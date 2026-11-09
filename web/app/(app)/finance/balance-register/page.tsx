@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { bcreApi, programmeApi, type BcreDashboard, type BalanceRegister, type Programme } from "@/lib/api";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -16,15 +17,15 @@ function getListData<T>(payload: unknown): T[] {
 }
 
 const MODULE_LABELS: Record<string, string> = {
-  salary_advance: "Salary Advance",
-  imprest:        "Imprest",
+  salary_advance: "finance.bcre.module.salary_advance",
+  imprest:        "finance.bcre.module.imprest",
 };
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
-  active:   { label: "Active",   badge: "badge-success" },
-  closed:   { label: "Closed",   badge: "badge-muted" },
-  disputed: { label: "Disputed", badge: "badge-danger" },
-  locked:   { label: "Locked",   badge: "badge-warning" },
+  active:   { label: "finance.bcre.status.active",   badge: "badge-success" },
+  closed:   { label: "finance.bcre.status.closed",   badge: "badge-muted" },
+  disputed: { label: "finance.bcre.status.disputed", badge: "badge-danger" },
+  locked:   { label: "finance.bcre.status.locked",   badge: "badge-warning" },
 };
 
 function fmt(n: number) {
@@ -32,6 +33,7 @@ function fmt(n: number) {
 }
 
 export default function BcreDashboardPage() {
+  const { t } = useI18n();
   const [dashboard, setDashboard] = useState<BcreDashboard | null>(null);
   const [recentSA, setRecentSA]   = useState<BalanceRegister[]>([]);
   const [recentIMP, setRecentIMP] = useState<BalanceRegister[]>([]);
@@ -55,7 +57,7 @@ export default function BcreDashboardPage() {
         const progPayload = (progRes as any)?.data;
         setProgrammes(getListData<Programme>(progPayload));
       })
-      .catch(() => setError("Failed to load dashboard."))
+      .catch(() => setError(t("decisions.dashboard.loadFailed")))
       .finally(() => setLoading(false));
   }, []);
 
@@ -64,27 +66,27 @@ export default function BcreDashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Balance Control & Reconciliation"
-        subtitle="Financial truth engine — controlled registers for advances and imprest"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Balance Control & Reconciliation" }]} />}
+        title="finance.bcre.dashboard.title"
+        subtitle="finance.bcre.dashboard.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "finance.bcre.dashboard.title" }]} />}
       />
         <div className="flex gap-2">
           <Link href="/finance/balance-register/exceptions" className="btn-secondary text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-base">warning</span>
-            Exceptions Queue
+            {t("finance.bcre.exceptionsQueue")}
           </Link>
           <Link href="/finance/balance-register/registers" className="btn-primary text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-base">list</span>
-            All Registers
+            {t("finance.bcre.allRegisters")}
           </Link>
         </div>
       </div>
 
       {/* Breadcrumb */}
       <nav className="text-sm text-neutral-500 flex items-center gap-1">
-        <Link href="/finance" className="hover:text-primary">Finance</Link>
+        <Link href="/finance" className="hover:text-primary">{t("nav.finance")}</Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span className="text-neutral-800 font-medium">Balance Register</span>
+        <span className="text-neutral-800 font-medium">{t("finance.bcre.balanceRegister")}</span>
       </nav>
 
       {error && <ErrorBanner message={error} />}
@@ -103,36 +105,36 @@ export default function BcreDashboardPage() {
           {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="card p-5">
-              <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Outstanding Balance</p>
+              <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">{t("finance.bcre.dashboard.outstanding")}</p>
               <p className="text-2xl font-bold text-neutral-900">{fmt(dashboard.total_outstanding_balance)}</p>
-              <p className="text-xs text-neutral-400 mt-1">across all active registers</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("finance.bcre.dashboard.outstandingHint")}</p>
             </div>
             <div className="card p-5">
-              <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Active Registers</p>
+              <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">{t("finance.bcre.dashboard.active")}</p>
               <p className="text-2xl font-bold text-neutral-900">{dashboard.total_active_registers}</p>
               <p className="text-xs text-neutral-400 mt-1">
-                {Object.entries(dashboard.registers_by_module).map(([m, c]) => `${MODULE_LABELS[m] ?? m}: ${c}`).join(" · ")}
+                {Object.entries(dashboard.registers_by_module).map(([m, c]) => `${MODULE_LABELS[m] ? t(MODULE_LABELS[m]) : m}: ${c}`).join(" · ")}
               </p>
             </div>
             <div className="card p-5">
-              <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Pending Verification</p>
+              <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">{t("finance.bcre.dashboard.pending")}</p>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-2xl font-bold text-neutral-900">{dashboard.pending_verifications}</p>
                 {dashboard.pending_verifications > 0 && (
-                  <span className="badge-warning text-xs px-2 py-0.5 rounded-full">Action required</span>
+                  <span className="badge-warning text-xs px-2 py-0.5 rounded-full">{t("finance.bcre.dashboard.actionRequired")}</span>
                 )}
               </div>
-              <p className="text-xs text-neutral-400 mt-1">transactions awaiting checker</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("finance.bcre.dashboard.pendingHint")}</p>
             </div>
             <div className="card p-5">
-              <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Disputed Registers</p>
+              <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">{t("finance.bcre.dashboard.disputed")}</p>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-2xl font-bold text-neutral-900">{dashboard.disputed_registers}</p>
                 {dashboard.disputed_registers > 0 && (
-                  <span className="badge-danger text-xs px-2 py-0.5 rounded-full">Needs resolution</span>
+                  <span className="badge-danger text-xs px-2 py-0.5 rounded-full">{t("finance.bcre.dashboard.needsResolution")}</span>
                 )}
               </div>
-              <p className="text-xs text-neutral-400 mt-1">employee disputes open</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("finance.bcre.dashboard.disputedHint")}</p>
             </div>
           </div>
 
@@ -141,13 +143,13 @@ export default function BcreDashboardPage() {
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-lg">folder_special</span>
-                <h2 className="font-semibold text-neutral-800">Programme snapshot</h2>
+                <h2 className="font-semibold text-neutral-800">{t("finance.bcre.dashboard.programmes")}</h2>
               </div>
-              <Link href="/pif" className="btn-secondary text-xs py-1 px-2">Open programmes</Link>
+              <Link href="/pif" className="btn-secondary text-xs py-1 px-2">{t("finance.bcre.dashboard.openProgrammes")}</Link>
             </div>
             <div className="divide-y divide-neutral-50">
               {programmes.length === 0 ? (
-                <EmptyState icon="folder_special" title="No recent programmes to surface beside BCRE." className="py-8 min-h-0" />
+                <EmptyState icon="folder_special" title="finance.bcre.dashboard.noProgrammes" className="py-8 min-h-0" />
               ) : programmes.map((p) => (
                 <Link
                   key={p.id}
@@ -155,7 +157,7 @@ export default function BcreDashboardPage() {
                   className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-neutral-800">{p.title ?? p.reference_number ?? `Programme #${p.id}`}</p>
+                    <p className="text-sm font-medium text-neutral-800">{p.title ?? p.reference_number ?? t("finance.bcre.dashboard.programmeNumber", { id: p.id })}</p>
                     <p className="text-xs text-neutral-500">{p.status ?? "—"}</p>
                   </div>
                   <span className="material-symbols-outlined text-neutral-400 text-base">chevron_right</span>
@@ -171,24 +173,24 @@ export default function BcreDashboardPage() {
               <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-lg">payments</span>
-                  <h2 className="font-semibold text-neutral-800">Salary Advance Registers</h2>
+                  <h2 className="font-semibold text-neutral-800">{t("finance.bcre.dashboard.saRegisters")}</h2>
                 </div>
-                <Link href="/finance/balance-register/registers?module_type=salary_advance" className="btn-secondary text-xs py-1 px-2">View all</Link>
+                <Link href="/finance/balance-register/registers?module_type=salary_advance" className="btn-secondary text-xs py-1 px-2">{t("common.viewAll")}</Link>
               </div>
               <div className="divide-y divide-neutral-50">
                 {recentSA.length === 0 ? (
-                  <EmptyState icon="payments" title="No salary advance registers yet." className="py-8 min-h-0" />
+                  <EmptyState icon="payments" title="finance.bcre.dashboard.noSa" className="py-8 min-h-0" />
                 ) : recentSA.map(reg => (
                   <Link key={reg.id} href={`/finance/balance-register/${reg.id}`}
                     className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50 transition-colors">
                     <div>
                       <p className="text-sm font-medium text-neutral-800">{reg.reference_number}</p>
-                      <p className="text-xs text-neutral-500">{reg.employee?.name ?? `Employee #${reg.employee_id}`}</p>
+                      <p className="text-xs text-neutral-500">{reg.employee?.name ?? t("finance.bcre.employeeNumber", { id: reg.employee_id })}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-neutral-900">NAD {Number(reg.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                      <p className="text-sm font-semibold text-neutral-900">{"NAD"} {Number(reg.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                       <span className={`text-xs ${STATUS_CONFIG[reg.status]?.badge ?? "badge-muted"}`}>
-                        {STATUS_CONFIG[reg.status]?.label ?? reg.status}
+                        {STATUS_CONFIG[reg.status] ? t(STATUS_CONFIG[reg.status].label) : reg.status}
                       </span>
                     </div>
                   </Link>
@@ -201,24 +203,24 @@ export default function BcreDashboardPage() {
               <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-lg">account_balance_wallet</span>
-                  <h2 className="font-semibold text-neutral-800">Imprest Registers</h2>
+                  <h2 className="font-semibold text-neutral-800">{t("finance.bcre.dashboard.impRegisters")}</h2>
                 </div>
-                <Link href="/finance/balance-register/registers?module_type=imprest" className="btn-secondary text-xs py-1 px-2">View all</Link>
+                <Link href="/finance/balance-register/registers?module_type=imprest" className="btn-secondary text-xs py-1 px-2">{t("common.viewAll")}</Link>
               </div>
               <div className="divide-y divide-neutral-50">
                 {recentIMP.length === 0 ? (
-                  <EmptyState icon="account_balance_wallet" title="No imprest registers yet." className="py-8 min-h-0" />
+                  <EmptyState icon="account_balance_wallet" title="finance.bcre.dashboard.noImp" className="py-8 min-h-0" />
                 ) : recentIMP.map(reg => (
                   <Link key={reg.id} href={`/finance/balance-register/${reg.id}`}
                     className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50 transition-colors">
                     <div>
                       <p className="text-sm font-medium text-neutral-800">{reg.reference_number}</p>
-                      <p className="text-xs text-neutral-500">{reg.employee?.name ?? `Employee #${reg.employee_id}`}</p>
+                      <p className="text-xs text-neutral-500">{reg.employee?.name ?? t("finance.bcre.employeeNumber", { id: reg.employee_id })}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-neutral-900">NAD {Number(reg.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                      <p className="text-sm font-semibold text-neutral-900">{"NAD"} {Number(reg.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                       <span className={`text-xs ${STATUS_CONFIG[reg.status]?.badge ?? "badge-muted"}`}>
-                        {STATUS_CONFIG[reg.status]?.label ?? reg.status}
+                        {STATUS_CONFIG[reg.status] ? t(STATUS_CONFIG[reg.status].label) : reg.status}
                       </span>
                     </div>
                   </Link>

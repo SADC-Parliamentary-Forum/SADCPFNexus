@@ -8,11 +8,13 @@ import { saamApi, type SignatureProfile } from "@/lib/api";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Tab = "full" | "initials";
 type InputMode = "draw" | "upload";
 
 export default function SignatureSetupPage() {
+  const { t, localeTag } = useI18n();
   const { success, error, info } = useToast();
   const { confirm } = useConfirm();
   const [tab, setTab] = useState<Tab>("full");
@@ -62,17 +64,17 @@ export default function SignatureSetupPage() {
 
   async function saveDraw() {
     if (!sigPadRef.current || sigPadRef.current.isEmpty()) {
-      error("Please draw a signature first.");
+      error(t("profile.signature.drawFirst"));
       return;
     }
     setSaving(true);
     try {
       const dataUrl = sigPadRef.current.toDataURL("image/png");
       await saamApi.draw(tab, dataUrl);
-      success("Signature saved.");
+      success(t("profile.signature.saved"));
       loadProfiles();
     } catch {
-      error("Failed to save signature.");
+      error(t("profile.signature.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -80,18 +82,18 @@ export default function SignatureSetupPage() {
 
   async function saveUpload() {
     if (!uploadFile) {
-      error("Please choose a file.");
+      error(t("profile.signature.chooseFile"));
       return;
     }
     setSaving(true);
     try {
       await saamApi.upload(tab, uploadFile);
-      success("Signature uploaded.");
+      success(t("profile.signature.uploaded"));
       setUploadFile(null);
       setUploadPreview(null);
       loadProfiles();
     } catch {
-      error("Failed to upload signature.");
+      error(t("profile.signature.uploadFailed"));
     } finally {
       setSaving(false);
     }
@@ -100,17 +102,17 @@ export default function SignatureSetupPage() {
   async function revokeSignature(type: Tab) {
     if (
       !(await confirm({
-        title: "Revoke signature",
-        message: `Revoke your ${type} signature? This action cannot be undone.`,
+        title: t("profile.signature.revokeTitle"),
+        message: t(type === "full" ? "profile.signature.revokeFull" : "profile.signature.revokeInitials"),
         variant: "danger",
       }))
     ) return;
     try {
       await saamApi.revoke(type);
-      success("Signature revoked.");
+      success(t("profile.signature.revoked"));
       loadProfiles();
     } catch {
-      error("Failed to revoke signature.");
+      error(t("profile.signature.revokeFailed"));
     }
   }
 
@@ -131,28 +133,28 @@ export default function SignatureSetupPage() {
       {/* Toast */}
 {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/profile" className="hover:text-primary transition-colors">Profile</Link>
+        <Link href="/profile" className="hover:text-primary transition-colors">{t("profile.signature.crumbProfile")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">My Signature</span>
+        <span className="text-neutral-900 font-medium">{t("profile.signature.crumbMine")}</span>
       </div>
 
       <ModulePageHeader
-        title="Digital Signature"
-        subtitle="Set up your institutional signature and initials for workflow approvals."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Digital Signature" }]} />}
+        title="profile.signature.title"
+        subtitle="profile.signature.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "profile.signature.title" }]} />}
       />
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-neutral-200">
-        {(["full", "initials"] as Tab[]).map((t) => (
+        {(["full", "initials"] as Tab[]).map((tb) => (
           <button
-            key={t}
-            onClick={() => { setTab(t); setMode("draw"); setUploadFile(null); setUploadPreview(null); }}
+            key={tb}
+            onClick={() => { setTab(tb); setMode("draw"); setUploadFile(null); setUploadPreview(null); }}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize ${
-              tab === t ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"
+              tab === tb ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"
             }`}
           >
-            {t === "full" ? "Full Signature" : "Initials"}
+            {tb === "full" ? t("profile.signature.fullTab") : t("profile.signature.initialsTab")}
           </button>
         ))}
       </div>
@@ -167,27 +169,26 @@ export default function SignatureSetupPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">
-                    Active {tab === "full" ? "Signature" : "Initials"}
+                    {tab === "full" ? t("profile.signature.activeSignature") : t("profile.signature.activeInitials")}
                   </p>
                   <div className="bg-neutral-50 border border-neutral-100 rounded-xl p-4 inline-block">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={`/api/v1/saam/signature-image/${currentProfile!.active_version!.id}`}
-                      alt="active signature"
+                      alt={t("profile.signature.activeAlt")}
                       className="max-h-16 max-w-[200px] object-contain"
                       style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,.12))" }}
                     />
                   </div>
                   <p className="text-xs text-neutral-400 mt-2">
-                    Version {currentProfile!.active_version!.version_no} · Active since{" "}
-                    {new Date(currentProfile!.active_version!.effective_from).toLocaleDateString("en-GB")}
+                    {t("profile.signature.versionSince", { version: currentProfile!.active_version!.version_no, date: new Date(currentProfile!.active_version!.effective_from).toLocaleDateString(localeTag) })}
                   </p>
                 </div>
                 <button
                   onClick={() => revokeSignature(tab)}
                   className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600"
                 >
-                  Revoke
+                  {t("profile.signature.revoke")}
                 </button>
               </div>
             </div>
@@ -204,7 +205,7 @@ export default function SignatureSetupPage() {
               }`}
             >
               <span className="material-symbols-outlined text-[15px]">draw</span>
-              Draw
+              {t("profile.signature.draw")}
             </button>
             <button
               onClick={() => setMode("upload")}
@@ -215,7 +216,7 @@ export default function SignatureSetupPage() {
               }`}
             >
               <span className="material-symbols-outlined text-[15px]">upload</span>
-              Upload
+              {t("common.upload")}
             </button>
           </div>
 
@@ -224,10 +225,10 @@ export default function SignatureSetupPage() {
             <div className="card p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wide">
-                  Draw your {tab === "full" ? "signature" : "initials"} below
+                  {tab === "full" ? t("profile.signature.drawSignatureBelow") : t("profile.signature.drawInitialsBelow")}
                 </p>
                 <button onClick={clearPad} className="text-xs text-neutral-400 hover:text-neutral-600">
-                  Clear
+                  {t("profile.signature.clear")}
                 </button>
               </div>
               <div className="border-2 border-dashed border-neutral-200 rounded-xl overflow-hidden bg-neutral-50 relative" style={{ height: 160 }}>
@@ -247,7 +248,7 @@ export default function SignatureSetupPage() {
                   ) : (
                     <span className="material-symbols-outlined text-[16px]">save</span>
                   )}
-                  {saving ? "Saving…" : "Save Signature"}
+                  {saving ? t("hr.timesheets.saving") : t("profile.signature.save")}
                 </button>
               </div>
             </div>
@@ -257,21 +258,21 @@ export default function SignatureSetupPage() {
           {mode === "upload" && (
             <div className="card p-5 space-y-4">
               <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wide">
-                Upload {tab === "full" ? "signature" : "initials"} image (PNG, transparent bg preferred, max 500KB)
+                {tab === "full" ? t("profile.signature.uploadSignatureHint") : t("profile.signature.uploadInitialsHint")}
               </p>
               {uploadPreview ? (
                 <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 flex items-center gap-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={uploadPreview} alt="preview" className="max-h-16 max-w-[160px] object-contain" />
+                  <img src={uploadPreview} alt={t("profile.signature.previewAlt")} className="max-h-16 max-w-[160px] object-contain" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-neutral-700">{uploadFile?.name}</p>
-                    <button onClick={() => { setUploadFile(null); setUploadPreview(null); }} className="btn-secondary text-xs py-1 px-2 mt-0.5 text-red-600">Remove</button>
+                    <button onClick={() => { setUploadFile(null); setUploadPreview(null); }} className="btn-secondary text-xs py-1 px-2 mt-0.5 text-red-600">{t("profile.signature.remove")}</button>
                   </div>
                 </div>
               ) : (
                 <label htmlFor="profile-signature-upload" className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-neutral-200 rounded-xl p-8 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                   <span className="material-symbols-outlined text-neutral-400 text-[32px]">image</span>
-                  <span className="text-sm text-neutral-500">Click to choose PNG file</span>
+                  <span className="text-sm text-neutral-500">{t("profile.signature.choosePng")}</span>
                   <input id="profile-signature-upload" type="file" accept=".png,image/png" className="hidden" onChange={onFileChange} />
                 </label>
               )}
@@ -286,7 +287,7 @@ export default function SignatureSetupPage() {
                   ) : (
                     <span className="material-symbols-outlined text-[16px]">upload</span>
                   )}
-                  {saving ? "Uploading…" : "Upload Signature"}
+                  {saving ? t("profile.signature.uploading") : t("profile.signature.upload")}
                 </button>
               </div>
             </div>
@@ -295,7 +296,7 @@ export default function SignatureSetupPage() {
           {/* Info note */}
           <div className="flex items-start gap-2 text-xs text-neutral-500 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
             <span className="material-symbols-outlined text-amber-500 text-[16px] mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>info</span>
-            <span>Your signature is stored securely and used only when you explicitly approve a document. It is never shared publicly and requires password re-authentication each time it is applied.</span>
+            <span>{t("profile.signature.securityNote")}</span>
           </div>
         </>
       )}

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function localIso(d: Date) {
   const y = d.getFullYear();
@@ -19,19 +20,20 @@ function localIso(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-function monthBounds(d = new Date()) {
+function monthBounds(d = new Date(), localeTag = "en-GB") {
   const from = new Date(d.getFullYear(), d.getMonth(), 1);
   const to = new Date(d.getFullYear(), d.getMonth() + 1, 0);
   return {
     from: localIso(from),
     to: localIso(to),
-    label: from.toLocaleString("en-GB", { month: "long", year: "numeric" }),
+    label: from.toLocaleString(localeTag, { month: "long", year: "numeric" }),
     year: from.getFullYear(),
     month: from.getMonth(),
   };
 }
 
 export default function AssignmentsCalendarPage() {
+  const { t, localeTag } = useI18n();
   const queryClient = useQueryClient();
   const { confirm } = useConfirm();
   const toast = useToast();
@@ -43,7 +45,7 @@ export default function AssignmentsCalendarPage() {
   const [icsError, setIcsError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
-  const bounds = useMemo(() => monthBounds(cursor), [cursor]);
+  const bounds = useMemo(() => monthBounds(cursor, localeTag), [cursor, localeTag]);
   const todayIso = localIso(new Date());
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -63,10 +65,10 @@ export default function AssignmentsCalendarPage() {
       queryClient.setQueryData(["assignments-calendar-feed"], next);
       setRevealed(false);
       setCopied(false);
-      toast.success("Subscription link regenerated");
+      toast.success(t("assignments.calendar.toast.regenerated"));
     },
     onError: (err) => {
-      toast.error("Could not regenerate subscription link", apiErrorMessage(err, "Failed to regenerate the calendar subscription link."));
+      toast.error(t("assignments.calendar.toast.regenerateFailed"), apiErrorMessage(err, t("assignments.calendar.toast.regenerateFailedDetail")));
     },
   });
 
@@ -130,10 +132,10 @@ export default function AssignmentsCalendarPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Assignment Calendar"
-        subtitle={`Due dates for ${bounds.label}. Download ICS with your session, or subscribe in Google Calendar / Outlook with a private feed URL.`}
+        title={t("assignments.calendar.title")}
+        subtitle={t("assignments.calendar.subtitle", { month: bounds.label })}
         breadcrumbs={
-          <PageBreadcrumbs items={[{ label: "Assignments", href: "/assignments" }, { label: "Calendar" }]} />
+          <PageBreadcrumbs items={[{ label: t("nav.assignments"), href: "/assignments" }, { label: t("assignments.calendar.breadcrumb") }]} />
         }
         actions={
           <>
@@ -141,38 +143,38 @@ export default function AssignmentsCalendarPage() {
               className="form-input w-36"
               value={scope}
               onChange={(e) => setScope(e.target.value as typeof scope)}
-              aria-label="Calendar scope"
+              aria-label={t("assignments.calendar.scope")}
             >
-              <option value="mine">Mine</option>
-              <option value="team">Team</option>
-              <option value="register">Register</option>
+              <option value="mine">{t("assignments.calendar.scopeMine")}</option>
+              <option value="team">{t("assignments.calendar.scopeTeam")}</option>
+              <option value="register">{t("assignments.calendar.scopeRegister")}</option>
             </select>
             <Link href="/assignments/capacity" className="btn-secondary text-sm">
-              Capacity
+              {t("assignments.calendar.capacity")}
             </Link>
             <Link href="/assignments/workload" className="btn-secondary text-sm">
-              Workload
+              {t("assignments.calendar.workload")}
             </Link>
             <button type="button" className="btn-secondary text-sm" onClick={() => void downloadIcs()}>
               <span className="material-symbols-outlined text-[18px]">download</span>
-              Download ICS
+              {t("assignments.calendar.downloadIcs")}
             </button>
             <button
               type="button"
               className="btn-secondary text-sm"
               onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
             >
-              Previous
+              {t("common.previous")}
             </button>
             <button type="button" className="btn-secondary text-sm" onClick={() => setCursor(new Date())}>
-              This month
+              {t("assignments.calendar.thisMonth")}
             </button>
             <button
               type="button"
               className="btn-secondary text-sm"
               onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
             >
-              Next
+              {t("common.next")}
             </button>
           </>
         }
@@ -189,9 +191,9 @@ export default function AssignmentsCalendarPage() {
       {isError && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
-          <span className="flex-1">Failed to load assignment calendar.</span>
+          <span className="flex-1">{t("assignments.calendar.loadFailed")}</span>
           <button type="button" className="btn-secondary text-xs" onClick={() => void refetch()}>
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       )}
@@ -200,14 +202,14 @@ export default function AssignmentsCalendarPage() {
         <div className="card space-y-3 p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-neutral-900">Subscribe in a calendar app</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{t("assignments.calendar.subscribeTitle")}</h2>
               <p className="mt-1 max-w-2xl text-xs text-neutral-500">
                 {feed.google_credentials_present
-                  ? "Google Calendar credentials are present. ICS subscribe remains available as a secret URL — calendar apps cannot send your login token."
-                  : "Google credentials are not configured. Add this URL in Google Calendar or Outlook (Add by URL). This is not live two-way sync."}
+                  ? t("assignments.calendar.googlePresent")
+                  : t("assignments.calendar.googleMissing")}
               </p>
             </div>
-            <span className="badge-muted text-[11px] uppercase tracking-wide">Secret URL</span>
+            <span className="badge-muted text-[11px] uppercase tracking-wide">{t("assignments.calendar.secretUrl")}</span>
           </div>
           <p className="text-xs text-neutral-600">{feed.instructions}</p>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -218,14 +220,14 @@ export default function AssignmentsCalendarPage() {
               autoComplete="off"
               spellCheck={false}
               className="form-input min-w-0 flex-1 font-mono text-xs"
-              aria-label="ICS subscribe URL"
+              aria-label={t("assignments.calendar.subscribeUrl")}
             />
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn-secondary text-sm" onClick={() => setRevealed((v) => !v)}>
-                {revealed ? "Hide" : "Show"}
+                {revealed ? t("assignments.calendar.hide") : t("assignments.calendar.show")}
               </button>
               <button type="button" className="btn-secondary text-sm" onClick={() => void copySubscribeUrl()}>
-                {copied ? "Copied" : "Copy URL"}
+                {copied ? t("assignments.calendar.copied") : t("assignments.calendar.copyUrl")}
               </button>
               <button
                 type="button"
@@ -233,15 +235,15 @@ export default function AssignmentsCalendarPage() {
                 disabled={rotate.isPending}
                 onClick={regenerateSubscribeUrl}
               >
-                {rotate.isPending ? "Regenerating…" : "Regenerate URL"}
+                {rotate.isPending ? t("assignments.calendar.regenerating") : t("assignments.calendar.regenerateUrl")}
               </button>
             </div>
           </div>
           {rotate.isError ? (
-            <p className="text-sm text-red-700">Could not regenerate the subscribe URL. Try again.</p>
+            <p className="text-sm text-red-700">{t("assignments.calendar.regenerateError")}</p>
           ) : null}
           <p className="text-[11px] text-neutral-400">
-            Anyone with this URL can read your assignments. Download ICS in the toolbar still uses your signed-in session.
+            {t("assignments.calendar.secretWarning")}
           </p>
         </div>
       ) : null}
@@ -250,11 +252,11 @@ export default function AssignmentsCalendarPage() {
         <div className="card">
           <EmptyState
             icon="calendar_month"
-            title={`No due dates in ${bounds.label}`}
-            description="Try another month, or switch scope. Import an ICS file below to create draft assignments assigned to you."
+            title={t("assignments.calendar.emptyTitle", { month: bounds.label })}
+            description={t("assignments.calendar.emptyDescription")}
             action={
               <Link href="/assignments" className="btn-secondary text-sm">
-                Open assignments
+                {t("assignments.calendar.openAssignments")}
               </Link>
             }
           />
@@ -263,12 +265,12 @@ export default function AssignmentsCalendarPage() {
 
       {!isLoading && !isError ? (
         <div className="card grid grid-cols-7 gap-px overflow-hidden border border-neutral-200 bg-neutral-200 p-px">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          {["sun", "mon", "tue", "wed", "thu", "fri", "sat"].map((d) => (
             <div
               key={d}
               className="bg-neutral-50 px-2 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-500"
             >
-              {d}
+              {t(`assignments.calendar.dow.${d}`)}
             </div>
           ))}
           {cells.map((cell) => {
@@ -287,7 +289,7 @@ export default function AssignmentsCalendarPage() {
                   </span>
                   {isToday ? (
                     <span className="rounded-full bg-primary px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-white">
-                      Today
+                      {t("assignments.calendar.today")}
                     </span>
                   ) : null}
                 </div>
@@ -306,7 +308,7 @@ export default function AssignmentsCalendarPage() {
                   {dayItems.length > 3 && (
                     <li>
                       <Link href="/assignments" className="text-[11px] text-neutral-400 hover:text-primary">
-                        +{dayItems.length - 3} more
+                        {t("assignments.calendar.more", { count: dayItems.length - 3 })}
                       </Link>
                     </li>
                   )}
@@ -318,7 +320,7 @@ export default function AssignmentsCalendarPage() {
       ) : null}
 
       <details className="card p-5">
-        <summary className="cursor-pointer text-sm font-semibold text-neutral-900">Import ICS</summary>
+        <summary className="cursor-pointer text-sm font-semibold text-neutral-900">{t("assignments.calendar.importIcs")}</summary>
         <form
           data-testid="assignment-ics-import"
           className="mt-3 space-y-3"
@@ -332,32 +334,32 @@ export default function AssignmentsCalendarPage() {
               const res = await assignmentsApi.importIcs({ ics });
               setIcsResult(res.data.data as Record<string, unknown>);
               setIcsText("");
-              toast.success("Calendar imported", "Events were added as draft assignments.");
+              toast.success(t("assignments.calendar.toast.imported"), t("assignments.calendar.toast.importedDetail"));
               await queryClient.invalidateQueries({ queryKey: ["assignments-calendar"] });
             } catch (err) {
-              const message = apiErrorMessage(err, "ICS import failed. Events are created as drafts only.");
-              setIcsError("ICS import failed. Events are created as drafts only.");
-              toast.error("Calendar not imported", message);
+              const message = apiErrorMessage(err, t("assignments.calendar.importFailed"));
+              setIcsError(t("assignments.calendar.importFailed"));
+              toast.error(t("assignments.calendar.toast.notImported"), message);
             } finally {
               setIcsBusy(false);
             }
           }}
         >
           <p className="text-xs text-neutral-500">
-            Paste a calendar file. Import creates draft assignments assigned to you — it does not issue or complete work.
+            {t("assignments.calendar.importHint")}
           </p>
           <label htmlFor="assignments-calendar-ics-text-seticstext-e-target-value-placeholder-b" className="block text-xs font-medium text-neutral-600">
-            ICS text
+            {t("assignments.calendar.icsText")}
             <textarea id="assignments-calendar-ics-text-seticstext-e-target-value-placeholder-b"
               className="form-input mt-1 min-h-32 font-mono text-xs"
               value={icsText}
               onChange={(e) => setIcsText(e.target.value)}
               placeholder="BEGIN:VCALENDAR"
-              aria-label="ICS text"
+              aria-label={t("assignments.calendar.icsText")}
             />
           </label>
           <button type="submit" className="btn-secondary text-sm" disabled={icsBusy || !icsText.trim()}>
-            {icsBusy ? "Importing…" : "Import ICS"}
+            {icsBusy ? t("assignments.calendar.importing") : t("assignments.calendar.importIcs")}
           </button>
           {icsError ? <p className="text-sm text-red-700">{icsError}</p> : null}
           {icsResult ? <LabelledRecord value={icsResult} /> : null}

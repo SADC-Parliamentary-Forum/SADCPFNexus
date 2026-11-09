@@ -5,21 +5,26 @@ import { adminApi, programmeApi, type ApprovalWorkflow, type ApprovalStep, type 
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // Fallback list used only if the backend module catalogue cannot be loaded.
+// Labels are catalog keys; labels from the backend catalogue are shown as sent.
+const FALLBACK_LABEL_PREFIX = "admin.workflows.module.";
 const FALLBACK_MODULE_OPTIONS = [
-  { value: "leave",          label: "Leave" },
-  { value: "travel",         label: "Travel & Missions" },
-  { value: "imprest",        label: "Imprest Advances" },
-  { value: "correspondence", label: "Correspondence" },
-  { value: "procurement",    label: "Procurement" },
-  { value: "finance",        label: "Finance / Payments" },
-  { value: "hr",             label: "HR Requests" },
-  { value: "governance",     label: "Governance" },
-  { value: "programmes",     label: "Programmes (PIF)" },
+  { value: "leave",          label: "admin.workflows.module.leave" },
+  { value: "travel",         label: "admin.workflows.module.travel" },
+  { value: "imprest",        label: "admin.workflows.module.imprest" },
+  { value: "correspondence", label: "admin.workflows.module.correspondence" },
+  { value: "procurement",    label: "admin.workflows.module.procurement" },
+  { value: "finance",        label: "admin.workflows.module.finance" },
+  { value: "hr",             label: "admin.workflows.module.hr" },
+  { value: "governance",     label: "admin.workflows.module.governance" },
+  { value: "programmes",     label: "admin.workflows.module.programmes" },
 ];
 
 export default function AdminWorkflowPage() {
+  const { t } = useI18n();
+  const optionLabel = (label: string) => (label.startsWith(FALLBACK_LABEL_PREFIX) ? t(label) : label);
   const [workflows, setWorkflows] = useState<ApprovalWorkflow[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
@@ -90,9 +95,9 @@ export default function AdminWorkflowPage() {
       const res = await adminApi.listWorkflows();
       setWorkflows(res.data.data);
       setEditing(null);
-      toast("success", "Workflow Saved", "The approval workflow has been saved successfully.");
+      toast("success", t("admin.workflows.saved"), t("admin.workflows.savedDesc"));
     } catch {
-      toast("error", "Save Failed", "Failed to save the workflow configuration.");
+      toast("error", t("admin.workflows.saveFailed"), t("admin.workflows.saveFailedDesc"));
     } finally {
       setLoading(false);
     }
@@ -102,8 +107,8 @@ export default function AdminWorkflowPage() {
     if (
       !editing?.id ||
       !(await confirm({
-        title: "Delete workflow",
-        message: "Delete this workflow? This cannot be undone.",
+        title: t("admin.workflows.deleteTitle"),
+        message: t("admin.workflows.deleteMessage"),
         variant: "danger",
       }))
     ) return; // ship-safe-ignore
@@ -113,9 +118,9 @@ export default function AdminWorkflowPage() {
       const res = await adminApi.listWorkflows();
       setWorkflows(res.data.data);
       setEditing(null);
-      toast("success", "Workflow Deleted", "The workflow has been removed.");
+      toast("success", t("admin.workflows.deleted"), t("admin.workflows.deletedDesc"));
     } catch {
-      toast("error", "Delete Failed", "Failed to delete the workflow.");
+      toast("error", t("admin.workflows.deleteFailed"), t("admin.workflows.deleteFailedDesc"));
     } finally {
       setLoading(false);
     }
@@ -125,11 +130,11 @@ export default function AdminWorkflowPage() {
     if (!wf.target_type || !wf.target_id) return null;
     if (wf.target_type === "department") {
       const dept = departments.find((d) => d.id === wf.target_id);
-      return dept ? `For: ${dept.name}` : `Dept #${wf.target_id}`;
+      return dept ? t("admin.workflows.forName", { name: dept.name }) : t("admin.workflows.deptN", { id: wf.target_id });
     }
     if (wf.target_type === "programme") {
       const prog = programmes.find((p) => p.id === wf.target_id);
-      return prog ? `For: ${prog.title}` : `Programme #${wf.target_id}`;
+      return prog ? t("admin.workflows.forName", { name: prog.title }) : t("admin.workflows.programmeN", { id: wf.target_id });
     }
     return null;
   }
@@ -137,13 +142,13 @@ export default function AdminWorkflowPage() {
   return (
     <div className="space-y-6">
       <ModulePageHeader
-        title="Approval Workflows"
-        subtitle="Configure multi-stage approval processes for system modules."
+        title={t("admin.home.approvalWorkflows")}
+        subtitle={t("admin.workflows.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Approval Workflows" },
+              { label: t("admin.homeLabel"), href: "/admin" },
+              { label: t("admin.home.approvalWorkflows") },
             ]}
           />
         }
@@ -154,7 +159,7 @@ export default function AdminWorkflowPage() {
             className="btn-primary"
           >
             <span className="material-symbols-outlined">add</span>
-            New Workflow
+            {t("admin.workflows.new")}
           </button>
         }
       />
@@ -173,10 +178,10 @@ export default function AdminWorkflowPage() {
                 <div className="flex justify-between items-center">
                   <h3 className="font-bold text-neutral-900">{wf.name}</h3>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${wf.is_active ? "bg-green-100 text-green-700" : "bg-neutral-100 text-neutral-500"}`}>
-                    {wf.is_active ? "Active" : "Inactive"}
+                    {wf.is_active ? t("admin.common.active") : t("admin.common.inactive")}
                   </span>
                 </div>
-                <p className="text-xs text-neutral-500 mt-1 capitalize">{moduleOptions.find(m => m.value === wf.module_type)?.label ?? wf.module_type}</p>
+                <p className="text-xs text-neutral-500 mt-1 capitalize">{optionLabel(moduleOptions.find(m => m.value === wf.module_type)?.label ?? wf.module_type)}</p>
                 {tLabel && (
                   <span className="inline-block mt-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-100 rounded px-1.5 py-0.5">
                     {tLabel}
@@ -197,35 +202,35 @@ export default function AdminWorkflowPage() {
           {editing ? (
             <div className="card p-6 border-primary/20 shadow-lg">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold text-neutral-900">{editing.id ? "Edit Workflow" : "Create New Workflow"}</h2>
+                <h2 className="text-lg font-bold text-neutral-900">{editing.id ? t("admin.workflows.edit") : t("admin.workflows.create")}</h2>
                 <div className="flex gap-2">
                   {editing.id && (
-                    <button onClick={deleteWorkflow} className="btn-secondary py-1.5 px-3 text-xs text-red-600 hover:bg-red-50 border-red-200">Delete</button>
+                    <button onClick={deleteWorkflow} className="btn-secondary py-1.5 px-3 text-xs text-red-600 hover:bg-red-50 border-red-200">{t("common.delete")}</button>
                   )}
-                  <button onClick={() => setEditing(null)} className="btn-secondary py-1.5 px-3 text-xs">Cancel</button>
-                  <button onClick={saveWorkflow} className="btn-primary py-1.5 px-3 text-xs">Save Changes</button>
+                  <button onClick={() => setEditing(null)} className="btn-secondary py-1.5 px-3 text-xs">{t("common.cancel")}</button>
+                  <button onClick={saveWorkflow} className="btn-primary py-1.5 px-3 text-xs">{t("admin.governance.saveChanges")}</button>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label htmlFor="admin-workflows-workflow-name" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Workflow Name</label>
+                  <label htmlFor="admin-workflows-workflow-name" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">{t("admin.workflows.name")}</label>
                   <input id="admin-workflows-workflow-name"
                     className="form-input"
                     value={editing.name}
                     onChange={e => setEditing({ ...editing, name: e.target.value })}
-                    placeholder="e.g. Leave Approval Policy"
+                    placeholder={t("admin.workflows.namePlaceholder")}
                   />
                 </div>
                 <div>
-                  <label htmlFor="admin-workflows-module" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Module</label>
+                  <label htmlFor="admin-workflows-module" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">{t("admin.common.module")}</label>
                   <select id="admin-workflows-module"
                     className="form-input"
                     value={editing.module_type}
                     onChange={e => setEditing({ ...editing, module_type: e.target.value })}
                   >
                     {moduleOptions.map(m => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
+                      <option key={m.value} value={m.value}>{optionLabel(m.label)}</option>
                     ))}
                   </select>
                 </div>
@@ -234,39 +239,39 @@ export default function AdminWorkflowPage() {
               {/* Targeting */}
               <div className="grid grid-cols-2 gap-4 mb-8 p-4 bg-neutral-50 rounded-xl border border-neutral-100">
                 <div>
-                  <label htmlFor="admin-workflows-applicability" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Applicability</label>
+                  <label htmlFor="admin-workflows-applicability" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">{t("admin.workflows.applicability")}</label>
                   <select id="admin-workflows-applicability"
                     className="form-input"
                     value={editing.target_type ?? ""}
                     onChange={e => setEditing({ ...editing, target_type: (e.target.value as "programme" | "department") || null, target_id: null })}
                   >
-                    <option value="">All (no restriction)</option>
-                    <option value="department">Specific Department</option>
-                    <option value="programme">Specific Programme</option>
+                    <option value="">{t("admin.workflows.allNoRestriction")}</option>
+                    <option value="department">{t("admin.workflows.specificDept")}</option>
+                    <option value="programme">{t("admin.workflows.specificProgramme")}</option>
                   </select>
                 </div>
                 {editing.target_type === "department" && (
                   <div>
-                    <label htmlFor="admin-workflows-department" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Department</label>
+                    <label htmlFor="admin-workflows-department" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">{t("admin.common.department")}</label>
                     <select id="admin-workflows-department"
                       className="form-input"
                       value={editing.target_id ?? ""}
                       onChange={e => setEditing({ ...editing, target_id: e.target.value ? Number(e.target.value) : null })}
                     >
-                      <option value="">Select department…</option>
+                      <option value="">{t("admin.workflows.selectDept")}</option>
                       {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                     </select>
                   </div>
                 )}
                 {editing.target_type === "programme" && (
                   <div>
-                    <label htmlFor="admin-workflows-programme" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Programme</label>
+                    <label htmlFor="admin-workflows-programme" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">{t("admin.workflows.programme")}</label>
                     <select id="admin-workflows-programme"
                       className="form-input"
                       value={editing.target_id ?? ""}
                       onChange={e => setEditing({ ...editing, target_id: e.target.value ? Number(e.target.value) : null })}
                     >
-                      <option value="">Select programme…</option>
+                      <option value="">{t("admin.workflows.selectProgramme")}</option>
                       {programmes.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                     </select>
                   </div>
@@ -275,7 +280,7 @@ export default function AdminWorkflowPage() {
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1">Approval Steps</p>
+                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1">{t("admin.workflows.steps")}</p>
                 </div>
 
                 {editing.steps?.map((step, idx) => (
@@ -287,49 +292,49 @@ export default function AdminWorkflowPage() {
                       <div className="flex items-start gap-4">
                         <div className="flex-1 grid grid-cols-3 gap-4">
                           <div className="col-span-1">
-                            <label htmlFor="admin-workflows-approver-type" className="block text-[10px] font-bold text-neutral-500 mb-1">Approver Type</label>
+                            <label htmlFor="admin-workflows-approver-type" className="block text-[10px] font-bold text-neutral-500 mb-1">{t("admin.workflows.approverType")}</label>
                             <select id="admin-workflows-approver-type"
                               className="form-input py-1 text-xs"
                               value={step.approver_type}
                               onChange={e => handleUpdateStep(idx, { approver_type: e.target.value as any })}
                             >
-                              <option value="supervisor">Direct Supervisor</option>
-                              <option value="up_the_chain">Head of Chain</option>
-                              <option value="specific_role">Specific Role</option>
-                              <option value="specific_user">Specific Individual</option>
+                              <option value="supervisor">{t("admin.workflows.approver.supervisor")}</option>
+                              <option value="up_the_chain">{t("admin.workflows.approver.chain")}</option>
+                              <option value="specific_role">{t("admin.workflows.approver.role")}</option>
+                              <option value="specific_user">{t("admin.workflows.approver.user")}</option>
                             </select>
                           </div>
 
                           <div className="col-span-2">
                             {step.approver_type === 'specific_role' && (
                               <>
-                                <label htmlFor={`admin-workflows-select-role-${idx}`} className="block text-[10px] font-bold text-neutral-500 mb-1">Select Role</label>
+                                <label htmlFor={`admin-workflows-select-role-${idx}`} className="block text-[10px] font-bold text-neutral-500 mb-1">{t("admin.workflows.selectRole")}</label>
                                 <select id={`admin-workflows-select-role-${idx}`}
                                   className="form-input py-1 text-xs"
                                   value={step.role_id || ""}
                                   onChange={e => handleUpdateStep(idx, { role_id: parseInt(e.target.value) })}
                                 >
-                                  <option value="">Select Role...</option>
+                                  <option value="">{t("admin.workflows.selectRoleDots")}</option>
                                   {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                 </select>
                               </>
                             )}
                             {step.approver_type === 'specific_user' && (
                               <>
-                                <label htmlFor={`admin-workflows-select-user-${idx}`} className="block text-[10px] font-bold text-neutral-500 mb-1">Select User</label>
+                                <label htmlFor={`admin-workflows-select-user-${idx}`} className="block text-[10px] font-bold text-neutral-500 mb-1">{t("admin.workflows.selectUser")}</label>
                                 <select id={`admin-workflows-select-user-${idx}`}
                                   className="form-input py-1 text-xs"
                                   value={step.user_id || ""}
                                   onChange={e => handleUpdateStep(idx, { user_id: parseInt(e.target.value) })}
                                 >
-                                  <option value="">Select User...</option>
+                                  <option value="">{t("admin.workflows.selectUserDots")}</option>
                                   {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                 </select>
                               </>
                             )}
                             {(step.approver_type === 'supervisor' || step.approver_type === 'up_the_chain') && (
                               <p className="text-[10px] text-neutral-500 mt-5 italic">
-                                Automatically determined via department hierarchy.
+                                {t("admin.workflows.autoHierarchy")}
                               </p>
                             )}
                           </div>
@@ -350,15 +355,15 @@ export default function AdminWorkflowPage() {
                   className="w-full py-4 border-2 border-dashed border-neutral-200 rounded-xl text-neutral-400 hover:text-primary hover:border-primary/50 transition-all flex items-center justify-center gap-2"
                 >
                   <span className="material-symbols-outlined text-[18px]">add_circle</span>
-                  <span className="text-xs font-bold uppercase tracking-wider">Add Approval Stage</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">{t("admin.workflows.addStage")}</span>
                 </button>
               </div>
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-neutral-400 border-2 border-dashed border-neutral-200 rounded-2xl py-20 px-10 text-center">
               <span className="material-symbols-outlined text-6xl opacity-20 mb-4">account_tree</span>
-              <h3 className="text-lg font-bold text-neutral-500">No workflow selected</h3>
-              <p className="max-w-xs mt-2">Select an existing policy or create a new one to define how approvals flow through the organisation.</p>
+              <h3 className="text-lg font-bold text-neutral-500">{t("admin.workflows.noneSelected")}</h3>
+              <p className="max-w-xs mt-2">{t("admin.workflows.noneSelectedDesc")}</p>
             </div>
           )}
         </div>

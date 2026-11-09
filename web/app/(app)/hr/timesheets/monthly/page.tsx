@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { hrApi, type Timesheet } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -53,22 +54,20 @@ function getCalendarWeeks(year: number, month: number): Date[][] {
   return weeks;
 }
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+/** 1 January 2024 was a Monday, so these seven dates give localised Mon–Sun names. */
+const WEEK_DAYS = [1, 2, 3, 4, 5, 6, 7].map((d) => new Date(2024, 0, d));
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-  draft:     { label: "Draft",     cls: "bg-neutral-100 text-neutral-600" },
-  submitted: { label: "Submitted", cls: "bg-amber-100 text-amber-700" },
-  approved:  { label: "Approved",  cls: "bg-green-100 text-green-700" },
-  rejected:  { label: "Rejected",  cls: "bg-red-100 text-red-700" },
+  draft:     { label: "hr.timesheets.status.draft", cls: "bg-neutral-100 text-neutral-600" },
+  submitted: { label: "hr.timesheets.detail.stepSubmitted", cls: "bg-amber-100 text-amber-700" },
+  approved:  { label: "hr.timesheets.monthly.approved", cls: "bg-green-100 text-green-700" },
+  rejected:  { label: "hr.timesheets.status.rejected", cls: "bg-red-100 text-red-700" },
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function MonthlyTimesheetPage() {
+  const { t, localeTag } = useI18n();
   const now = new Date();
   const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth()); // 0-based
@@ -99,7 +98,7 @@ export default function MonthlyTimesheetPage() {
       setTravelDays((tdRes.data as any).data ?? {});
       setHolidayDates((hdRes.data as any).data ?? {});
     } catch {
-      setError("Failed to load monthly data.");
+      setError(t("hr.timesheets.monthly.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -190,24 +189,24 @@ export default function MonthlyTimesheetPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title={`${MONTH_NAMES[month]} ${year}`}
-        subtitle="Monthly timesheet overview"
+        title={new Date(year, month, 1).toLocaleString(localeTag, { month: "long", year: "numeric" })}
+        subtitle="hr.timesheets.monthly.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Timesheets", href: "/hr/timesheets" },
-              { label: "Monthly" },
+              { label: "nav.timesheets", href: "/hr/timesheets" },
+              { label: "hr.timesheets.monthly.crumb" },
             ]}
           />
         }
         actions={
           <>
-          <Link href="/hr/timesheets" className="btn-secondary text-sm">Weekly View</Link>
-          <button type="button" onClick={prevMonth} aria-label="Previous month" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
+          <Link href="/hr/timesheets" className="btn-secondary text-sm">{t("hr.timesheets.monthly.weeklyView")}</Link>
+          <button type="button" onClick={prevMonth} aria-label={t("hr.timesheets.monthly.previousMonth")} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
-          <button type="button" onClick={nextMonth} aria-label="Next month" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
+          <button type="button" onClick={nextMonth} aria-label={t("hr.timesheets.monthly.nextMonth")} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
           </>
@@ -217,10 +216,10 @@ export default function MonthlyTimesheetPage() {
       {/* Summary KPIs */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total Hours", value: `${totalHoursThisMonth.toFixed(1)}h`, icon: "schedule", color: "text-primary" },
-          { label: "Approved",    value: `${approvedCount} wk`,  icon: "check_circle", color: "text-green-600" },
-          { label: "Pending",     value: `${submittedCount} wk`, icon: "pending",      color: "text-amber-600" },
-          { label: "Draft",       value: `${draftCount} wk`,     icon: "edit_note",    color: "text-neutral-500" },
+          { label: t("hr.timesheets.monthly.totalHours"), value: `${totalHoursThisMonth.toFixed(1)}h`, icon: "schedule", color: "text-primary" },
+          { label: t("hr.timesheets.monthly.approved"), value: t("hr.timesheets.monthly.weeks", { count: approvedCount }), icon: "check_circle", color: "text-green-600" },
+          { label: t("hr.timesheets.history.pending"), value: t("hr.timesheets.monthly.weeks", { count: submittedCount }), icon: "pending", color: "text-amber-600" },
+          { label: t("hr.timesheets.status.draft"), value: t("hr.timesheets.monthly.weeks", { count: draftCount }), icon: "edit_note", color: "text-neutral-500" },
         ].map((kpi) => (
           <div key={kpi.label} className="card p-4 flex items-center gap-3">
             <span className={cn("material-symbols-outlined text-[22px]", kpi.color)}>{kpi.icon}</span>
@@ -239,13 +238,13 @@ export default function MonthlyTimesheetPage() {
       {/* Legend */}
       <div className="flex flex-wrap gap-3 text-xs">
         {[
-          { cls: "bg-green-100 text-green-700",   label: "Approved" },
-          { cls: "bg-amber-100 text-amber-700",   label: "Submitted" },
-          { cls: "bg-red-100 text-red-600",       label: "Incomplete" },
-          { cls: "bg-teal-100 text-teal-700",     label: "Mission" },
-          { cls: "bg-amber-50 text-amber-700",    label: "Leave" },
-          { cls: "bg-neutral-100 text-neutral-600", label: "Holiday" },
-          { cls: "bg-neutral-50 text-neutral-400", label: "Weekend" },
+          { cls: "bg-green-100 text-green-700",   label: t("hr.timesheets.monthly.approved") },
+          { cls: "bg-amber-100 text-amber-700",   label: t("hr.timesheets.detail.stepSubmitted") },
+          { cls: "bg-red-100 text-red-600",       label: t("hr.timesheets.monthly.incomplete") },
+          { cls: "bg-teal-100 text-teal-700",     label: t("hr.timesheets.monthly.mission") },
+          { cls: "bg-amber-50 text-amber-700",    label: t("hr.timesheets.monthly.leave") },
+          { cls: "bg-neutral-100 text-neutral-600", label: t("hr.timesheets.monthly.holiday") },
+          { cls: "bg-neutral-50 text-neutral-400", label: t("hr.timesheets.monthly.weekend") },
         ].map((l) => (
           <span key={l.label} className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium", l.cls)}>
             {l.label}
@@ -262,11 +261,11 @@ export default function MonthlyTimesheetPage() {
         <div className="card overflow-hidden">
           {/* Header row */}
           <div className="grid border-b border-neutral-100 bg-neutral-50" style={{ gridTemplateColumns: "repeat(7, 1fr) 80px 100px" }}>
-            {DAY_NAMES.map((d) => (
-              <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">{d}</div>
+            {WEEK_DAYS.map((d) => (
+              <div key={d.getDate()} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">{d.toLocaleDateString(localeTag, { weekday: "short" })}</div>
             ))}
-            <div className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">Total</div>
-            <div className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">Status</div>
+            <div className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("hr.timesheets.detail.total")}</div>
+            <div className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("hr.timesheets.monthly.status")}</div>
           </div>
 
           {/* Week rows */}
@@ -316,7 +315,7 @@ export default function MonthlyTimesheetPage() {
                 <div className="flex items-center justify-center bg-neutral-50 min-h-[56px]">
                   {tsStatus ? (
                     <span className={cn("inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", STATUS_CONFIG[tsStatus]?.cls ?? "bg-neutral-100 text-neutral-500")}>
-                      {STATUS_CONFIG[tsStatus]?.label ?? tsStatus}
+                      {STATUS_CONFIG[tsStatus] ? t(STATUS_CONFIG[tsStatus].label) : tsStatus}
                     </span>
                   ) : (
                     <span className="text-[10px] text-neutral-300">—</span>
@@ -329,8 +328,8 @@ export default function MonthlyTimesheetPage() {
       )}
 
       <div className="flex justify-between">
-        <Link href="/hr/timesheets/history" className="btn-secondary text-xs">All timesheets</Link>
-        <Link href="/hr/timesheets" className="btn-secondary text-xs">Open weekly view</Link>
+        <Link href="/hr/timesheets/history" className="btn-secondary text-xs">{t("hr.timesheets.monthly.allTimesheets")}</Link>
+        <Link href="/hr/timesheets" className="btn-secondary text-xs">{t("hr.timesheets.monthly.openWeekly")}</Link>
       </div>
     </div>
   );

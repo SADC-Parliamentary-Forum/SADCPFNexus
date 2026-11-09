@@ -8,6 +8,7 @@ import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -32,6 +33,7 @@ function personLabel(p: Record<string, unknown>): string {
 }
 
 export default function Page() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export default function Page() {
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "signature-register"] });
     },
-    onError: () => setErr("Could not enrol the signature. Staff specimen capture is on SAAM."),
+    onError: () => setErr(t("people.signatures.enrolFailed")),
   });
   const activate = useMutation({
     mutationFn: () => peopleAuthorityApi.activateSignature(Number(activateId)),
@@ -60,7 +62,7 @@ export default function Page() {
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "signature-register"] });
     },
-    onError: () => setErr("Could not activate that enrolment."),
+    onError: () => setErr(t("people.signatures.activateFailed")),
   });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "signature-register"],
@@ -91,25 +93,27 @@ export default function Page() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Signature Register"
-        subtitle="People & Authority register"
+        title={t("people.signatures.title")}
+        subtitle={t("people.common.registerSubtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "Signature Register" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.signatures.title") },
             ]}
           />
         }
         actions={
           <Link href="/saam" className="btn-secondary text-sm">
-            SAAM enrolment
+            {t("people.signatures.saamEnrolment")}
           </Link>
         }
       />
 
       <p className="text-sm text-neutral-600">
-        Staff capture their specimen in <Link href="/saam" className="btn-secondary text-xs">SAAM</Link>. This register enrols and activates records for administration.
+        {t("people.signatures.introBefore")}{" "}
+        <Link href="/saam" className="btn-secondary text-xs">SAAM</Link>{/* i18n-ignore */}
+        {t("people.signatures.introAfter")}
       </p>
 
       <form
@@ -120,21 +124,21 @@ export default function Page() {
         }}
       >
         <label htmlFor="people-signatures-person-setenrolform-f-required-select" className="block text-xs font-medium text-neutral-600">
-          Person
+          {t("people.common.person")}
           <select id="people-signatures-person-setenrolform-f-required-select" className="form-input mt-1" value={enrolForm.person_id} onChange={(e) => setEnrolForm((f) => ({ ...f, person_id: e.target.value }))} required>
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {(peopleQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
             ))}
           </select>
         </label>
         <label htmlFor="people-signatures-enrolment-type-setenrolform-f" className="block text-xs font-medium text-neutral-600">
-          Enrolment type
+          {t("people.signatures.enrolmentType")}
           <input id="people-signatures-enrolment-type-setenrolform-f" className="form-input mt-1" value={enrolForm.enrolment_type} onChange={(e) => setEnrolForm((f) => ({ ...f, enrolment_type: e.target.value }))} />
         </label>
         <div className="flex items-end">
           <button type="submit" className="btn-primary text-sm" disabled={enrol.isPending}>
-            {enrol.isPending ? "Saving…" : "Enrol signature"}
+            {enrol.isPending ? t("people.common.saving") : t("people.signatures.enrol")}
           </button>
         </div>
       </form>
@@ -147,23 +151,23 @@ export default function Page() {
         }}
       >
         <label htmlFor="people-signatures-enrolment-id-setactivateid-e-target-value-requir" className="block text-xs font-medium text-neutral-600">
-          Enrolment id
+          {t("people.signatures.enrolmentId")}
           <input id="people-signatures-enrolment-id-setactivateid-e-target-value-requir" className="form-input mt-1" value={activateId} onChange={(e) => setActivateId(e.target.value)} required />
         </label>
         <button type="submit" className="btn-primary text-sm" disabled={activate.isPending}>
-          {activate.isPending ? "Activating…" : "Activate signature"}
+          {activate.isPending ? t("people.signatures.activating") : t("people.signatures.activate")}
         </button>
         {err && <p className="text-sm text-red-700">{err}</p>}
       </form>
 
       <div className="card p-3">
         <label htmlFor="people-signatures-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
+          {t("common.search")}
           <input id="people-signatures-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
+            placeholder={t("people.common.filterRows")}
           />
         </label>
       </div>
@@ -178,24 +182,24 @@ export default function Page() {
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
             action={
               <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
+                {t("common.retry")}
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">Signature Register</caption>
+              <caption className="sr-only">{t("people.signatures.title")}</caption>
               <thead>
                 <tr>
                   {columns.map((c) => (

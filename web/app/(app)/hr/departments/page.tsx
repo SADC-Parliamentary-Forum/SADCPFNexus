@@ -7,8 +7,10 @@ import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function AdminDepartmentsPage() {
+  const { t } = useI18n();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -34,7 +36,7 @@ export default function AdminDepartmentsPage() {
         setDepartments((deptRes.data as any).data ?? []);
         setUsers((userRes.data as any).data ?? []);
       })
-      .catch(() => setError("Failed to load departments or users."))
+      .catch(() => setError(t("hr.departments.loadFailed")))
       .finally(() => setLoading(false));
   }, []);
 
@@ -66,7 +68,7 @@ export default function AdminDepartmentsPage() {
       setForm({ name: "", code: "", parent_id: null, supervisor_id: null });
       setShowForm(false);
     } catch {
-      setError("Failed to save department.");
+      setError(t("hr.departments.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -91,13 +93,13 @@ export default function AdminDepartmentsPage() {
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (!(await confirm({ title: "Delete Department", message: `Are you sure you want to delete the department "${name}"? It cannot be undone.`, variant: "danger" }))) return;
+    if (!(await confirm({ title: t("hr.departments.deleteTitle"), message: t("hr.departments.deleteMessage", { name }), variant: "danger" }))) return;
     try {
       await adminApi.deleteDepartment(id);
       setDepartments((prev) => prev.filter(d => d.id !== id));
-      toast("success", "Department deleted");
+      toast("success", t("hr.departments.deleted"));
     } catch (err: any) {
-      toast("error", "Failed to delete department", err.response?.data?.message || "It might have sub-units or assigned staff.");
+      toast("error", t("hr.departments.deleteFailed"), err.response?.data?.message || t("hr.departments.deleteFailedHint"));
     }
   };
 
@@ -117,9 +119,9 @@ export default function AdminDepartmentsPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Departments"
-        subtitle="Manage organisational units and their department codes."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Departments" }]} />}
+        title="hr.departments.title"
+        subtitle="hr.departments.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "hr.departments.title" }]} />}
       />
         {isAdmin && (
           <button
@@ -127,7 +129,7 @@ export default function AdminDepartmentsPage() {
             className="btn-primary"
           >
             <span className="material-symbols-outlined text-[18px]">{showForm && !editId ? "close" : "add"}</span>
-            {showForm && !editId ? "Cancel" : "New Department"}
+            {showForm && !editId ? t("common.cancel") : t("hr.departments.new")}
           </button>
         )}
       </div>
@@ -139,19 +141,19 @@ export default function AdminDepartmentsPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <span className="material-symbols-outlined text-primary text-[18px]">{editId ? "edit" : "add_business"}</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900">{editId ? "Edit Department" : "New Department"}</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{editId ? t("hr.departments.edit") : t("hr.departments.new")}</h3>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label htmlFor="hr-departments-name" className="block text-xs font-semibold text-neutral-700">
-                Department Name <span className="text-red-500">*</span>
+                {t("hr.departments.name")} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">corporate_fare</span>
                 <input
                   id="hr-departments-name"
                   className="form-input pl-8"
-                  placeholder="e.g. Finance & Administration"
+                  placeholder={t("hr.departments.namePlaceholder")}
                   value={form.name}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                 />
@@ -159,14 +161,14 @@ export default function AdminDepartmentsPage() {
             </div>
             <div className="space-y-1.5">
               <label htmlFor="hr-departments-code" className="block text-xs font-semibold text-neutral-700">
-                Department Code <span className="text-red-500">*</span>
+                {t("hr.departments.code")} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">tag</span>
                 <input
                   id="hr-departments-code"
                   className="form-input pl-8 uppercase font-mono"
-                  placeholder="e.g. FIN"
+                  placeholder={t("hr.departments.codePlaceholder")}
                   maxLength={6}
                   value={form.code}
                   onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))}
@@ -175,7 +177,7 @@ export default function AdminDepartmentsPage() {
             </div>
             <div className="space-y-1.5">
               <label htmlFor="hr-departments-parent" className="block text-xs font-semibold text-neutral-700">
-                Parent Department
+                {t("hr.departments.parent")}
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">hub</span>
@@ -185,7 +187,7 @@ export default function AdminDepartmentsPage() {
                   value={form.parent_id || ""}
                   onChange={(e) => setForm((p) => ({ ...p, parent_id: e.target.value ? Number(e.target.value) : null }))}
                 >
-                  <option value="">None (Top Level)</option>
+                  <option value="">{t("hr.departments.topLevel")}</option>
                   {departments
                     .filter(d => d.id !== editId)
                     .map(d => <option key={d.id} value={d.id}>{d.name}</option>)
@@ -195,7 +197,7 @@ export default function AdminDepartmentsPage() {
             </div>
             <div className="space-y-1.5">
               <label htmlFor="hr-departments-supervisor" className="block text-xs font-semibold text-neutral-700">
-                Department Supervisor
+                {t("hr.departments.supervisor")}
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">person</span>
@@ -205,7 +207,7 @@ export default function AdminDepartmentsPage() {
                   value={form.supervisor_id || ""}
                   onChange={(e) => setForm((p) => ({ ...p, supervisor_id: e.target.value ? Number(e.target.value) : null }))}
                 >
-                  <option value="">Select Supervisor</option>
+                  <option value="">{t("hr.departments.selectSupervisor")}</option>
                   {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
               </div>
@@ -214,7 +216,7 @@ export default function AdminDepartmentsPage() {
           <div className="flex justify-end gap-2 pt-1">
             <button onClick={cancelForm} className="btn-secondary">
               <span className="material-symbols-outlined text-[16px]">close</span>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               onClick={handleSave}
@@ -226,7 +228,7 @@ export default function AdminDepartmentsPage() {
               ) : (
                 <span className="material-symbols-outlined text-[16px]">{editId ? "save" : "add"}</span>
               )}
-              {saving ? "Saving…" : editId ? "Update Department" : "Create Department"}
+              {saving ? t("hr.timesheets.saving") : editId ? t("hr.departments.update") : t("hr.departments.create")}
             </button>
           </div>
         </div>
@@ -244,9 +246,9 @@ export default function AdminDepartmentsPage() {
       {!loading && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Total Departments", value: departments.length, icon: "corporate_fare", color: "text-primary", bg: "bg-primary/10" },
-            { label: "Total Staff", value: departments.reduce((s, d) => s + (d.users_count ?? 0), 0), icon: "people", color: "text-green-600", bg: "bg-green-50" },
-            { label: "Active Units", value: departments.filter(d => (d.users_count ?? 0) > 0).length, icon: "hub", color: "text-primary", bg: "bg-primary/10" },
+            { label: t("hr.departments.totalDepartments"), value: departments.length, icon: "corporate_fare", color: "text-primary", bg: "bg-primary/10" },
+            { label: t("hr.departments.totalStaff"), value: departments.reduce((s, d) => s + (d.users_count ?? 0), 0), icon: "people", color: "text-green-600", bg: "bg-green-50" },
+            { label: t("hr.departments.activeUnits"), value: departments.filter(d => (d.users_count ?? 0) > 0).length, icon: "hub", color: "text-primary", bg: "bg-primary/10" },
           ].map((s) => (
             <div key={s.label} className="card p-4">
               <div className="flex items-center gap-3">
@@ -268,9 +270,9 @@ export default function AdminDepartmentsPage() {
         <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">corporate_fare</span>
-            <h3 className="text-sm font-semibold text-neutral-900">All Departments</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("hr.departments.all")}</h3>
           </div>
-          <span className="badge-muted">{departments.length} total</span>
+          <span className="badge-muted">{t("common.totalCount", { count: departments.length })}</span>
         </div>
 
         {loading ? (
@@ -290,12 +292,12 @@ export default function AdminDepartmentsPage() {
         ) : departments.length === 0 ? (
           <EmptyState
             icon="corporate_fare"
-            title="No departments yet"
-            description={isAdmin ? "Create your first department to get started." : "You can view departments only."}
+            title={t("hr.departments.empty")}
+            description={isAdmin ? t("hr.departments.emptyAdmin") : t("hr.departments.emptyViewer")}
             action={isAdmin ? (
               <button type="button" onClick={() => setShowForm(true)} className="btn-primary">
                 <span className="material-symbols-outlined text-[16px]">add</span>
-                New Department
+                {t("hr.departments.new")}
               </button>
             ) : undefined}
           />
@@ -303,11 +305,11 @@ export default function AdminDepartmentsPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Department</th>
-                <th>Code</th>
-                <th>Head / Supervisor</th>
-                <th>Staff</th>
-                {isAdmin && <th className="text-right">Actions</th>}
+                <th>{t("hr.departments.department")}</th>
+                <th>{t("hr.timesheets.templates.code")}</th>
+                <th>{t("hr.departments.head")}</th>
+                <th>{t("hr.departments.staff")}</th>
+                {isAdmin && <th className="text-right">{t("hr.timesheets.overtime.actions")}</th>}
               </tr>
             </thead>
             <tbody>
@@ -338,14 +340,14 @@ export default function AdminDepartmentsPage() {
                           <span className="text-sm font-medium text-neutral-700">{dept.supervisor.name}</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-neutral-400 italic">Not assigned</span>
+                        <span className="text-xs text-neutral-400 italic">{t("hr.departments.notAssigned")}</span>
                       )}
                     </td>
                     <td>
                       <span className="flex items-center gap-1.5 text-neutral-600">
                         <span className="material-symbols-outlined text-[14px] text-neutral-300">people</span>
                         <span className="font-medium">{dept.users_count ?? 0}</span>
-                        <span className="text-neutral-400 text-xs">staff</span>
+                        <span className="text-neutral-400 text-xs">{t("hr.departments.staffSuffix")}</span>
                       </span>
                     </td>
                     {isAdmin && (
@@ -356,14 +358,14 @@ export default function AdminDepartmentsPage() {
                             className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-neutral-600 hover:text-primary hover:bg-primary/5 transition-colors"
                           >
                             <span className="material-symbols-outlined text-[14px]">edit</span>
-                            Edit
+                            {t("common.edit")}
                           </button>
                           <button
                             onClick={() => handleDelete(dept.id, dept.name)}
                             className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
                           >
                             <span className="material-symbols-outlined text-[14px]">delete</span>
-                            Delete
+                            {t("common.delete")}
                           </button>
                         </div>
                       </td>

@@ -8,6 +8,7 @@ import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -28,6 +29,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 }
 
 export default function Page() {
+  const { t } = useI18n();
   const [q, setQ] = useState("");
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "my-delegations"],
@@ -60,31 +62,31 @@ const me = (await peopleAuthorityApi.me()).data.data as any; return me.delegatio
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="My Delegations"
-        subtitle="People & Authority register"
+        title={t("people.myDelegations.title")}
+        subtitle={t("people.common.registerSubtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "My Delegations" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.myDelegations.title") },
             ]}
           />
         }
         actions={
           <Link href="/people" className="btn-secondary text-sm">
-            Hub
+            {t("people.common.hub")}
           </Link>
         }
       />
 
       <div className="card p-3">
         <label htmlFor="people-my-delegations-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
+          {t("common.search")}
           <input id="people-my-delegations-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
+            placeholder={t("people.common.filterRows")}
           />
         </label>
       </div>
@@ -99,24 +101,24 @@ const me = (await peopleAuthorityApi.me()).data.data as any; return me.delegatio
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
             action={
               <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
+                {t("common.retry")}
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">My Delegations</caption>
+              <caption className="sr-only">{t("people.myDelegations.title")}</caption>
               <thead>
                 <tr>
                   {columns.map((c) => (

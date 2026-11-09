@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { travelApi, type TravelMission } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function Flag({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -17,6 +18,7 @@ function Flag({ ok, label }: { ok: boolean; label: string }) {
 }
 
 export default function TravelMissionDetailPage() {
+  const { t } = useI18n();
   const params = useParams();
   const id = Number(params?.id);
   const [mission, setMission] = useState<TravelMission | null>(null);
@@ -26,29 +28,30 @@ export default function TravelMissionDetailPage() {
   useEffect(() => {
     if (!id || Number.isNaN(id)) {
       setLoading(false);
-      setError("Invalid mission ID.");
+      setError(t("travel.mission.invalidId"));
       return;
     }
     travelApi.getMission(id)
       .then((r) => setMission((r.data as any).data ?? r.data))
-      .catch(() => setError("Failed to load mission readiness."))
+      .catch(() => setError(t("travel.mission.loadFailed")))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const missionCrumbs = [
     { label: "nav.travel", href: "/travel" },
-    { label: "Missions", href: "/travel/missions" },
-    { label: mission?.title ?? "Mission" },
+    { label: t("travel.mission.crumbMissions"), href: "/travel/missions" },
+    { label: mission?.title ?? t("travel.mission.crumbMission") },
   ];
 
   if (loading) {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Mission readiness"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.travel", href: "/travel" }, { label: "Missions", href: "/travel/missions" }, { label: "Mission" }]} />}
+          title={t("travel.mission.title")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.travel", href: "/travel" }, { label: t("travel.mission.crumbMissions"), href: "/travel/missions" }, { label: t("travel.mission.crumbMission") }]} />}
         />
-        <p className="text-sm text-neutral-400">Loading mission…</p>
+        <p className="text-sm text-neutral-400">{t("travel.mission.loading")}</p>
       </div>
     );
   }
@@ -56,11 +59,11 @@ export default function TravelMissionDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Mission readiness"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.travel", href: "/travel" }, { label: "Missions", href: "/travel/missions" }, { label: "Mission" }]} />}
+          title={t("travel.mission.title")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.travel", href: "/travel" }, { label: t("travel.mission.crumbMissions"), href: "/travel/missions" }, { label: t("travel.mission.crumbMission") }]} />}
         />
-        <p className="text-sm text-red-600">{error ?? "Not found"}</p>
-        <Link href="/travel/missions" className="btn-secondary text-sm">Back to Missions</Link>
+        <p className="text-sm text-red-600">{error ?? t("travel.mission.notFound")}</p>
+        <Link href="/travel/missions" className="btn-secondary text-sm">{t("travel.mission.back")}</Link>
       </div>
     );
   }
@@ -75,48 +78,48 @@ export default function TravelMissionDetailPage() {
 
       <div className="grid grid-cols-3 gap-3">
         <div className="card p-4">
-          <p className="text-[11px] uppercase tracking-wide text-neutral-400">Travellers</p>
+          <p className="text-[11px] uppercase tracking-wide text-neutral-400">{t("travel.mission.travellers")}</p>
           <p className="text-2xl font-semibold mt-1">{mission.summary?.travellers ?? 0}</p>
         </div>
         <div className="card p-4">
-          <p className="text-[11px] uppercase tracking-wide text-neutral-400">Ready</p>
+          <p className="text-[11px] uppercase tracking-wide text-neutral-400">{t("travel.mission.ready")}</p>
           <p className="text-2xl font-semibold mt-1 text-green-700">{mission.summary?.ready ?? 0}</p>
         </div>
         <div className="card p-4">
-          <p className="text-[11px] uppercase tracking-wide text-neutral-400">Pending</p>
+          <p className="text-[11px] uppercase tracking-wide text-neutral-400">{t("travel.mission.pending")}</p>
           <p className="text-2xl font-semibold mt-1 text-amber-700">{mission.summary?.pending ?? 0}</p>
         </div>
       </div>
 
       {(mission.travellers ?? []).length === 0 ? (
-        <EmptyState icon="groups" title="No travellers linked." description="Travellers appear here once travel requests are linked to this mission." />
+        <EmptyState icon="groups" title={t("travel.mission.empty")} description={t("travel.mission.emptyHint")} />
       ) : (
       <table className="data-table w-full">
         <thead>
           <tr>
-            <th>Traveller</th>
-            <th>Reference</th>
-            <th>Status</th>
-            <th>Readiness</th>
+            <th>{t("travel.mission.col.traveller")}</th>
+            <th>{t("travel.mission.col.reference")}</th>
+            <th>{t("travel.mission.col.status")}</th>
+            <th>{t("travel.mission.col.readiness")}</th>
           </tr>
         </thead>
         <tbody>
-          {(mission.travellers ?? []).map((t) => (
-            <tr key={t.travel_request_id}>
-              <td>{t.traveller ?? "—"}</td>
+          {(mission.travellers ?? []).map((tr) => (
+            <tr key={tr.travel_request_id}>
+              <td>{tr.traveller ?? "—"}</td>
               <td>
-                <Link className="text-primary font-mono text-sm" href={`/travel/${t.travel_request_id}`}>
-                  {t.reference_number}
+                <Link className="text-primary font-mono text-sm" href={`/travel/${tr.travel_request_id}`}>
+                  {tr.reference_number}
                 </Link>
               </td>
-              <td className="capitalize text-sm">{t.status.replace(/_/g, " ")}</td>
+              <td className="capitalize text-sm">{tr.status.replace(/_/g, " ")}</td>
               <td>
                 <div className="flex flex-wrap gap-1.5">
-                  <Flag ok={t.ticket} label="Ticket" />
-                  <Flag ok={t.visa} label="Visa" />
-                  <Flag ok={t.hotel} label="Hotel" />
-                  <Flag ok={t.dsa} label="DSA" />
-                  <Flag ok={t.ready} label={t.ready ? "Ready" : "Not ready"} />
+                  <Flag ok={tr.ticket} label={t("travel.mission.flag.ticket")} />
+                  <Flag ok={tr.visa} label={t("travel.mission.flag.visa")} />
+                  <Flag ok={tr.hotel} label={t("travel.mission.flag.hotel")} />
+                  <Flag ok={tr.dsa} label={t("travel.mission.flag.dsa")} />
+                  <Flag ok={tr.ready} label={tr.ready ? t("travel.mission.ready") : t("travel.mission.notReady")} />
                 </div>
               </td>
             </tr>

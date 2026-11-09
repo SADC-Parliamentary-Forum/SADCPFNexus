@@ -4,8 +4,10 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { authApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function ActivateAccountForm() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const token = (searchParams.get("token") ?? "").trim();
 
@@ -18,13 +20,14 @@ function ActivateAccountForm() {
   const [bootstrapping, setBootstrapping] = useState(true);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const [linkInvalid, setLinkInvalid] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadInvitation() {
       if (!token) {
-        setError("This invitation link is missing a token.");
+        setError(t("auth.activate.missingToken"));
         setBootstrapping(false);
         return;
       }
@@ -38,7 +41,8 @@ function ActivateAccountForm() {
       } catch (err: unknown) {
         if (cancelled) return;
         const ax = err as { response?: { data?: { message?: string } } };
-        setError(ax.response?.data?.message ?? "This invitation link is invalid or has expired.");
+        setLinkInvalid(true);
+        setError(ax.response?.data?.message ?? t("auth.activate.invalidLink"));
       } finally {
         if (!cancelled) setBootstrapping(false);
       }
@@ -48,6 +52,8 @@ function ActivateAccountForm() {
     return () => {
       cancelled = true;
     };
+    // Error copy is read once when the link loads; re-running on a locale change would refetch the invitation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,7 +67,7 @@ function ActivateAccountForm() {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       const msg = ax.response?.data?.message
         ?? (ax.response?.data?.errors && Object.values(ax.response.data.errors).flat()[0])
-        ?? "Unable to activate this account right now.";
+        ?? t("auth.activate.failed");
       setError(msg);
     } finally {
       setLoading(false);
@@ -71,22 +77,22 @@ function ActivateAccountForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f6f7f8] px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white border border-neutral-200 shadow-sm p-8">
-        <h1 className="text-xl font-bold text-neutral-900">Activate account</h1>
+        <h1 className="text-xl font-bold text-neutral-900">{t("auth.activate.title")}</h1>
         <p className="mt-2 text-sm text-neutral-500">
-          Choose a strong password to finish setting up your SADC PF Nexus account.
+          {t("auth.activate.subtitle")}
         </p>
 
         {bootstrapping && (
-          <p className="mt-4 text-sm text-neutral-500">Checking invitation…</p>
+          <p className="mt-4 text-sm text-neutral-500">{t("auth.activate.checking")}</p>
         )}
 
         {done && (
           <div className="mt-4 space-y-4">
             <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-              Account activated. You can now sign in.
+              {t("auth.activate.done")}
             </div>
             <Link href={isSupplier ? "/supplier/login" : "/login"} className="inline-flex text-sm font-medium text-primary hover:underline">
-              Go to sign in
+              {t("auth.activate.goToSignIn")}
             </Link>
           </div>
         )}
@@ -97,17 +103,17 @@ function ActivateAccountForm() {
           </div>
         )}
 
-        {!bootstrapping && !done && !error.includes("invalid") && email && (
+        {!bootstrapping && !done && !linkInvalid && !error.includes("invalid") && email && (
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div>
               <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1.5">
-                Account
+                {t("auth.activate.account")}
               </label>
               <p className="text-sm text-neutral-800">{name ? `${name} · ${email}` : email}</p>
             </div>
             <div>
               <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1.5">
-                Password
+                {t("auth.activate.password")}
               </label>
               <input
                 type="password"
@@ -119,12 +125,12 @@ function ActivateAccountForm() {
                 autoComplete="new-password"
               />
               <p className="mt-1 text-xs text-neutral-400">
-                At least 12 characters with upper/lower case, a number, and a symbol.
+                {t("auth.activate.passwordHint")}
               </p>
             </div>
             <div>
               <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1.5">
-                Confirm password
+                {t("auth.activate.confirmPassword")}
               </label>
               <input
                 type="password"
@@ -137,14 +143,14 @@ function ActivateAccountForm() {
               />
             </div>
             <button type="submit" disabled={loading || !token} className="btn-primary w-full">
-              {loading ? "Activating…" : "Activate account"}
+              {loading ? t("auth.activate.activating") : t("auth.activate.title")}
             </button>
           </form>
         )}
 
         {!done && (
           <p className="mt-6 text-center text-sm text-neutral-500">
-            <Link href="/login" className="text-primary hover:underline font-medium">Back to sign in</Link>
+            <Link href="/login" className="text-primary hover:underline font-medium">{t("auth.activate.backToSignIn")}</Link>
           </p>
         )}
       </div>
@@ -153,8 +159,9 @@ function ActivateAccountForm() {
 }
 
 export default function ActivateAccountPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-sm text-neutral-500">Loading…</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-sm text-neutral-500">{t("common.loading")}</div>}>
       <ActivateAccountForm />
     </Suspense>
   );

@@ -7,13 +7,15 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormSection } from "@/components/ui/FormSection";
 import { formatDateShort } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
+/** Journey rows; `label` is a catalog key translated where it renders. */
 const TYPES: Array<{ key: string; label: string }> = [
-  { key: "onboarding", label: "Onboarding" },
-  { key: "separation", label: "Separation" },
-  { key: "transfer", label: "Transfers" },
-  { key: "promotion", label: "Promotions" },
-  { key: "probation", label: "Probation" },
+  { key: "onboarding", label: "lifecycle.onboarding.crumb" },
+  { key: "separation", label: "lifecycle.separation.crumb" },
+  { key: "transfer", label: "lifecycle.journeys.filter.transfer" },
+  { key: "promotion", label: "lifecycle.journeys.filter.promotion" },
+  { key: "probation", label: "lifecycle.journeys.filter.probation" },
 ];
 
 function Kpi({ label, value }: { label: string; value: string | number }) {
@@ -26,6 +28,7 @@ function Kpi({ label, value }: { label: string; value: string | number }) {
 }
 
 export default function LifecycleReportsPage() {
+  const { t } = useI18n();
   const analyticsQuery = useQuery({
     queryKey: ["lifecycle", "analytics"],
     queryFn: async () => (await lifecycleApi.analytics()).data.data,
@@ -57,34 +60,34 @@ export default function LifecycleReportsPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Lifecycle reports"
-        subtitle="Cycle time, bottlenecks, and clearance aging for onboarding, separation, transfer, promotion, and probation."
+        title={t("lifecycle.reports.title")}
+        subtitle={t("lifecycle.reports.subtitle")}
         breadcrumbs={
-          <PageBreadcrumbs items={[{ label: "Employee Lifecycle", href: "/lifecycle" }, { label: "Reports" }]} />
+          <PageBreadcrumbs items={[{ label: t("lifecycle.common.breadcrumb"), href: "/lifecycle" }, { label: t("lifecycle.reports.crumb") }]} />
         }
       />
 
       {analyticsQuery.isError ? (
-        <p className="text-sm text-red-600">Could not load analytics. Refresh or try again.</p>
+        <p className="text-sm text-red-600">{t("lifecycle.reports.loadFailed")}</p>
       ) : null}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Open exceptions" value={analytics?.exceptions_open ?? "—"} />
-        <Kpi label="Clearance 0–7 days" value={aging?.["0_7"] ?? "—"} />
-        <Kpi label="Clearance 8–14 days" value={aging?.["8_14"] ?? "—"} />
-        <Kpi label="Clearance 15+ days" value={aging?.["15_plus"] ?? "—"} />
+        <Kpi label={t("lifecycle.reports.kpi.exceptions")} value={analytics?.exceptions_open ?? "—"} />
+        <Kpi label={t("lifecycle.reports.kpi.aging0")} value={aging?.["0_7"] ?? "—"} />
+        <Kpi label={t("lifecycle.reports.kpi.aging8")} value={aging?.["8_14"] ?? "—"} />
+        <Kpi label={t("lifecycle.reports.kpi.aging15")} value={aging?.["15_plus"] ?? "—"} />
       </div>
 
-      <FormSection title="Cycle time by journey">
-        {analyticsQuery.isLoading ? <p className="text-sm text-neutral-500">Loading analytics…</p> : null}
+      <FormSection title={t("lifecycle.reports.cycleTime")}>
+        {analyticsQuery.isLoading ? <p className="text-sm text-neutral-500">{t("lifecycle.reports.loading")}</p> : null}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b text-left text-neutral-500">
-                <th className="py-2 pr-4">Journey</th>
-                <th className="py-2 pr-4">Open</th>
-                <th className="py-2 pr-4">Completed</th>
-                <th className="py-2">Avg cycle (days)</th>
+                <th className="py-2 pr-4">{t("lifecycle.reports.col.journey")}</th>
+                <th className="py-2 pr-4">{t("lifecycle.reports.col.open")}</th>
+                <th className="py-2 pr-4">{t("lifecycle.reports.col.completed")}</th>
+                <th className="py-2">{t("lifecycle.reports.col.avgCycle")}</th>
               </tr>
             </thead>
             <tbody>
@@ -92,7 +95,7 @@ export default function LifecycleReportsPage() {
                 const row = analytics?.by_type[type.key];
                 return (
                   <tr key={type.key} className="border-b border-neutral-100 dark:border-neutral-800">
-                    <td className="py-2 pr-4">{type.label}</td>
+                    <td className="py-2 pr-4">{t(type.label)}</td>
                     <td className="py-2 pr-4 tabular-nums">{row?.open ?? "—"}</td>
                     <td className="py-2 pr-4 tabular-nums">{row?.completed ?? "—"}</td>
                     <td className="py-2 tabular-nums">
@@ -106,18 +109,18 @@ export default function LifecycleReportsPage() {
         </div>
       </FormSection>
 
-      <FormSection title="Open-task bottlenecks">
+      <FormSection title={t("lifecycle.reports.bottlenecks")}>
         {(analytics?.bottlenecks ?? []).length === 0 && !analyticsQuery.isLoading ? (
-          <EmptyState icon="pending_actions" title="No open tasks to rank." className="py-6 min-h-0" />
+          <EmptyState icon="pending_actions" title={t("lifecycle.reports.noBottlenecks")} className="py-6 min-h-0" />
         ) : (
           <ul className="space-y-2 text-sm">
             {(analytics?.bottlenecks ?? []).map((item) => (
               <li key={item.task_key} className="flex justify-between gap-4 border-b border-neutral-100 py-2 dark:border-neutral-800">
                 <span>
                   {item.title}{" "}
-                  <span className="text-neutral-500">({item.open_count} open)</span>
+                  <span className="text-neutral-500">{t("lifecycle.reports.openCount", { count: item.open_count })}</span>
                 </span>
-                <span className="tabular-nums text-neutral-600">{item.avg_age_days} days</span>
+                <span className="tabular-nums text-neutral-600">{t("lifecycle.reports.days", { count: item.avg_age_days })}</span>
               </li>
             ))}
           </ul>
@@ -125,22 +128,22 @@ export default function LifecycleReportsPage() {
       </FormSection>
 
       {([
-        { title: "Onboarding cases", rows: onboardingQuery.data ?? [], loading: onboardingQuery.isLoading },
-        { title: "Transfer cases", rows: transferQuery.data ?? [], loading: transferQuery.isLoading },
-        { title: "Promotion cases", rows: promotionQuery.data ?? [], loading: promotionQuery.isLoading },
-        { title: "Probation cases", rows: probationQuery.data ?? [], loading: probationQuery.isLoading },
-        { title: "Separation cases", rows: separationQuery.data ?? [], loading: separationQuery.isLoading },
-      ] as Array<{ title: string; rows: LifecycleCaseSummary[]; loading: boolean }>).map((section) => (
-        <FormSection key={section.title} title={section.title}>
-          {section.loading ? <p className="text-sm text-neutral-500">Loading…</p> : null}
+        { key: "onboarding", title: t("lifecycle.reports.cases.onboarding"), rows: onboardingQuery.data ?? [], loading: onboardingQuery.isLoading },
+        { key: "transfer", title: t("lifecycle.reports.cases.transfer"), rows: transferQuery.data ?? [], loading: transferQuery.isLoading },
+        { key: "promotion", title: t("lifecycle.reports.cases.promotion"), rows: promotionQuery.data ?? [], loading: promotionQuery.isLoading },
+        { key: "probation", title: t("lifecycle.reports.cases.probation"), rows: probationQuery.data ?? [], loading: probationQuery.isLoading },
+        { key: "separation", title: t("lifecycle.reports.cases.separation"), rows: separationQuery.data ?? [], loading: separationQuery.isLoading },
+      ] as Array<{ key: string; title: string; rows: LifecycleCaseSummary[]; loading: boolean }>).map((section) => (
+        <FormSection key={section.key} title={section.title}>
+          {section.loading ? <p className="text-sm text-neutral-500">{t("common.loading")}</p> : null}
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-neutral-500 border-b">
-                  <th className="py-2 pr-4">Reference</th>
-                  <th className="py-2 pr-4">Employee</th>
-                  <th className="py-2 pr-4">Start</th>
-                  <th className="py-2">Status</th>
+                  <th className="py-2 pr-4">{t("lifecycle.common.reference")}</th>
+                  <th className="py-2 pr-4">{t("lifecycle.common.employee")}</th>
+                  <th className="py-2 pr-4">{t("lifecycle.common.start")}</th>
+                  <th className="py-2">{t("lifecycle.common.status")}</th>
                 </tr>
               </thead>
               <tbody>

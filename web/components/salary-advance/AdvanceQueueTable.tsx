@@ -10,6 +10,7 @@ import { RegisterShell, type RegisterDensity } from "@/components/registers/Regi
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export const SA_STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   draft:                   { label: "Draft",                   badge: "badge-muted" },
@@ -30,25 +31,45 @@ export const SA_STATUS_CONFIG: Record<string, { label: string; badge: string }> 
   cancelled:               { label: "Cancelled",               badge: "badge-muted" },
 };
 
+/** Catalog keys for SA_STATUS_CONFIG labels (the English labels stay for other consumers). */
+export const SA_STATUS_LABEL_KEYS: Record<string, string> = {
+  draft: "salaryAdvance.status.draft",
+  submitted: "salaryAdvance.status.submitted",
+  resubmitted: "salaryAdvance.status.resubmitted",
+  finance_certified: "salaryAdvance.status.financeCertified",
+  finance_returned: "salaryAdvance.status.financeReturned",
+  not_eligible: "salaryAdvance.status.notEligible",
+  approved: "salaryAdvance.status.approved",
+  approved_for_payment: "salaryAdvance.status.approvedForPayment",
+  rejected: "salaryAdvance.status.rejected",
+  paid: "salaryAdvance.status.paid",
+  recovery_scheduled: "salaryAdvance.status.recoveryScheduled",
+  recovered: "salaryAdvance.status.recovered",
+  closed: "salaryAdvance.status.closed",
+  reconciliation_required: "salaryAdvance.status.reconciliationRequired",
+  withdrawn: "salaryAdvance.status.withdrawn",
+  cancelled: "salaryAdvance.status.cancelled",
+};
+
 const TYPE_LABELS: Record<string, string> = {
-  salary_advance: "Salary Advance",
-  education_advance: "Education Advance",
-  medical_advance: "Medical Advance",
-  emergency_advance: "Emergency Advance",
-  medical: "Medical",
-  school: "School",
-  rental: "Rental",
-  funeral: "Funeral",
-  other: "Other",
+  salary_advance: "salaryAdvance.type.salaryAdvance",
+  education_advance: "salaryAdvance.type.educationAdvance",
+  medical_advance: "salaryAdvance.type.medicalAdvance",
+  emergency_advance: "salaryAdvance.type.emergencyAdvance",
+  medical: "salaryAdvance.type.medical",
+  school: "salaryAdvance.type.school",
+  rental: "salaryAdvance.type.rental",
+  funeral: "salaryAdvance.type.funeral",
+  other: "salaryAdvance.type.other",
 };
 
 const FILTER_TABS = [
-  { key: "all", label: "All" },
-  { key: "draft", label: "Draft" },
-  { key: "submitted", label: "Submitted" },
-  { key: "approved_for_payment", label: "For payment" },
-  { key: "paid", label: "Paid" },
-  { key: "recovered", label: "Recovered" },
+  { key: "all", label: "salaryAdvance.queueTable.tabAll" },
+  { key: "draft", label: "salaryAdvance.status.draft" },
+  { key: "submitted", label: "salaryAdvance.queueTable.tabSubmitted" },
+  { key: "approved_for_payment", label: "salaryAdvance.queueTable.tabForPayment" },
+  { key: "paid", label: "salaryAdvance.status.paid" },
+  { key: "recovered", label: "salaryAdvance.status.recovered" },
 ] as const;
 
 type FilterKey = (typeof FILTER_TABS)[number]["key"];
@@ -87,6 +108,7 @@ export function AdvanceQueueTable({
   showRequester?: boolean;
   emptyHint?: string;
 }) {
+  const { t } = useI18n();
   const { success } = useToast();
   const { confirm } = useConfirm();
   const [advances, setAdvances] = useState<SalaryAdvanceRequest[]>([]);
@@ -126,11 +148,11 @@ export function AdvanceQueueTable({
         }
       }
     } catch {
-      setError("Failed to load salary advances.");
+      setError(t("salaryAdvance.queueTable.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [queue]);
+  }, [queue, t]);
 
   useEffect(() => { load(1); }, [load]);
 
@@ -175,15 +197,15 @@ export function AdvanceQueueTable({
         paid_at: a.paid_at ?? "",
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "requester", header: "Requester" },
-        { key: "type", header: "Type" },
-        { key: "amount", header: "Amount" },
-        { key: "currency", header: "Currency" },
-        { key: "purpose", header: "Purpose" },
-        { key: "status", header: "Status" },
-        { key: "submitted_at", header: "Submitted" },
-        { key: "paid_at", header: "Paid" },
+        { key: "reference", header: t("salaryAdvance.queueTable.reference") },
+        { key: "requester", header: t("salaryAdvance.queueTable.requester") },
+        { key: "type", header: t("salaryAdvance.queueTable.type") },
+        { key: "amount", header: t("salaryAdvance.queueTable.amount") },
+        { key: "currency", header: t("salaryAdvance.queueTable.currency") },
+        { key: "purpose", header: t("salaryAdvance.queueTable.purpose") },
+        { key: "status", header: t("salaryAdvance.queueTable.status") },
+        { key: "submitted_at", header: t("salaryAdvance.queueTable.submitted") },
+        { key: "paid_at", header: t("salaryAdvance.status.paid") },
       ],
     );
   };
@@ -191,9 +213,9 @@ export function AdvanceQueueTable({
   const handleDelete = async (adv: SalaryAdvanceRequest) => {
     if (
       !(await confirm({
-        title: "Delete draft",
-        message: `Permanently remove draft ${adv.reference_number}?`,
-        confirmText: "Delete",
+        title: t("salaryAdvance.queueTable.deleteTitle"),
+        message: t("salaryAdvance.queueTable.deleteMessage", { reference: adv.reference_number }),
+        confirmText: t("common.delete"),
         variant: "danger",
       }))
     ) {
@@ -202,10 +224,10 @@ export function AdvanceQueueTable({
     setActionId(adv.id);
     try {
       await financeApi.deleteAdvance(adv.id);
-      success("Draft deleted.");
+      success(t("salaryAdvance.queueTable.deleted"));
       await load(page);
     } catch {
-      setError("Failed to delete draft.");
+      setError(t("salaryAdvance.queueTable.deleteFailed"));
     } finally {
       setActionId(null);
     }
@@ -214,9 +236,9 @@ export function AdvanceQueueTable({
   const handleWithdraw = async (adv: SalaryAdvanceRequest) => {
     if (
       !(await confirm({
-        title: "Withdraw request",
-        message: `Withdraw ${adv.reference_number} from the workflow?`,
-        confirmText: "Withdraw",
+        title: t("salaryAdvance.queueTable.withdrawTitle"),
+        message: t("salaryAdvance.queueTable.withdrawMessage", { reference: adv.reference_number }),
+        confirmText: t("salaryAdvance.queueTable.withdraw"),
         variant: "danger",
       }))
     ) {
@@ -225,10 +247,10 @@ export function AdvanceQueueTable({
     setActionId(adv.id);
     try {
       await financeApi.withdrawAdvance(adv.id);
-      success("Request withdrawn.");
+      success(t("salaryAdvance.queueTable.withdrawn"));
       await load(page);
     } catch {
-      setError("Failed to withdraw request.");
+      setError(t("salaryAdvance.queueTable.withdrawFailed"));
     } finally {
       setActionId(null);
     }
@@ -241,7 +263,7 @@ export function AdvanceQueueTable({
       breadcrumbs={
         <PageBreadcrumbs
           items={[
-            { label: "Salary Advances", href: "/salary-advances" },
+            { label: "nav.salary_advances", href: "/salary-advances" },
             { label: title },
           ]}
         />
@@ -257,11 +279,11 @@ export function AdvanceQueueTable({
           <div className="card">
             <EmptyState
               icon="payments"
-              title="No advances found"
+              title={t("salaryAdvance.queueTable.emptyTitle")}
               description={
                 advances.length === 0
-                  ? (emptyHint ?? "Nothing in this queue right now.")
-                  : "No rows match the current filters."
+                  ? (emptyHint ?? t("salaryAdvance.queueTable.emptyQueue"))
+                  : t("salaryAdvance.queueTable.noMatches")
               }
             />
           </div>
@@ -275,7 +297,7 @@ export function AdvanceQueueTable({
           onClick={handleExport}
         >
           <span className="material-symbols-outlined text-[18px]">download</span>
-          Export CSV
+          {t("salaryAdvance.queueTable.exportCsv")}
         </button>
       }
       stats={
@@ -287,30 +309,30 @@ export function AdvanceQueueTable({
             <div className="card space-y-2 p-4">
               <div className="flex flex-wrap gap-2">
                 <span className="badge badge-muted text-xs">
-                  Adapter: {payrollAdapter?.adapter ?? payrollAdapter?.mode ?? "manual"}
+                  {t("salaryAdvance.queueTable.adapter", { value: payrollAdapter?.adapter ?? payrollAdapter?.mode ?? "manual" })}
                 </span>
                 <span className="badge badge-muted text-xs">
-                  Driver: {payrollAdapter?.driver ?? "manual"}
+                  {t("salaryAdvance.queueTable.driver", { value: payrollAdapter?.driver ?? "manual" })}
                 </span>
                 <span className={`badge text-xs ${payrollAdapter?.enabled ? "badge-warning" : "badge-success"}`}>
-                  {payrollAdapter?.enabled ? "Vendor automation on" : "Manual recording"}
+                  {payrollAdapter?.enabled ? t("salaryAdvance.queueTable.vendorAutomation") : t("salaryAdvance.queueTable.manualRecording")}
                 </span>
                 {(payrollAdapter?.recording_mode === "manual_reference_required" || !payrollAdapter?.enabled) && (
-                  <span className="badge badge-muted text-xs">Payroll transaction ref required</span>
+                  <span className="badge badge-muted text-xs">{t("salaryAdvance.queueTable.refRequired")}</span>
                 )}
               </div>
               <p className="text-xs text-neutral-500">
                 {payrollAdapter?.message
-                  ?? "Manual payroll recovery — record each deduction with a payroll transaction reference."}
+                  ?? t("salaryAdvance.queueTable.manualHint")}
               </p>
             </div>
           ) : null}
           {!loading && advances.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {[
-                { label: "On this page", value: advances.length, icon: "list", color: "text-primary", bg: "bg-primary/10" },
-                { label: "Matching filter", value: filtered.length, icon: "filter_alt", color: "text-amber-600", bg: "bg-amber-50" },
-                { label: "Amount (shown)", value: formatSaCurrency(pageTotal), icon: "payments", color: "text-green-600", bg: "bg-green-50" },
+                { label: t("salaryAdvance.queueTable.onThisPage"), value: advances.length, icon: "list", color: "text-primary", bg: "bg-primary/10" },
+                { label: t("salaryAdvance.queueTable.matchingFilter"), value: filtered.length, icon: "filter_alt", color: "text-amber-600", bg: "bg-amber-50" },
+                { label: t("salaryAdvance.queueTable.amountShown"), value: formatSaCurrency(pageTotal), icon: "payments", color: "text-green-600", bg: "bg-green-50" },
               ].map((s) => (
                 <div key={s.label} className="card p-4">
                   <div className="flex items-center justify-between">
@@ -337,10 +359,10 @@ export function AdvanceQueueTable({
             <input
               type="search"
               className="form-input pl-10"
-              placeholder="Search reference, purpose, requester…"
+              placeholder={t("salaryAdvance.queueTable.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search salary advances"
+              aria-label={t("salaryAdvance.queueTable.searchLabel")}
             />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -351,7 +373,7 @@ export function AdvanceQueueTable({
                 onClick={() => setFilter(tab.key)}
                 className={`filter-tab ${filter === tab.key ? "active" : ""}`}
               >
-                {tab.label}
+                {t(tab.label)}
               </button>
             ))}
           </div>
@@ -361,19 +383,19 @@ export function AdvanceQueueTable({
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="data-table">
-              <caption className="sr-only">Salary advance applications</caption>
+              <caption className="sr-only">{t("salaryAdvance.queueTable.caption")}</caption>
             <thead>
               <tr>
-                <th>Reference</th>
-                {showRequester ? <th>Requester</th> : null}
-                <th>Type</th>
-                <th>Amount</th>
-                {isRecovery ? <th>Payment ref</th> : <th>Purpose</th>}
-                {isRecovery ? <th>Recovery payroll</th> : null}
-                {isRecovery ? <th>Recovered</th> : null}
-                {isRecovery ? <th>Outstanding</th> : null}
-                <th>Status</th>
-                <th>{isRecovery ? "Paid" : "Submitted"}</th>
+                <th>{t("salaryAdvance.queueTable.reference")}</th>
+                {showRequester ? <th>{t("salaryAdvance.queueTable.requester")}</th> : null}
+                <th>{t("salaryAdvance.queueTable.type")}</th>
+                <th>{t("salaryAdvance.queueTable.amount")}</th>
+                {isRecovery ? <th>{t("salaryAdvance.queueTable.paymentRef")}</th> : <th>{t("salaryAdvance.queueTable.purpose")}</th>}
+                {isRecovery ? <th>{t("salaryAdvance.queueTable.recoveryPayroll")}</th> : null}
+                {isRecovery ? <th>{t("salaryAdvance.status.recovered")}</th> : null}
+                {isRecovery ? <th>{t("salaryAdvance.queueTable.outstanding")}</th> : null}
+                <th>{t("salaryAdvance.queueTable.status")}</th>
+                <th>{isRecovery ? t("salaryAdvance.status.paid") : t("salaryAdvance.queueTable.submitted")}</th>
                 <th />
               </tr>
             </thead>
@@ -388,7 +410,7 @@ export function AdvanceQueueTable({
                     {showRequester ? (
                       <td className="font-medium text-neutral-800">{adv.requester?.name ?? "—"}</td>
                     ) : null}
-                    <td>{TYPE_LABELS[adv.advance_type] ?? adv.advance_type}</td>
+                    <td>{TYPE_LABELS[adv.advance_type] ? t(TYPE_LABELS[adv.advance_type]) : adv.advance_type}</td>
                     <td className="whitespace-nowrap font-semibold">{formatSaCurrency(adv.amount, adv.currency)}</td>
                     {isRecovery ? (
                       <td className="font-mono text-xs text-neutral-600">{adv.payment_reference ?? "—"}</td>
@@ -406,7 +428,7 @@ export function AdvanceQueueTable({
                     {isRecovery ? (
                       <td className="whitespace-nowrap text-xs font-semibold">{formatSaCurrency(outstanding, adv.currency)}</td>
                     ) : null}
-                    <td><span className={`badge text-xs ${sc.badge}`}>{sc.label}</span></td>
+                    <td><span className={`badge text-xs ${sc.badge}`}>{SA_STATUS_LABEL_KEYS[adv.status] ? t(SA_STATUS_LABEL_KEYS[adv.status]) : sc.label}</span></td>
                     <td className="whitespace-nowrap text-xs text-neutral-500">
                       {isRecovery
                         ? (adv.paid_at ? formatDate(adv.paid_at) : "—")
@@ -418,7 +440,7 @@ export function AdvanceQueueTable({
                           href={`/salary-advances/${adv.id}`}
                           className="btn-secondary py-1 px-2 text-xs"
                         >
-                          {isRecovery ? "Record recovery" : "View"}
+                          {isRecovery ? t("salaryAdvance.queueTable.recordRecovery") : t("salaryAdvance.queueTable.view")}
                         </Link>
                         {adv.status === "draft" && (
                           <button
@@ -427,7 +449,7 @@ export function AdvanceQueueTable({
                             onClick={() => void handleDelete(adv)}
                             className="btn-secondary py-1 px-2 text-xs text-red-700 disabled:opacity-50"
                           >
-                            Delete
+                            {t("common.delete")}
                           </button>
                         )}
                         {(adv.status === "submitted" || adv.status === "resubmitted" || adv.status === "finance_returned") && (
@@ -437,7 +459,7 @@ export function AdvanceQueueTable({
                             onClick={() => void handleWithdraw(adv)}
                             className="btn-secondary py-1 px-2 text-xs disabled:opacity-50"
                           >
-                            Withdraw
+                            {t("salaryAdvance.queueTable.withdraw")}
                           </button>
                         )}
                       </div>

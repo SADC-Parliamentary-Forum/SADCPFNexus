@@ -9,11 +9,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { assignmentsApi, adminApi, type AssignmentType, type AssignmentPriority, type TenantUserOption, type Department } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function CreateAssignmentPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
 
   const [form, setForm] = useState({
     title: "",
@@ -46,13 +48,13 @@ export default function CreateAssignmentPage() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["assignments"] });
       const id = (res.data as any).data?.id ?? (res.data as any).id;
-      toast.success("Assignment created");
+      toast.success(t("assignments.create.toast.created"));
       router.push(`/assignments/${id}`);
     },
     onError: (err: any) => {
       const errs = err?.response?.data?.errors ?? {};
       setErrors(errs);
-      toast.error("Assignment not created", apiErrorMessage(err, "Failed to create assignment. Check the form and try again."));
+      toast.error(t("assignments.create.toast.notCreated"), apiErrorMessage(err, t("assignments.create.toast.notCreatedDetail")));
     },
   });
 
@@ -81,26 +83,26 @@ export default function CreateAssignmentPage() {
     <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-sm text-neutral-500">
-        <Link href="/assignments" className="hover:text-primary">Assignments</Link>
+        <Link href="/assignments" className="hover:text-primary">{t("nav.assignments")}</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-700 font-medium">New Assignment</span>
+        <span className="text-neutral-700 font-medium">{t("assignments.newAssignment")}</span>
       </nav>
 
       <ModulePageHeader
-        title="Create Assignment"
-        subtitle="Issue a new assignment to an individual, sector, or team."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Create Assignment" }]} />}
+        title={t("assignments.create.title")}
+        subtitle={t("assignments.create.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("assignments.create.title") }]} />}
       />
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Title */}
         <div>
-          <label htmlFor="assignments-create-title" className="block text-sm font-medium text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
+          <label htmlFor="assignments-create-title" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.titleLabel")} <span className="text-red-500">*</span></label>
           <input id="assignments-create-title"
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
-            placeholder="Clear, concise assignment title"
+            placeholder={t("assignments.create.titlePlaceholder")}
             className={inputCls("title")}
             required
           />
@@ -109,12 +111,12 @@ export default function CreateAssignmentPage() {
 
         {/* Description */}
         <div>
-          <label htmlFor="assignments-create-description" className="block text-sm font-medium text-neutral-700 mb-1">Description <span className="text-red-500">*</span></label>
+          <label htmlFor="assignments-create-description" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.description")} <span className="text-red-500">*</span></label>
           <textarea id="assignments-create-description"
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
             rows={4}
-            placeholder="Describe what needs to be done in detail…"
+            placeholder={t("assignments.create.descriptionPlaceholder")}
             className={inputCls("description")}
             required
           />
@@ -124,22 +126,22 @@ export default function CreateAssignmentPage() {
         {/* Objective + Expected Output */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="assignments-create-objective" className="block text-sm font-medium text-neutral-700 mb-1">Objective</label>
+            <label htmlFor="assignments-create-objective" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.objective")}</label>
             <textarea id="assignments-create-objective"
               value={form.objective}
               onChange={(e) => set("objective", e.target.value)}
               rows={3}
-              placeholder="What should be achieved?"
+              placeholder={t("assignments.create.objectivePlaceholder")}
               className="form-input"
             />
           </div>
           <div>
-            <label htmlFor="assignments-create-expected-output" className="block text-sm font-medium text-neutral-700 mb-1">Expected Output</label>
+            <label htmlFor="assignments-create-expected-output" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.expectedOutput")}</label>
             <textarea id="assignments-create-expected-output"
               value={form.expected_output}
               onChange={(e) => set("expected_output", e.target.value)}
               rows={3}
-              placeholder="Tangible deliverable / output…"
+              placeholder={t("assignments.create.expectedOutputPlaceholder")}
               className="form-input"
             />
           </div>
@@ -148,20 +150,20 @@ export default function CreateAssignmentPage() {
         {/* Type + Priority */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="assignments-create-assignment-type" className="block text-sm font-medium text-neutral-700 mb-1">Assignment Type</label>
+            <label htmlFor="assignments-create-assignment-type" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.type")}</label>
             <select id="assignments-create-assignment-type" value={form.type} onChange={(e) => set("type", e.target.value)} className="form-input">
-              <option value="individual">Individual</option>
-              <option value="sector">Sector</option>
-              <option value="collaborative">Collaborative</option>
+              <option value="individual">{t("assignments.type.individual")}</option>
+              <option value="sector">{t("assignments.type.sector")}</option>
+              <option value="collaborative">{t("assignments.type.collaborative")}</option>
             </select>
           </div>
           <div>
-            <label htmlFor="assignments-create-priority" className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
+            <label htmlFor="assignments-create-priority" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.priority")}</label>
             <select id="assignments-create-priority" value={form.priority} onChange={(e) => set("priority", e.target.value)} className="form-input">
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
+              <option value="low">{t("assignments.priority.low")}</option>
+              <option value="medium">{t("assignments.priority.medium")}</option>
+              <option value="high">{t("assignments.priority.high")}</option>
+              <option value="critical">{t("assignments.priority.critical")}</option>
             </select>
           </div>
         </div>
@@ -171,20 +173,20 @@ export default function CreateAssignmentPage() {
           <div>
             <EmployeePicker
               id="assignments-create-assign-to"
-              label="Assign To"
+              label={t("assignments.create.assignTo")}
               value={assignedUser}
               onSelect={(u) => {
                 setAssignedUser(u);
                 set("assigned_to", u ? String(u.id) : "");
               }}
-              placeholder="Search staff by name or email…"
+              placeholder={t("assignments.create.assignToPlaceholder")}
             />
             {errors.assigned_to && <p className="mt-1 text-xs text-red-500">{errors.assigned_to}</p>}
           </div>
           <div>
-            <label htmlFor="assignments-create-department-sector" className="block text-sm font-medium text-neutral-700 mb-1">Department / Sector</label>
+            <label htmlFor="assignments-create-department-sector" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.department")}</label>
             <select id="assignments-create-department-sector" value={form.department_id} onChange={(e) => set("department_id", e.target.value)} className="form-input">
-              <option value="">— Select department —</option>
+              <option value="">{t("assignments.create.selectDepartment")}</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
@@ -195,7 +197,7 @@ export default function CreateAssignmentPage() {
         {/* Dates */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="assignments-create-due-date" className="block text-sm font-medium text-neutral-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+            <label htmlFor="assignments-create-due-date" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.dueDate")} <span className="text-red-500">*</span></label>
             <input id="assignments-create-due-date"
               type="date"
               value={form.due_date}
@@ -206,7 +208,7 @@ export default function CreateAssignmentPage() {
             {errors.due_date && <p className="mt-1 text-xs text-red-500">{errors.due_date}</p>}
           </div>
           <div>
-            <label htmlFor="assignments-create-start-date" className="block text-sm font-medium text-neutral-700 mb-1">Start Date</label>
+            <label htmlFor="assignments-create-start-date" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.startDate")}</label>
             <input id="assignments-create-start-date"
               type="date"
               value={form.start_date}
@@ -218,13 +220,13 @@ export default function CreateAssignmentPage() {
 
         {/* Check-in frequency */}
         <div>
-          <label htmlFor="assignments-create-check-in-frequency" className="block text-sm font-medium text-neutral-700 mb-1">Check-in Frequency</label>
+          <label htmlFor="assignments-create-check-in-frequency" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.checkinFrequency")}</label>
           <select id="assignments-create-check-in-frequency" value={form.checkin_frequency} onChange={(e) => set("checkin_frequency", e.target.value)} className="form-input">
-            <option value="">— None —</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="biweekly">Bi-weekly</option>
-            <option value="monthly">Monthly</option>
+            <option value="">{t("assignments.create.none")}</option>
+            <option value="daily">{t("assignments.frequency.daily")}</option>
+            <option value="weekly">{t("assignments.frequency.weekly")}</option>
+            <option value="biweekly">{t("assignments.frequency.biweekly")}</option>
+            <option value="monthly">{t("assignments.frequency.monthly")}</option>
           </select>
         </div>
 
@@ -236,7 +238,7 @@ export default function CreateAssignmentPage() {
             onChange={(e) => set("is_confidential", e.target.checked)}
             className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
           />
-          <span className="text-sm text-neutral-700">Mark as Confidential</span>
+          <span className="text-sm text-neutral-700">{t("assignments.create.confidential")}</span>
         </label>
 
         {/* Actions */}
@@ -251,14 +253,14 @@ export default function CreateAssignmentPage() {
             ) : (
               <span className="material-symbols-outlined text-[18px]">save</span>
             )}
-            Save as Draft
+            {t("assignments.create.saveDraft")}
           </button>
-          <Link href="/assignments" className="btn-secondary">Cancel</Link>
+          <Link href="/assignments" className="btn-secondary">{t("common.cancel")}</Link>
         </div>
 
         {mutation.isError && (
           <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-            Failed to create assignment. Please check the form and try again.
+            {t("assignments.create.failed")}
           </div>
         )}
       </form>

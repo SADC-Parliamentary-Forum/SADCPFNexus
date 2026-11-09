@@ -8,12 +8,13 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { EmptyState, TableEmpty } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Tab = "contacts" | "groups";
 
 const stakeholderLabel: Record<string, string> = {
-  member_parliament: "Parliament", ministry: "Ministry", ngo: "NGO",
-  donor: "Donor", private_sector: "Private Sector", other: "Other",
+  member_parliament: "correspondence.contacts.type.parliament", ministry: "correspondence.contacts.type.ministry", ngo: "correspondence.contacts.type.ngo",
+  donor: "correspondence.contacts.type.donor", private_sector: "correspondence.contacts.type.privateSector", other: "correspondence.channel.other",
 };
 
 const EMPTY_CONTACT = {
@@ -24,6 +25,7 @@ const EMPTY_CONTACT = {
 export default function CorrespondenceContactsPage() {
   const { confirm } = useConfirm();
   const toast = useToast();
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("contacts");
   const [contacts, setContacts] = useState<CorrespondenceContact[]>([]);
   const [groups, setGroups] = useState<ContactGroup[]>([]);
@@ -72,7 +74,7 @@ export default function CorrespondenceContactsPage() {
 
   async function saveContact() {
     if (!form.full_name.trim() || !form.email.trim()) {
-      setError("Name and email are required.");
+      setError(t("correspondence.contacts.nameEmailRequired"));
       return;
     }
     setSaving(true);
@@ -85,7 +87,7 @@ export default function CorrespondenceContactsPage() {
         email: form.email,
         phone: form.phone || undefined,
         stakeholder_type: form.stakeholder_type,
-        tags: form.tags ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
+        tags: form.tags ? form.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : [],
       };
       const existing = slideOver?.item as CorrespondenceContact | undefined;
       if (existing?.id) {
@@ -93,12 +95,12 @@ export default function CorrespondenceContactsPage() {
       } else {
         await correspondenceApi.createContact(data);
       }
-      toast.success(existing?.id ? "Contact updated" : "Contact created");
+      toast.success(existing?.id ? t("correspondence.contacts.contactUpdated") : t("correspondence.contacts.contactCreated"));
       setSlideOver(null);
       loadData();
     } catch (err) {
-      setError("Failed to save contact.");
-      toast.error("Contact not saved", apiErrorMessage(err, "Failed to save contact."));
+      setError(t("correspondence.contacts.contactSaveFailed"));
+      toast.error(t("correspondence.contacts.contactNotSaved"), apiErrorMessage(err, t("correspondence.contacts.contactSaveFailed")));
     } finally {
       setSaving(false);
     }
@@ -107,23 +109,23 @@ export default function CorrespondenceContactsPage() {
   async function deleteContact(id: number) {
     if (
       !(await confirm({
-        title: "Delete contact",
-        message: "Delete this contact?",
+        title: t("correspondence.contacts.deleteContactTitle"),
+        message: t("correspondence.contacts.deleteContactMessage"),
         variant: "danger",
       }))
     ) return;
     try {
       await correspondenceApi.deleteContact(id);
-      toast.success("Contact deleted");
+      toast.success(t("correspondence.contacts.contactDeleted"));
       loadData();
     } catch (err) {
-      setError("Failed to delete contact.");
-      toast.error("Contact not deleted", apiErrorMessage(err, "Failed to delete contact."));
+      setError(t("correspondence.contacts.contactDeleteFailed"));
+      toast.error(t("correspondence.contacts.contactNotDeleted"), apiErrorMessage(err, t("correspondence.contacts.contactDeleteFailed")));
     }
   }
 
   async function saveGroup() {
-    if (!groupForm.name.trim()) { setError("Group name is required."); return; }
+    if (!groupForm.name.trim()) { setError(t("correspondence.contacts.groupNameRequired")); return; }
     setSaving(true);
     setError(null);
     try {
@@ -133,12 +135,12 @@ export default function CorrespondenceContactsPage() {
       } else {
         await correspondenceApi.createGroup(groupForm);
       }
-      toast.success(existing?.id ? "Group updated" : "Group created");
+      toast.success(existing?.id ? t("correspondence.contacts.groupUpdated") : t("correspondence.contacts.groupCreated"));
       setSlideOver(null);
       loadData();
     } catch (err) {
-      setError("Failed to save group.");
-      toast.error("Group not saved", apiErrorMessage(err, "Failed to save group."));
+      setError(t("correspondence.contacts.groupSaveFailed"));
+      toast.error(t("correspondence.contacts.groupNotSaved"), apiErrorMessage(err, t("correspondence.contacts.groupSaveFailed")));
     } finally {
       setSaving(false);
     }
@@ -147,18 +149,18 @@ export default function CorrespondenceContactsPage() {
   async function deleteGroup(id: number) {
     if (
       !(await confirm({
-        title: "Delete group",
-        message: "Delete this group?",
+        title: t("correspondence.contacts.deleteGroupTitle"),
+        message: t("correspondence.contacts.deleteGroupMessage"),
         variant: "danger",
       }))
     ) return;
     try {
       await correspondenceApi.deleteGroup(id);
-      toast.success("Group deleted");
+      toast.success(t("correspondence.contacts.groupDeleted"));
       loadData();
     } catch (err) {
-      setError("Failed to delete group.");
-      toast.error("Group not deleted", apiErrorMessage(err, "Failed to delete group."));
+      setError(t("correspondence.contacts.groupDeleteFailed"));
+      toast.error(t("correspondence.contacts.groupNotDeleted"), apiErrorMessage(err, t("correspondence.contacts.groupDeleteFailed")));
     }
   }
 
@@ -170,9 +172,9 @@ export default function CorrespondenceContactsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <ModulePageHeader
-        title="Contacts & Groups"
-        subtitle="Manage correspondence recipients and distribution groups."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Contacts & Groups" }]} />}
+        title={t("correspondence.contacts.title")}
+        subtitle={t("correspondence.contacts.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("correspondence.contacts.title") }]} />}
       />
         {canAdmin && (
           <button
@@ -180,24 +182,24 @@ export default function CorrespondenceContactsPage() {
             className="btn-primary inline-flex items-center gap-1.5 flex-shrink-0"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
-            {tab === "contacts" ? "Add Contact" : "Add Group"}
+            {tab === "contacts" ? t("correspondence.contacts.addContact") : t("correspondence.contacts.addGroup")}
           </button>
         )}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-neutral-200">
-        {(["contacts", "groups"] as Tab[]).map((t) => (
+        {(["contacts", "groups"] as Tab[]).map((tb) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tb}
+            onClick={() => setTab(tb)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t
+              tab === tb
                 ? "border-primary text-primary"
                 : "border-transparent text-neutral-500 hover:text-neutral-700"
             }`}
           >
-            {t === "contacts" ? `Contacts (${contacts.length})` : `Groups (${groups.length})`}
+            {tb === "contacts" ? t("correspondence.contacts.tabContacts", { count: contacts.length }) : t("correspondence.contacts.tabGroups", { count: groups.length })}
           </button>
         ))}
       </div>
@@ -209,24 +211,24 @@ export default function CorrespondenceContactsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="form-input w-full max-w-sm"
-            placeholder="Search contacts by name or email…"
+            placeholder={t("correspondence.contacts.search")}
           />
         </div>
       )}
 
       {loading ? (
-        <div className="py-8 text-center text-sm text-neutral-400">Loading…</div>
+        <div className="py-8 text-center text-sm text-neutral-400">{t("common.loading")}</div>
       ) : tab === "contacts" ? (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Organization</th>
-                  <th>Type</th>
-                  <th>Country</th>
+                  <th>{t("correspondence.contacts.name")}</th>
+                  <th>{t("correspondence.contacts.email")}</th>
+                  <th>{t("correspondence.contacts.organization")}</th>
+                  <th>{t("correspondence.col.type")}</th>
+                  <th>{t("correspondence.contacts.country")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -236,13 +238,13 @@ export default function CorrespondenceContactsPage() {
                     <td className="font-medium text-neutral-900">{c.full_name}</td>
                     <td className="text-sm text-neutral-500">{c.email}</td>
                     <td className="text-sm text-neutral-500">{c.organization ?? "—"}</td>
-                    <td><span className="text-xs text-neutral-500">{stakeholderLabel[c.stakeholder_type] ?? c.stakeholder_type}</span></td>
+                    <td><span className="text-xs text-neutral-500">{stakeholderLabel[c.stakeholder_type] ? t(stakeholderLabel[c.stakeholder_type]) : c.stakeholder_type}</span></td>
                     <td className="text-sm text-neutral-500">{c.country ?? "—"}</td>
                     <td>
                       {canAdmin && (
                         <div className="flex items-center gap-2">
-                          <button type="button" onClick={() => openContactSlideOver(c)} className="btn-secondary text-xs py-1 px-2">Edit</button>
-                          <button type="button" onClick={() => deleteContact(c.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Delete</button>
+                          <button type="button" onClick={() => openContactSlideOver(c)} className="btn-secondary text-xs py-1 px-2">{t("common.edit")}</button>
+                          <button type="button" onClick={() => deleteContact(c.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">{t("common.delete")}</button>
                         </div>
                       )}
                     </td>
@@ -250,9 +252,9 @@ export default function CorrespondenceContactsPage() {
                 )) : (
                   <TableEmpty
                     colSpan={6}
-                    title="No contacts yet."
+                    title={t("correspondence.contacts.emptyContacts")}
                     action={canAdmin ? (
-                      <button type="button" onClick={() => openContactSlideOver()} className="btn-primary text-sm">Add one</button>
+                      <button type="button" onClick={() => openContactSlideOver()} className="btn-primary text-sm">{t("correspondence.contacts.addOne")}</button>
                     ) : undefined}
                   />
                 )}
@@ -271,22 +273,22 @@ export default function CorrespondenceContactsPage() {
                 </div>
                 {canAdmin && (
                   <div className="flex gap-1 flex-shrink-0">
-                    <button type="button" onClick={() => openGroupSlideOver(g)} className="btn-secondary text-xs py-1 px-2">Edit</button>
-                    <button type="button" onClick={() => deleteGroup(g.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Delete</button>
+                    <button type="button" onClick={() => openGroupSlideOver(g)} className="btn-secondary text-xs py-1 px-2">{t("common.edit")}</button>
+                    <button type="button" onClick={() => deleteGroup(g.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">{t("common.delete")}</button>
                   </div>
                 )}
               </div>
               <p className="text-xs text-neutral-500">
-                {g.contacts_count ?? 0} member{(g.contacts_count ?? 0) !== 1 ? "s" : ""}
+                {(g.contacts_count ?? 0) === 1 ? t("correspondence.contacts.memberOne") : t("correspondence.contacts.memberMany", { count: g.contacts_count ?? 0 })}
               </p>
             </div>
           )) : (
             <div className="col-span-3 card">
               <EmptyState
                 icon="group"
-                title="No groups yet."
+                title={t("correspondence.contacts.emptyGroups")}
                 action={canAdmin ? (
-                  <button type="button" onClick={() => openGroupSlideOver()} className="btn-primary text-sm">Create one</button>
+                  <button type="button" onClick={() => openGroupSlideOver()} className="btn-primary text-sm">{t("correspondence.contacts.createOne")}</button>
                 ) : undefined}
               />
             </div>
@@ -302,8 +304,8 @@ export default function CorrespondenceContactsPage() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
               <h2 className="text-base font-semibold text-neutral-900">
                 {slideOver.type === "contact"
-                  ? (slideOver.item ? "Edit Contact" : "Add Contact")
-                  : (slideOver.item ? "Edit Group" : "Add Group")}
+                  ? (slideOver.item ? t("correspondence.contacts.editContact") : t("correspondence.contacts.addContact"))
+                  : (slideOver.item ? t("correspondence.contacts.editGroup") : t("correspondence.contacts.addGroup"))}
               </h2>
               <button onClick={() => setSlideOver(null)} className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[20px]">close</span>
@@ -318,51 +320,51 @@ export default function CorrespondenceContactsPage() {
               {slideOver.type === "contact" ? (
                 <>
                   <div>
-                    <label htmlFor="correspondence-contacts-full-name" className="block text-xs font-medium text-neutral-600 mb-1">Full Name *</label>
+                    <label htmlFor="correspondence-contacts-full-name" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.contacts.fullNameRequired")}</label>
                     <input id="correspondence-contacts-full-name" value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} className="form-input w-full" />
                   </div>
                   <div>
-                    <label htmlFor="correspondence-contacts-email" className="block text-xs font-medium text-neutral-600 mb-1">Email *</label>
+                    <label htmlFor="correspondence-contacts-email" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.contacts.emailRequired")}</label>
                     <input id="correspondence-contacts-email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="form-input w-full" />
                   </div>
                   <div>
-                    <label htmlFor="correspondence-contacts-organization" className="block text-xs font-medium text-neutral-600 mb-1">Organization</label>
+                    <label htmlFor="correspondence-contacts-organization" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.contacts.organization")}</label>
                     <input id="correspondence-contacts-organization" value={form.organization} onChange={(e) => setForm((f) => ({ ...f, organization: e.target.value }))} className="form-input w-full" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label htmlFor="correspondence-contacts-country" className="block text-xs font-medium text-neutral-600 mb-1">Country</label>
-                      <input id="correspondence-contacts-country" value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))} className="form-input w-full" placeholder="e.g. ZA" maxLength={4} />
+                      <label htmlFor="correspondence-contacts-country" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.contacts.country")}</label>
+                      <input id="correspondence-contacts-country" value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))} className="form-input w-full" placeholder={t("correspondence.contacts.countryPlaceholder")} maxLength={4} />
                     </div>
                     <div>
-                      <label htmlFor="correspondence-contacts-phone" className="block text-xs font-medium text-neutral-600 mb-1">Phone</label>
+                      <label htmlFor="correspondence-contacts-phone" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.contacts.phone")}</label>
                       <input id="correspondence-contacts-phone" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} className="form-input w-full" />
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="correspondence-contacts-stakeholder-type" className="block text-xs font-medium text-neutral-600 mb-1">Stakeholder Type</label>
+                    <label htmlFor="correspondence-contacts-stakeholder-type" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.contacts.stakeholderType")}</label>
                     <select id="correspondence-contacts-stakeholder-type" value={form.stakeholder_type} onChange={(e) => setForm((f) => ({ ...f, stakeholder_type: e.target.value }))} className="form-input w-full">
-                      <option value="member_parliament">Member of Parliament</option>
-                      <option value="ministry">Ministry / Government</option>
-                      <option value="ngo">NGO / Civil Society</option>
-                      <option value="donor">Donor / Partner</option>
-                      <option value="private_sector">Private Sector</option>
-                      <option value="other">Other</option>
+                      <option value="member_parliament">{t("correspondence.contacts.opt.mp")}</option>
+                      <option value="ministry">{t("correspondence.contacts.opt.ministry")}</option>
+                      <option value="ngo">{t("correspondence.contacts.opt.ngo")}</option>
+                      <option value="donor">{t("correspondence.contacts.opt.donor")}</option>
+                      <option value="private_sector">{t("correspondence.contacts.type.privateSector")}</option>
+                      <option value="other">{t("correspondence.channel.other")}</option>
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="correspondence-contacts-tags-comma-separated" className="block text-xs font-medium text-neutral-600 mb-1">Tags <span className="text-neutral-400 font-normal">(comma-separated)</span></label>
-                    <input id="correspondence-contacts-tags-comma-separated" value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} className="form-input w-full" placeholder="e.g. sadc, finance, procurement" />
+                    <label htmlFor="correspondence-contacts-tags-comma-separated" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.contacts.tags")} <span className="text-neutral-400 font-normal">{t("correspondence.contacts.commaSeparated")}</span></label>
+                    <input id="correspondence-contacts-tags-comma-separated" value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} className="form-input w-full" placeholder={t("correspondence.contacts.tagsPlaceholder")} />
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <label htmlFor="correspondence-contacts-group-name" className="block text-xs font-medium text-neutral-600 mb-1">Group Name *</label>
-                    <input id="correspondence-contacts-group-name" value={groupForm.name} onChange={(e) => setGroupForm((f) => ({ ...f, name: e.target.value }))} className="form-input w-full" placeholder="e.g. Finance Committee" />
+                    <label htmlFor="correspondence-contacts-group-name" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.contacts.groupNameLabel")}</label>
+                    <input id="correspondence-contacts-group-name" value={groupForm.name} onChange={(e) => setGroupForm((f) => ({ ...f, name: e.target.value }))} className="form-input w-full" placeholder={t("correspondence.contacts.groupPlaceholder")} />
                   </div>
                   <div>
-                    <label htmlFor="correspondence-contacts-description" className="block text-xs font-medium text-neutral-600 mb-1">Description</label>
+                    <label htmlFor="correspondence-contacts-description" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.contacts.description")}</label>
                     <textarea id="correspondence-contacts-description" value={groupForm.description} onChange={(e) => setGroupForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="form-input w-full resize-none" />
                   </div>
                 </>
@@ -370,13 +372,13 @@ export default function CorrespondenceContactsPage() {
             </div>
 
             <div className="px-6 py-4 border-t border-neutral-100 flex justify-end gap-3">
-              <button onClick={() => setSlideOver(null)} className="btn-secondary">Cancel</button>
+              <button onClick={() => setSlideOver(null)} className="btn-secondary">{t("common.cancel")}</button>
               <button
                 disabled={saving}
                 onClick={slideOver.type === "contact" ? saveContact : saveGroup}
                 className="btn-primary"
               >
-                {saving ? "Saving…" : "Save"}
+                {saving ? t("correspondence.saving") : t("common.save")}
               </button>
             </div>
           </div>

@@ -8,8 +8,10 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function PeopleAiPage() {
+  const { t } = useI18n();
   const [kind, setKind] = useState("access_recommendation");
   const suggest = useMutation({
     mutationFn: () => peopleAuthorityApi.aiSuggest({ kind, context: {} }),
@@ -29,32 +31,32 @@ export default function PeopleAiPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="AI Assist"
-        subtitle="Suggestions only - never auto-grants access, authority, delegation, or signing rights."
+        title={t("people.ai.title")}
+        subtitle={t("people.ai.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "AI Assist" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.ai.title") },
             ]}
           />
         }
         actions={
           <Link href="/people" className="btn-secondary text-sm">
-            Hub
+            {t("people.common.hub")}
           </Link>
         }
       />
 
-      <FormSection title="Request a suggestion" icon="smart_toy" dense>
+      <FormSection title={t("people.ai.requestSection")} icon="smart_toy" dense>
         <div className="flex flex-wrap items-end gap-3">
-          <FormField label="Suggestion kind" htmlFor="ai-kind" className="min-w-[220px]">
+          <FormField label={t("people.ai.kind")} htmlFor="ai-kind" className="min-w-[220px]">
             <select id="ai-kind" className="form-input" value={kind} onChange={(e) => setKind(e.target.value)}>
-              <option value="access_recommendation">Access recommendation</option>
-              <option value="anomalous_privilege">Anomalous privilege</option>
-              <option value="nl_org_search">NL org search</option>
-              <option value="succession_hint">Succession hint</option>
-              <option value="skills_gap">Skills gap</option>
+              <option value="access_recommendation">{t("people.ai.kindAccess")}</option>
+              <option value="anomalous_privilege">{t("people.ai.kindAnomalous")}</option>
+              <option value="nl_org_search">{t("people.ai.kindNlSearch")}</option>
+              <option value="succession_hint">{t("people.ai.kindSuccession")}</option>
+              <option value="skills_gap">{t("people.ai.kindSkillsGap")}</option>
             </select>
           </FormField>
           <button
@@ -63,19 +65,19 @@ export default function PeopleAiPage() {
             disabled={suggest.isPending}
             onClick={() => suggest.mutate()}
           >
-            {suggest.isPending ? "Requesting…" : "Request suggestion"}
+            {suggest.isPending ? t("people.ai.requesting") : t("people.ai.request")}
           </button>
         </div>
       </FormSection>
 
       {!suggestion && !suggest.isPending ? (
         <div className="card">
-          <EmptyState icon="psychology" title="No suggestion yet" description="Choose a kind and request a suggestion." />
+          <EmptyState icon="psychology" title={t("people.ai.emptyTitle")} description={t("people.ai.emptyHint")} />
         </div>
       ) : null}
 
       {suggestion ? (
-        <FormSection title="Suggestion" icon="lightbulb" dense>
+        <FormSection title={t("people.ai.suggestion")} icon="lightbulb" dense>
           <LabelledRecord value={suggestion} />
           {suggestionId ? (
             <button
@@ -84,7 +86,7 @@ export default function PeopleAiPage() {
               disabled={apply.isPending}
               onClick={() => apply.mutate(suggestionId)}
             >
-              Confirm attach note
+              {t("people.ai.confirmAttach")}
             </button>
           ) : null}
         </FormSection>

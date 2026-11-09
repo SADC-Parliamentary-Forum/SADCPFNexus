@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const TOKEN = /\{\{([a-z0-9_]+)\}\}/gi;
 
@@ -29,6 +30,7 @@ export default function CorrespondenceMailMergePage() {
   const router = useRouter();
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["correspondence-templates"],
     queryFn: () => correspondenceApi.listTemplates().then((r) => r.data.data),
@@ -40,7 +42,7 @@ export default function CorrespondenceMailMergePage() {
   const [error, setError] = useState<string | null>(null);
 
   const selected = useMemo(
-    () => templates.find((t) => t.id === templateId),
+    () => templates.find((tpl) => tpl.id === templateId),
     [templates, templateId],
   );
 
@@ -59,7 +61,7 @@ export default function CorrespondenceMailMergePage() {
 
   const previewMutation = useMutation({
     mutationFn: async () => {
-      if (!templateId) throw new Error("Select a template.");
+      if (!templateId) throw new Error(t("correspondence.mailMerge.selectTemplate"));
       return correspondenceApi
         .mailMergePreview({ template_id: Number(templateId), fields: fieldPayload() })
         .then((r) => r.data.data);
@@ -68,12 +70,12 @@ export default function CorrespondenceMailMergePage() {
       setPreview(data);
       setError(null);
     },
-    onError: (e: Error) => setError(e.message || "Preview failed"),
+    onError: (e: Error) => setError(e.message || t("correspondence.mailMerge.previewFailed")),
   });
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!templateId) throw new Error("Select a template.");
+      if (!templateId) throw new Error(t("correspondence.mailMerge.selectTemplate"));
       return correspondenceApi
         .mailMergeCreate({
           template_id: Number(templateId),
@@ -84,12 +86,12 @@ export default function CorrespondenceMailMergePage() {
     },
     onSuccess: (letter) => {
       void qc.invalidateQueries({ queryKey: ["correspondence"] });
-      toast.success("Letter created");
+      toast.success(t("correspondence.mailMerge.letterCreated"));
       router.push(`/correspondence/${letter.id}`);
     },
     onError: (e: Error) => {
-      setError(e.message || "Create failed");
-      toast.error("Letter not created", apiErrorMessage(e, "Create failed"));
+      setError(e.message || t("correspondence.mailMerge.createFailed"));
+      toast.error(t("correspondence.mailMerge.letterNotCreated"), apiErrorMessage(e, t("correspondence.mailMerge.createFailed")));
     },
   });
 
@@ -103,22 +105,22 @@ export default function CorrespondenceMailMergePage() {
           "Dear {{recipient_name}},\n\nWe acknowledge receipt of {{subject_matter}} dated {{letter_date}}.\n\nYours sincerely,\n{{signatory_name}}",
       }),
     onSuccess: () => {
-      toast.success("Template created");
+      toast.success(t("correspondence.mailMerge.templateCreated"));
       void qc.invalidateQueries({ queryKey: ["correspondence-templates"] });
     },
-    onError: (e) => toast.error("Template not created", apiErrorMessage(e, "Failed to create the template.")),
+    onError: (e) => toast.error(t("correspondence.mailMerge.templateNotCreated"), apiErrorMessage(e, t("correspondence.mailMerge.templateFailed"))),
   });
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Mail merge"
-        subtitle="Substitute template fields into a letter draft. AI assist on letter detail requires human confirm and never auto-sends."
+        title={t("correspondence.mailMerge.title")}
+        subtitle={t("correspondence.mailMerge.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Correspondence", href: "/correspondence" },
-              { label: "Mail merge" },
+              { label: t("workflows.simulate.module.correspondence"), href: "/correspondence" },
+              { label: t("correspondence.mailMerge.title") },
             ]}
           />
         }
@@ -127,7 +129,7 @@ export default function CorrespondenceMailMergePage() {
       <div className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5">
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex-1">
-            <label htmlFor="mail-merge-template" className="mb-1 block text-sm text-neutral-600">Template</label>
+            <label htmlFor="mail-merge-template" className="mb-1 block text-sm text-neutral-600">{t("correspondence.mailMerge.template")}</label>
             <select
               id="mail-merge-template"
               className="form-input w-full"
@@ -139,22 +141,22 @@ export default function CorrespondenceMailMergePage() {
               }}
               disabled={isLoading}
             >
-              <option value="">Select…</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
+              <option value="">{t("correspondence.mailMerge.select")}</option>
+              {templates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>{tpl.name} ({tpl.code})</option>
               ))}
             </select>
           </div>
           <button type="button" className="btn-secondary text-sm" onClick={() => createTemplateMutation.mutate()} disabled={createTemplateMutation.isPending}>
-            Seed acknowledgement template
+            {t("correspondence.mailMerge.seed")}
           </button>
         </div>
 
         {selected && (
           <div className="rounded bg-neutral-50 p-3 text-xs text-neutral-600">
-            <p className="font-medium text-neutral-800">Subject template</p>
+            <p className="font-medium text-neutral-800">{t("correspondence.mailMerge.subjectTemplate")}</p>
             <pre className="whitespace-pre-wrap">{selected.subject_template}</pre>
-            <p className="mt-2 font-medium text-neutral-800">Body template</p>
+            <p className="mt-2 font-medium text-neutral-800">{t("correspondence.mailMerge.bodyTemplate")}</p>
             <pre className="whitespace-pre-wrap">{selected.body_template}</pre>
           </div>
         )}
@@ -180,16 +182,16 @@ export default function CorrespondenceMailMergePage() {
 
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-secondary text-sm" onClick={() => previewMutation.mutate()} disabled={previewMutation.isPending}>
-            Preview merge
+            {t("correspondence.mailMerge.preview")}
           </button>
           <button type="button" className="btn-primary text-sm" onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
-            Create draft letter
+            {t("correspondence.mailMerge.createDraft")}
           </button>
         </div>
 
         {preview && (
           <div className="space-y-2 border-t border-neutral-100 pt-4">
-            <h2 className="text-sm font-medium">Preview</h2>
+            <h2 className="text-sm font-medium">{t("correspondence.mailMerge.previewHeading")}</h2>
             <p className="text-sm font-semibold">{preview.subject}</p>
             <pre className="whitespace-pre-wrap rounded bg-neutral-50 p-3 text-xs text-neutral-800">{preview.body}</pre>
           </div>

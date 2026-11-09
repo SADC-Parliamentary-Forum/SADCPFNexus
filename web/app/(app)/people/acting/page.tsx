@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -34,6 +35,7 @@ function personLabel(p: Record<string, unknown>): string {
 }
 
 export default function Page() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
   const [q, setQ] = useState("");
@@ -76,39 +78,39 @@ export default function Page() {
         reason: form.reason || undefined,
       }),
     onSuccess: () => {
-      toast.success("Acting appointment created");
+      toast.success(t("people.acting.created"));
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "acting-appointments"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not create the acting appointment. Position, person, and start date are required.");
+      const message = apiErrorMessage(e, t("people.acting.createFailed"));
       setErr(message);
-      toast.error("Acting appointment not created", message);
+      toast.error(t("people.acting.notCreated"), message);
     },
   });
   const approve = useMutation({
     mutationFn: (id: number) => peopleAuthorityApi.approveActing(id),
     onSuccess: () => {
-      toast.success("Acting appointment approved");
+      toast.success(t("people.acting.approved"));
       qc.invalidateQueries({ queryKey: ["people-authority", "acting-appointments"] });
     },
-    onError: (e) => toast.error("Could not approve acting appointment", apiErrorMessage(e, "Could not approve the acting appointment.")),
+    onError: (e) => toast.error(t("people.acting.approveFailedTitle"), apiErrorMessage(e, t("people.acting.approveFailed"))),
   });
 
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Acting Appointments"
-        subtitle="People & Authority register"
+        title={t("people.acting.title")}
+        subtitle={t("people.common.registerSubtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "Acting Appointments" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.acting.title") },
             ]}
           />
         }
-        actions={<Link href="/people" className="btn-secondary text-sm">Hub</Link>}
+        actions={<Link href="/people" className="btn-secondary text-sm">{t("people.common.hub")}</Link>}
       />
 
       <form
@@ -119,38 +121,38 @@ export default function Page() {
         }}
       >
         <label htmlFor="people-acting-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
-          Position
+          {t("people.common.position")}
           <select id="people-acting-position-setform-f-required-select" className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.name ?? p.code ?? p.id)}</option>
             ))}
           </select>
         </label>
         <label htmlFor="people-acting-acting-person-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
-          Acting person
+          {t("people.acting.actingPerson")}
           <select id="people-acting-acting-person-setform-f-required-select" className="form-input mt-1" value={form.person_id} onChange={(e) => setForm((f) => ({ ...f, person_id: e.target.value }))} required>
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {(peopleQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
             ))}
           </select>
         </label>
         <label htmlFor="people-acting-start-setform-f-required" className="block text-xs font-medium text-neutral-600">
-          Start
+          {t("people.common.start")}
           <input id="people-acting-start-setform-f-required" type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
         </label>
         <label htmlFor="people-acting-end-setform-f" className="block text-xs font-medium text-neutral-600">
-          End
+          {t("people.common.end")}
           <input id="people-acting-end-setform-f" type="date" className="form-input mt-1" value={form.end_at} onChange={(e) => setForm((f) => ({ ...f, end_at: e.target.value }))} />
         </label>
         <label htmlFor="people-acting-reason-setform-f" className="block text-xs font-medium text-neutral-600 sm:col-span-2">
-          Reason
+          {t("common.reason")}
           <input id="people-acting-reason-setform-f" className="form-input mt-1" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
         </label>
         <div className="sm:col-span-2 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
-            {create.isPending ? "Saving…" : "Create acting appointment"}
+            {create.isPending ? t("people.common.saving") : t("people.acting.create")}
           </button>
           {err && <p className="text-sm text-red-700">{err}</p>}
         </div>
@@ -158,8 +160,8 @@ export default function Page() {
 
       <div className="card p-3">
         <label htmlFor="people-acting-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
-          <input id="people-acting-search-setq-e-target-value-placeholder-filter-ro" className="form-input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter rows…" />
+          {t("common.search")}
+          <input id="people-acting-search-setq-e-target-value-placeholder-filter-ro" className="form-input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("people.common.filterRows")} />
         </label>
       </div>
 
@@ -173,27 +175,27 @@ export default function Page() {
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
-            action={<button type="button" className="btn-primary text-sm" onClick={() => refetch()}>Retry</button>}
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
+            action={<button type="button" className="btn-primary text-sm" onClick={() => refetch()}>{t("common.retry")}</button>}
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">Acting Appointments</caption>
+              <caption className="sr-only">{t("people.acting.title")}</caption>
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Status</th>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Actions</th>
+                  <th>{t("people.common.reference")}</th>
+                  <th>{t("people.common.status")}</th>
+                  <th>{t("people.common.start")}</th>
+                  <th>{t("people.common.end")}</th>
+                  <th>{t("people.common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -206,7 +208,7 @@ export default function Page() {
                     <td>
                       {r.status !== "approved" && r.status !== "active" && (
                         <button type="button" className="btn-secondary text-xs py-1 px-2 text-emerald-700" onClick={() => approve.mutate(Number(r.id))} disabled={approve.isPending}>
-                          Approve
+                          {t("common.approve")}
                         </button>
                       )}
                     </td>

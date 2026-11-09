@@ -13,15 +13,23 @@ import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageH
 import { EmptyState } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  pending:   { label: "Pending",   cls: "badge-warning", icon: "hourglass_empty" },
-  inspected: { label: "Inspected", cls: "badge-primary", icon: "search"          },
-  accepted:  { label: "Accepted",  cls: "badge-success", icon: "check_circle"    },
-  rejected:  { label: "Rejected",  cls: "badge-danger",  icon: "cancel"          },
+  pending:   { label: "status.pending", cls: "badge-warning", icon: "hourglass_empty" },
+  inspected: { label: "procurement.grnStatus.inspected", cls: "badge-primary", icon: "search"          },
+  accepted:  { label: "procurement.grnStatus.accepted", cls: "badge-success", icon: "check_circle"    },
+  rejected:  { label: "status.rejected", cls: "badge-danger",  icon: "cancel"          },
 };
 
 const FILTERS = ["all", "pending", "inspected", "accepted", "rejected"];
+const FILTER_LABEL_KEYS: Record<string, string> = {
+  all: "procurement.filter.all",
+  pending: "status.pending",
+  inspected: "procurement.grnStatus.inspected",
+  accepted: "procurement.grnStatus.accepted",
+  rejected: "status.rejected",
+};
 
 interface ItemRow {
   purchase_order_item_id: number;
@@ -40,6 +48,7 @@ function ReceiptsPageInner() {
   const poId          = poIdParam ? Number(poIdParam) : null;
   const queryClient   = useQueryClient();
   const toast         = useToast();
+  const { t } = useI18n();
 
   const [statusFilter, setStatusFilter]   = useState("all");
   const [search, setSearch]               = useState("");
@@ -114,13 +123,13 @@ function ReceiptsPageInner() {
       queryClient.invalidateQueries({ queryKey: ["grns-all"] });
       setShowModal(false);
       setItemRows([]);
-      toast.success("Goods receipt recorded");
+      toast.success(t("procurement.receipts.recorded"));
       router.push(`/procurement/receipts/${res.data.data.id}?po=${poId}`);
     },
     onError: (e: unknown) => {
-      const message = apiErrorMessage(e, "Failed to record receipt.");
+      const message = apiErrorMessage(e, t("procurement.receipts.recordFailed"));
       setSubmitError(message);
-      toast.error("Goods receipt not recorded", message);
+      toast.error(t("procurement.receipts.notRecorded"), message);
     },
   });
 
@@ -156,10 +165,10 @@ function ReceiptsPageInner() {
         received_date: g.received_date ?? "",
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "po", header: "PO" },
-        { key: "status", header: "Status" },
-        { key: "received_date", header: "Received" },
+        { key: "reference", header: t("procurement.col.reference") },
+        { key: "po", header: t("procurement.receipts.csv.po") },
+        { key: "status", header: t("procurement.col.status") },
+        { key: "received_date", header: t("procurement.receipts.csv.received") },
       ],
     );
   };
@@ -167,11 +176,11 @@ function ReceiptsPageInner() {
   return (
     <div className="space-y-6">
       <ProcurementPageHeader
-        title="Goods Receipts"
-        subtitle={poIdParam ? `Receipts for PO #${poIdParam}` : "Track deliveries against purchase orders"}
+        title={t("procurement.receipts.title")}
+        subtitle={poIdParam ? t("procurement.receipts.subtitleForPo", { id: poIdParam }) : t("procurement.receipts.subtitle")}
         crumbs={[
           { label: "nav.procurement", href: "/procurement" },
-          { label: "Receipts" },
+          { label: t("procurement.receipts.crumb") },
         ]}
         actions={
           <>
@@ -182,7 +191,7 @@ function ReceiptsPageInner() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[16px]">download</span>
-            Export CSV
+            {t("procurement.exportCsv")}
           </button>
           {poId && (
             <>
@@ -192,17 +201,17 @@ function ReceiptsPageInner() {
                 className="btn-primary inline-flex items-center gap-1.5 text-sm"
               >
                 <span className="material-symbols-outlined text-[16px]">add</span>
-                Record Receipt
+                {t("procurement.receipts.record")}
               </button>
               <Link href={`/procurement/purchase-orders/${poId}`} className="btn-secondary inline-flex items-center gap-1.5 text-sm">
                 <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                Back to PO
+                {t("procurement.receipts.backToPo")}
               </Link>
             </>
           )}
           <Link href="/procurement/purchase-orders" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
             <span className="material-symbols-outlined text-[16px]">receipt_long</span>
-            Purchase Orders
+            {t("procurement.purchaseOrders.title")}
           </Link>
           </>
         }
@@ -211,10 +220,10 @@ function ReceiptsPageInner() {
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total GRNs",  value: total,    icon: "inventory_2",   color: "text-primary",   bg: "bg-primary/10"  },
-          { label: "Pending",     value: pending,  icon: "hourglass_empty",color: "text-amber-600", bg: "bg-amber-50"    },
-          { label: "Accepted",    value: accepted, icon: "check_circle",  color: "text-green-600", bg: "bg-green-50"    },
-          { label: "Rejected",    value: rejected, icon: "cancel",        color: "text-red-600",   bg: "bg-red-50"      },
+          { label: t("procurement.receipts.kpi.total"), value: total,    icon: "inventory_2",   color: "text-primary",   bg: "bg-primary/10"  },
+          { label: t("status.pending"), value: pending,  icon: "hourglass_empty",color: "text-amber-600", bg: "bg-amber-50"    },
+          { label: t("procurement.grnStatus.accepted"), value: accepted, icon: "check_circle",  color: "text-green-600", bg: "bg-green-50"    },
+          { label: t("status.rejected"), value: rejected, icon: "cancel",        color: "text-red-600",   bg: "bg-red-50"      },
         ].map((k) => (
           <div key={k.label} className="card p-4 flex items-center gap-3">
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${k.bg} flex-shrink-0`}>
@@ -238,7 +247,7 @@ function ReceiptsPageInner() {
             <input
               type="search"
               className="form-input pl-10"
-              placeholder="Search GRN or PO…"
+              placeholder={t("procurement.receipts.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -257,7 +266,7 @@ function ReceiptsPageInner() {
                 }}
                 className={`filter-tab capitalize ${statusFilter === f ? "active" : ""}`}
               >
-                {f === "all" ? "All" : f}
+                {FILTER_LABEL_KEYS[f] ? t(FILTER_LABEL_KEYS[f]) : f}
               </button>
             ))}
           </div>
@@ -279,24 +288,24 @@ function ReceiptsPageInner() {
           ))}
         </div>
       ) : isError ? (
-        <div className="card p-6 text-center text-sm text-red-600">Failed to load goods receipts.</div>
+        <div className="card p-6 text-center text-sm text-red-600">{t("procurement.receipts.loadError")}</div>
       ) : filtered.length === 0 ? (
         <EmptyState
           icon="inventory_2"
-          title="No goods receipts found."
-          description={poId ? "Click “Record Receipt” above to log a new delivery." : "Record a receipt against an issued purchase order."}
+          title={t("procurement.receipts.empty")}
+          description={poId ? t("procurement.receipts.emptyHintPo") : t("procurement.receipts.emptyHint")}
         />
       ) : (
         <div className="card overflow-hidden">
           <table className="data-table">
             <thead>
               <tr>
-                <th>GRN Reference</th>
-                <th>Purchase Order</th>
-                <th>Vendor</th>
-                <th>Received Date</th>
-                <th>Received By</th>
-                <th>Status</th>
+                <th>{t("procurement.receipts.col.reference")}</th>
+                <th>{t("procurement.purchaseOrder")}</th>
+                <th>{t("procurement.col.vendor")}</th>
+                <th>{t("procurement.receipts.receivedDate")}</th>
+                <th>{t("procurement.receipts.receivedBy")}</th>
+                <th>{t("procurement.col.status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -336,7 +345,7 @@ function ReceiptsPageInner() {
                     <td>
                       <span className={`badge ${s.cls} inline-flex items-center gap-1`}>
                         <span className="material-symbols-outlined text-[11px]">{s.icon}</span>
-                        {s.label}
+                        {t(s.label)}
                       </span>
                     </td>
                   </tr>
@@ -368,7 +377,7 @@ function ReceiptsPageInner() {
                 <span className="material-symbols-outlined text-[20px] text-green-600">inventory_2</span>
               </div>
               <div>
-                <h2 className="text-base font-bold text-neutral-900">Record Goods Receipt</h2>
+                <h2 className="text-base font-bold text-neutral-900">{t("procurement.receipts.modalTitle")}</h2>
                 {poData && <p className="text-xs text-neutral-400 font-mono">{poData.reference_number} — {poData.vendor?.name}</p>}
               </div>
             </div>
@@ -379,7 +388,7 @@ function ReceiptsPageInner() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label htmlFor="procurement-receipts-received-date" className="text-xs font-semibold text-neutral-600">Received Date <span className="text-red-500">*</span></label>
+                <label htmlFor="procurement-receipts-received-date" className="text-xs font-semibold text-neutral-600">{t("procurement.receipts.receivedDate")} <span className="text-red-500">*</span></label>
                 <input id="procurement-receipts-received-date"
                   type="date"
                   className="form-input"
@@ -388,11 +397,11 @@ function ReceiptsPageInner() {
                 />
               </div>
               <div className="space-y-1">
-                <label htmlFor="procurement-receipts-notes" className="text-xs font-semibold text-neutral-600">Notes</label>
+                <label htmlFor="procurement-receipts-notes" className="text-xs font-semibold text-neutral-600">{t("procurement.notes")}</label>
                 <input id="procurement-receipts-notes"
                   type="text"
                   className="form-input"
-                  placeholder="Optional notes…"
+                  placeholder={t("procurement.receipts.notesPlaceholder")}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                 />
@@ -401,11 +410,11 @@ function ReceiptsPageInner() {
 
             {/* Items */}
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">Items Received</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">{t("procurement.receipts.itemsReceived")}</h3>
               {poLoading ? (
-                <div className="text-center py-6 text-sm text-neutral-400 animate-pulse">Loading PO items…</div>
+                <div className="text-center py-6 text-sm text-neutral-400 animate-pulse">{t("procurement.receipts.loadingItems")}</div>
               ) : itemRows.length === 0 ? (
-                <div className="text-center py-6 text-sm text-neutral-400">No line items on this purchase order.</div>
+                <div className="text-center py-6 text-sm text-neutral-400">{t("procurement.receipts.noItems")}</div>
               ) : (
                 <div className="space-y-3">
                   {itemRows.map((row, idx) => (
@@ -413,12 +422,12 @@ function ReceiptsPageInner() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-neutral-900">{row.description}</p>
-                          <p className="text-xs text-neutral-400">{row.unit} · Ordered: {row.quantity_ordered}</p>
+                          <p className="text-xs text-neutral-400">{t("procurement.receipts.unitOrdered", { unit: row.unit, qty: row.quantity_ordered })}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
-                          <label htmlFor="procurement-receipts-qty-received" className="text-[10px] font-semibold uppercase text-neutral-400">Qty Received</label>
+                          <label htmlFor="procurement-receipts-qty-received" className="text-[10px] font-semibold uppercase text-neutral-400">{t("procurement.receipts.qtyReceived")}</label>
                           <input id="procurement-receipts-qty-received"
                             type="number"
                             min="0"
@@ -433,7 +442,7 @@ function ReceiptsPageInner() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label htmlFor="procurement-receipts-qty-accepted" className="text-[10px] font-semibold uppercase text-neutral-400">Qty Accepted</label>
+                          <label htmlFor="procurement-receipts-qty-accepted" className="text-[10px] font-semibold uppercase text-neutral-400">{t("procurement.receipts.qtyAccepted")}</label>
                           <input id="procurement-receipts-qty-accepted"
                             type="number"
                             min="0"
@@ -448,11 +457,11 @@ function ReceiptsPageInner() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label htmlFor="procurement-receipts-condition-notes" className="text-[10px] font-semibold uppercase text-neutral-400">Condition Notes</label>
+                          <label htmlFor="procurement-receipts-condition-notes" className="text-[10px] font-semibold uppercase text-neutral-400">{t("procurement.receipts.conditionNotes")}</label>
                           <input id="procurement-receipts-condition-notes"
                             type="text"
                             className="form-input text-sm"
-                            placeholder="Optional…"
+                            placeholder={t("stock.movementModal.optional")}
                             value={row.condition_notes}
                             onChange={(e) => {
                               const updated = [...itemRows];
@@ -473,7 +482,7 @@ function ReceiptsPageInner() {
                 className="btn-secondary flex-1"
                 onClick={() => { setShowModal(false); setItemRows([]); }}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 className="btn-primary flex-1 disabled:opacity-60"
@@ -485,7 +494,7 @@ function ReceiptsPageInner() {
                 ) : (
                   <span className="material-symbols-outlined text-[18px]">check_circle</span>
                 )}
-                {createMutation.isPending ? "Recording…" : "Record Receipt"}
+                {createMutation.isPending ? t("procurement.recording") : t("procurement.receipts.record")}
               </button>
             </div>
           </div>

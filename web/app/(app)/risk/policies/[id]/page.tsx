@@ -9,6 +9,7 @@ import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const LEVEL_CLS: Record<string, string> = {
   low:      "text-green-700 bg-green-100 border-green-300",
@@ -19,6 +20,7 @@ const LEVEL_CLS: Record<string, string> = {
 
 export default function PolicyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: paramId } = use(params);
+  const { t } = useI18n();
   const toast = useToast();
 
   const [policy, setPolicy]       = useState<Policy | null>(null);
@@ -29,12 +31,12 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     const id = Number(paramId);
-    if (!Number.isFinite(id)) { setError("Invalid policy ID"); setLoading(false); return; }
+    if (!Number.isFinite(id)) { setError(t("risk.policy.invalidId")); setLoading(false); return; }
     policyApi.get(id)
       .then((r) => setPolicy(r.data.data))
-      .catch(() => setError("Failed to load policy."))
+      .catch(() => setError(t("risk.policy.loadFailed")))
       .finally(() => setLoading(false));
-  }, [paramId]);
+  }, [paramId, t]);
 
   if (loading) {
     return (
@@ -48,9 +50,9 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
   if (error || !policy) {
     return (
       <div className="mx-auto max-w-6xl">
-        <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-sm text-red-700">{error ?? "Policy not found."}</div>
+        <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-sm text-red-700">{error ?? t("risk.policy.notFound")}</div>
         <Link href="/risk/policies" className="btn-secondary mt-4 inline-flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span> {t("common.back")}
         </Link>
       </div>
     );
@@ -68,14 +70,14 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
           <PageBreadcrumbs
             items={[
               { label: "risk.hub", href: "/risk" },
-              { label: "Policy Library", href: "/risk/policies" },
+              { label: t("risk.policies.pageTitle"), href: "/risk/policies" },
               { label: policy.title },
             ]}
           />
         }
         meta={
           <span className={`badge-${policy.status === "active" ? "success" : "muted"} capitalize`}>
-            {policy.status}
+            {policy.status === "active" ? t("risk.policies.status.active") : policy.status === "archived" ? t("risk.policies.status.archived") : policy.status}
           </span>
         }
       />
@@ -101,15 +103,15 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
                   daysToRenewal !== null && daysToRenewal < 90 ? "text-amber-700" : ""
                 }`}>
                   <span className="material-symbols-outlined text-[14px]">event</span>
-                  Renewal: {formatDateShort(policy.renewal_date)}
-                  {daysToRenewal !== null && daysToRenewal < 0 && " (Overdue)"}
-                  {daysToRenewal !== null && daysToRenewal >= 0 && daysToRenewal < 90 && " (Due soon)"}
+                  {t("risk.policy.renewal", { date: formatDateShort(policy.renewal_date) })}
+                  {daysToRenewal !== null && daysToRenewal < 0 && ` ${t("risk.policy.overdue")}`}
+                  {daysToRenewal !== null && daysToRenewal >= 0 && daysToRenewal < 90 && ` ${t("risk.policy.dueSoon")}`}
                 </span>
               )}
             </div>
           </div>
           <span className={`badge-${policy.status === "active" ? "success" : "muted"} capitalize`}>
-            {policy.status}
+            {policy.status === "active" ? t("risk.policies.status.active") : policy.status === "archived" ? t("risk.policies.status.archived") : policy.status}
           </span>
         </div>
       </div>
@@ -127,8 +129,8 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
             }`}
           >
             {tab === "documents"
-              ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}`
-              : "Details"}
+              ? (attachments.length > 0 ? t("risk.policy.documentsCount", { count: attachments.length }) : t("risk.policy.documents"))
+              : t("risk.policy.details")}
           </button>
         ))}
       </div>
@@ -139,16 +141,16 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
           {/* Description */}
           {policy.description && (
             <div className="card p-5">
-              <h2 className="text-sm font-semibold text-neutral-800 mb-3">Description</h2>
+              <h2 className="text-sm font-semibold text-neutral-800 mb-3">{t("risk.create.description")}</h2>
               <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap">{policy.description}</p>
             </div>
           )}
 
           {/* Linked Risks */}
           <div className="card p-5">
-            <h2 className="text-sm font-semibold text-neutral-800 mb-4">Linked Risks</h2>
+            <h2 className="text-sm font-semibold text-neutral-800 mb-4">{t("risk.policy.linkedRisks")}</h2>
             {!policy.risks || policy.risks.length === 0 ? (
-              <p className="text-xs text-neutral-400 italic">No risks linked to this policy yet. Link from the risk detail page.</p>
+              <p className="text-xs text-neutral-400 italic">{t("risk.policy.noLinkedRisks")}</p>
             ) : (
               <div className="space-y-2">
                 {policy.risks.map((r) => (
@@ -168,7 +170,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
               </div>
             )}
             <p className="text-xs text-neutral-400 mt-3 italic">
-              To link this policy to a risk, open the risk and use the "Related Policies" tab.
+              {t("risk.policy.linkHint")}
             </p>
           </div>
         </div>
@@ -177,7 +179,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
       {/* Documents Tab */}
       {activeTab === "documents" && (
         <div className="card p-6">
-          <h2 className="text-sm font-semibold text-neutral-800 mb-5">Policy Documents</h2>
+          <h2 className="text-sm font-semibold text-neutral-800 mb-5">{t("risk.policy.policyDocuments")}</h2>
           <RiskDocumentsPanel
             documents={attachments}
             loading={false}
@@ -187,9 +189,9 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
               try {
                 const r = await policyApi.uploadAttachment(policy.id, file, type);
                 setPolicy((prev) => prev ? { ...prev, attachments: [r.data.data, ...(prev.attachments ?? [])] } : prev);
-                toast.success("Document uploaded");
+                toast.success(t("risk.policy.docUploaded"));
               } catch (err) {
-                toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload document."));
+                toast.error(t("risk.policy.docNotUploaded"), apiErrorMessage(err, t("risk.policy.docUploadFailed")));
                 throw err;
               } finally { setUploading(false); }
             }}
@@ -197,9 +199,9 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
               try {
                 await policyApi.deleteAttachment(policy.id, id);
                 setPolicy((prev) => prev ? { ...prev, attachments: (prev.attachments ?? []).filter((a) => a.id !== id) } : prev);
-                toast.success("Document deleted");
+                toast.success(t("risk.policy.docDeleted"));
               } catch (err) {
-                toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete document."));
+                toast.error(t("risk.policy.docNotDeleted"), apiErrorMessage(err, t("risk.policy.docDeleteFailed")));
                 throw err;
               }
             }}
@@ -210,7 +212,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
       <Link href="/risk/policies" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-        Back to Policy Library
+        {t("risk.policy.backToLibrary")}
       </Link>
     </RiskPageFrame>
   );

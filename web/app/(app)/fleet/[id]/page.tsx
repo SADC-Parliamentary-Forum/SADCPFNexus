@@ -7,12 +7,14 @@ import { fleetApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function FleetVehicleDetailPage() {
   const params = useParams();
   const id = Number(params.id);
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [gpsToast, setGpsToast] = useState<string | null>(null);
   const [gps, setGps] = useState({ lat: "", lng: "" });
@@ -78,11 +80,11 @@ export default function FleetVehicleDetailPage() {
       setError(null);
       setTrip({ started_at: "", ended_at: "", start_odometer_km: "", end_odometer_km: "", purpose: "", origin: "", destination: "" });
       invalidate();
-      toast.success("Trip logged");
+      toast.success(t("fleet.detail.tripLogged"));
     },
     onError: (err: unknown) => {
-      setError("Could not create trip log.");
-      toast.error("Trip not logged", apiErrorMessage(err, "Could not create trip log."));
+      setError(t("fleet.detail.tripFailed"));
+      toast.error(t("fleet.detail.tripNotLogged"), apiErrorMessage(err, t("fleet.detail.tripFailed")));
     },
   });
 
@@ -99,11 +101,11 @@ export default function FleetVehicleDetailPage() {
       setError(null);
       setFuel({ logged_at: "", litres: "", cost_amount: "", odometer_km: "", station: "" });
       invalidate();
-      toast.success("Fuel log added");
+      toast.success(t("fleet.detail.fuelAdded"));
     },
     onError: (err: unknown) => {
-      setError("Could not create fuel log.");
-      toast.error("Fuel log not added", apiErrorMessage(err, "Could not create fuel log."));
+      setError(t("fleet.detail.fuelFailed"));
+      toast.error(t("fleet.detail.fuelNotAdded"), apiErrorMessage(err, t("fleet.detail.fuelFailed")));
     },
   });
 
@@ -122,11 +124,11 @@ export default function FleetVehicleDetailPage() {
     onSuccess: () => {
       setError(null);
       invalidate();
-      toast.success("Service schedule added");
+      toast.success(t("fleet.detail.serviceAdded"));
     },
     onError: (err: unknown) => {
-      setError("Could not create service schedule.");
-      toast.error("Service schedule not added", apiErrorMessage(err, "Could not create service schedule."));
+      setError(t("fleet.detail.serviceFailed"));
+      toast.error(t("fleet.detail.serviceNotAdded"), apiErrorMessage(err, t("fleet.detail.serviceFailed")));
     },
   });
 
@@ -138,13 +140,13 @@ export default function FleetVehicleDetailPage() {
       }),
     onSuccess: () => {
       setError(null);
-      setGpsToast("Last-known GPS saved (manual override).");
+      setGpsToast(t("fleet.detail.gpsSavedManual"));
       invalidate();
-      toast.success("GPS location saved");
+      toast.success(t("fleet.detail.gpsSaved"));
     },
     onError: (err: unknown) => {
-      setError("Could not save GPS location.");
-      toast.error("GPS location not saved", apiErrorMessage(err, "Could not save GPS location."));
+      setError(t("fleet.detail.gpsFailed"));
+      toast.error(t("fleet.detail.gpsNotSaved"), apiErrorMessage(err, t("fleet.detail.gpsFailed")));
     },
   });
 
@@ -155,13 +157,13 @@ export default function FleetVehicleDetailPage() {
       }),
     onSuccess: () => {
       setError(null);
-      setGpsToast("Telematics device mapping saved.");
+      setGpsToast(t("fleet.detail.telematicsMapped"));
       invalidate();
-      toast.success("Telematics device saved");
+      toast.success(t("fleet.detail.telematicsSaved"));
     },
     onError: (err: unknown) => {
-      setError("Could not save telematics device id.");
-      toast.error("Telematics device not saved", apiErrorMessage(err, "Could not save telematics device id."));
+      setError(t("fleet.detail.telematicsFailed"));
+      toast.error(t("fleet.detail.telematicsNotSaved"), apiErrorMessage(err, t("fleet.detail.telematicsFailed")));
     },
   });
 
@@ -171,19 +173,19 @@ export default function FleetVehicleDetailPage() {
       : null;
 
   const providerLabel = telematics?.enabled
-    ? `Provider: ${telematics.driver}`
-    : "Provider: disabled (manual stub)";
+    ? t("fleet.detail.provider", { driver: telematics.driver })
+    : t("fleet.detail.providerDisabled");
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title={vehicle ? `${vehicle.asset_code} — ${vehicle.name}` : "Fleet vehicle"}
-        subtitle="Trip / mileage, fuel, service due, GPS, and telematics mapping for this Fixed Asset vehicle."
+        title={vehicle ? `${vehicle.asset_code} — ${vehicle.name}` : t("fleet.detail.title")}
+        subtitle={t("fleet.detail.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Fleet", href: "/fleet" },
-              { label: vehicle?.asset_code ?? "Vehicle" },
+              { label: t("fleet.title"), href: "/fleet" },
+              { label: vehicle?.asset_code ?? t("fleet.col.vehicle") },
             ]}
           />
         }
@@ -193,37 +195,37 @@ export default function FleetVehicleDetailPage() {
       {gpsToast && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{gpsToast}</div>
       )}
-      {detailQuery.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
+      {detailQuery.isLoading && <p className="text-sm text-neutral-500">{t("common.loading")}</p>}
 
       {data && (
         <>
           <section className="card space-y-3 p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <h2 className="font-semibold">GPS & telematics</h2>
+                <h2 className="font-semibold">{t("fleet.detail.gpsTelematics")}</h2>
                 <p className="mt-0.5 text-xs text-neutral-500">
                   {providerLabel}
-                  {telematics?.webhook_configured ? " · webhook configured" : ""}
-                  {telematics?.schedule_enabled ? " · scheduled sync on" : ""}
+                  {telematics?.webhook_configured ? ` · ${t("fleet.detail.webhookConfigured")}` : ""}
+                  {telematics?.schedule_enabled ? ` · ${t("fleet.detail.scheduledSync")}` : ""}
                 </p>
               </div>
               <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-600">
-                {telematics?.enabled ? telematics.driver : "Stub / manual"}
+                {telematics?.enabled ? telematics.driver : t("fleet.detail.stubManual")}
               </span>
             </div>
             {vehicle?.gps_lat != null && vehicle?.gps_lng != null ? (
               <p className="text-sm text-neutral-700">
-                Current:{" "}
+                {t("fleet.detail.current")}{" "}
                 <span className="font-mono">
                   {Number(vehicle.gps_lat).toFixed(5)}, {Number(vehicle.gps_lng).toFixed(5)}
                 </span>
                 {vehicle.gps_recorded_at ? (
-                  <span className="text-neutral-500"> · recorded {String(vehicle.gps_recorded_at).slice(0, 19).replace("T", " ")}</span>
+                  <span className="text-neutral-500"> · {t("fleet.detail.recorded", { time: String(vehicle.gps_recorded_at).slice(0, 19).replace("T", " ") })}</span>
                 ) : null}
                 {vehicle.telematics_synced_at ? (
                   <span className="text-neutral-500">
                     {" "}
-                    · last sync {String(vehicle.telematics_synced_at).slice(0, 19).replace("T", " ")}
+                    · {t("fleet.detail.lastSync", { time: String(vehicle.telematics_synced_at).slice(0, 19).replace("T", " ") })}
                     {vehicle.telematics_sync_status ? ` (${vehicle.telematics_sync_status})` : ""}
                   </span>
                 ) : null}
@@ -232,21 +234,21 @@ export default function FleetVehicleDetailPage() {
                     {" "}
                     ·{" "}
                     <a href={mapsHref} target="_blank" rel="noreferrer" className="btn-secondary text-xs">
-                      Open map
+                      {t("fleet.detail.openMap")}
                     </a>
                   </>
                 ) : null}
               </p>
             ) : (
-              <p className="text-sm text-neutral-500">No last-known location recorded yet.</p>
+              <p className="text-sm text-neutral-500">{t("fleet.detail.noLocation")}</p>
             )}
             {vehicle?.telematics_sync_error ? (
-              <p className="text-xs text-red-700">Last sync error: {vehicle.telematics_sync_error}</p>
+              <p className="text-xs text-red-700">{t("fleet.detail.syncError", { error: String(vehicle.telematics_sync_error) })}</p>
             ) : null}
             <div className="grid gap-2 sm:grid-cols-3">
               <input
                 className="input sm:col-span-1"
-                placeholder="Telematics device id"
+                placeholder={t("fleet.detail.deviceId")}
                 value={deviceId}
                 onChange={(e) => setDeviceId(e.target.value)}
               />
@@ -256,23 +258,23 @@ export default function FleetVehicleDetailPage() {
                 disabled={updateTelematics.isPending}
                 onClick={() => updateTelematics.mutate()}
               >
-                {updateTelematics.isPending ? "Saving…" : "Save device id"}
+                {updateTelematics.isPending ? t("correspondence.saving") : t("fleet.detail.saveDeviceId")}
               </button>
             </div>
             <p className="text-xs text-neutral-500">
-              Manual coordinates remain editable when the provider is disabled, or as an override.
+              {t("fleet.detail.manualHint")}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
               <input
                 className="input"
-                placeholder="Latitude (e.g. -22.5609)"
+                placeholder={t("fleet.detail.latitude")}
                 value={gps.lat}
                 onChange={(e) => setGps({ ...gps, lat: e.target.value })}
                 inputMode="decimal"
               />
               <input
                 className="input"
-                placeholder="Longitude (e.g. 17.0658)"
+                placeholder={t("fleet.detail.longitude")}
                 value={gps.lng}
                 onChange={(e) => setGps({ ...gps, lng: e.target.value })}
                 inputMode="decimal"
@@ -284,126 +286,126 @@ export default function FleetVehicleDetailPage() {
               disabled={updateGps.isPending || !gps.lat.trim() || !gps.lng.trim()}
               onClick={() => updateGps.mutate()}
             >
-              {updateGps.isPending ? "Saving…" : "Save last-known GPS"}
+              {updateGps.isPending ? t("correspondence.saving") : t("fleet.detail.saveGps")}
             </button>
           </section>
 
           <div className="grid gap-4 md:grid-cols-3">
             <section className="card space-y-2 p-4">
-              <h2 className="font-semibold">Log trip</h2>
+              <h2 className="font-semibold">{t("fleet.detail.logTrip")}</h2>
               <label htmlFor="trip-started-at" className="block space-y-1">
-                <span className="text-sm font-medium">Started at</span>
+                <span className="text-sm font-medium">{t("fleet.detail.startedAt")}</span>
                 <input id="trip-started-at" className="input w-full" type="datetime-local" value={trip.started_at} onChange={(e) => setTrip({ ...trip, started_at: e.target.value })} />
               </label>
               <label htmlFor="trip-ended-at" className="block space-y-1">
-                <span className="text-sm font-medium">Ended at</span>
+                <span className="text-sm font-medium">{t("fleet.detail.endedAt")}</span>
                 <input id="trip-ended-at" className="input w-full" type="datetime-local" value={trip.ended_at} onChange={(e) => setTrip({ ...trip, ended_at: e.target.value })} />
               </label>
               <label htmlFor="trip-start-odometer" className="block space-y-1">
-                <span className="text-sm font-medium">Start odometer km</span>
-                <input id="trip-start-odometer" className="input w-full" type="number" min="0" placeholder="Start odometer km" value={trip.start_odometer_km} onChange={(e) => setTrip({ ...trip, start_odometer_km: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.detail.startOdometer")}</span>
+                <input id="trip-start-odometer" className="input w-full" type="number" min="0" placeholder={t("fleet.detail.startOdometer")} value={trip.start_odometer_km} onChange={(e) => setTrip({ ...trip, start_odometer_km: e.target.value })} />
               </label>
               <label htmlFor="trip-end-odometer" className="block space-y-1">
-                <span className="text-sm font-medium">End odometer km</span>
-                <input id="trip-end-odometer" className="input w-full" type="number" min="0" placeholder="End odometer km" value={trip.end_odometer_km} onChange={(e) => setTrip({ ...trip, end_odometer_km: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.detail.endOdometer")}</span>
+                <input id="trip-end-odometer" className="input w-full" type="number" min="0" placeholder={t("fleet.detail.endOdometer")} value={trip.end_odometer_km} onChange={(e) => setTrip({ ...trip, end_odometer_km: e.target.value })} />
               </label>
               <label htmlFor="trip-purpose" className="block space-y-1">
-                <span className="text-sm font-medium">Purpose</span>
-                <input id="trip-purpose" className="input w-full" placeholder="Purpose" value={trip.purpose} onChange={(e) => setTrip({ ...trip, purpose: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.col.purpose")}</span>
+                <input id="trip-purpose" className="input w-full" placeholder={t("fleet.col.purpose")} value={trip.purpose} onChange={(e) => setTrip({ ...trip, purpose: e.target.value })} />
               </label>
               <button type="button" className="btn-primary" disabled={createTrip.isPending || !trip.started_at} onClick={() => createTrip.mutate()}>
-                Save trip
+                {t("fleet.detail.saveTrip")}
               </button>
             </section>
 
             <section className="card space-y-2 p-4">
-              <h2 className="font-semibold">Log fuel</h2>
+              <h2 className="font-semibold">{t("fleet.detail.logFuel")}</h2>
               <label htmlFor="fuel-logged-at" className="block space-y-1">
-                <span className="text-sm font-medium">Logged at</span>
+                <span className="text-sm font-medium">{t("fleet.detail.loggedAt")}</span>
                 <input id="fuel-logged-at" className="input w-full" type="datetime-local" value={fuel.logged_at} onChange={(e) => setFuel({ ...fuel, logged_at: e.target.value })} />
               </label>
               <label htmlFor="fuel-litres" className="block space-y-1">
-                <span className="text-sm font-medium">Litres</span>
-                <input id="fuel-litres" className="input w-full" type="number" min="0" placeholder="Litres" value={fuel.litres} onChange={(e) => setFuel({ ...fuel, litres: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.detail.litres")}</span>
+                <input id="fuel-litres" className="input w-full" type="number" min="0" placeholder={t("fleet.detail.litres")} value={fuel.litres} onChange={(e) => setFuel({ ...fuel, litres: e.target.value })} />
               </label>
               <label htmlFor="fuel-cost" className="block space-y-1">
-                <span className="text-sm font-medium">Cost (NAD)</span>
-                <input id="fuel-cost" className="input w-full" type="number" min="0" placeholder="Cost (NAD)" value={fuel.cost_amount} onChange={(e) => setFuel({ ...fuel, cost_amount: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.detail.cost")}</span>
+                <input id="fuel-cost" className="input w-full" type="number" min="0" placeholder={t("fleet.detail.cost")} value={fuel.cost_amount} onChange={(e) => setFuel({ ...fuel, cost_amount: e.target.value })} />
               </label>
               <label htmlFor="fuel-odometer" className="block space-y-1">
-                <span className="text-sm font-medium">Odometer km</span>
-                <input id="fuel-odometer" className="input w-full" type="number" min="0" placeholder="Odometer km" value={fuel.odometer_km} onChange={(e) => setFuel({ ...fuel, odometer_km: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.detail.odometer")}</span>
+                <input id="fuel-odometer" className="input w-full" type="number" min="0" placeholder={t("fleet.detail.odometer")} value={fuel.odometer_km} onChange={(e) => setFuel({ ...fuel, odometer_km: e.target.value })} />
               </label>
               <label htmlFor="fuel-station" className="block space-y-1">
-                <span className="text-sm font-medium">Station</span>
-                <input id="fuel-station" className="input w-full" placeholder="Station" value={fuel.station} onChange={(e) => setFuel({ ...fuel, station: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.detail.station")}</span>
+                <input id="fuel-station" className="input w-full" placeholder={t("fleet.detail.station")} value={fuel.station} onChange={(e) => setFuel({ ...fuel, station: e.target.value })} />
               </label>
               <button type="button" className="btn-primary" disabled={createFuel.isPending || !fuel.logged_at || !fuel.litres} onClick={() => createFuel.mutate()}>
-                Save fuel
+                {t("fleet.detail.saveFuel")}
               </button>
             </section>
 
             <section className="card space-y-2 p-4">
-              <h2 className="font-semibold">Service schedule</h2>
+              <h2 className="font-semibold">{t("fleet.detail.serviceSchedule")}</h2>
               <label htmlFor="service-type" className="block space-y-1">
-                <span className="text-sm font-medium">Service type</span>
-                <input id="service-type" className="input w-full" placeholder="Service type" value={service.service_type} onChange={(e) => setService({ ...service, service_type: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.detail.serviceType")}</span>
+                <input id="service-type" className="input w-full" placeholder={t("fleet.detail.serviceType")} value={service.service_type} onChange={(e) => setService({ ...service, service_type: e.target.value })} />
               </label>
               <label htmlFor="service-interval-km" className="block space-y-1">
-                <span className="text-sm font-medium">Interval km</span>
-                <input id="service-interval-km" className="input w-full" type="number" min="0" placeholder="Interval km" value={service.interval_km} onChange={(e) => setService({ ...service, interval_km: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.detail.intervalKm")}</span>
+                <input id="service-interval-km" className="input w-full" type="number" min="0" placeholder={t("fleet.detail.intervalKm")} value={service.interval_km} onChange={(e) => setService({ ...service, interval_km: e.target.value })} />
               </label>
               <label htmlFor="service-interval-days" className="block space-y-1">
-                <span className="text-sm font-medium">Interval days</span>
-                <input id="service-interval-days" className="input w-full" type="number" min="0" placeholder="Interval days" value={service.interval_days} onChange={(e) => setService({ ...service, interval_days: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.detail.intervalDays")}</span>
+                <input id="service-interval-days" className="input w-full" type="number" min="0" placeholder={t("fleet.detail.intervalDays")} value={service.interval_days} onChange={(e) => setService({ ...service, interval_days: e.target.value })} />
               </label>
               <label htmlFor="service-last-service-at" className="block space-y-1">
-                <span className="text-sm font-medium">Last service date</span>
+                <span className="text-sm font-medium">{t("fleet.detail.lastServiceDate")}</span>
                 <input id="service-last-service-at" className="input w-full" type="date" value={service.last_service_at} onChange={(e) => setService({ ...service, last_service_at: e.target.value })} />
               </label>
               <label htmlFor="service-last-odometer" className="block space-y-1">
-                <span className="text-sm font-medium">Last service odometer</span>
-                <input id="service-last-odometer" className="input w-full" type="number" min="0" placeholder="Last service odometer" value={service.last_service_odometer_km} onChange={(e) => setService({ ...service, last_service_odometer_km: e.target.value })} />
+                <span className="text-sm font-medium">{t("fleet.detail.lastServiceOdometer")}</span>
+                <input id="service-last-odometer" className="input w-full" type="number" min="0" placeholder={t("fleet.detail.lastServiceOdometer")} value={service.last_service_odometer_km} onChange={(e) => setService({ ...service, last_service_odometer_km: e.target.value })} />
               </label>
               <button type="button" className="btn-primary" disabled={createService.isPending} onClick={() => createService.mutate()}>
-                Save schedule
+                {t("fleet.detail.saveSchedule")}
               </button>
             </section>
           </div>
 
           <section className="card p-4">
-            <h2 className="mb-2 font-semibold">Recent trips</h2>
+            <h2 className="mb-2 font-semibold">{t("fleet.detail.recentTrips")}</h2>
             <ul className="space-y-1 text-sm">
-              {data.trips.map((t) => (
-                <li key={t.id}>
-                  {t.started_at} — {t.purpose || "Trip"} ({t.distance_km ?? "?"} km)
+              {data.trips.map((tr) => (
+                <li key={tr.id}>
+                  {t("fleet.detail.tripRow", { start: String(tr.started_at), purpose: tr.purpose || t("fleet.detail.trip"), km: String(tr.distance_km ?? "?") })}
                 </li>
               ))}
-              {data.trips.length === 0 && <li className="text-neutral-500">No trips yet.</li>}
+              {data.trips.length === 0 && <li className="text-neutral-500">{t("fleet.detail.noTrips")}</li>}
             </ul>
           </section>
 
           <section className="card p-4">
-            <h2 className="mb-2 font-semibold">Fuel logs</h2>
+            <h2 className="mb-2 font-semibold">{t("fleet.detail.fuelLogs")}</h2>
             <ul className="space-y-1 text-sm">
               {data.fuel_logs.map((f) => (
                 <li key={f.id}>
                   {f.logged_at} — {f.litres} L {f.station ? `@ ${f.station}` : ""}
                 </li>
               ))}
-              {data.fuel_logs.length === 0 && <li className="text-neutral-500">No fuel logs yet.</li>}
+              {data.fuel_logs.length === 0 && <li className="text-neutral-500">{t("fleet.detail.noFuel")}</li>}
             </ul>
           </section>
 
           <section className="card p-4">
-            <h2 className="mb-2 font-semibold">Service due</h2>
+            <h2 className="mb-2 font-semibold">{t("fleet.detail.serviceDue")}</h2>
             <ul className="space-y-1 text-sm">
               {data.service_schedules.map((s) => (
                 <li key={s.id}>
-                  {s.service_type}: next {s.next_due_at || "—"} / {s.next_due_odometer_km ?? "—"} km
+                  {t("fleet.detail.serviceRow", { type: s.service_type, date: s.next_due_at || "—", km: String(s.next_due_odometer_km ?? "—") })}
                 </li>
               ))}
-              {data.service_schedules.length === 0 && <li className="text-neutral-500">No service schedules yet.</li>}
+              {data.service_schedules.length === 0 && <li className="text-neutral-500">{t("fleet.detail.noService")}</li>}
             </ul>
           </section>
         </>

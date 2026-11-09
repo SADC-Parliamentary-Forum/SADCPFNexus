@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Schedule = {
   id: number;
@@ -20,6 +21,7 @@ type Schedule = {
 };
 
 export default function WorkSchedulesPage() {
+  const { t } = useI18n();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [expected, setExpected] = useState<{ expected_hours: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export default function WorkSchedulesPage() {
       );
       setExpected((exp.data as any).data ?? null);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load schedules");
+      setError(e instanceof Error ? e.message : t("hr.timesheets.schedules.loadFailed"));
     }
   }, []);
 
@@ -48,11 +50,11 @@ export default function WorkSchedulesPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Work Schedules"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Work Schedules" }]} />}
+        title="hr.timesheets.schedules.title"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "hr.timesheets.schedules.title" }]} />}
       />
         <Link href="/hr/timesheets" className="btn-secondary text-sm py-1 px-2">
-          Timesheets
+          {t("nav.timesheets")}
         </Link>
       </div>
 
@@ -60,7 +62,7 @@ export default function WorkSchedulesPage() {
 
       {expected && (
         <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
-          <div className="text-sm text-[var(--text-secondary)]">Expected hours this week</div>
+          <div className="text-sm text-[var(--text-secondary)]">{t("hr.timesheets.schedules.expectedThisWeek")}</div>
           <div className="text-3xl font-semibold">{expected.expected_hours}</div>
         </div>
       )}
@@ -68,8 +70,8 @@ export default function WorkSchedulesPage() {
       {schedules.length === 0 ? (
         <EmptyState
           icon="calendar_clock"
-          title="No schedules yet."
-          description="The API will seed the standard office schedule on first expected-hours request."
+          title={t("hr.timesheets.schedules.empty")}
+          description={t("hr.timesheets.schedules.emptyHint")}
         />
       ) : (
       <ul className="space-y-3">
@@ -77,13 +79,13 @@ export default function WorkSchedulesPage() {
           <li key={s.id} className="rounded-lg border border-[var(--border)] p-4">
             <div className="flex items-center justify-between">
               <div className="font-medium">
-                {s.name} {s.is_default ? <span className="text-xs text-[var(--text-secondary)]">(default)</span> : null}
+                {s.name} {s.is_default ? <span className="text-xs text-[var(--text-secondary)]">{t("hr.timesheets.schedules.default")}</span> : null}
               </div>
-              <div className="text-sm text-[var(--text-secondary)]">{s.ordinary_hours_per_day}h / day</div>
+              <div className="text-sm text-[var(--text-secondary)]">{t("hr.timesheets.schedules.perDay", { hours: s.ordinary_hours_per_day })}</div>
             </div>
             <div className="mt-1 text-sm text-[var(--text-secondary)]">
               {s.start_time?.slice(0, 5)}–{s.end_time?.slice(0, 5)}
-              {s.lunch_start ? ` · lunch ${s.lunch_start.slice(0, 5)}–${s.lunch_end?.slice(0, 5)}` : ""}
+              {s.lunch_start ? t("hr.timesheets.schedules.lunch", { start: s.lunch_start.slice(0, 5), end: s.lunch_end?.slice(0, 5) ?? "" }) : ""}
             </div>
           </li>
         ))}

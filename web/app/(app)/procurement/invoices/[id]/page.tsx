@@ -10,16 +10,17 @@ import { formatDateShort } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  received: { label: "Received", cls: "text-amber-700 bg-amber-50 border-amber-200",    icon: "inbox"        },
-  matched:  { label: "Matched",  cls: "text-blue-700 bg-blue-50 border-blue-200",        icon: "link"         },
-  approved: { label: "Approved", cls: "text-green-700 bg-green-50 border-green-200",     icon: "check_circle" },
-  approved_for_payment: { label: "Approved", cls: "text-green-700 bg-green-50 border-green-200", icon: "check_circle" },
-  proforma_submitted: { label: "Proforma Submitted", cls: "text-blue-700 bg-blue-50 border-blue-200", icon: "receipt_long" },
-  final_invoice_submitted: { label: "Final Submitted", cls: "text-teal-700 bg-teal-50 border-teal-200", icon: "task_alt" },
-  rejected: { label: "Rejected", cls: "text-red-700 bg-red-50 border-red-200",           icon: "cancel"       },
-  paid:     { label: "Paid",     cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "payments"  },
+  received: { label: "procurement.invoiceStatus.received", cls: "text-amber-700 bg-amber-50 border-amber-200",    icon: "inbox"        },
+  matched:  { label: "procurement.invoiceStatus.matched", cls: "text-blue-700 bg-blue-50 border-blue-200",        icon: "link"         },
+  approved: { label: "status.approved", cls: "text-green-700 bg-green-50 border-green-200",     icon: "check_circle" },
+  approved_for_payment: { label: "status.approved", cls: "text-green-700 bg-green-50 border-green-200", icon: "check_circle" },
+  proforma_submitted: { label: "procurement.invoiceStatus.proformaSubmitted", cls: "text-blue-700 bg-blue-50 border-blue-200", icon: "receipt_long" },
+  final_invoice_submitted: { label: "procurement.invoiceStatus.finalSubmitted", cls: "text-teal-700 bg-teal-50 border-teal-200", icon: "task_alt" },
+  rejected: { label: "status.rejected", cls: "text-red-700 bg-red-50 border-red-200",           icon: "cancel"       },
+  paid:     { label: "procurement.invoiceStatus.paid", cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "payments"  },
 };
 
 function getStoredUser() {
@@ -37,6 +38,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const invId       = Number(id);
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason]       = useState("");
@@ -59,10 +61,10 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     mutationFn: () => invoicesApi.approve(invId),
     onSuccess:  () => {
       queryClient.invalidateQueries({ queryKey: ["invoice", invId] });
-      toast.success("Invoice approved");
+      toast.success(t("procurement.invoice.approved"));
     },
     onError: (e: unknown) => {
-      toast.error("Could not approve invoice", apiErrorMessage(e, "Failed to approve the invoice."));
+      toast.error(t("procurement.invoice.approveFailedTitle"), apiErrorMessage(e, t("procurement.invoice.approveFailed")));
     },
   });
 
@@ -71,12 +73,12 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoice", invId] });
       setShowRejectModal(false);
-      toast.success("Invoice rejected");
+      toast.success(t("procurement.invoice.rejected"));
     },
     onError: (e: unknown) => {
-      const message = apiErrorMessage(e, "Failed to reject.");
+      const message = apiErrorMessage(e, t("procurement.invoice.rejectFailed"));
       setRejectError(message);
-      toast.error("Could not reject invoice", message);
+      toast.error(t("procurement.invoice.rejectFailedTitle"), message);
     },
   });
 
@@ -84,10 +86,10 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     mutationFn: () => invoicesApi.markPaid(invId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoice", invId] });
-      toast.success("Invoice marked as paid");
+      toast.success(t("procurement.invoice.markedPaid"));
     },
     onError: (e: unknown) => {
-      toast.error("Could not mark invoice as paid", apiErrorMessage(e, "Failed to mark the invoice as paid."));
+      toast.error(t("procurement.invoice.markPaidFailedTitle"), apiErrorMessage(e, t("procurement.invoice.markPaidFailed")));
     },
   });
 
@@ -104,8 +106,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   if (isError || !inv) return (
     <div className="w-full min-w-0 card p-8 text-center space-y-3">
       <span className="material-symbols-outlined text-4xl text-neutral-300">error</span>
-      <p className="text-sm text-neutral-500">Invoice not found.</p>
-      <Link href="/procurement/invoices" className="btn-secondary inline-flex items-center gap-1.5 text-sm py-2 px-4">Back</Link>
+      <p className="text-sm text-neutral-500">{t("procurement.invoice.notFound")}</p>
+      <Link href="/procurement/invoices" className="btn-secondary inline-flex items-center gap-1.5 text-sm py-2 px-4">{t("common.back")}</Link>
     </div>
   );
 
@@ -115,10 +117,10 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const matchPO = inv.purchase_order?.total_amount ? Number(inv.purchase_order.total_amount) : null;
 
   const matchIndicator = {
-    pending:  { label: "Pending",        icon: "hourglass_empty", bg: "bg-neutral-50",  text: "text-neutral-500",  border: "border-neutral-200" },
-    matched:  { label: "Match Passed",   icon: "check_circle",    bg: "bg-green-50",    text: "text-green-700",    border: "border-green-200"   },
-    variance: { label: "Variance Found", icon: "warning",         bg: "bg-amber-50",    text: "text-amber-700",    border: "border-amber-200"   },
-  }[inv.match_status] ?? { label: "Unknown", icon: "help", bg: "bg-neutral-50", text: "text-neutral-500", border: "border-neutral-200" };
+    pending:  { label: t("status.pending"), icon: "hourglass_empty", bg: "bg-neutral-50",  text: "text-neutral-500",  border: "border-neutral-200" },
+    matched:  { label: t("procurement.invoice.matchPassed"), icon: "check_circle",    bg: "bg-green-50",    text: "text-green-700",    border: "border-green-200"   },
+    variance: { label: t("procurement.invoice.varianceFound"), icon: "warning",         bg: "bg-amber-50",    text: "text-amber-700",    border: "border-amber-200"   },
+  }[inv.match_status] ?? { label: t("procurement.invoice.unknown"), icon: "help", bg: "bg-neutral-50", text: "text-neutral-500", border: "border-neutral-200" };
 
   return (
     <div className="w-full min-w-0 space-y-5">
@@ -126,14 +128,14 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       <div className="flex gap-1 border-b border-neutral-200">
         {(["details", "documents"] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors -mb-px ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
-            {tab === "documents" ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}` : "Details"}
+            {tab === "documents" ? (attachments.length > 0 ? t("procurement.tab.documentsCount", { count: attachments.length }) : t("procurement.tab.documents")) : t("procurement.tab.details")}
           </button>
         ))}
       </div>
 
       {activeTab === "documents" && (
         <div className="card p-6">
-          <h2 className="text-sm font-semibold text-neutral-800 mb-5">Invoice Documents</h2>
+          <h2 className="text-sm font-semibold text-neutral-800 mb-5">{t("procurement.invoice.documents")}</h2>
           <GenericDocumentsPanel
             documents={attachments}
             documentTypes={INVOICE_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
@@ -145,18 +147,18 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               try {
                 const r = await invoiceAttachmentsApi.upload(invId, file, type);
                 setAttachments((p) => [r.data.data, ...p]);
-                toast.success("Document uploaded");
+                toast.success(t("procurement.doc.uploaded"));
               } catch (err) {
-                toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload the document."));
+                toast.error(t("procurement.doc.notUploaded"), apiErrorMessage(err, t("procurement.doc.uploadFailed")));
               } finally { setUploading(false); }
             }}
             onDelete={async (id) => {
               try {
                 await invoiceAttachmentsApi.delete(invId, id);
                 setAttachments((p) => p.filter((a) => a.id !== id));
-                toast.success("Document deleted");
+                toast.success(t("procurement.doc.deleted"));
               } catch (err) {
-                toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete the document."));
+                toast.error(t("procurement.doc.notDeleted"), apiErrorMessage(err, t("procurement.doc.deleteFailed")));
               }
             }}
             downloadUrl={(id) => invoiceAttachmentsApi.downloadUrl(invId, id)}
@@ -166,11 +168,11 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
       {activeTab === "details" && <>
       <ProcurementPageHeader
-        title="Invoice"
+        title={t("procurement.invoice.title")}
         subtitle={inv.reference_number}
         crumbs={[
           { label: "nav.procurement", href: "/procurement" },
-          { label: "Invoices", href: "/procurement/invoices" },
+          { label: t("procurement.invoices.title"), href: "/procurement/invoices" },
           { label: inv.reference_number },
         ]}
       />
@@ -179,12 +181,12 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       <div className="card p-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <p className="text-xs text-neutral-400">Vendor ref: <span className="font-mono">{inv.vendor_invoice_number}</span></p>
+            <p className="text-xs text-neutral-400">{t("procurement.invoice.vendorRef")} <span className="font-mono">{inv.vendor_invoice_number}</span></p>
           </div>
           <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
-              {s.label}
+              {t(s.label)}
             </span>
             {canApprove && (
               <>
@@ -194,14 +196,14 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
                 >
                   <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                  {approveMutation.isPending ? "Approving…" : "Approve"}
+                  {approveMutation.isPending ? t("procurement.approving") : t("common.approve")}
                 </button>
                 <button
                   onClick={() => setShowRejectModal(true)}
                   className="inline-flex items-center gap-1 text-xs text-red-600 border border-red-200 rounded-full px-3 py-1 bg-red-50 hover:bg-red-100 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[12px]">cancel</span>
-                  Reject
+                  {t("common.reject")}
                 </button>
               </>
             )}
@@ -212,7 +214,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
               >
                 <span className="material-symbols-outlined text-[14px]">payments</span>
-                {markPaidMutation.isPending ? "Recording..." : "Mark Paid"}
+                {markPaidMutation.isPending ? t("procurement.invoice.recording") : t("procurement.invoice.markPaid")}
               </button>
             )}
           </div>
@@ -220,10 +222,10 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
           {[
-            { label: "Vendor",        icon: "storefront",      value: inv.vendor?.name ?? "—"                            },
-            { label: "Currency",      icon: "currency_exchange",value: inv.currency                                       },
-            { label: "Invoice Date",  icon: "calendar_today",  value: inv.invoice_date ? formatDateShort(inv.invoice_date) : "—" },
-            { label: "Due Date",      icon: "event",           value: inv.due_date     ? formatDateShort(inv.due_date)     : "—" },
+            { label: t("procurement.col.vendor"), icon: "storefront",      value: inv.vendor?.name ?? "—"                            },
+            { label: t("procurement.col.currency"), icon: "currency_exchange",value: inv.currency                                       },
+            { label: t("procurement.invoice.invoiceDate"), icon: "calendar_today",  value: inv.invoice_date ? formatDateShort(inv.invoice_date) : "—" },
+            { label: t("procurement.invoice.dueDate"), icon: "event",           value: inv.due_date     ? formatDateShort(inv.due_date)     : "—" },
           ].map((row) => (
             <div key={row.label}>
               <div className="flex items-center gap-1.5 mb-1">
@@ -239,7 +241,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
           <div className="mt-4 pt-4 border-t border-neutral-50">
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[13px] text-red-400">cancel</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Rejection Reason</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("procurement.invoice.rejectionReason")}</p>
             </div>
             <p className="text-sm text-red-700">{inv.rejection_reason}</p>
           </div>
@@ -250,13 +252,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       <div className={`card p-5 border ${matchIndicator.border} ${matchIndicator.bg}`}>
         <div className="flex items-center gap-2 mb-4">
           <span className={`material-symbols-outlined text-[20px] ${matchIndicator.text}`}>{matchIndicator.icon}</span>
-          <h3 className={`text-sm font-bold ${matchIndicator.text}`}>3-Way Match — {matchIndicator.label}</h3>
+          <h3 className={`text-sm font-bold ${matchIndicator.text}`}>{t("procurement.invoice.threeWay", { status: matchIndicator.label })}</h3>
         </div>
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "PO Total",      value: matchPO != null ? `${inv.purchase_order?.currency} ${matchPO.toLocaleString()}` : "—", icon: "receipt_long"  },
-            { label: "Invoice Amount",value: `${inv.currency} ${Number(inv.amount).toLocaleString()}`,                               icon: "request_quote" },
-            { label: "GRN Status",    value: inv.goods_receipt_note ? (inv.goods_receipt_note.status ?? "—") : "No GRN linked",      icon: "inventory_2"   },
+            { label: t("procurement.invoice.poTotal"), value: matchPO != null ? `${inv.purchase_order?.currency} ${matchPO.toLocaleString()}` : "—", icon: "receipt_long"  },
+            { label: t("procurement.invoice.amount"), value: `${inv.currency} ${Number(inv.amount).toLocaleString()}`,                               icon: "request_quote" },
+            { label: t("procurement.invoice.grnStatus"), value: inv.goods_receipt_note ? (inv.goods_receipt_note.status ?? "—") : t("procurement.invoice.noGrn"),      icon: "inventory_2"   },
           ].map((col) => (
             <div key={col.label} className="text-center">
               <span className={`material-symbols-outlined text-[20px] ${matchIndicator.text} mb-1 block`}>{col.icon}</span>
@@ -272,13 +274,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Linked documents */}
       <div className="card p-5 space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Linked Documents</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("procurement.invoice.linkedDocuments")}</h3>
         <div className="grid grid-cols-2 gap-3">
           {/* PO link */}
           <div className="rounded-lg border border-neutral-100 p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[14px] text-neutral-400">receipt_long</span>
-              <p className="text-[11px] font-semibold uppercase text-neutral-400">Purchase Order</p>
+              <p className="text-[11px] font-semibold uppercase text-neutral-400">{t("procurement.purchaseOrder")}</p>
             </div>
             {inv.purchase_order ? (
               <Link href={`/procurement/purchase-orders/${inv.purchase_order_id}`} className="btn-secondary font-mono text-xs">
@@ -291,27 +293,28 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
           <div className="rounded-lg border border-neutral-100 p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[14px] text-neutral-400">inventory_2</span>
-              <p className="text-[11px] font-semibold uppercase text-neutral-400">Goods Receipt Note</p>
+              <p className="text-[11px] font-semibold uppercase text-neutral-400">{t("procurement.goodsReceiptNote")}</p>
             </div>
             {inv.goods_receipt_note ? (
               <Link href={`/procurement/receipts/${inv.goods_receipt_note_id}?po=${inv.purchase_order_id}`} className="btn-secondary font-mono text-xs">
                 {inv.goods_receipt_note.reference_number}
               </Link>
-            ) : <span className="text-xs text-neutral-400">Not linked</span>}
+            ) : <span className="text-xs text-neutral-400">{t("procurement.invoice.notLinked")}</span>}
           </div>
         </div>
       </div>
 
       {inv.reviewed_by && (
         <div className="text-xs text-neutral-400 text-right">
-          Reviewed by {inv.reviewed_by.name}
-          {inv.reviewed_at ? ` on ${formatDateShort(inv.reviewed_at)}` : ""}
+          {inv.reviewed_at
+            ? t("procurement.invoice.reviewedByOn", { name: inv.reviewed_by.name, date: formatDateShort(inv.reviewed_at) })
+            : t("procurement.invoice.reviewedBy", { name: inv.reviewed_by.name })}
         </div>
       )}
 
       <Link href="/procurement/invoices" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-        Back to Invoices
+        {t("procurement.invoice.backToInvoices")}
       </Link>
       </> /* end details tab */}
 
@@ -319,22 +322,22 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowRejectModal(false)}>
           <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-base font-bold text-neutral-900">Reject Invoice</h2>
+            <h2 className="text-base font-bold text-neutral-900">{t("procurement.invoice.rejectTitle")}</h2>
             {rejectError && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{rejectError}</div>}
             <textarea
               className="form-input w-full h-24 resize-none"
-              placeholder="Reason for rejection…"
+              placeholder={t("procurement.rejectReasonPlaceholder")}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
             />
             <div className="flex gap-3">
-              <button className="btn-secondary flex-1" onClick={() => setShowRejectModal(false)}>Back</button>
+              <button className="btn-secondary flex-1" onClick={() => setShowRejectModal(false)}>{t("common.back")}</button>
               <button
                 disabled={rejectMutation.isPending || !rejectReason.trim()}
                 onClick={() => rejectMutation.mutate()}
                 className="flex-1 rounded-lg bg-red-600 text-white text-sm font-medium py-2 hover:bg-red-700 disabled:opacity-60 transition-colors"
               >
-                {rejectMutation.isPending ? "Rejecting…" : "Confirm Reject"}
+                {rejectMutation.isPending ? t("procurement.rejecting") : t("procurement.confirmReject")}
               </button>
             </div>
           </div>

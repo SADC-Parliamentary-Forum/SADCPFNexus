@@ -6,10 +6,12 @@ import { vendorsApi, type SupplierDocumentRecord } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: number; canManage: boolean }) {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectRemarks, setRejectRemarks] = useState("");
 
@@ -23,10 +25,10 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor-register-docs", vendorId] });
       queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
-      toast.success("Document verified");
+      toast.success(t("procurement.supplier360.docVerified"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not verify document", apiErrorMessage(err, "Failed to verify the document."));
+      toast.error(t("procurement.supplier360.verifyFailedTitle"), apiErrorMessage(err, t("procurement.supplier360.verifyFailed")));
     },
   });
 
@@ -38,10 +40,10 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
       setRejectRemarks("");
       queryClient.invalidateQueries({ queryKey: ["vendor-register-docs", vendorId] });
       queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
-      toast.success("Document rejected");
+      toast.success(t("procurement.supplier360.docRejected"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not reject document", apiErrorMessage(err, "Failed to reject the document."));
+      toast.error(t("procurement.supplier360.rejectFailedTitle"), apiErrorMessage(err, t("procurement.supplier360.rejectFailed")));
     },
   });
 
@@ -50,13 +52,13 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
   return (
     <div className="card overflow-hidden" data-testid="supplier-register-panel">
       <div className="border-b border-neutral-100 px-5 py-4">
-        <h2 className="text-sm font-semibold text-neutral-800">Document register</h2>
-        <p className="text-xs text-neutral-400">Versioned compliance records with officer verification stamps.</p>
+        <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.supplier360.docRegister")}</h2>
+        <p className="text-xs text-neutral-400">{t("procurement.supplier360.docRegisterHint")}</p>
       </div>
       {docsQuery.isLoading ? (
-        <p className="px-5 py-8 text-sm text-neutral-400">Loading register…</p>
+        <p className="px-5 py-8 text-sm text-neutral-400">{t("procurement.supplier360.loadingRegister")}</p>
       ) : docs.length === 0 ? (
-        <p className="px-5 py-8 text-sm text-neutral-400">No register documents yet.</p>
+        <p className="px-5 py-8 text-sm text-neutral-400">{t("procurement.supplier360.noDocs")}</p>
       ) : (
         <ul className="divide-y divide-neutral-100">
           {docs.map((doc) => (
@@ -65,12 +67,13 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
                 <p className="truncate text-sm font-medium text-neutral-800">{doc.name}</p>
                 <p className="text-xs capitalize text-neutral-500">
                   {doc.type_code.replace(/_/g, " ")} · v{doc.version} · {doc.status.replace(/_/g, " ")}
-                  {doc.expiry_date ? ` · expires ${formatDateShort(doc.expiry_date)}` : ""}
+                  {doc.expiry_date ? ` · ${t("procurement.supplier360.expires", { date: formatDateShort(doc.expiry_date) })}` : ""}
                 </p>
                 {doc.verified_at && (
                   <p className="mt-1 text-xs text-green-700" data-testid="document-verify-stamp">
-                    Verified {formatDateShort(doc.verified_at)}
-                    {doc.verified_by?.name ? ` by ${doc.verified_by.name}` : ""}
+                    {doc.verified_by?.name
+                      ? t("procurement.supplier360.verifiedBy", { date: formatDateShort(doc.verified_at), name: doc.verified_by.name })
+                      : t("procurement.supplier360.verifiedOn", { date: formatDateShort(doc.verified_at) })}
                   </p>
                 )}
               </div>
@@ -79,7 +82,7 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
                   href={vendorsApi.downloadRegisterDocumentUrl(vendorId, doc.id)}
                   className="btn-secondary text-xs py-1 px-2"
                 >
-                  Download
+                  {t("common.download")}
                 </a>
                 {canManage && doc.status === "pending" && (
                   <>
@@ -90,7 +93,7 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
                       disabled={verifyMutation.isPending}
                       onClick={() => verifyMutation.mutate(doc)}
                     >
-                      Verify
+                      {t("procurement.supplier360.verify")}
                     </button>
                     <button
                       type="button"
@@ -100,7 +103,7 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
                         setRejectRemarks("");
                       }}
                     >
-                      Reject
+                      {t("common.reject")}
                     </button>
                   </>
                 )}
@@ -110,7 +113,7 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
                   <textarea
                     className="form-input w-full"
                     rows={2}
-                    placeholder="Rejection remarks"
+                    placeholder={t("procurement.supplier360.rejectionRemarks")}
                     value={rejectRemarks}
                     onChange={(e) => setRejectRemarks(e.target.value)}
                   />
@@ -120,7 +123,7 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
                     disabled={!rejectRemarks.trim() || rejectMutation.isPending}
                     onClick={() => rejectMutation.mutate({ id: doc.id, remarks: rejectRemarks.trim() })}
                   >
-                    Confirm reject
+                    {t("procurement.supplier360.confirmReject")}
                   </button>
                 </div>
               )}
@@ -137,6 +140,7 @@ type ActivityTab = "rfqs" | "quotes" | "pos" | "invoices" | string;
 export function SupplierChangeRequestsPanel({ vendorId, canManage }: { vendorId: number; canManage: boolean }) {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const listQuery = useQuery({
     queryKey: ["vendor-change-requests", vendorId],
     queryFn: () => vendorsApi.changeRequests(vendorId).then((r) => r.data.data),
@@ -146,20 +150,20 @@ export function SupplierChangeRequestsPanel({ vendorId, canManage }: { vendorId:
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor-change-requests", vendorId] });
       queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
-      toast.success("Change request approved");
+      toast.success(t("procurement.supplier360.changeApproved"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not approve change request", apiErrorMessage(err, "Failed to approve the change request."));
+      toast.error(t("procurement.supplier360.changeApproveFailedTitle"), apiErrorMessage(err, t("procurement.supplier360.changeApproveFailed")));
     },
   });
   const rejectMutation = useMutation({
     mutationFn: (id: number) => vendorsApi.rejectChangeRequest(vendorId, id, "Rejected from Supplier 360"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor-change-requests", vendorId] });
-      toast.success("Change request rejected");
+      toast.success(t("procurement.supplier360.changeRejected"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not reject change request", apiErrorMessage(err, "Failed to reject the change request."));
+      toast.error(t("procurement.supplier360.changeRejectFailedTitle"), apiErrorMessage(err, t("procurement.supplier360.changeRejectFailed")));
     },
   });
 
@@ -167,9 +171,9 @@ export function SupplierChangeRequestsPanel({ vendorId, canManage }: { vendorId:
 
   return (
     <div className="card p-6 mt-4" data-testid="supplier-change-requests">
-      <h2 className="mb-3 text-sm font-semibold">Critical-field change requests</h2>
+      <h2 className="mb-3 text-sm font-semibold">{t("procurement.supplier360.changeRequests")}</h2>
       {rows.length === 0 ? (
-        <p className="text-sm text-neutral-500">No pending or historical change requests.</p>
+        <p className="text-sm text-neutral-500">{t("procurement.supplier360.noChangeRequests")}</p>
       ) : (
         <ul className="space-y-2 text-sm">
           {rows.map((row) => {
@@ -179,8 +183,8 @@ export function SupplierChangeRequestsPanel({ vendorId, canManage }: { vendorId:
                 <span>{String(row.field_group ?? "change")} · {String(row.status ?? "")}</span>
                 {canManage && row.status === "pending" && (
                   <span className="flex gap-2">
-                    <button type="button" className="btn-primary text-xs py-1 px-2" onClick={() => approveMutation.mutate(id)}>Approve</button>
-                    <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => rejectMutation.mutate(id)}>Reject</button>
+                    <button type="button" className="btn-primary text-xs py-1 px-2" onClick={() => approveMutation.mutate(id)}>{t("common.approve")}</button>
+                    <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => rejectMutation.mutate(id)}>{t("common.reject")}</button>
                   </span>
                 )}
               </li>
@@ -193,6 +197,7 @@ export function SupplierChangeRequestsPanel({ vendorId, canManage }: { vendorId:
 }
 
 export function SupplierActivityPanel({ vendorId, tab }: { vendorId: number; tab: ActivityTab }) {
+  const { t } = useI18n();
   const activityQuery = useQuery({
     queryKey: ["vendor-activity", vendorId],
     queryFn: () => vendorsApi.activity(vendorId).then((r) => r.data.data),
@@ -209,11 +214,11 @@ export function SupplierActivityPanel({ vendorId, tab }: { vendorId: number; tab
 
   return (
     <div className="card p-6" data-testid={`supplier-360-${tab}`}>
-      <h2 className="mb-3 text-sm font-semibold capitalize">{tab === "pos" ? "Purchase orders" : tab}</h2>
+      <h2 className="mb-3 text-sm font-semibold capitalize">{["rfqs", "quotes", "pos", "invoices"].includes(tab) ? t(`procurement.supplier360.tab.${tab}`) : tab}</h2>
       {activityQuery.isLoading ? (
-        <p className="text-sm text-neutral-400">Loading…</p>
+        <p className="text-sm text-neutral-400">{t("common.loading")}</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-neutral-500">No records in this tab.</p>
+        <p className="text-sm text-neutral-500">{t("procurement.supplier360.noRecords")}</p>
       ) : (
         <ul className="space-y-2 text-sm">
           {rows.map((row, index) => {

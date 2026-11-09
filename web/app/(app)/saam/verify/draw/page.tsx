@@ -7,12 +7,14 @@ import { saamApi } from "@/lib/api";
 import { attachCanvasPassiveFalseTouchListeners } from "@/lib/attachCanvasPassiveFalseTouchListeners";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type SigType = "full" | "initials";
 
 export default function DrawSignaturePage() {
   const { success, error: showErrorToast, info } = useToast();
   const router = useRouter();
+  const { t } = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [sigType, setSigType] = useState<SigType>("full");
   const [isDrawing, setIsDrawing] = useState(false);
@@ -139,7 +141,7 @@ export default function DrawSignaturePage() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     if (!hasStrokes) {
-      setError("Please draw your signature before saving.");
+      setError(t("saam.draw.required"));
       return;
     }
     setSaving(true);
@@ -147,12 +149,12 @@ export default function DrawSignaturePage() {
     try {
       const dataUrl = canvas.toDataURL("image/png");
       await saamApi.draw(sigType, dataUrl);
-      success("Signature saved successfully.");
+      success(t("saam.draw.saved"));
       setTimeout(() => router.push("/saam"), 1000);
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Failed to save signature. Please try again.";
+          ?.message ?? t("saam.draw.saveFailed");
       setError(msg);
     } finally {
       setSaving(false);
@@ -162,13 +164,13 @@ export default function DrawSignaturePage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Draw Your Signature"
-        subtitle="Use your mouse or touch to draw your signature on the canvas below."
+        title={t("saam.draw.title")}
+        subtitle={t("saam.draw.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "SAAM", href: "/saam" },
-              { label: "Draw Signature" },
+              { label: t("saam.drawSignature") },
             ]}
           />
         }
@@ -177,22 +179,22 @@ export default function DrawSignaturePage() {
       {/* Type selector */}
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100">
-          <p className="text-xs font-semibold text-neutral-700 mb-3">Signature Type</p>
+          <p className="text-xs font-semibold text-neutral-700 mb-3">{t("saam.draw.type")}</p>
           <div className="flex gap-2">
-            {(["full", "initials"] as SigType[]).map((t) => (
+            {(["full", "initials"] as SigType[]).map((st) => (
               <button
-                key={t}
-                onClick={() => setSigType(t)}
+                key={st}
+                onClick={() => setSigType(st)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  sigType === t
+                  sigType === st
                     ? "bg-primary text-white"
                     : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                 }`}
               >
                 <span className="material-symbols-outlined text-[15px]">
-                  {t === "full" ? "draw" : "text_fields"}
+                  {st === "full" ? "draw" : "text_fields"}
                 </span>
-                {t === "full" ? "Full Signature" : "Initials"}
+                {st === "full" ? t("saam.sigType.full") : t("saam.sigType.initials")}
               </button>
             ))}
           </div>
@@ -203,7 +205,7 @@ export default function DrawSignaturePage() {
           {/* Toolbar */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-neutral-600">Pen size:</span>
+              <span className="text-xs font-semibold text-neutral-600">{t("saam.draw.penSize")}</span>
               {[1, 2, 3, 5].map((size) => (
                 <button
                   key={size}
@@ -227,7 +229,7 @@ export default function DrawSignaturePage() {
               className="flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-700 transition-colors"
             >
               <span className="material-symbols-outlined text-[15px]">clear</span>
-              Clear
+              {t("saam.draw.clear")}
             </button>
           </div>
 
@@ -248,8 +250,7 @@ export default function DrawSignaturePage() {
 
           {!hasStrokes && (
             <p className="text-xs text-neutral-400 text-center">
-              Draw your{" "}
-              {sigType === "full" ? "full signature" : "initials"} above
+              {sigType === "full" ? t("saam.draw.hintFull") : t("saam.draw.hintInitials")}
             </p>
           )}
         </div>
@@ -272,7 +273,7 @@ export default function DrawSignaturePage() {
       <div className="flex items-center justify-between">
         <Link href="/saam" className="btn-secondary text-sm">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back
+          {t("common.back")}
         </Link>
         <button
           onClick={save}
@@ -286,7 +287,7 @@ export default function DrawSignaturePage() {
           ) : (
             <span className="material-symbols-outlined text-[16px]">save</span>
           )}
-          {saving ? "Saving…" : "Save Signature"}
+          {saving ? t("organogram.saving") : t("saam.draw.save")}
         </button>
       </div>
     </div>

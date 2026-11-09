@@ -2,11 +2,18 @@
 
 import Link from "next/link";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+const BADGE_KEYS: Record<string, string> = {
+  Core: "settings.hr.home.badge.core",
+  "Phase 2": "settings.hr.home.badge.phase2",
+  "Phase 3": "settings.hr.home.badge.phase3",
+};
 
 const settingsLinks = [
   {
-    title: "Position Grades",
-    description: "Define grade bands, employment categories, leave entitlements, and eligibility rules.",
+    title: "settings.hr.home.gradeBands.title",
+    description: "settings.hr.home.gradeBands.description",
     href: "/settings/hr/grade-bands",
     icon: "grade",
     color: "text-primary",
@@ -15,8 +22,8 @@ const settingsLinks = [
     badge: "Core",
   },
   {
-    title: "Salary Scales",
-    description: "Configure notch-based salary scales linked to each grade band with effective dates.",
+    title: "settings.hr.home.salaryScales.title",
+    description: "settings.hr.home.salaryScales.description",
     href: "/settings/hr/salary-scales",
     icon: "payments",
     color: "text-green-600",
@@ -25,8 +32,8 @@ const settingsLinks = [
     badge: "Core",
   },
   {
-    title: "Job Families",
-    description: "Group positions into functional families such as Finance, ICT, and Parliamentary Affairs.",
+    title: "settings.hr.home.jobFamilies.title",
+    description: "settings.hr.home.jobFamilies.description",
     href: "/settings/hr/job-families",
     icon: "category",
     color: "text-violet-600",
@@ -35,8 +42,8 @@ const settingsLinks = [
     badge: null,
   },
   {
-    title: "Contract Types",
-    description: "Define contract templates — permanent, fixed-term, temporary, consultancy.",
+    title: "settings.hr.home.contractTypes.title",
+    description: "settings.hr.home.contractTypes.description",
     href: "/settings/hr/contract-types",
     icon: "description",
     color: "text-amber-600",
@@ -45,8 +52,8 @@ const settingsLinks = [
     badge: "Phase 2",
   },
   {
-    title: "Leave Profiles",
-    description: "Set leave day entitlements by grade category for each leave type.",
+    title: "settings.hr.home.leaveProfiles.title",
+    description: "settings.hr.home.leaveProfiles.description",
     href: "/settings/hr/leave-profiles",
     icon: "event_available",
     color: "text-teal-600",
@@ -55,8 +62,8 @@ const settingsLinks = [
     badge: "Phase 2",
   },
   {
-    title: "Allowance Profiles",
-    description: "Configure transport, housing, communication, and subsistence allowance rules.",
+    title: "settings.hr.home.allowanceProfiles.title",
+    description: "settings.hr.home.allowanceProfiles.description",
     href: "/settings/hr/allowance-profiles",
     icon: "attach_money",
     color: "text-emerald-600",
@@ -65,8 +72,8 @@ const settingsLinks = [
     badge: "Phase 2",
   },
   {
-    title: "Appraisal Templates",
-    description: "Define appraisal cycles, rating scales, KRA counts, and template configurations.",
+    title: "settings.hr.home.appraisalTemplates.title",
+    description: "settings.hr.home.appraisalTemplates.description",
     href: "/settings/hr/appraisal-templates",
     icon: "rate_review",
     color: "text-pink-600",
@@ -75,8 +82,8 @@ const settingsLinks = [
     badge: "Phase 3",
   },
   {
-    title: "Personnel File Sections",
-    description: "Configure document sections, visibility levels, retention rules, and mandatory requirements.",
+    title: "settings.hr.home.personnelFileSections.title",
+    description: "settings.hr.home.personnelFileSections.description",
     href: "/settings/hr/personnel-file-sections",
     icon: "folder_shared",
     color: "text-indigo-600",
@@ -85,8 +92,8 @@ const settingsLinks = [
     badge: "Phase 3",
   },
   {
-    title: "Approval Matrix",
-    description: "Define who approves HR actions — recruitment, promotion, salary adjustment, and more.",
+    title: "settings.hr.home.approvalMatrix.title",
+    description: "settings.hr.home.approvalMatrix.description",
     href: "/settings/hr/approval-matrix",
     icon: "account_tree",
     color: "text-orange-600",
@@ -95,8 +102,8 @@ const settingsLinks = [
     badge: "Phase 3",
   },
   {
-    title: "Settings Audit Log",
-    description: "Immutable history of every change made to HR master data, with before/after values.",
+    title: "settings.hr.home.audit.title",
+    description: "settings.hr.home.audit.description",
     href: "/settings/hr/audit",
     icon: "receipt_long",
     color: "text-neutral-600",
@@ -107,22 +114,22 @@ const settingsLinks = [
 ];
 
 export default function HrSettingsDashboard() {
+  const { t } = useI18n();
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
       <ModulePageHeader
-        title="HR Master Data & Rules"
-        subtitle="Governed configuration for position grading, salary scales, employment terms, and HR workflows. All sensitive changes require approval before taking effect."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.admin", href: "/admin" }, { label: "HR Administration" }]} />}
+        title={t("settings.hr.home.title")}
+        subtitle={t("settings.hr.home.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.admin", href: "/admin" }, { label: t("settings.hr.home.breadcrumb") }]} />}
       />
 
       {/* Governance notice */}
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex gap-3">
         <span className="material-symbols-outlined text-amber-600 text-[20px] mt-0.5 shrink-0">policy</span>
         <div>
-          <p className="text-sm font-medium text-amber-800">Governed configuration area</p>
+          <p className="text-sm font-medium text-amber-800">{t("settings.hr.home.noticeTitle")}</p>
           <p className="text-sm text-amber-700 mt-0.5">
-            Changes to grade bands and salary scales follow a draft → review → approved → published lifecycle.
-            Published records cannot be edited directly — a new version must be created and approved.
+            {t("settings.hr.home.noticeBody")}
           </p>
         </div>
       </div>
@@ -141,7 +148,7 @@ export default function HrSettingsDashboard() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-neutral-900 text-sm group-hover:text-primary transition-colors">
-                    {item.title}
+                    {t(item.title)}
                   </span>
                   {item.badge && (
                     <span className={
@@ -151,11 +158,11 @@ export default function HrSettingsDashboard() {
                         ? "text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700"
                         : "text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500"
                     }>
-                      {item.badge}
+                      {t(BADGE_KEYS[item.badge] ?? item.badge)}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{item.description}</p>
+                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{t(item.description)}</p>
               </div>
             </Link>
         ))}

@@ -10,24 +10,26 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  draft:              { label: "Draft",              cls: "badge-muted",    icon: "draft"            },
-  submitted:          { label: "Submitted",          cls: "badge-primary",  icon: "send"             },
-  acknowledged:       { label: "Acknowledged",       cls: "badge-success",  icon: "check_circle"     },
-  revision_requested: { label: "Revision Requested", cls: "badge-warning",  icon: "edit_note"        },
-  archived:           { label: "Archived",           cls: "badge-muted",    icon: "inventory_2"      },
+  draft:              { label: "srhr.reportStatus.draft", cls: "badge-muted",    icon: "draft"            },
+  submitted:          { label: "srhr.reportStatus.submitted", cls: "badge-primary",  icon: "send"             },
+  acknowledged:       { label: "srhr.reportStatus.acknowledged", cls: "badge-success",  icon: "check_circle"     },
+  revision_requested: { label: "srhr.reportStatus.revision_requested", cls: "badge-warning",  icon: "edit_note"        },
+  archived:           { label: "srhr.reportStatus.archived", cls: "badge-muted",    icon: "inventory_2"      },
 };
 
 const typeLabel: Record<string, string> = {
-  monthly:   "Monthly Report",
-  quarterly: "Quarterly Report",
-  annual:    "Annual Report",
-  ad_hoc:    "Ad Hoc Report",
+  monthly:   "srhr.reportTypeFull.monthly",
+  quarterly: "srhr.reportTypeFull.quarterly",
+  annual:    "srhr.reportTypeFull.annual",
+  ad_hoc:    "srhr.reportTypeFull.ad_hoc",
 };
 
 export default function ReportDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id }     = use(params);
+  const { t }      = useI18n();
   const router     = useRouter();
   const { confirm } = useConfirm();
   const toast      = useToast();
@@ -44,39 +46,39 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
     researcherReportsApi
       .get(Number(id))
       .then((res) => setReport(res.data.data))
-      .catch(() => setError("Report not found."))
+      .catch(() => setError(t("srhr.report.notFound")))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { loadReport(); }, [id]);
 
   const handleSubmit = async () => {
-    if (!(await confirm({ title: "Submit report", message: "Submit this report to SADC-PF?", variant: "primary" }))) return;
+    if (!(await confirm({ title: t("srhr.report.submitTitle"), message: t("srhr.report.submitMessage"), variant: "primary" }))) return;
     setSubmitting(true);
     try {
       const res = await researcherReportsApi.submit(Number(id));
       setReport(res.data.data);
-      toast.success("Report submitted");
+      toast.success(t("srhr.report.submitted"));
     } catch (err) {
-      const message = apiErrorMessage(err, "Failed to submit report.");
+      const message = apiErrorMessage(err, t("srhr.report.submitFailed"));
       setError(message);
-      toast.error("Report not submitted", message);
+      toast.error(t("srhr.report.notSubmitted"), message);
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleAcknowledge = async () => {
-    if (!(await confirm({ title: "Acknowledge report", message: "Acknowledge this report?", variant: "primary" }))) return;
+    if (!(await confirm({ title: t("srhr.report.ackTitle"), message: t("srhr.report.ackMessage"), variant: "primary" }))) return;
     setAcknowledging(true);
     try {
       const res = await researcherReportsApi.acknowledge(Number(id));
       setReport(res.data.data);
-      toast.success("Report acknowledged");
+      toast.success(t("srhr.report.acknowledged"));
     } catch (err) {
-      const message = apiErrorMessage(err, "Failed to acknowledge report.");
+      const message = apiErrorMessage(err, t("srhr.report.ackFailed"));
       setError(message);
-      toast.error("Could not acknowledge report", message);
+      toast.error(t("srhr.report.notAcknowledged"), message);
     } finally {
       setAcknowledging(false);
     }
@@ -90,11 +92,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
       setReport(res.data.data);
       setShowRevisionModal(false);
       setRevisionNotes("");
-      toast.success("Revision requested");
+      toast.success(t("srhr.report.revisionRequested"));
     } catch (err) {
-      const message = apiErrorMessage(err, "Failed to request revision.");
+      const message = apiErrorMessage(err, t("srhr.report.revisionFailed"));
       setError(message);
-      toast.error("Could not request revision", message);
+      toast.error(t("srhr.report.revisionNotRequested"), message);
     } finally {
       setRequestingRevision(false);
     }
@@ -114,7 +116,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
   }
 
   if (error || !report) {
-    return <div className="card p-8 text-center text-sm text-red-600">{error ?? "Not found."}</div>;
+    return <div className="card p-8 text-center text-sm text-red-600">{error ?? t("srhr.notFound")}</div>;
   }
 
   const status = statusConfig[report.status];
@@ -123,17 +125,17 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={report.title}
-        subtitle={`${typeLabel[report.report_type]} · ${report.employee?.name} · ${report.parliament?.name}`}
+        subtitle={`${typeLabel[report.report_type] ? t(typeLabel[report.report_type]) : report.report_type} · ${report.employee?.name} · ${report.parliament?.name}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "SRHR", href: "/srhr" },
-              { label: "Reports", href: "/srhr/reports" },
+              { label: "srhr.crumb", href: "/srhr" },
+              { label: "srhr.report.crumb", href: "/srhr/reports" },
               { label: report.reference_number },
             ]}
           />
         }
-        meta={<span className={`badge ${status?.cls ?? "badge-muted"}`}>{status?.label}</span>}
+        meta={<span className={`badge ${status?.cls ?? "badge-muted"}`}>{status ? t(status.label) : report.status}</span>}
       />
 
       {/* Revision feedback banner */}
@@ -141,7 +143,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2">
           <span className="material-symbols-outlined text-amber-600 text-[18px] flex-shrink-0 mt-0.5">edit_note</span>
           <div>
-            <p className="text-sm font-medium text-amber-800">Revision Requested</p>
+            <p className="text-sm font-medium text-amber-800">{t("srhr.reportStatus.revision_requested")}</p>
             <p className="text-sm text-amber-700 mt-0.5">{report.revision_notes}</p>
           </div>
         </div>
@@ -153,11 +155,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
           <>
             <Link href={`/srhr/reports/${report.id}/edit`} className="btn-secondary inline-flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px]">edit</span>
-              Edit
+              {t("common.edit")}
             </Link>
             <button className="btn-primary inline-flex items-center gap-2" onClick={handleSubmit} disabled={submitting}>
               <span className="material-symbols-outlined text-[18px]">send</span>
-              {submitting ? "Submitting…" : "Submit to SADC-PF"}
+              {submitting ? t("hr.incidents.new.submitting") : t("srhr.report.submitToSadcpf")}
             </button>
           </>
         )}
@@ -165,14 +167,14 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
           <>
             <button className="btn-primary inline-flex items-center gap-2" onClick={handleAcknowledge} disabled={acknowledging}>
               <span className="material-symbols-outlined text-[18px]">check_circle</span>
-              {acknowledging ? "Acknowledging…" : "Acknowledge"}
+              {acknowledging ? t("srhr.report.acknowledging") : t("srhr.report.acknowledge")}
             </button>
             <button
               className="btn-secondary inline-flex items-center gap-2"
               onClick={() => setShowRevisionModal(true)}
             >
               <span className="material-symbols-outlined text-[18px]">edit_note</span>
-              Request Revision
+              {t("srhr.report.requestRevision")}
             </button>
           </>
         )}
@@ -182,18 +184,18 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
       <div className="card p-6">
         <h3 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] text-neutral-400">info</span>
-          Report Details
+          {t("srhr.report.details")}
         </h3>
         <dl className="grid grid-cols-2 gap-4 text-sm">
           {[
-            { label: "Reference",    value: report.reference_number },
-            { label: "Type",         value: typeLabel[report.report_type] },
-            { label: "Period",       value: `${formatDate(report.period_start)} – ${formatDate(report.period_end)}` },
-            { label: "Researcher",   value: report.employee?.name },
-            { label: "Parliament",   value: report.parliament?.name },
-            { label: "Submitted",    value: report.submitted_at ? formatDate(report.submitted_at) : "—" },
-            { label: "Acknowledged", value: report.acknowledged_at ? formatDate(report.acknowledged_at) : "—" },
-            { label: "Acknowledged by", value: report.acknowledged_by_user?.name ?? "—" },
+            { label: t("hr.timesheets.overtime.reference"), value: report.reference_number },
+            { label: t("srhr.col.type"), value: typeLabel[report.report_type] ? t(typeLabel[report.report_type]) : report.report_type },
+            { label: t("srhr.reports.colPeriod"), value: `${formatDate(report.period_start)} – ${formatDate(report.period_end)}` },
+            { label: t("srhr.col.researcher"), value: report.employee?.name },
+            { label: t("srhr.col.parliament"), value: report.parliament?.name },
+            { label: t("srhr.reportStatus.submitted"), value: report.submitted_at ? formatDate(report.submitted_at) : "—" },
+            { label: t("srhr.reportStatus.acknowledged"), value: report.acknowledged_at ? formatDate(report.acknowledged_at) : "—" },
+            { label: t("srhr.report.acknowledgedBy"), value: report.acknowledged_by_user?.name ?? "—" },
           ].map((f) => (
             <div key={f.label}>
               <dt className="text-xs text-neutral-500 mb-0.5">{f.label}</dt>
@@ -208,7 +210,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         <div className="card p-6">
           <h3 className="text-sm font-semibold text-neutral-700 mb-3 flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">summarize</span>
-            Executive Summary
+            {t("srhr.report.executiveSummary")}
           </h3>
           <p className="text-sm text-neutral-700 whitespace-pre-line leading-relaxed">{report.executive_summary}</p>
         </div>
@@ -219,7 +221,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         <div className="card p-6">
           <h3 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">checklist</span>
-            Activities Undertaken ({report.activities_undertaken.length})
+            {t("srhr.report.activitiesCount", { count: report.activities_undertaken.length })}
           </h3>
           <div className="space-y-4">
             {report.activities_undertaken.map((act, i) => (
@@ -247,23 +249,23 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         <div className="card p-6 space-y-5">
           <h3 className="text-sm font-semibold text-neutral-700 flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">analytics</span>
-            Analysis & Planning
+            {t("srhr.report.analysis")}
           </h3>
           {report.challenges_faced && (
             <div>
-              <p className="text-xs font-medium text-neutral-500 mb-1.5">Challenges Faced</p>
+              <p className="text-xs font-medium text-neutral-500 mb-1.5">{t("srhr.report.challenges")}</p>
               <p className="text-sm text-neutral-700 whitespace-pre-line leading-relaxed">{report.challenges_faced}</p>
             </div>
           )}
           {report.recommendations && (
             <div>
-              <p className="text-xs font-medium text-neutral-500 mb-1.5">Recommendations</p>
+              <p className="text-xs font-medium text-neutral-500 mb-1.5">{t("srhr.report.recommendations")}</p>
               <p className="text-sm text-neutral-700 whitespace-pre-line leading-relaxed">{report.recommendations}</p>
             </div>
           )}
           {report.next_period_plan && (
             <div>
-              <p className="text-xs font-medium text-neutral-500 mb-1.5">Plan for Next Period</p>
+              <p className="text-xs font-medium text-neutral-500 mb-1.5">{t("srhr.report.nextPlan")}</p>
               <p className="text-sm text-neutral-700 whitespace-pre-line leading-relaxed">{report.next_period_plan}</p>
             </div>
           )}
@@ -275,7 +277,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         <div className="card p-6">
           <h3 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">bar_chart</span>
-            SRHR Indicators
+            {t("srhr.report.indicators")}
           </h3>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {Object.entries(report.srhr_indicators).map(([key, val]) => (
@@ -292,23 +294,23 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
       {showRevisionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="text-base font-semibold text-neutral-900">Request Revision</h3>
-            <p className="text-sm text-neutral-600">Explain what the researcher needs to revise or clarify.</p>
+            <h3 className="text-base font-semibold text-neutral-900">{t("srhr.report.requestRevision")}</h3>
+            <p className="text-sm text-neutral-600">{t("srhr.report.revisionPrompt")}</p>
             <textarea
               className="form-input"
               rows={4}
-              placeholder="Revision notes…"
+              placeholder={t("srhr.report.revisionPlaceholder")}
               value={revisionNotes}
               onChange={(e) => setRevisionNotes(e.target.value)}
             />
             <div className="flex justify-end gap-3">
-              <button className="btn-secondary" onClick={() => setShowRevisionModal(false)}>Cancel</button>
+              <button className="btn-secondary" onClick={() => setShowRevisionModal(false)}>{t("common.cancel")}</button>
               <button
                 className="btn-primary"
                 disabled={!revisionNotes.trim() || requestingRevision}
                 onClick={handleRequestRevision}
               >
-                {requestingRevision ? "Sending…" : "Request Revision"}
+                {requestingRevision ? t("srhr.report.sending") : t("srhr.report.requestRevision")}
               </button>
             </div>
           </div>

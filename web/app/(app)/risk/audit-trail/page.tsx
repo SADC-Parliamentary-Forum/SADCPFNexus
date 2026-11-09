@@ -9,6 +9,7 @@ import { riskApi, type RiskHistory } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
 import { LabelledChangeRows } from "@/components/ui/LabelledRecord";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -27,18 +28,18 @@ const CHANGE_TYPE_ICONS: Record<string, { icon: string; color: string }> = {
 };
 
 const CHANGE_TYPE_OPTIONS = [
-  { value: "",               label: "All event types"  },
-  { value: "created",        label: "Created"          },
-  { value: "updated",        label: "Updated"          },
-  { value: "submitted",      label: "Submitted"        },
-  { value: "reviewed",       label: "Reviewed"         },
-  { value: "approved",       label: "Approved"         },
-  { value: "escalated",      label: "Escalated"        },
-  { value: "closed",         label: "Closed"           },
-  { value: "archived",       label: "Archived"         },
-  { value: "reopened",       label: "Reopened"         },
-  { value: "action_added",   label: "Action Added"     },
-  { value: "action_completed",label: "Action Completed"},
+  { value: "",                 label: "risk.auditTrail.allEventTypes" },
+  { value: "created",          label: "risk.auditTrail.event.created" },
+  { value: "updated",          label: "risk.auditTrail.event.updated" },
+  { value: "submitted",        label: "risk.analytics.status.submitted" },
+  { value: "reviewed",         label: "risk.analytics.status.reviewed" },
+  { value: "approved",         label: "risk.analytics.status.approved" },
+  { value: "escalated",        label: "risk.analytics.status.escalated" },
+  { value: "closed",           label: "risk.analytics.status.closed" },
+  { value: "archived",         label: "risk.analytics.status.archived" },
+  { value: "reopened",         label: "risk.auditTrail.event.reopened" },
+  { value: "action_added",     label: "risk.auditTrail.event.actionAdded" },
+  { value: "action_completed", label: "risk.auditTrail.event.actionCompleted" },
 ];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -51,6 +52,11 @@ interface Filters {
 }
 
 export default function RiskAuditTrailPage() {
+  const { t } = useI18n();
+  const eventLabel = (type: string): string => {
+    const key = CHANGE_TYPE_OPTIONS.find((o) => o.value === type)?.label;
+    return key ? t(key) : type.replace(/_/g, " ");
+  };
   const [filters, setFilters] = useState<Filters>({
     date_from: "", date_to: "", change_type: "", page: 1,
   });
@@ -92,13 +98,13 @@ export default function RiskAuditTrailPage() {
       to_status:   e.new_values?.status ?? "",
       hash:        e.hash ?? "",
     })), [
-      { key: "time",        header: "Time"        },
-      { key: "risk_code",   header: "Risk Code"   },
-      { key: "change_type", header: "Event"       },
-      { key: "actor",       header: "Actor"       },
-      { key: "from_status", header: "From Status" },
-      { key: "to_status",   header: "To Status"   },
-      { key: "hash",        header: "Hash"        },
+      { key: "time",        header: t("risk.auditTrail.time") },
+      { key: "risk_code",   header: t("risk.auditTrail.riskCode") },
+      { key: "change_type", header: t("risk.auditTrail.event") },
+      { key: "actor",       header: t("risk.auditTrail.actor") },
+      { key: "from_status", header: t("risk.auditTrail.fromStatus") },
+      { key: "to_status",   header: t("risk.auditTrail.toStatus") },
+      { key: "hash",        header: t("risk.auditTrail.hash") },
     ]);
   }
 
@@ -115,20 +121,20 @@ export default function RiskAuditTrailPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Risk Audit Trail"
-        subtitle="Tamper-evident ledger of all risk register events."
+        title={t("risk.auditTrail.pageTitle")}
+        subtitle={t("risk.auditTrail.subtitle")}
         breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.auditTrail.title" }]} />}
       />
         <button onClick={handleExport} disabled={!events.length} className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-40">
           <span className="material-symbols-outlined text-[16px]">download</span>
-          Export CSV
+          {t("risk.analytics.exportCsv")}
         </button>
       </div>
 
       {/* Filters */}
       <div className="card px-4 py-3 flex flex-wrap gap-3 items-end">
         <div>
-          <label htmlFor="risk-audit-trail-date-from" className="block text-xs text-neutral-500 mb-1">Date From</label>
+          <label htmlFor="risk-audit-trail-date-from" className="block text-xs text-neutral-500 mb-1">{t("risk.auditTrail.dateFrom")}</label>
           <input id="risk-audit-trail-date-from"
             type="date"
             value={filters.date_from}
@@ -137,7 +143,7 @@ export default function RiskAuditTrailPage() {
           />
         </div>
         <div>
-          <label htmlFor="risk-audit-trail-date-to" className="block text-xs text-neutral-500 mb-1">Date To</label>
+          <label htmlFor="risk-audit-trail-date-to" className="block text-xs text-neutral-500 mb-1">{t("risk.auditTrail.dateTo")}</label>
           <input id="risk-audit-trail-date-to"
             type="date"
             value={filters.date_to}
@@ -146,21 +152,21 @@ export default function RiskAuditTrailPage() {
           />
         </div>
         <div>
-          <label htmlFor="risk-audit-trail-event-type" className="block text-xs text-neutral-500 mb-1">Event Type</label>
+          <label htmlFor="risk-audit-trail-event-type" className="block text-xs text-neutral-500 mb-1">{t("risk.auditTrail.eventType")}</label>
           <select id="risk-audit-trail-event-type"
             value={filters.change_type}
             onChange={(e) => setFilter("change_type", e.target.value)}
             className="form-input text-sm h-9 w-44"
           >
             {CHANGE_TYPE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value}>{t(o.label)}</option>
             ))}
           </select>
         </div>
         {hasActiveFilters && (
           <button onClick={clearFilters} className="btn-secondary text-sm h-9 flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">close</span>
-            Clear
+            {t("risk.auditTrail.clear")}
           </button>
         )}
       </div>
@@ -168,11 +174,11 @@ export default function RiskAuditTrailPage() {
       {/* Stats bar */}
       <div className="flex items-center justify-between px-1">
         <p className="text-sm text-neutral-500">
-          Total Records: <span className="font-semibold text-neutral-800">{total.toLocaleString()}</span>
+          {t("risk.auditTrail.totalRecords")} <span className="font-semibold text-neutral-800">{total.toLocaleString()}</span>
         </p>
         <div className="flex items-center gap-1.5 text-xs text-green-700">
           <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />
-          Hash verification enabled
+          {t("risk.auditTrail.hashEnabled")}
         </div>
       </div>
 
@@ -181,20 +187,20 @@ export default function RiskAuditTrailPage() {
         {isLoading ? (
           <div className="px-5 py-10 flex items-center justify-center gap-2 text-neutral-400">
             <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-            Loading events…
+            {t("risk.auditTrail.loading")}
           </div>
         ) : events.length === 0 ? (
-          <EmptyState icon="history" title="No events found." />
+          <EmptyState icon="history" title={t("risk.auditTrail.empty")} />
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Time</th>
-                <th>Risk</th>
-                <th>Event</th>
-                <th>Actor</th>
-                <th>Status Change</th>
-                <th className="font-mono">Hash</th>
+                <th>{t("risk.auditTrail.time")}</th>
+                <th>{t("risk.auditTrail.risk")}</th>
+                <th>{t("risk.auditTrail.event")}</th>
+                <th>{t("risk.auditTrail.actor")}</th>
+                <th>{t("risk.auditTrail.statusChange")}</th>
+                <th className="font-mono">{t("risk.auditTrail.hash")}</th>
               </tr>
             </thead>
             <tbody>
@@ -224,7 +230,7 @@ export default function RiskAuditTrailPage() {
                     <td>
                       <div className="flex items-center gap-1.5">
                         <span className={`material-symbols-outlined text-[14px] ${ct.color}`}>{ct.icon}</span>
-                        <span className="text-xs text-neutral-700 capitalize">{event.change_type.replace(/_/g, " ")}</span>
+                        <span className="text-xs text-neutral-700 capitalize">{eventLabel(event.change_type)}</span>
                       </div>
                     </td>
                     <td className="text-xs text-neutral-700">{event.actor?.name ?? "—"}</td>
@@ -255,18 +261,17 @@ export default function RiskAuditTrailPage() {
             className="btn-secondary text-sm flex items-center gap-1 disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-[16px]">chevron_left</span>
-            Previous
+            {t("common.previous")}
           </button>
           <span className="text-sm text-neutral-500">
-            Page <span className="font-semibold text-neutral-800">{filters.page}</span> of{" "}
-            <span className="font-semibold text-neutral-800">{lastPage}</span>
+            {t("common.pageOf", { page: filters.page, total: lastPage })}
           </span>
           <button
             disabled={filters.page >= lastPage}
             onClick={() => setFilter("page", filters.page + 1)}
             className="btn-secondary text-sm flex items-center gap-1 disabled:opacity-40"
           >
-            Next
+            {t("common.next")}
             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
           </button>
         </div>
@@ -276,30 +281,30 @@ export default function RiskAuditTrailPage() {
       {selected && (
         <div className="card p-5 space-y-4 border-primary/30 border">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-800">Event Detail</h2>
-            <button onClick={() => setSelected(null)} aria-label="Close event detail" className="text-neutral-400 hover:text-neutral-600">
+            <h2 className="text-sm font-semibold text-neutral-800">{t("risk.auditTrail.detail")}</h2>
+            <button onClick={() => setSelected(null)} aria-label={t("risk.auditTrail.closeDetail")} className="text-neutral-400 hover:text-neutral-600">
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 text-sm">
             <div>
-              <p className="text-xs text-neutral-500 mb-0.5">Actor</p>
+              <p className="text-xs text-neutral-500 mb-0.5">{t("risk.auditTrail.actor")}</p>
               <p className="font-medium text-neutral-800">{selected.actor?.name ?? "—"}</p>
             </div>
             <div>
-              <p className="text-xs text-neutral-500 mb-0.5">Timestamp</p>
+              <p className="text-xs text-neutral-500 mb-0.5">{t("risk.auditTrail.timestamp")}</p>
               <p className="font-medium text-neutral-800">{fmt(selected.created_at)}</p>
             </div>
             <div>
-              <p className="text-xs text-neutral-500 mb-0.5">Event</p>
-              <p className="font-medium text-neutral-800 capitalize">{selected.change_type.replace(/_/g, " ")}</p>
+              <p className="text-xs text-neutral-500 mb-0.5">{t("risk.auditTrail.event")}</p>
+              <p className="font-medium text-neutral-800 capitalize">{eventLabel(selected.change_type)}</p>
             </div>
           </div>
 
           {selected.hash && (
             <div>
-              <p className="text-xs text-neutral-500 mb-1">SHA-256 Hash</p>
+              <p className="text-xs text-neutral-500 mb-1">{t("risk.auditTrail.sha256")}</p>
               <p className="font-mono text-xs text-neutral-700 break-all bg-neutral-50 rounded-lg p-3 border border-neutral-200">
                 {selected.hash}
               </p>
@@ -308,7 +313,7 @@ export default function RiskAuditTrailPage() {
 
           {(selected.old_values || selected.new_values) && (
             <div>
-              <p className="text-xs text-neutral-500 mb-1">Change rows</p>
+              <p className="text-xs text-neutral-500 mb-1">{t("risk.auditTrail.changeRows")}</p>
               <LabelledChangeRows oldValues={selected.old_values} newValues={selected.new_values} />
             </div>
           )}

@@ -9,20 +9,22 @@ import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { getListData, getLastPage, getTotal } from "@/lib/listPagination";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const MODULE_LABELS: Record<string, string> = {
-  salary_advance: "Salary Advance",
-  imprest: "Imprest",
+  salary_advance: "finance.bcre.module.salary_advance",
+  imprest: "finance.bcre.module.imprest",
 };
 
 function exceptionType(reg: BalanceRegister): { label: string; badge: string } {
   if (reg.status === "disputed") {
-    return { label: "Disputed", badge: "badge-danger" };
+    return { label: "finance.bcre.status.disputed", badge: "badge-danger" };
   }
-  return { label: "Pending Verification", badge: "badge-warning" };
+  return { label: "finance.bcre.dashboard.pending", badge: "badge-warning" };
 }
 
 export default function ExceptionsPage() {
+  const { t } = useI18n();
   const [registers, setRegisters] = useState<BalanceRegister[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +43,11 @@ export default function ExceptionsPage() {
       setLastPage(getLastPage(res.data));
       setTotal(getTotal(res.data, rows.length));
     } catch {
-      setError("Failed to load exceptions.");
+      setError(t("finance.bcre.exceptions.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load(1);
@@ -63,17 +65,20 @@ export default function ExceptionsPage() {
       const exc = exceptionType(reg);
       const hay = [
         reg.reference_number,
-        MODULE_LABELS[reg.module_type] ?? reg.module_type,
+        MODULE_LABELS[reg.module_type] ? t(MODULE_LABELS[reg.module_type]) : reg.module_type,
         reg.employee?.name,
         String(reg.employee_id),
-        exc.label,
+        t(exc.label),
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [registers, search]);
+  }, [registers, search, t]);
+
+  const [disputedBefore, disputedAfter = ""] = t("finance.bcre.exceptions.ruleDisputed").split("{status}");
+  const [staleBefore, staleAfter = ""] = t("finance.bcre.exceptions.ruleStale").split("{hours}");
 
   const handleExport = () => {
     if (filtered.length === 0) return;
@@ -81,19 +86,19 @@ export default function ExceptionsPage() {
       `balance-exceptions-${new Date().toISOString().slice(0, 10)}.csv`,
       filtered.map((reg) => ({
         reference: reg.reference_number,
-        module: MODULE_LABELS[reg.module_type] ?? reg.module_type,
+        module: MODULE_LABELS[reg.module_type] ? t(MODULE_LABELS[reg.module_type]) : reg.module_type,
         employee: reg.employee?.name ?? `#${reg.employee_id}`,
         balance: reg.balance,
-        exception: exceptionType(reg).label,
+        exception: t(exceptionType(reg).label),
         updated_at: reg.updated_at,
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "module", header: "Module" },
-        { key: "employee", header: "Employee" },
-        { key: "balance", header: "Balance" },
-        { key: "exception", header: "Exception Type" },
-        { key: "updated_at", header: "Last Updated" },
+        { key: "reference", header: t("decisions.col.reference") },
+        { key: "module", header: t("finance.bcre.col.module") },
+        { key: "employee", header: t("finance.payrollImports.col.employee") },
+        { key: "balance", header: t("finance.bcre.col.balance") },
+        { key: "exception", header: t("finance.bcre.exceptions.col.type") },
+        { key: "updated_at", header: t("finance.bcre.col.lastUpdated") },
       ],
     );
   };
@@ -101,18 +106,18 @@ export default function ExceptionsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/finance" className="hover:text-primary transition-colors">Finance</Link>
+        <Link href="/finance" className="hover:text-primary transition-colors">{t("nav.finance")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <Link href="/finance/balance-register" className="hover:text-primary transition-colors">Balance Register</Link>
+        <Link href="/finance/balance-register" className="hover:text-primary transition-colors">{t("finance.bcre.balanceRegister")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">Exceptions</span>
+        <span className="text-neutral-900 font-medium">{t("finance.bcre.exceptions.crumb")}</span>
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <ModulePageHeader
-        title="Exceptions Queue"
-        subtitle="Disputed registers and stale pending verifications requiring attention"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Exceptions Queue" }]} />}
+        title="finance.bcre.exceptionsQueue"
+        subtitle="finance.bcre.exceptions.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "finance.bcre.exceptionsQueue" }]} />}
       />
         <div className="flex flex-wrap gap-2">
           <button
@@ -122,11 +127,11 @@ export default function ExceptionsPage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("finance.budget.exportCsv")}
           </button>
           <Link href="/finance/balance-register" className="btn-secondary text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-base">arrow_back</span>
-            Back to Dashboard
+            {t("finance.bcre.exceptions.backToDashboard")}
           </Link>
         </div>
       </div>
@@ -134,13 +139,13 @@ export default function ExceptionsPage() {
       <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 text-sm flex items-start gap-3">
         <span className="material-symbols-outlined text-base mt-0.5">info</span>
         <div>
-          <p className="font-medium">What appears here</p>
+          <p className="font-medium">{t("finance.bcre.exceptions.whatAppears")}</p>
           <ul className="list-disc ml-4 mt-1 space-y-0.5 text-xs">
             <li>
-              Registers with status <strong>Disputed</strong> — employee raised a concern
+              {disputedBefore}<strong>{t("finance.bcre.status.disputed")}</strong>{disputedAfter}
             </li>
             <li>
-              Registers with transactions pending verification for more than <strong>72 hours</strong>
+              {staleBefore}<strong>{t("finance.bcre.exceptions.hours72")}</strong>{staleAfter}
             </li>
           </ul>
         </div>
@@ -154,7 +159,8 @@ export default function ExceptionsPage() {
           <input
             type="search"
             className="form-input pl-10"
-            placeholder="Search reference, employee, exception…"
+            placeholder={t("finance.bcre.exceptions.searchPlaceholder")}
+            aria-label={t("finance.bcre.exceptions.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -172,13 +178,13 @@ export default function ExceptionsPage() {
         <table className="data-table w-full">
           <thead>
             <tr>
-              <th>Reference</th>
-              <th>Module</th>
-              <th>Employee</th>
-              <th className="text-right">Balance</th>
-              <th>Exception Type</th>
-              <th>Last Updated</th>
-              <th />
+              <th>{t("decisions.col.reference")}</th>
+              <th>{t("finance.bcre.col.module")}</th>
+              <th>{t("finance.payrollImports.col.employee")}</th>
+              <th className="text-right">{t("finance.bcre.col.balance")}</th>
+              <th>{t("finance.bcre.exceptions.col.type")}</th>
+              <th>{t("finance.bcre.col.lastUpdated")}</th>
+              <th><span className="sr-only">{t("finance.budget.col.actions")}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -198,8 +204,8 @@ export default function ExceptionsPage() {
                 icon="check_circle"
                 title={
                   search.trim()
-                    ? "No exceptions match your search."
-                    : "No exceptions — all registers are in good standing."
+                    ? "finance.bcre.exceptions.noMatch"
+                    : "finance.bcre.exceptions.empty"
                 }
               />
             ) : (
@@ -208,17 +214,17 @@ export default function ExceptionsPage() {
                 return (
                   <tr key={reg.id} className="hover:bg-neutral-50">
                     <td className="font-mono text-sm font-medium text-neutral-800">{reg.reference_number}</td>
-                    <td className="text-sm">{MODULE_LABELS[reg.module_type] ?? reg.module_type}</td>
+                    <td className="text-sm">{MODULE_LABELS[reg.module_type] ? t(MODULE_LABELS[reg.module_type]) : reg.module_type}</td>
                     <td className="text-sm">{reg.employee?.name ?? `#${reg.employee_id}`}</td>
                     <td className="text-right text-sm font-semibold text-neutral-900">
-                      NAD {Number(reg.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {"NAD"} {Number(reg.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>
                     <td>
                       <span className={`badge ${exc.badge} inline-flex items-center gap-1`}>
                         <span className="material-symbols-outlined text-xs">
                           {reg.status === "disputed" ? "warning" : "hourglass_top"}
                         </span>
-                        {exc.label}
+                        {t(exc.label)}
                       </span>
                     </td>
                     <td className="text-sm text-neutral-500">{formatDate(reg.updated_at)}</td>
@@ -227,7 +233,7 @@ export default function ExceptionsPage() {
                         href={`/finance/balance-register/${reg.id}`}
                         className="btn-secondary text-xs py-1 px-2"
                       >
-                        Resolve
+                        {t("finance.bcre.exceptions.resolve")}
                       </Link>
                     </td>
                   </tr>

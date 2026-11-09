@@ -8,8 +8,10 @@ import { FormSection } from "@/components/ui/FormSection";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { formatDateShort } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function LifecycleCaseDetailPage() {
+  const { t } = useI18n();
   const params = useParams<{ id: string }>();
   const caseId = Number(params.id);
   const queryClient = useQueryClient();
@@ -40,31 +42,31 @@ export default function LifecycleCaseDetailPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title={String(data?.reference ?? "Lifecycle case")}
+        title={String(data?.reference ?? t("lifecycle.case.fallbackTitle"))}
         subtitle={`${String(data?.lifecycle_type ?? "")} · ${String(data?.status ?? "")}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Employee Lifecycle", href: "/lifecycle" },
-              { label: String(data?.reference ?? "Case") },
+              { label: t("lifecycle.common.breadcrumb"), href: "/lifecycle" },
+              { label: String(data?.reference ?? t("lifecycle.case.crumb")) },
             ]}
           />
         }
       />
 
-      {caseQuery.isLoading ? <p className="text-sm text-neutral-500">Loading case…</p> : null}
-      {caseQuery.isError ? <p className="text-sm text-red-600">Failed to load case.</p> : null}
+      {caseQuery.isLoading ? <p className="text-sm text-neutral-500">{t("lifecycle.case.loading")}</p> : null}
+      {caseQuery.isError ? <p className="text-sm text-red-600">{t("lifecycle.case.loadFailed")}</p> : null}
 
       {data ? (
         <>
-          <FormSection title="Summary">
+          <FormSection title={t("lifecycle.case.summary")}>
             <LabelledRecord
               value={{
                 employee: (data.employee as { name?: string })?.name ?? "—",
                 start_date: data.start_date ? formatDateShort(String(data.start_date)) : "—",
                 notice_end: data.notice_end_date ? formatDateShort(String(data.notice_end_date)) : "—",
-                terminal_payment: data.terminal_payment_blocked ? "Blocked pending clearance" : "Allowed",
-                readiness: (data.readiness as { ready?: boolean })?.ready ? "Ready" : "Not ready",
+                terminal_payment: data.terminal_payment_blocked ? t("lifecycle.case.paymentBlocked") : t("lifecycle.case.paymentAllowed"),
+                readiness: (data.readiness as { ready?: boolean })?.ready ? t("lifecycle.onboarding.ready") : t("lifecycle.case.notReady"),
                 outstanding_assets: Array.isArray(data.outstanding_assets)
                   ? String((data.outstanding_assets as unknown[]).length)
                   : "0",
@@ -73,9 +75,9 @@ export default function LifecycleCaseDetailPage() {
           </FormSection>
 
           {Array.isArray(data.outstanding_assets) && data.outstanding_assets.length > 0 ? (
-            <FormSection title="Outstanding assets">
+            <FormSection title={t("lifecycle.case.outstandingAssets")}>
               <p className="mb-3 text-sm text-amber-800">
-                ICT clearance cannot complete while these assets remain assigned. Return, transfer, or request an authorised exception.
+                {t("lifecycle.case.outstandingAssetsHint")}
               </p>
               <ul className="space-y-2 text-sm">
                 {(data.outstanding_assets as Array<{ id: number; tag_number?: string; name?: string; status?: string }>).map((asset) => (
@@ -92,7 +94,7 @@ export default function LifecycleCaseDetailPage() {
           {stages.map((stage) => (
             <FormSection key={stage.name} title={stage.name}>
               {(stage.tasks ?? []).length === 0 ? (
-                <EmptyState title="No tasks in this stage" />
+                <EmptyState title={t("lifecycle.case.noTasks")} />
               ) : (
                 <ul className="space-y-3">
                   {(stage.tasks ?? []).map((task) => (
@@ -101,8 +103,8 @@ export default function LifecycleCaseDetailPage() {
                         <p className="font-medium text-neutral-900">{String(task.title)}</p>
                         <p className="text-xs text-neutral-500 mt-1">
                           {String(task.assignee_role ?? "")}
-                          {task.due_date ? ` · Due ${formatDateShort(String(task.due_date))}` : ""}
-                          {task.mandatory === false ? " · Optional" : ""}
+                          {task.due_date ? ` · ${t("lifecycle.myTasks.due", { date: formatDateShort(String(task.due_date)) })}` : ""}
+                          {task.mandatory === false ? ` · ${t("lifecycle.case.optional")}` : ""}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -119,7 +121,7 @@ export default function LifecycleCaseDetailPage() {
                               })
                             }
                           >
-                            Complete
+                            {t("lifecycle.case.complete")}
                           </button>
                         ) : null}
                       </div>
@@ -130,9 +132,9 @@ export default function LifecycleCaseDetailPage() {
             </FormSection>
           ))}
 
-          <FormSection title="Timeline">
+          <FormSection title={t("lifecycle.case.timeline")}>
             {(timelineQuery.data ?? []).length === 0 ? (
-              <p className="text-sm text-neutral-500">No events recorded yet.</p>
+              <p className="text-sm text-neutral-500">{t("lifecycle.case.noEvents")}</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {(timelineQuery.data ?? []).map((event) => (
@@ -141,7 +143,7 @@ export default function LifecycleCaseDetailPage() {
                       {event.created_at ? formatDateShort(String(event.created_at)) : "—"}
                     </span>
                     <span>
-                      {String(event.event_type)} · {String(event.actor ?? "System")}
+                      {String(event.event_type)} · {String(event.actor ?? t("lifecycle.case.system"))}
                     </span>
                   </li>
                 ))}

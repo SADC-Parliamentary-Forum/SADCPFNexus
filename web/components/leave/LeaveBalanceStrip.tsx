@@ -1,8 +1,9 @@
 "use client";
 
-import { formatLeaveDays, type LeaveBalanceCard } from "@/lib/leaveBalances";
+import { type LeaveBalanceCard } from "@/lib/leaveBalances";
 import { LEAVE_TYPE_COLORS, LEAVE_TYPE_ICONS } from "@/lib/leaveHub";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export function LeaveBalanceStrip({
   cards,
@@ -19,6 +20,11 @@ export function LeaveBalanceStrip({
   onSelect?: (code: string) => void;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
+  const formatLeaveDays = (n: number): string => {
+    const rounded = Math.round(Number(n) * 100) / 100;
+    return t(Math.abs(rounded) === 1 ? "admin.leaveStrip.day" : "admin.leaveStrip.days", { count: String(rounded) });
+  };
   if (loading) {
     return (
       <div
@@ -38,7 +44,9 @@ export function LeaveBalanceStrip({
   if (cards.length === 0) {
     return (
       <p className="text-sm text-neutral-500" data-testid="leave-balance-strip">
-        Leave balances for {year ?? "this year"} could not be loaded.
+        {year
+          ? t("admin.leaveStrip.loadFailedYear", { year })
+          : t("admin.leaveStrip.loadFailed")}
       </p>
     );
   }
@@ -87,7 +95,7 @@ export function LeaveBalanceStrip({
     <div className="space-y-2" data-testid="leave-balance-strip">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          Days by leave type{year ? ` · ${year}` : ""}
+          {t("admin.leaveStrip.heading")}{year ? ` · ${year}` : ""}
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
@@ -95,7 +103,7 @@ export function LeaveBalanceStrip({
           const color = LEAVE_TYPE_COLORS[card.code] ?? "text-neutral-700 bg-neutral-50 border-neutral-200";
           const selected = selectedCode === card.code;
           const value = card.headline === "used" ? card.used : card.remaining;
-          const caption = card.headline === "used" ? "used this year" : "remaining";
+          const caption = card.headline === "used" ? t("admin.leaveStrip.usedThisYear") : t("admin.leaveStrip.remaining");
           const inner = (
             <>
               <div className="flex items-start justify-between gap-2">
@@ -108,7 +116,7 @@ export function LeaveBalanceStrip({
               <p className="mt-0.5 text-[11px] text-neutral-500">{caption}</p>
               {card.pending > 0 && card.headline === "remaining" ? (
                 <p className="mt-1 text-[11px] font-medium text-amber-800">
-                  {formatLeaveDays(card.pending)} pending approval
+                  {t("admin.leaveStrip.pendingApproval", { days: formatLeaveDays(card.pending) })}
                 </p>
               ) : null}
             </>

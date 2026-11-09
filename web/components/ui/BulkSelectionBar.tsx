@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface BulkSelectionBarProps {
   count: number;
@@ -22,6 +23,7 @@ export function BulkSelectionBar({
   children,
   className = "",
 }: BulkSelectionBarProps) {
+  const { t } = useI18n();
   if (count <= 0) return null;
 
   return (
@@ -41,7 +43,7 @@ export function BulkSelectionBar({
         >
           check_box
         </span>
-        {count} selected
+        {t("ui.bulkSelection.selected", { count })}
       </span>
 
       {children ? (
@@ -60,7 +62,7 @@ export function BulkSelectionBar({
         <span className="material-symbols-outlined text-[14px] leading-none" aria-hidden>
           close
         </span>
-        Clear
+        {t("ui.bulkSelection.clear")}
       </button>
     </div>
   );
@@ -80,15 +82,16 @@ export function SelectAllCheckbox({
   indeterminate = false,
   onChange,
   disabled = false,
-  label = "Select all",
+  label,
 }: SelectAllCheckboxProps) {
+  const { t } = useI18n();
   return (
     <Checkbox
       checked={checked}
       indeterminate={indeterminate}
       onChange={() => onChange()}
       disabled={disabled}
-      aria-label={label}
+      aria-label={label ?? t("ui.bulkSelection.selectAll")}
       className="-m-2"
     />
   );

@@ -9,16 +9,35 @@ import { formatDateShort } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type StatsData = { total: number; by_status: Record<string, number>; overdue: number; my_assignments: number };
 
 const PRIORITY_FILTERS = ["All", "Critical", "High", "Medium", "Low"] as const;
 const STATUS_TABS = [
-  { label: "My Work", value: "mine" },
-  { label: "Assigned By Me", value: "by_me" },
-  { label: "All", value: "all" },
-  { label: "Overdue", value: "overdue" },
+  { label: "hr.assignments.tabMine", value: "mine" },
+  { label: "hr.assignments.tabByMe", value: "by_me" },
+  { label: "hr.assignments.all", value: "all" },
+  { label: "hr.assignments.status.overdue", value: "overdue" },
 ] as const;
+
+const PRIORITY_FILTER_KEYS: Record<string, string> = {
+  All: "hr.assignments.all",
+  Critical: "hr.assignments.priority.critical",
+  High: "hr.assignments.priority.high",
+  Medium: "hr.assignments.priority.medium",
+  Low: "hr.assignments.priority.low",
+};
+
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  draft: "hr.assignments.status.draft",
+  assigned: "hr.assignments.status.assigned",
+  in_progress: "hr.assignments.status.inProgress",
+  pending_review: "hr.assignments.status.pendingReview",
+  completed: "hr.assignments.status.completed",
+  overdue: "hr.assignments.status.overdue",
+  cancelled: "hr.assignments.status.cancelled",
+};
 
 function priorityBadge(priority: WorkAssignment["priority"]) {
   const map: Record<string, string> = {
@@ -43,11 +62,19 @@ function statusBadge(status: WorkAssignment["status"]) {
   return map[status] ?? "badge-muted";
 }
 
-function statusLabel(status: WorkAssignment["status"]) {
+function statusLabel(status: WorkAssignment["status"], t: (key: string) => string) {
+  const key = STATUS_LABEL_KEYS[status];
+  if (key) return t(key);
   return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function priorityLabel(priority: string, t: (key: string) => string) {
+  const key = PRIORITY_FILTER_KEYS[priority.charAt(0).toUpperCase() + priority.slice(1)];
+  return key ? t(key) : priority;
+}
+
 export default function AssignmentsPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const currentUser = getStoredUser();
@@ -100,11 +127,11 @@ export default function AssignmentsPage() {
       setLastPage(res.data.last_page);
       setTotal(res.data.total);
     } catch {
-      setError("Failed to load assignments.");
+      setError(t("hr.assignments.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [tab, priorityFilter, page, currentUser?.id]);
+  }, [tab, priorityFilter, page, currentUser?.id, t]);
 
   useEffect(() => {
     loadStats();
@@ -133,7 +160,7 @@ export default function AssignmentsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.assigned_to) {
-      setFormError("Title and assignee are required.");
+      setFormError(t("hr.assignments.titleAssigneeRequired"));
       return;
     }
     setSubmitting(true);
@@ -149,22 +176,22 @@ export default function AssignmentsPage() {
       });
       setShowModal(false);
       setForm({ title: "", assigned_to: "", description: "", priority: "medium", due_date: "", estimated_hours: "" });
-      toast.success("Assignment created");
+      toast.success(t("hr.assignments.created"));
       loadAssignments();
       loadStats();
     } catch (err) {
-      setFormError("Failed to create assignment. Please try again.");
-      toast.error("Assignment not created", apiErrorMessage(err, "Failed to create assignment. Please try again."));
+      setFormError(t("hr.assignments.createFailed"));
+      toast.error(t("hr.assignments.notCreated"), apiErrorMessage(err, t("hr.assignments.createFailed")));
     } finally {
       setSubmitting(false);
     }
   };
 
   const statCards = [
-    { label: "My Assignments", value: stats?.my_assignments ?? "—", icon: "task_alt", color: "text-blue-600 bg-blue-50" },
-    { label: "In Progress", value: stats?.by_status?.in_progress ?? "—", icon: "pending", color: "text-amber-600 bg-amber-50" },
-    { label: "Overdue", value: stats?.overdue ?? "—", icon: "schedule", color: "text-red-600 bg-red-50" },
-    { label: "Completed", value: stats?.by_status?.completed ?? "—", icon: "check_circle", color: "text-green-600 bg-green-50" },
+    { label: t("hr.assignments.statMine"), value: stats?.my_assignments ?? "—", icon: "task_alt", color: "text-blue-600 bg-blue-50" },
+    { label: t("hr.assignments.status.inProgress"), value: stats?.by_status?.in_progress ?? "—", icon: "pending", color: "text-amber-600 bg-amber-50" },
+    { label: t("hr.assignments.status.overdue"), value: stats?.overdue ?? "—", icon: "schedule", color: "text-red-600 bg-red-50" },
+    { label: t("hr.assignments.status.completed"), value: stats?.by_status?.completed ?? "—", icon: "check_circle", color: "text-green-600 bg-green-50" },
   ];
 
   return (
@@ -172,13 +199,13 @@ export default function AssignmentsPage() {
       {/* Page header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Work Assignments"
-        subtitle="Track and manage work tasks and assignments"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Work Assignments" }]} />}
+        title={t("hr.assignments.title")}
+        subtitle={t("hr.assignments.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("hr.assignments.title") }]} />}
       />
         <button className="btn-primary flex items-center gap-2" onClick={openModal}>
           <span className="material-symbols-outlined text-[20px]">add</span>
-          New Assignment
+          {t("hr.assignments.new")}
         </button>
       </div>
 
@@ -202,13 +229,13 @@ export default function AssignmentsPage() {
         <div className="flex flex-wrap gap-3 items-center justify-between mb-3">
           {/* Tab filters */}
           <div className="flex gap-1 flex-wrap">
-            {STATUS_TABS.map((t) => (
+            {STATUS_TABS.map((st) => (
               <button
-                key={t.value}
-                onClick={() => setTab(t.value)}
-                className={`filter-tab${tab === t.value ? " active" : ""}`}
+                key={st.value}
+                onClick={() => setTab(st.value)}
+                className={`filter-tab${tab === st.value ? " active" : ""}`}
               >
-                {t.label}
+                {t(st.label)}
               </button>
             ))}
           </div>
@@ -224,7 +251,7 @@ export default function AssignmentsPage() {
                     : "bg-white text-neutral-600 border-neutral-200 hover:border-primary hover:text-primary"
                 }`}
               >
-                {p}
+                {t(PRIORITY_FILTER_KEYS[p])}
               </button>
             ))}
           </div>
@@ -245,8 +272,8 @@ export default function AssignmentsPage() {
         ) : assignments.length === 0 ? (
           <EmptyState
             icon="task_alt"
-            title="No assignments found"
-            description="Try changing your filters or create a new assignment."
+            title={t("hr.assignments.empty")}
+            description={t("hr.assignments.emptyHint")}
           />
         ) : (
           <>
@@ -254,13 +281,13 @@ export default function AssignmentsPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Title</th>
-                    <th>Assignee</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Due Date</th>
-                    <th>Hours (Est / Act)</th>
-                    <th>Actions</th>
+                    <th>{t("hr.assignments.colTitle")}</th>
+                    <th>{t("hr.assignments.assignee")}</th>
+                    <th>{t("hr.assignments.priorityLabel")}</th>
+                    <th>{t("hr.assignments.statusLabel")}</th>
+                    <th>{t("hr.assignments.dueDate")}</th>
+                    <th>{t("hr.assignments.hoursCol")}</th>
+                    <th>{t("hr.assignments.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -274,11 +301,11 @@ export default function AssignmentsPage() {
                       <td className="text-neutral-600">{a.assigned_to_user?.name ?? `#${a.assigned_to}`}</td>
                       <td>
                         <span className={`badge ${priorityBadge(a.priority)}`}>
-                          {a.priority.charAt(0).toUpperCase() + a.priority.slice(1)}
+                          {priorityLabel(a.priority, t)}
                         </span>
                       </td>
                       <td>
-                        <span className={`badge ${statusBadge(a.status)}`}>{statusLabel(a.status)}</span>
+                        <span className={`badge ${statusBadge(a.status)}`}>{statusLabel(a.status, t)}</span>
                       </td>
                       <td className={a.is_overdue ? "text-red-600 font-medium" : "text-neutral-600"}>
                         {a.due_date ? (
@@ -303,7 +330,7 @@ export default function AssignmentsPage() {
                             router.push(`/hr/assignments/${a.id}`);
                           }}
                         >
-                          View
+                          {t("hr.assignments.view")}
                         </button>
                       </td>
                     </tr>
@@ -314,14 +341,14 @@ export default function AssignmentsPage() {
             {/* Pagination */}
             {lastPage > 1 && (
               <div className="flex items-center justify-between mt-4 text-sm text-neutral-500">
-                <span>{total} total</span>
+                <span>{t("common.totalCount", { count: total })}</span>
                 <div className="flex gap-2">
                   <button
                     className="btn-secondary px-3 py-1 text-xs disabled:opacity-40"
                     disabled={page <= 1}
                     onClick={() => setPage((p) => p - 1)}
                   >
-                    Previous
+                    {t("common.previous")}
                   </button>
                   <span className="px-2 py-1">
                     {page} / {lastPage}
@@ -331,7 +358,7 @@ export default function AssignmentsPage() {
                     disabled={page >= lastPage}
                     onClick={() => setPage((p) => p + 1)}
                   >
-                    Next
+                    {t("common.next")}
                   </button>
                 </div>
               </div>
@@ -345,10 +372,10 @@ export default function AssignmentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
-              <h2 className="font-semibold text-neutral-800 text-lg">New Assignment</h2>
+              <h2 className="font-semibold text-neutral-800 text-lg">{t("hr.assignments.new")}</h2>
               <button
                 onClick={() => setShowModal(false)}
-                aria-label="Close assignment form"
+                aria-label={t("hr.assignments.closeForm")}
                 className="text-neutral-400 hover:text-neutral-600"
               >
                 <span className="material-symbols-outlined text-[22px]">close</span>
@@ -359,22 +386,22 @@ export default function AssignmentsPage() {
                 <div className="bg-red-50 text-red-700 rounded-lg px-4 py-2 text-sm">{formError}</div>
               )}
               <div>
-                <label htmlFor="hr-assignments-title" className="block text-sm font-medium text-neutral-700 mb-1">Title *</label>
+                <label htmlFor="hr-assignments-title" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.assignments.titleRequired")}</label>
                 <input id="hr-assignments-title"
                   className="form-input"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  placeholder="Assignment title"
+                  placeholder={t("hr.assignments.titlePlaceholder")}
                 />
               </div>
               <div>
-                <label htmlFor="hr-assignments-assign-to" className="block text-sm font-medium text-neutral-700 mb-1">Assign To *</label>
+                <label htmlFor="hr-assignments-assign-to" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.assignments.assignTo")}</label>
                 <select id="hr-assignments-assign-to"
                   className="form-input"
                   value={form.assigned_to}
                   onChange={(e) => setForm((f) => ({ ...f, assigned_to: e.target.value }))}
                 >
-                  <option value="">Select staff member...</option>
+                  <option value="">{t("hr.assignments.selectStaff")}</option>
                   {tenantUsers.map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name}
@@ -383,31 +410,31 @@ export default function AssignmentsPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="hr-assignments-description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
+                <label htmlFor="hr-assignments-description" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.assignments.description")}</label>
                 <textarea id="hr-assignments-description"
                   className="form-input"
                   rows={3}
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  placeholder="Describe the assignment..."
+                  placeholder={t("hr.assignments.descriptionPlaceholder")}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="hr-assignments-priority" className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
+                  <label htmlFor="hr-assignments-priority" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.assignments.priorityLabel")}</label>
                   <select id="hr-assignments-priority"
                     className="form-input"
                     value={form.priority}
                     onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
+                    <option value="low">{t("hr.assignments.priority.low")}</option>
+                    <option value="medium">{t("hr.assignments.priority.medium")}</option>
+                    <option value="high">{t("hr.assignments.priority.high")}</option>
+                    <option value="critical">{t("hr.assignments.priority.critical")}</option>
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="hr-assignments-est-hours" className="block text-sm font-medium text-neutral-700 mb-1">Est. Hours</label>
+                  <label htmlFor="hr-assignments-est-hours" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.assignments.estHours")}</label>
                   <input id="hr-assignments-est-hours"
                     className="form-input"
                     type="number"
@@ -415,12 +442,12 @@ export default function AssignmentsPage() {
                     step="0.5"
                     value={form.estimated_hours}
                     onChange={(e) => setForm((f) => ({ ...f, estimated_hours: e.target.value }))}
-                    placeholder="e.g. 8"
+                    placeholder={t("hr.assignments.estHoursPlaceholder")}
                   />
                 </div>
               </div>
               <div>
-                <label htmlFor="hr-assignments-due-date" className="block text-sm font-medium text-neutral-700 mb-1">Due Date</label>
+                <label htmlFor="hr-assignments-due-date" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.assignments.dueDate")}</label>
                 <input id="hr-assignments-due-date"
                   className="form-input"
                   type="date"
@@ -430,10 +457,10 @@ export default function AssignmentsPage() {
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button type="submit" className="btn-primary" disabled={submitting}>
-                  {submitting ? "Creating..." : "Create Assignment"}
+                  {submitting ? t("hr.assignments.creating") : t("hr.assignments.create")}
                 </button>
               </div>
             </form>

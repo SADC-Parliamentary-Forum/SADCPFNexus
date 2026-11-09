@@ -18,10 +18,18 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type NodeDraft = { title: string; code: string; description: string };
 
 const EMPTY_DRAFT: NodeDraft = { title: "", code: "", description: "" };
+
+const DELETE_TITLE: Record<"goal" | "objective" | "outcome" | "output", string> = {
+  goal: "mande.planDetail.deleteGoal",
+  objective: "mande.planDetail.deleteObjective",
+  outcome: "mande.planDetail.deleteOutcome",
+  output: "mande.planDetail.deleteOutput",
+};
 
 function NodeForm({
   label,
@@ -38,26 +46,27 @@ function NodeForm({
   pending: boolean;
   onCancel?: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50/80 p-3 space-y-2 mt-2">
       <p className="text-xs font-semibold text-neutral-700">{label}</p>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_120px]">
         <input
           className="form-input"
-          placeholder="Title *"
+          placeholder={t("mande.planDetail.titleRequired")}
           value={draft.title}
           onChange={(e) => setDraft({ ...draft, title: e.target.value })}
         />
         <input
           className="form-input"
-          placeholder="Code"
+          placeholder={t("fleet.col.code")}
           value={draft.code}
           onChange={(e) => setDraft({ ...draft, code: e.target.value })}
         />
       </div>
       <textarea
         className="form-input min-h-[60px]"
-        placeholder="Description"
+        placeholder={t("correspondence.contacts.description")}
         value={draft.description}
         onChange={(e) => setDraft({ ...draft, description: e.target.value })}
       />
@@ -68,11 +77,11 @@ function NodeForm({
           disabled={!draft.title.trim() || pending}
           onClick={onSubmit}
         >
-          {pending ? "Saving…" : "Add"}
+          {pending ? t("correspondence.saving") : t("common.add")}
         </button>
         {onCancel && (
           <button type="button" className="btn-secondary text-xs" onClick={onCancel}>
-            Cancel
+            {t("common.cancel")}
           </button>
         )}
       </div>
@@ -86,6 +95,7 @@ export default function StrategicPlanDetailPage() {
   const qc = useQueryClient();
   const { confirm } = useConfirm();
   const toast = useToast();
+  const { t } = useI18n();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "mande.admin");
 
@@ -117,11 +127,11 @@ export default function StrategicPlanDetailPage() {
     mutationFn: () => mandeApi.addGoal(id, payload(goalDraft)),
     onSuccess: () => {
       setGoalDraft(EMPTY_DRAFT);
-      setActionMsg("Goal added.");
-      toast.success("Goal added");
+      setActionMsg(t("mande.planDetail.goalAddedMsg"));
+      toast.success(t("mande.planDetail.goalAdded"));
       invalidate();
     },
-    onError: (err) => toast.error("Goal not added", apiErrorMessage(err, "Could not add the goal.")),
+    onError: (err) => toast.error(t("mande.planDetail.goalNotAdded"), apiErrorMessage(err, t("mande.planDetail.goalFailed"))),
   });
 
   const addObjectiveMut = useMutation({
@@ -129,11 +139,11 @@ export default function StrategicPlanDetailPage() {
     onSuccess: () => {
       setChildDraft(EMPTY_DRAFT);
       setAddingObjectiveFor(null);
-      setActionMsg("Objective added.");
-      toast.success("Objective added");
+      setActionMsg(t("mande.planDetail.objectiveAddedMsg"));
+      toast.success(t("mande.planDetail.objectiveAdded"));
       invalidate();
     },
-    onError: (err) => toast.error("Objective not added", apiErrorMessage(err, "Could not add the objective.")),
+    onError: (err) => toast.error(t("mande.planDetail.objectiveNotAdded"), apiErrorMessage(err, t("mande.planDetail.objectiveFailed"))),
   });
 
   const addOutcomeMut = useMutation({
@@ -141,11 +151,11 @@ export default function StrategicPlanDetailPage() {
     onSuccess: () => {
       setChildDraft(EMPTY_DRAFT);
       setAddingOutcomeFor(null);
-      setActionMsg("Outcome added.");
-      toast.success("Outcome added");
+      setActionMsg(t("mande.planDetail.outcomeAddedMsg"));
+      toast.success(t("mande.planDetail.outcomeAdded"));
       invalidate();
     },
-    onError: (err) => toast.error("Outcome not added", apiErrorMessage(err, "Could not add the outcome.")),
+    onError: (err) => toast.error(t("mande.planDetail.outcomeNotAdded"), apiErrorMessage(err, t("mande.planDetail.outcomeFailed"))),
   });
 
   const addOutputMut = useMutation({
@@ -153,22 +163,22 @@ export default function StrategicPlanDetailPage() {
     onSuccess: () => {
       setChildDraft(EMPTY_DRAFT);
       setAddingOutputFor(null);
-      setActionMsg("Output added.");
-      toast.success("Output added");
+      setActionMsg(t("mande.planDetail.outputAddedMsg"));
+      toast.success(t("mande.planDetail.outputAdded"));
       invalidate();
     },
-    onError: (err) => toast.error("Output not added", apiErrorMessage(err, "Could not add the output.")),
+    onError: (err) => toast.error(t("mande.planDetail.outputNotAdded"), apiErrorMessage(err, t("mande.planDetail.outputFailed"))),
   });
 
   const deleteMut = useMutation({
     mutationFn: ({ type, nodeId }: { type: "goal" | "objective" | "outcome" | "output"; nodeId: number }) =>
       mandeApi.deleteNode(type, nodeId),
     onSuccess: () => {
-      setActionMsg("Node removed.");
-      toast.success("Item removed");
+      setActionMsg(t("mande.planDetail.nodeRemoved"));
+      toast.success(t("mande.planDetail.itemRemoved"));
       invalidate();
     },
-    onError: (err) => toast.error("Item not removed", apiErrorMessage(err, "Could not remove the item.")),
+    onError: (err) => toast.error(t("mande.planDetail.itemNotRemoved"), apiErrorMessage(err, t("mande.planDetail.removeFailed"))),
   });
 
   const startChild = (kind: "objective" | "outcome" | "output", parentId: number) => {
@@ -183,7 +193,7 @@ export default function StrategicPlanDetailPage() {
     nodeId: number,
     message: string,
   ) => {
-    if (await confirm({ title: `Delete ${type}`, message, variant: "danger" })) {
+    if (await confirm({ title: t(DELETE_TITLE[type]), message, variant: "danger" })) {
       deleteMut.mutate({ type, nodeId });
     }
   };
@@ -192,10 +202,10 @@ export default function StrategicPlanDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Strategic plan"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: "Strategic Plans", href: "/mande/strategic-plan" }, { label: "Plan" }]} />}
+          title={t("mande.planDetail.title")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: t("mande.plans.title"), href: "/mande/strategic-plan" }, { label: t("mande.frameworks.plan") }]} />}
         />
-        <p className="text-sm text-neutral-400">Loading plan…</p>
+        <p className="text-sm text-neutral-400">{t("mande.planDetail.loading")}</p>
       </div>
     );
   }
@@ -203,11 +213,11 @@ export default function StrategicPlanDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Strategic plan"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: "Strategic Plans", href: "/mande/strategic-plan" }, { label: "Plan" }]} />}
+          title={t("mande.planDetail.title")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: t("mande.plans.title"), href: "/mande/strategic-plan" }, { label: t("mande.frameworks.plan") }]} />}
         />
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">Plan not found.</div>
-        <Link href="/mande/strategic-plan" className="btn-secondary text-sm">Back to strategic plans</Link>
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{t("mande.planDetail.notFound")}</div>
+        <Link href="/mande/strategic-plan" className="btn-secondary text-sm">{t("mande.planDetail.back")}</Link>
       </div>
     );
   }
@@ -218,12 +228,12 @@ export default function StrategicPlanDetailPage() {
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={plan.name}
-        subtitle={`${plan.period ?? "No period"} · ${plan.start_date ? formatDateShort(plan.start_date) : "—"} → ${plan.end_date ? formatDateShort(plan.end_date) : "—"} · ${plan.status}`}
+        subtitle={`${plan.period ?? t("mande.planDetail.noPeriod")} · ${plan.start_date ? formatDateShort(plan.start_date) : "—"} → ${plan.end_date ? formatDateShort(plan.end_date) : "—"} · ${plan.status === "active" ? t("mande.plans.status.active") : plan.status === "archived" ? t("correspondence.status.archived") : plan.status === "draft" ? t("status.draft") : plan.status}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.mande", href: "/mande" },
-              { label: "Strategic Plans", href: "/mande/strategic-plan" },
+              { label: t("mande.plans.title"), href: "/mande/strategic-plan" },
               { label: plan.name },
             ]}
           />
@@ -240,15 +250,15 @@ export default function StrategicPlanDetailPage() {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h2 className="text-sm font-semibold text-neutral-800">Results hierarchy</h2>
-          <span className="text-xs text-neutral-400">{goals.length} goal{goals.length === 1 ? "" : "s"}</span>
+          <h2 className="text-sm font-semibold text-neutral-800">{t("mande.planDetail.hierarchy")}</h2>
+          <span className="text-xs text-neutral-400">{goals.length === 1 ? t("mande.planDetail.goalOne") : t("mande.planDetail.goalMany", { count: goals.length })}</span>
         </div>
 
         {goals.length === 0 && (
           <EmptyState
             icon="account_tree"
-            title="No goals yet"
-            description={canAdmin ? "Add a goal below to start the hierarchy." : "An administrator can add goals."}
+            title={t("mande.planDetail.noGoals")}
+            description={canAdmin ? t("mande.planDetail.noGoalsAdmin") : t("mande.planDetail.noGoalsViewer")}
           />
         )}
 
@@ -256,7 +266,7 @@ export default function StrategicPlanDetailPage() {
           <div key={goal.id} className="card p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">Goal</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">{t("mande.reports.goal")}</p>
                 <h3 className="text-base font-semibold text-neutral-900">
                   {goal.code ? `${goal.code} · ` : ""}{goal.title}
                 </h3>
@@ -269,14 +279,14 @@ export default function StrategicPlanDetailPage() {
                     className="btn-secondary text-xs"
                     onClick={() => startChild("objective", goal.id)}
                   >
-                    + Objective
+                    {t("mande.planDetail.addObjective")}
                   </button>
                   <button
                     type="button"
                     className="btn-secondary text-xs text-red-600"
-                    onClick={() => confirmDeleteNode("goal", goal.id, "Delete this goal and its children?")}
+                    onClick={() => confirmDeleteNode("goal", goal.id, t("mande.planDetail.deleteGoalMessage"))}
                   >
-                    Delete
+                    {t("common.delete")}
                   </button>
                 </div>
               )}
@@ -284,7 +294,7 @@ export default function StrategicPlanDetailPage() {
 
             {addingObjectiveFor === goal.id && (
               <NodeForm
-                label="New objective"
+                label={t("mande.planDetail.newObjective")}
                 draft={childDraft}
                 setDraft={setChildDraft}
                 pending={addObjectiveMut.isPending}
@@ -297,7 +307,7 @@ export default function StrategicPlanDetailPage() {
               <div key={obj.id} className="ml-3 border-l-2 border-neutral-200 pl-4 space-y-2">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Objective</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">{t("mande.planDetail.objective")}</p>
                     <p className="text-sm font-medium text-neutral-900">
                       {obj.code ? `${obj.code} · ` : ""}{obj.title}
                     </p>
@@ -310,14 +320,14 @@ export default function StrategicPlanDetailPage() {
                         className="btn-secondary text-xs"
                         onClick={() => startChild("outcome", obj.id)}
                       >
-                        + Outcome
+                        {t("mande.planDetail.addOutcome")}
                       </button>
                       <button
                         type="button"
                         className="btn-secondary text-xs text-red-600"
-                        onClick={() => confirmDeleteNode("objective", obj.id, "Delete this objective?")}
+                        onClick={() => confirmDeleteNode("objective", obj.id, t("mande.planDetail.deleteObjectiveMessage"))}
                       >
-                        Delete
+                        {t("common.delete")}
                       </button>
                     </div>
                   )}
@@ -325,7 +335,7 @@ export default function StrategicPlanDetailPage() {
 
                 {addingOutcomeFor === obj.id && (
                   <NodeForm
-                    label="New outcome"
+                    label={t("mande.planDetail.newOutcome")}
                     draft={childDraft}
                     setDraft={setChildDraft}
                     pending={addOutcomeMut.isPending}
@@ -338,7 +348,7 @@ export default function StrategicPlanDetailPage() {
                   <div key={outcome.id} className="ml-3 border-l-2 border-neutral-100 pl-4 space-y-2">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Outcome</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("mande.level.outcome")}</p>
                         <p className="text-sm text-neutral-800">
                           {outcome.code ? `${outcome.code} · ` : ""}{outcome.title}
                         </p>
@@ -351,14 +361,14 @@ export default function StrategicPlanDetailPage() {
                             className="btn-secondary text-xs"
                             onClick={() => startChild("output", outcome.id)}
                           >
-                            + Output
+                            {t("mande.planDetail.addOutput")}
                           </button>
                           <button
                             type="button"
                             className="btn-secondary text-xs text-red-600"
-                            onClick={() => confirmDeleteNode("outcome", outcome.id, "Delete this outcome?")}
+                            onClick={() => confirmDeleteNode("outcome", outcome.id, t("mande.planDetail.deleteOutcomeMessage"))}
                           >
-                            Delete
+                            {t("common.delete")}
                           </button>
                         </div>
                       )}
@@ -366,7 +376,7 @@ export default function StrategicPlanDetailPage() {
 
                     {addingOutputFor === outcome.id && (
                       <NodeForm
-                        label="New output"
+                        label={t("mande.planDetail.newOutput")}
                         draft={childDraft}
                         setDraft={setChildDraft}
                         pending={addOutputMut.isPending}
@@ -383,16 +393,16 @@ export default function StrategicPlanDetailPage() {
                             className="flex items-start justify-between gap-3 text-sm text-neutral-700"
                           >
                             <span>
-                              <span className="text-[10px] font-semibold uppercase text-neutral-400 mr-2">Output</span>
+                              <span className="text-[10px] font-semibold uppercase text-neutral-400 mr-2">{t("mande.level.output")}</span>
                               {output.code ? `${output.code} · ` : ""}{output.title}
                             </span>
                             {canAdmin && (
                               <button
                                 type="button"
                                 className="btn-secondary text-xs text-red-600 shrink-0"
-                                onClick={() => confirmDeleteNode("output", output.id, "Delete this output?")}
+                                onClick={() => confirmDeleteNode("output", output.id, t("mande.planDetail.deleteOutputMessage"))}
                               >
-                                Delete
+                                {t("common.delete")}
                               </button>
                             )}
                           </li>
@@ -409,7 +419,7 @@ export default function StrategicPlanDetailPage() {
         {canAdmin && (
           <div className="card p-4">
             <NodeForm
-              label="Add strategic goal"
+              label={t("mande.planDetail.addGoal")}
               draft={goalDraft}
               setDraft={setGoalDraft}
               pending={addGoalMut.isPending}

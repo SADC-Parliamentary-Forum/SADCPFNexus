@@ -8,12 +8,14 @@ import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi, fleetApi, type FleetBooking, type FleetDriver, type FleetVehicle, type User } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Tab = "vehicles" | "drivers" | "calendar";
 
 export default function FleetListPage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("vehicles");
   const [error, setError] = useState<string | null>(null);
 
@@ -58,11 +60,11 @@ export default function FleetListPage() {
       setDriverUserId("");
       setLicence("");
       qc.invalidateQueries({ queryKey: ["fleet", "drivers"] });
-      toast.success("Driver added");
+      toast.success(t("fleet.driverAdded"));
     },
     onError: (err: unknown) => {
-      setError("Could not add driver.");
-      toast.error("Driver not added", apiErrorMessage(err, "Could not add driver."));
+      setError(t("fleet.addDriverFailed"));
+      toast.error(t("fleet.driverNotAdded"), apiErrorMessage(err, t("fleet.addDriverFailed")));
     },
   });
 
@@ -78,12 +80,12 @@ export default function FleetListPage() {
       setError(null);
       setBookingPurpose("");
       qc.invalidateQueries({ queryKey: ["fleet", "bookings"] });
-      toast.success("Booking created");
+      toast.success(t("fleet.bookingCreated"));
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.errors?.starts_at?.[0] ?? "Could not create booking (check conflicts).";
+      const msg = err?.response?.data?.errors?.starts_at?.[0] ?? t("fleet.bookingFailed");
       setError(msg);
-      toast.error("Booking not created", msg);
+      toast.error(t("fleet.bookingNotCreated"), msg);
     },
   });
 
@@ -106,20 +108,20 @@ export default function FleetListPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Fleet"
-        subtitle="Ops layer on Fixed Assets with category fleet — vehicles, drivers roster, and booking calendar. GPS uses a pluggable telematics provider when configured, or a manual override otherwise."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Fleet" }]} />}
+        title={t("fleet.title")}
+        subtitle={t("fleet.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("fleet.title") }]} />}
       />
 
       <div className="flex flex-wrap gap-2">
-        {(["vehicles", "drivers", "calendar"] as Tab[]).map((t) => (
+        {(["vehicles", "drivers", "calendar"] as Tab[]).map((tb) => (
           <button
-            key={t}
+            key={tb}
             type="button"
-            onClick={() => setTab(t)}
-            className={tab === t ? "btn-primary" : "btn-secondary"}
+            onClick={() => setTab(tb)}
+            className={tab === tb ? "btn-primary" : "btn-secondary"}
           >
-            {t === "vehicles" ? "Vehicles" : t === "drivers" ? "Drivers" : "Booking calendar"}
+            {tb === "vehicles" ? t("fleet.tab.vehicles") : tb === "drivers" ? t("fleet.tab.drivers") : t("fleet.tab.calendar")}
           </button>
         ))}
       </div>
@@ -131,9 +133,9 @@ export default function FleetListPage() {
           <table className="data-table">
             <thead className="bg-neutral-50 text-left text-neutral-600 dark:bg-neutral-950/60 dark:text-neutral-400">
               <tr>
-                <th className="px-3 py-2 font-medium">Code</th>
-                <th className="px-3 py-2 font-medium">Name</th>
-                <th className="px-3 py-2 font-medium">Status</th>
+                <th className="px-3 py-2 font-medium">{t("fleet.col.code")}</th>
+                <th className="px-3 py-2 font-medium">{t("fleet.col.name")}</th>
+                <th className="px-3 py-2 font-medium">{t("fleet.col.status")}</th>
                 <th className="px-3 py-2 font-medium" />
               </tr>
             </thead>
@@ -145,7 +147,7 @@ export default function FleetListPage() {
                   <td className="px-3 py-3">{v.status}</td>
                   <td className="px-3 py-3 text-right">
                     <Link href={`/fleet/${v.id}`} className="btn-secondary text-xs">
-                      Open
+                      {t("common.open")}
                     </Link>
                   </td>
                 </tr>
@@ -154,11 +156,11 @@ export default function FleetListPage() {
                 vehiclesQuery.isLoading ? (
                   <tr>
                     <td colSpan={4} className="px-3 py-8 text-center text-neutral-500 dark:text-neutral-400">
-                      Loading fleet vehicles…
+                      {t("fleet.loadingVehicles")}
                     </td>
                   </tr>
                 ) : (
-                  <TableEmpty colSpan={4} title="No fleet vehicles found." />
+                  <TableEmpty colSpan={4} title={t("fleet.noVehicles")} />
                 )
               )}
             </tbody>
@@ -170,14 +172,14 @@ export default function FleetListPage() {
         <div className="space-y-4">
           <form onSubmit={onDriver} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900 md:grid-cols-3">
             <label htmlFor="fleet-staff-member-setdriveruserid-e-target-value-sele" className="space-y-1">
-              <span className="text-sm font-medium">Staff member</span>
+              <span className="text-sm font-medium">{t("fleet.staffMember")}</span>
               <select id="fleet-staff-member-setdriveruserid-e-target-value-sele"
                 className="input w-full"
                 required
                 value={driverUserId}
                 onChange={(e) => setDriverUserId(e.target.value)}
               >
-                <option value="">Select staff…</option>
+                <option value="">{t("fleet.selectStaff")}</option>
                 {((usersQuery.data ?? []) as User[]).map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name}
@@ -186,12 +188,12 @@ export default function FleetListPage() {
               </select>
             </label>
             <label htmlFor="fleet-licence-setlicence-e-target-value" className="space-y-1">
-              <span className="text-sm font-medium">Licence #</span>
+              <span className="text-sm font-medium">{t("fleet.licenceNumber")}</span>
               <input id="fleet-licence-setlicence-e-target-value" className="input w-full" value={licence} onChange={(e) => setLicence(e.target.value)} />
             </label>
             <div className="flex items-end">
               <button type="submit" className="btn-primary" disabled={createDriver.isPending}>
-                Add driver
+                {t("fleet.addDriver")}
               </button>
             </div>
           </form>
@@ -199,23 +201,23 @@ export default function FleetListPage() {
             <table className="data-table">
               <thead className="bg-neutral-50 text-left text-neutral-600 dark:bg-neutral-950/60 dark:text-neutral-400">
                 <tr>
-                  <th className="px-3 py-2 font-medium">Driver</th>
-                  <th className="px-3 py-2 font-medium">Licence</th>
-                  <th className="px-3 py-2 font-medium">Expires</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
+                  <th className="px-3 py-2 font-medium">{t("fleet.col.driver")}</th>
+                  <th className="px-3 py-2 font-medium">{t("fleet.col.licence")}</th>
+                  <th className="px-3 py-2 font-medium">{t("fleet.col.expires")}</th>
+                  <th className="px-3 py-2 font-medium">{t("fleet.col.status")}</th>
                 </tr>
               </thead>
               <tbody>
                 {drivers.map((d) => (
                   <tr key={d.id} className="border-t border-neutral-100 dark:border-neutral-800 dark:text-neutral-200">
-                    <td className="px-3 py-3">{d.user?.name ?? `User #${d.user_id}`}</td>
+                    <td className="px-3 py-3">{d.user?.name ?? t("fleet.userNumber", { id: d.user_id })}</td>
                     <td className="px-3 py-3">{d.licence_number ?? "—"}</td>
                     <td className="px-3 py-3">{d.licence_expires_on ?? "—"}</td>
                     <td className="px-3 py-3">{d.status}</td>
                   </tr>
                 ))}
                 {drivers.length === 0 && (
-                  <TableEmpty colSpan={4} title="No drivers on roster yet." />
+                  <TableEmpty colSpan={4} title={t("fleet.noDrivers")} />
                 )}
               </tbody>
             </table>
@@ -227,9 +229,9 @@ export default function FleetListPage() {
         <div className="space-y-4">
           <form onSubmit={onBooking} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900 md:grid-cols-2">
             <label htmlFor="fleet-vehicle-setbookingassetid-e-target-value-select" className="space-y-1">
-              <span className="text-sm font-medium">Vehicle</span>
+              <span className="text-sm font-medium">{t("fleet.col.vehicle")}</span>
               <select id="fleet-vehicle-setbookingassetid-e-target-value-select" className="input w-full" required value={bookingAssetId} onChange={(e) => setBookingAssetId(e.target.value)}>
-                <option value="">Select…</option>
+                <option value="">{t("correspondence.mailMerge.select")}</option>
                 {vehicles.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.asset_code} — {v.name}
@@ -238,20 +240,20 @@ export default function FleetListPage() {
               </select>
             </label>
             <label htmlFor="fleet-purpose-setbookingpurpose-e-target-value" className="space-y-1">
-              <span className="text-sm font-medium">Purpose</span>
+              <span className="text-sm font-medium">{t("fleet.col.purpose")}</span>
               <input id="fleet-purpose-setbookingpurpose-e-target-value" className="input w-full" value={bookingPurpose} onChange={(e) => setBookingPurpose(e.target.value)} />
             </label>
             <label htmlFor="fleet-starts-setbookingstart-e-target-value" className="space-y-1">
-              <span className="text-sm font-medium">Starts</span>
+              <span className="text-sm font-medium">{t("fleet.starts")}</span>
               <input id="fleet-starts-setbookingstart-e-target-value" className="input w-full" type="datetime-local" required value={bookingStart} onChange={(e) => setBookingStart(e.target.value)} />
             </label>
             <label htmlFor="fleet-ends-setbookingend-e-target-value" className="space-y-1">
-              <span className="text-sm font-medium">Ends</span>
+              <span className="text-sm font-medium">{t("fleet.ends")}</span>
               <input id="fleet-ends-setbookingend-e-target-value" className="input w-full" type="datetime-local" required value={bookingEnd} onChange={(e) => setBookingEnd(e.target.value)} />
             </label>
             <div className="md:col-span-2">
               <button type="submit" className="btn-primary" disabled={createBooking.isPending}>
-                Book vehicle
+                {t("fleet.bookVehicle")}
               </button>
             </div>
           </form>
@@ -259,11 +261,11 @@ export default function FleetListPage() {
             <table className="data-table">
               <thead className="bg-neutral-50 text-left text-neutral-600 dark:bg-neutral-950/60 dark:text-neutral-400">
                 <tr>
-                  <th className="px-3 py-2 font-medium">Vehicle</th>
-                  <th className="px-3 py-2 font-medium">Start</th>
-                  <th className="px-3 py-2 font-medium">End</th>
-                  <th className="px-3 py-2 font-medium">Purpose</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
+                  <th className="px-3 py-2 font-medium">{t("fleet.col.vehicle")}</th>
+                  <th className="px-3 py-2 font-medium">{t("fleet.col.start")}</th>
+                  <th className="px-3 py-2 font-medium">{t("fleet.col.end")}</th>
+                  <th className="px-3 py-2 font-medium">{t("fleet.col.purpose")}</th>
+                  <th className="px-3 py-2 font-medium">{t("fleet.col.status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -277,7 +279,7 @@ export default function FleetListPage() {
                   </tr>
                 ))}
                 {calendarRows.length === 0 && (
-                  <TableEmpty colSpan={5} title="No bookings yet." />
+                  <TableEmpty colSpan={5} title={t("fleet.noBookings")} />
                 )}
               </tbody>
             </table>

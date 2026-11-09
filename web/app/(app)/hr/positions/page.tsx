@@ -8,12 +8,14 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const GRADES = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"];
 
 export default function PositionsPage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [deptFilter, setDeptFilter] = useState<number | "">("");
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Position | null>(null);
@@ -44,18 +46,18 @@ export default function PositionsPage() {
       qc.invalidateQueries({ queryKey: ["admin-positions"] });
       setDeleteTarget(null);
       setDeleteError("");
-      toast.success("Position deleted");
+      toast.success(t("hr.positions.deleted"));
     },
     onError: (err: any) => {
-      setDeleteError(err?.response?.data?.message ?? "Could not delete position.");
-      toast.error("Position not deleted", apiErrorMessage(err, "Could not delete position."));
+      setDeleteError(err?.response?.data?.message ?? t("hr.positions.deleteFailed"));
+      toast.error(t("hr.positions.notDeleted"), apiErrorMessage(err, t("hr.positions.deleteFailed")));
     },
   });
 
   // Group positions by department
   const grouped: Record<string, Position[]> = {};
   for (const pos of positions) {
-    const deptName = pos.department?.name ?? "Unassigned";
+    const deptName = pos.department?.name ?? t("hr.positions.unassigned");
     if (!grouped[deptName]) grouped[deptName] = [];
     grouped[deptName].push(pos);
   }
@@ -63,13 +65,13 @@ export default function PositionsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Positions (Establishment)"
-        subtitle="Manage establishment positions across all departments."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Positions" }]} />}
+        title="hr.positions.title"
+        subtitle="hr.positions.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "hr.positions.crumb" }]} />}
         actions={
           <Link href="/hr/positions/create" className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New Position
+            {t("hr.positions.newPosition")}
           </Link>
         }
       />
@@ -80,7 +82,7 @@ export default function PositionsPage() {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[18px]">search</span>
           <input
             type="text"
-            placeholder="Search positions..."
+            placeholder={t("hr.positions.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="form-input pl-9 w-full"
@@ -91,13 +93,13 @@ export default function PositionsPage() {
           onChange={(e) => setDeptFilter(e.target.value ? Number(e.target.value) : "")}
           className="form-input min-w-[200px]"
         >
-          <option value="">All Departments</option>
+          <option value="">{t("hr.positions.allDepartments")}</option>
           {departments.map((d) => (
             <option key={d.id} value={d.id}>{d.name}</option>
           ))}
         </select>
         <span className="text-xs text-neutral-400 ml-auto">
-          {positions.length} position{positions.length !== 1 ? "s" : ""}
+          {t(positions.length === 1 ? "hr.positions.countOne" : "hr.positions.countOther", { count: positions.length })}
         </span>
       </div>
 
@@ -111,12 +113,12 @@ export default function PositionsPage() {
       ) : positions.length === 0 ? (
         <EmptyState
           icon="work"
-          title="No positions found"
-          description="Create your first establishment position."
+          title="hr.positions.empty"
+          description="hr.positions.emptyHint"
           action={
             <Link href="/hr/positions/create" className="btn-primary">
               <span className="material-symbols-outlined text-[18px]">add</span>
-              New Position
+              {t("hr.positions.newPosition")}
             </Link>
           }
         />
@@ -131,11 +133,11 @@ export default function PositionsPage() {
                 <table className="data-table w-full">
                   <thead>
                     <tr>
-                      <th>Position Title</th>
-                      <th className="w-20 text-center">Grade</th>
-                      <th className="w-24 text-center">Headcount</th>
-                      <th className="w-24 text-center">Status</th>
-                      <th className="w-28 text-right">Actions</th>
+                      <th>{t("hr.positions.positionTitle")}</th>
+                      <th className="w-20 text-center">{t("hr.positions.grade")}</th>
+                      <th className="w-24 text-center">{t("hr.positions.headcount")}</th>
+                      <th className="w-24 text-center">{t("hr.positions.status")}</th>
+                      <th className="w-28 text-right">{t("hr.positions.actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -166,7 +168,7 @@ export default function PositionsPage() {
                         </td>
                         <td className="text-center">
                           <span className={`badge ${pos.is_active ? "badge-success" : "badge-muted"}`}>
-                            {pos.is_active ? "Active" : "Inactive"}
+                            {pos.is_active ? t("hr.positions.active") : t("hr.positions.inactive")}
                           </span>
                         </td>
                         <td className="text-right">
@@ -174,14 +176,14 @@ export default function PositionsPage() {
                             <Link
                               href={`/hr/positions/${pos.id}/edit`}
                               className="flex items-center justify-center h-7 w-7 rounded-lg text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
-                              title="Edit"
+                              title={t("common.edit")}
                             >
                               <span className="material-symbols-outlined text-[16px]">edit</span>
                             </Link>
                             <button
                               onClick={() => { setDeleteTarget(pos); setDeleteError(""); }}
                               className="flex items-center justify-center h-7 w-7 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                              title="Delete"
+                              title={t("common.delete")}
                             >
                               <span className="material-symbols-outlined text-[16px]">delete</span>
                             </button>
@@ -204,9 +206,9 @@ export default function PositionsPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 mx-auto mb-4">
               <span className="material-symbols-outlined text-red-500 text-[24px]">warning</span>
             </div>
-            <h3 className="text-base font-semibold text-neutral-900 text-center">Delete Position?</h3>
+            <h3 className="text-base font-semibold text-neutral-900 text-center">{t("hr.positions.deleteTitle")}</h3>
             <p className="text-sm text-neutral-500 text-center mt-1">
-              <span className="font-medium text-neutral-700">{deleteTarget.title}</span> will be permanently removed.
+              {t("hr.positions.deleteBody", { title: deleteTarget.title })}
             </p>
             {deleteError && (
               <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-center">
@@ -219,14 +221,14 @@ export default function PositionsPage() {
                 className="btn-secondary flex-1"
                 disabled={deleteMutation.isPending}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={() => deleteMutation.mutate(deleteTarget.id)}
                 disabled={deleteMutation.isPending}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 disabled:opacity-50 transition-colors"
               >
-                {deleteMutation.isPending ? "Deleting…" : "Delete"}
+                {deleteMutation.isPending ? t("hr.positions.deleting") : t("common.delete")}
               </button>
             </div>
           </div>

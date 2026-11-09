@@ -17,6 +17,7 @@ import { attachCanvasPassiveFalseTouchListeners } from "@/lib/attachCanvasPassiv
 import { createFilePreviewUrl } from "@/lib/filePreview";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,13 +61,13 @@ type SigMethod = "draw" | "upload" | null;
 const SESSION_KEY = "sadcpf_setup_wizard";
 
 const STEPS = [
-  { label: "Identity" },
-  { label: "Personal Info" },
-  { label: "Photo" },
-  { label: "Signatures" },
-  { label: "Security" },
-  { label: "Preferences" },
-  { label: "Review" },
+  { label: "setup.step.identity" },
+  { label: "setup.step.personal" },
+  { label: "setup.step.photo" },
+  { label: "setup.step.signatures" },
+  { label: "setup.step.security" },
+  { label: "setup.step.preferences" },
+  { label: "setup.step.review" },
 ];
 
 function getInitialState(): WizardState {
@@ -87,11 +88,12 @@ function getInitialState(): WizardState {
 function StepCard({
   title, description, step, children,
 }: { title: string; description?: string; step: number; children: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <div className="rounded-2xl bg-white dark:bg-[var(--dk-bg-surface)] border border-neutral-200 dark:border-neutral-700 shadow-sm p-8">
       <div className="mb-6">
         <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
-          Step {step} of 7
+          {t("setup.stepOf", { step })}
         </p>
         <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{title}</h2>
         {description && <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{description}</p>}
@@ -102,7 +104,7 @@ function StepCard({
 }
 
 function StepFooter({
-  onBack, onNext, nextLabel = "Next", nextDisabled = false, saving = false,
+  onBack, onNext, nextLabel, nextDisabled = false, saving = false,
 }: {
   onBack?: () => void;
   onNext?: () => void;
@@ -110,12 +112,13 @@ function StepFooter({
   nextDisabled?: boolean;
   saving?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center justify-between mt-8 pt-6 border-t border-neutral-100 dark:border-neutral-700/50">
       {onBack ? (
         <button type="button" onClick={onBack} className="btn-secondary flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back
+          {t("common.back")}
         </button>
       ) : <div />}
       <button
@@ -126,7 +129,7 @@ function StepFooter({
       >
         {saving
           ? <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-          : nextLabel
+          : nextLabel ?? t("common.next")
         }
         {!saving && <span className="material-symbols-outlined text-[16px]">arrow_forward</span>}
       </button>
@@ -187,6 +190,7 @@ function FormSection({
 // ─── Setup Header ─────────────────────────────────────────────────────────────
 
 function SetupHeader() {
+  const { t } = useI18n();
   return (
     <div className="border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[var(--dk-bg-surface)] px-6 py-4">
       <div className="mx-auto max-w-3xl flex items-center justify-between gap-4">
@@ -194,19 +198,19 @@ function SetupHeader() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/sadcpf-logo.jpg" alt="SADC-PF" className="h-8 w-auto object-contain shrink-0" />
           <div className="min-w-0">
-            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">SADC-PF Nexus</p>
-            <p className="text-xs text-neutral-400 dark:text-neutral-500">Account Setup</p>
+            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">SADC-PF Nexus</p> {/* i18n-ignore */}
+            <p className="text-xs text-neutral-400 dark:text-neutral-500">{t("setup.accountSetup")}</p>
           </div>
         </div>
         <div className="flex items-center gap-4 shrink-0">
           <p className="text-xs text-neutral-400 dark:text-neutral-500 hidden sm:block max-w-[200px] md:max-w-none text-right">
-            Complete your profile to access the system
+            {t("setup.headerHint")}
           </p>
           <a
             href="/login?signout=1"
             className="text-sm font-medium text-primary hover:text-primary-hover underline-offset-4 hover:underline whitespace-nowrap"
           >
-            Sign out
+            {t("nav.signOut")}
           </a>
         </div>
       </div>
@@ -224,6 +228,7 @@ function SignatureCanvas({
   onSaved: () => void;
 }) {
   const toast = useToast();
+  const { t } = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasStrokes, setHasStrokes] = useState(false);
@@ -323,17 +328,17 @@ function SignatureCanvas({
 
   async function handleSave() {
     const canvas = canvasRef.current;
-    if (!canvas || !hasStrokes) { setError("Please draw your signature first."); return; }
+    if (!canvas || !hasStrokes) { setError(t("setup.drawFirst")); return; }
     setSaving(true);
     setError(null);
     try {
       const dataUrl = canvas.toDataURL("image/png");
       await saamApi.draw(type, dataUrl);
-      toast.success(type === "full" ? "Signature saved" : "Initials saved");
+      toast.success(type === "full" ? t("setup.sigSaved") : t("setup.initialsSaved"));
       onSaved();
     } catch (e: unknown) {
-      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to save. Please try again.");
-      toast.error(type === "full" ? "Signature not saved" : "Initials not saved", apiErrorMessage(e, "Failed to save. Please try again."));
+      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("correspondence.saveFailed"));
+      toast.error(type === "full" ? t("setup.sigNotSaved") : t("setup.initialsNotSaved"), apiErrorMessage(e, t("correspondence.saveFailed")));
     } finally {
       setSaving(false);
     }
@@ -348,6 +353,7 @@ function SignatureCanvas({
           width={600}
           height={150}
           className="w-full cursor-crosshair"
+          aria-label={t("setup.canvasLabel")}
           onMouseDown={startDraw}
           onMouseMove={onDraw}
           onMouseUp={endDraw}
@@ -357,7 +363,7 @@ function SignatureCanvas({
       <div className="flex items-center gap-2">
         <button type="button" onClick={clearCanvas} className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1">
           <span className="material-symbols-outlined text-[14px]">refresh</span>
-          Clear
+          {t("setup.clear")}
         </button>
         <button
           type="button"
@@ -368,7 +374,7 @@ function SignatureCanvas({
           {saving
             ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
             : <span className="material-symbols-outlined text-[16px]">save</span>}
-          {saving ? "Saving…" : "Save Signature"}
+          {saving ? t("correspondence.saving") : t("setup.saveSignature")}
         </button>
       </div>
     </div>
@@ -379,14 +385,15 @@ function SignatureCanvas({
 
 function SignatureUpload({ type, onSaved }: { type: "full" | "initials"; onSaved: () => void }) {
   const toast = useToast();
+  const { t } = useI18n();
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(f: File) {
-    if (!f.type.match(/^image\/(png|svg\+xml)$/)) { setError("Only PNG or SVG files are accepted."); return; }
-    if (f.size > 512 * 1024) { setError("File must be under 512 KB."); return; }
+    if (!f.type.match(/^image\/(png|svg\+xml)$/)) { setError(t("setup.pngSvgOnly")); return; }
+    if (f.size > 512 * 1024) { setError(t("setup.under512")); return; }
     setFile(f);
     setError(null);
   }
@@ -397,11 +404,11 @@ function SignatureUpload({ type, onSaved }: { type: "full" | "initials"; onSaved
     setError(null);
     try {
       await saamApi.upload(type, file);
-      toast.success(type === "full" ? "Signature uploaded" : "Initials uploaded");
+      toast.success(type === "full" ? t("setup.sigUploaded") : t("setup.initialsUploaded"));
       onSaved();
     } catch (e: unknown) {
-      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Upload failed.");
-      toast.error(type === "full" ? "Signature not uploaded" : "Initials not uploaded", apiErrorMessage(e, "Upload failed."));
+      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("setup.uploadFailed"));
+      toast.error(type === "full" ? t("setup.sigNotUploaded") : t("setup.initialsNotUploaded"), apiErrorMessage(e, t("setup.uploadFailed")));
     } finally {
       setSaving(false);
     }
@@ -418,9 +425,9 @@ function SignatureUpload({ type, onSaved }: { type: "full" | "initials"; onSaved
       >
         <span className="material-symbols-outlined text-[32px] text-neutral-300 mb-2 block">upload_file</span>
         <p className="text-sm font-medium text-neutral-600">
-          {file ? file.name : "Drop file here or click to browse"}
+          {file ? file.name : t("setup.dropHere")}
         </p>
-        <p className="text-xs text-neutral-400 mt-1">PNG or SVG · max 512 KB</p>
+        <p className="text-xs text-neutral-400 mt-1">{t("setup.pngSvgHint")}</p>
         <input ref={inputRef} type="file" accept=".png,.svg" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
       </div>
       {file && (
@@ -431,7 +438,7 @@ function SignatureUpload({ type, onSaved }: { type: "full" | "initials"; onSaved
           className="btn-primary py-1.5 px-4 text-sm flex items-center gap-1.5 disabled:opacity-40"
         >
           {saving ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> : <span className="material-symbols-outlined text-[16px]">upload</span>}
-          {saving ? "Uploading…" : "Upload Signature"}
+          {saving ? t("mande.report.uploading") : t("setup.uploadSignature")}
         </button>
       )}
     </div>
@@ -450,20 +457,21 @@ function SignatureSlot({
   setMethod: (m: SigMethod) => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   if (saved) {
     return (
       <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40">
         <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-green-800 dark:text-green-300">{label} saved</p>
-          <p className="text-xs text-green-600 dark:text-green-400">Your {type === "full" ? "signature" : "initials"} has been stored securely.</p>
+          <p className="text-sm font-semibold text-green-800 dark:text-green-300">{t("setup.slotSaved", { label })}</p>
+          <p className="text-xs text-green-600 dark:text-green-400">{type === "full" ? t("setup.sigStored") : t("setup.initialsStored")}</p>
         </div>
         <button
           type="button"
           onClick={() => setMethod("draw")}
           className="text-xs text-green-700 dark:text-green-300 underline hover:no-underline"
         >
-          Re-do
+          {t("setup.redo")}
         </button>
       </div>
     );
@@ -477,24 +485,24 @@ function SignatureSlot({
           <div className="flex gap-2">
             <button type="button" onClick={() => setMethod("draw")}
               className="btn-secondary py-1 px-3 text-xs flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">draw</span>Draw
+              <span className="material-symbols-outlined text-[14px]">draw</span>{t("setup.draw")}
             </button>
             <button type="button" onClick={() => setMethod("upload")}
               className="btn-secondary py-1 px-3 text-xs flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">upload</span>Upload
+              <span className="material-symbols-outlined text-[14px]">upload</span>{t("common.upload")}
             </button>
           </div>
         )}
         {method !== null && (
           <button type="button" onClick={() => setMethod(null)}
             className="text-xs text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">close</span>Cancel
+            <span className="material-symbols-outlined text-[14px]">close</span>{t("common.cancel")}
           </button>
         )}
       </div>
       {method === null && (
         <div className="rounded-xl border border-dashed border-neutral-200 dark:border-neutral-700 p-6 text-center text-sm text-neutral-400 dark:text-neutral-500">
-          Choose a method above to add your {type === "full" ? "signature" : "initials"}
+          {type === "full" ? t("setup.chooseSig") : t("setup.chooseInitials")}
         </div>
       )}
       {method === "draw" && <SignatureCanvas type={type} onSaved={onSaved} />}
@@ -514,6 +522,7 @@ function Step1Identity({
   loadError: string | null;
   onNext: () => void;
 }) {
+  const { t } = useI18n();
   const [err, setErr] = useState<string | null>(null);
   const [emailErr, setEmailErr] = useState<string | null>(null);
 
@@ -522,69 +531,69 @@ function Step1Identity({
   ) ?? [];
 
   async function handleNext() {
-    if (!state.name.trim()) { setErr("Full name is required."); return; }
-    if (!state.email.trim()) { setErr("Email is required."); return; }
+    if (!state.name.trim()) { setErr(t("setup.err.name")); return; }
+    if (!state.email.trim()) { setErr(t("setup.err.email")); return; }
     setErr(null);
     setEmailErr(null);
     onNext();
   }
 
   return (
-    <StepCard title="Identity & Employment Details" description='Please review your details below. Changes are audit-logged. "Please ensure your details are correct. Changes may be subject to administrative review."' step={1}>
+    <StepCard title={t("setup.s1.title")} description={t("setup.s1.description")} step={1}>
       {loadError && <ErrorBanner message={loadError} />}
       {err && <ErrorBanner message={err} />}
       <div className="space-y-4">
         <div>
-          <FieldLabel label="Full Name" required />
+          <FieldLabel label={t("setup.field.fullName")} required />
           <input type="text" value={state.name} onChange={(e) => update({ name: e.target.value })}
-            className="form-input w-full" placeholder="Your full legal name" />
+            className="form-input w-full" placeholder={t("setup.ph.legalName")} />
         </div>
         <div>
-          <FieldLabel label="Official Email" required />
+          <FieldLabel label={t("setup.field.officialEmail")} required />
           <input type="email" value={state.email} onChange={(e) => update({ email: e.target.value })}
-            className={cn("form-input w-full", emailErr && "border-red-400")} placeholder="you@sadcpf.org" />
+            className={cn("form-input w-full", emailErr && "border-red-400")} placeholder="you@sadcpf.org" /> {/* i18n-ignore */}
           {emailErr && <p className="text-xs text-red-600 mt-1">{emailErr}</p>}
         </div>
         <div>
-          <FieldLabel label="Employee Number" />
+          <FieldLabel label={t("setup.field.employeeNumber")} />
           <input type="text" value={state.employeeNumber} onChange={(e) => update({ employeeNumber: e.target.value })}
-            className="form-input w-full" placeholder="e.g. SADC-0042" />
+            className="form-input w-full" placeholder={t("setup.ph.employeeNumber")} />
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <FieldLabel label="Department" />
+            <FieldLabel label={t("setup.field.department")} />
             <select
               value={state.departmentId ?? ""}
               onChange={(e) => update({ departmentId: e.target.value ? Number(e.target.value) : null, positionId: null })}
               className="form-input w-full"
             >
-              <option value="">Select department…</option>
+              <option value="">{t("setup.selectDepartment")}</option>
               {options?.departments.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
             {!loadError && options && options.departments.length === 0 && (
               <p className="mt-1 text-xs text-neutral-500">
-                No departments are configured for your account yet.
+                {t("setup.noDepartments")}
               </p>
             )}
           </div>
           <div>
-            <FieldLabel label="Position" />
+            <FieldLabel label={t("setup.field.position")} />
             <select
               value={state.positionId ?? ""}
               onChange={(e) => update({ positionId: e.target.value ? Number(e.target.value) : null })}
               className="form-input w-full"
               disabled={!state.departmentId || filteredPositions.length === 0}
             >
-              <option value="">Select position…</option>
+              <option value="">{t("setup.selectPosition")}</option>
               {filteredPositions.map((p) => (
                 <option key={p.id} value={p.id}>{p.title}{p.grade ? ` (${p.grade})` : ""}</option>
               ))}
             </select>
             {!loadError && state.departmentId && filteredPositions.length === 0 && (
               <p className="mt-1 text-xs text-neutral-500">
-                No positions are available for the selected department.
+                {t("setup.noPositions")}
               </p>
             )}
           </div>
@@ -592,11 +601,11 @@ function Step1Identity({
         <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
           <span className="material-symbols-outlined text-amber-600 text-[16px] mt-0.5">info</span>
           <p className="text-xs text-amber-700">
-            Please ensure your details are correct. Changes are logged for audit purposes and may be subject to administrative review.
+            {t("setup.s1.notice")}
           </p>
         </div>
       </div>
-      <StepFooter onNext={handleNext} nextLabel="Continue" nextDisabled={Boolean(loadError)} />
+      <StepFooter onNext={handleNext} nextLabel={t("setup.continue")} nextDisabled={Boolean(loadError)} />
     </StepCard>
   );
 }
@@ -604,93 +613,94 @@ function Step1Identity({
 function Step2Personal({
   state, update, onNext, onBack,
 }: { state: WizardState; update: (p: Partial<WizardState>) => void; onNext: () => void; onBack: () => void }) {
+  const { t } = useI18n();
   const [err, setErr] = useState<string | null>(null);
 
   async function handleNext() {
-    if (!state.phone.trim()) { setErr("Mobile number is required."); return; }
-    if (!state.addressLine1.trim()) { setErr("Residential address is required."); return; }
-    if (!state.emergencyContactName.trim()) { setErr("Emergency contact name is required."); return; }
-    if (!state.nextOfKin.trim()) { setErr("Emergency contact relationship is required."); return; }
-    if (!state.emergencyContactPhone.trim()) { setErr("Emergency contact number is required."); return; }
+    if (!state.phone.trim()) { setErr(t("setup.err.phone")); return; }
+    if (!state.addressLine1.trim()) { setErr(t("setup.err.address")); return; }
+    if (!state.emergencyContactName.trim()) { setErr(t("setup.err.emergencyName")); return; }
+    if (!state.nextOfKin.trim()) { setErr(t("setup.err.relationship")); return; }
+    if (!state.emergencyContactPhone.trim()) { setErr(t("setup.err.emergencyPhone")); return; }
     setErr(null);
     onNext();
   }
 
   return (
-    <StepCard title="Personal Information" description="This information is kept confidential and used for HR and emergency purposes." step={2}>
+    <StepCard title={t("setup.s2.title")} description={t("setup.s2.description")} step={2}>
       {err && <ErrorBanner message={err} />}
       <div className="space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <FieldLabel label="Mobile Number" required />
+            <FieldLabel label={t("setup.field.mobile")} required />
             <input type="tel" value={state.phone} onChange={(e) => update({ phone: e.target.value })}
               className="form-input w-full" placeholder="+264 81 000 0000" />
           </div>
           <div>
-            <FieldLabel label="Date of Birth" />
+            <FieldLabel label={t("setup.field.dob")} />
             <input type="date" value={state.dateOfBirth} onChange={(e) => update({ dateOfBirth: e.target.value })}
               className="form-input w-full" />
           </div>
         </div>
         <div>
-          <FieldLabel label="Residential Address" required />
+          <FieldLabel label={t("setup.field.address")} required />
           <input type="text" value={state.addressLine1} onChange={(e) => update({ addressLine1: e.target.value })}
-            className="form-input w-full mb-2" placeholder="Street address" />
+            className="form-input w-full mb-2" placeholder={t("setup.ph.street")} />
           <input type="text" value={state.addressLine2} onChange={(e) => update({ addressLine2: e.target.value })}
-            className="form-input w-full mb-2" placeholder="Apartment, suburb, or additional details" />
+            className="form-input w-full mb-2" placeholder={t("setup.ph.address2")} />
           <div className="grid sm:grid-cols-2 gap-2">
             <input type="text" value={state.city} onChange={(e) => update({ city: e.target.value })}
-              className="form-input w-full" placeholder="City" />
+              className="form-input w-full" placeholder={t("setup.ph.city")} />
             <input type="text" value={state.country} onChange={(e) => update({ country: e.target.value })}
-              className="form-input w-full" placeholder="Country" />
+              className="form-input w-full" placeholder={t("setup.ph.country")} />
           </div>
         </div>
         <FormSection
-          title="Emergency Contact"
-          description="Provide the primary person and relationship we should use for urgent welfare, travel, or medical situations."
+          title={t("setup.emergency.title")}
+          description={t("setup.emergency.description")}
         >
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <FieldLabel label="Emergency Contact Name" required />
+              <FieldLabel label={t("setup.field.emergencyName")} required />
               <input type="text" value={state.emergencyContactName} onChange={(e) => update({ emergencyContactName: e.target.value })}
-                className="form-input w-full" placeholder="Full name" />
+                className="form-input w-full" placeholder={t("setup.ph.fullName")} />
             </div>
             <div>
-              <FieldLabel label="Relationship to You" required />
+              <FieldLabel label={t("setup.field.relationship")} required />
               <input type="text" value={state.nextOfKin} onChange={(e) => update({ nextOfKin: e.target.value })}
-                className="form-input w-full" placeholder="e.g. Spouse, Parent, Sibling" />
+                className="form-input w-full" placeholder={t("setup.ph.relationship")} />
             </div>
             <div>
-              <FieldLabel label="Primary Emergency Number" required />
+              <FieldLabel label={t("setup.field.primaryEmergency")} required />
               <input type="tel" value={state.emergencyContactPhone} onChange={(e) => update({ emergencyContactPhone: e.target.value })}
                 className="form-input w-full" placeholder="+264 81 000 0000" />
             </div>
             <div>
-              <FieldLabel label="Secondary Emergency Number" />
+              <FieldLabel label={t("setup.field.secondaryEmergency")} />
               <input type="tel" value={state.altContact} onChange={(e) => update({ altContact: e.target.value })}
-                className="form-input w-full" placeholder="Optional backup number" />
+                className="form-input w-full" placeholder={t("setup.ph.backup")} />
             </div>
           </div>
         </FormSection>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <FieldLabel label="Nationality" />
+            <FieldLabel label={t("setup.field.nationality")} />
             <input type="text" value={state.nationality} onChange={(e) => update({ nationality: e.target.value })}
-              className="form-input w-full" placeholder="e.g. Namibian" />
+              className="form-input w-full" placeholder={t("setup.ph.nationality")} />
           </div>
           <div>
-            <FieldLabel label="Gender" />
+            <FieldLabel label={t("setup.field.gender")} />
             <select value={state.gender} onChange={(e) => update({ gender: e.target.value })} className="form-input w-full">
-              <option value="">Select…</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-              <option value="prefer_not_to_say">Prefer not to say</option>
+              <option value="">{t("correspondence.mailMerge.select")}</option>
+              <option value="male">{t("setup.gender.male")}</option>
+              <option value="female">{t("setup.gender.female")}</option>
+              <option value="other">{t("correspondence.channel.other")}</option>
+              <option value="prefer_not_to_say">{t("setup.gender.na")}</option>
             </select>
           </div>
         </div>
       </div>
-      <StepFooter onBack={onBack} onNext={handleNext} nextLabel="Continue" />
+      <StepFooter onBack={onBack} onNext={handleNext} nextLabel={t("setup.continue")} />
     </StepCard>
   );
 }
@@ -699,6 +709,7 @@ function Step3Photo({
   state, update, onNext, onBack,
 }: { state: WizardState; update: (p: Partial<WizardState>) => void; onNext: () => void; onBack: () => void }) {
   const toast = useToast();
+  const { t } = useI18n();
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -706,8 +717,8 @@ function Step3Photo({
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFileChange(f: File) {
-    if (!f.type.startsWith("image/")) { setErr("Please upload an image file."); return; }
-    if (f.size > 5 * 1024 * 1024) { setErr("Image must be under 5 MB."); return; }
+    if (!f.type.startsWith("image/")) { setErr(t("setup.err.image")); return; }
+    if (f.size > 5 * 1024 * 1024) { setErr(t("setup.err.image5mb")); return; }
     setErr(null);
     setPhotoFile(f);
     setPreview(createFilePreviewUrl(f));
@@ -720,29 +731,29 @@ function Step3Photo({
     try {
       await profileDocumentsApi.upload(photoFile, "photo", "Profile Photo");
       update({ photoUploaded: true });
-      toast.success("Profile photo uploaded");
+      toast.success(t("setup.photoUploaded"));
     } catch (e: unknown) {
-      setErr((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Upload failed. Please try again.");
-      toast.error("Profile photo not uploaded", apiErrorMessage(e, "Upload failed. Please try again."));
+      setErr((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("setup.uploadRetry"));
+      toast.error(t("setup.photoNotUploaded"), apiErrorMessage(e, t("setup.uploadRetry")));
     } finally {
       setUploading(false);
     }
   }
 
   return (
-    <StepCard title="Profile Photo" description="Upload a clear, recent photo of yourself. This will appear on your profile and official documents." step={3}>
+    <StepCard title={t("setup.s3.title")} description={t("setup.s3.description")} step={3}>
       {err && <ErrorBanner message={err} />}
       <div className="space-y-6">
         {state.photoUploaded ? (
           <div className="flex items-center gap-4 p-4 rounded-xl bg-green-50 border border-green-200">
             {preview && (
-              <img src={preview} alt="Preview" className="h-16 w-16 rounded-full object-cover border-2 border-green-300" />
+              <img src={preview} alt={t("setup.preview")} className="h-16 w-16 rounded-full object-cover border-2 border-green-300" />
             )}
             <div>
-              <p className="text-sm font-semibold text-green-800">Photo uploaded successfully</p>
+              <p className="text-sm font-semibold text-green-800">{t("setup.photoSuccess")}</p>
               <button type="button" onClick={() => { update({ photoUploaded: false }); setPhotoFile(null); setPreview(null); }}
                 className="text-xs text-green-700 underline hover:no-underline mt-0.5">
-                Change photo
+                {t("setup.changePhotoLower")}
               </button>
             </div>
           </div>
@@ -754,7 +765,7 @@ function Step3Photo({
               onClick={() => inputRef.current?.click()}
             >
               {preview ? (
-                <img src={preview} alt="Preview" className="h-full w-full object-cover" />
+                <img src={preview} alt={t("setup.preview")} className="h-full w-full object-cover" />
               ) : (
                 <span className="material-symbols-outlined text-[36px] text-neutral-300">person</span>
               )}
@@ -765,7 +776,7 @@ function Step3Photo({
               <button type="button" onClick={() => inputRef.current?.click()}
                 className="btn-secondary flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">add_photo_alternate</span>
-                {photoFile ? "Change Photo" : "Choose Photo"}
+                {photoFile ? t("setup.changePhoto") : t("setup.choosePhoto")}
               </button>
               {photoFile && !state.photoUploaded && (
                 <button type="button" onClick={handleUpload} disabled={uploading}
@@ -773,15 +784,15 @@ function Step3Photo({
                   {uploading
                     ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
                     : <span className="material-symbols-outlined text-[16px]">cloud_upload</span>}
-                  {uploading ? "Uploading…" : "Upload"}
+                  {uploading ? t("mande.report.uploading") : t("common.upload")}
                 </button>
               )}
             </div>
-            <p className="text-xs text-neutral-400">JPG or PNG · max 5 MB</p>
+            <p className="text-xs text-neutral-400">{t("setup.jpgPngHint")}</p>
           </div>
         )}
       </div>
-      <StepFooter onBack={onBack} onNext={onNext} nextDisabled={!state.photoUploaded} nextLabel="Continue" />
+      <StepFooter onBack={onBack} onNext={onNext} nextDisabled={!state.photoUploaded} nextLabel={t("setup.continue")} />
     </StepCard>
   );
 }
@@ -789,17 +800,18 @@ function Step3Photo({
 function Step4Signatures({
   state, update, onNext, onBack,
 }: { state: WizardState; update: (p: Partial<WizardState>) => void; onNext: () => void; onBack: () => void }) {
+  const { t } = useI18n();
   const [fullMethod, setFullMethod] = useState<SigMethod>(null);
   const [initialsMethod, setInitialsMethod] = useState<SigMethod>(null);
 
   const bothSaved = state.fullSigSaved && state.initialsSigSaved;
 
   return (
-    <StepCard title="Signature & Initials" description="Your signature and initials will be used on official documents, approvals, and correspondence." step={4}>
+    <StepCard title={t("setup.s4.title")} description={t("setup.s4.description")} step={4}>
       <div className="space-y-6">
         <SignatureSlot
           type="full"
-          label="Full Signature"
+          label={t("setup.fullSignature")}
           saved={state.fullSigSaved}
           method={fullMethod}
           setMethod={(m) => { setFullMethod(m); if (state.fullSigSaved) update({ fullSigSaved: false }); }}
@@ -808,7 +820,7 @@ function Step4Signatures({
         <div className="border-t border-neutral-100" />
         <SignatureSlot
           type="initials"
-          label="Initials"
+          label={t("setup.initials")}
           saved={state.initialsSigSaved}
           method={initialsMethod}
           setMethod={(m) => { setInitialsMethod(m); if (state.initialsSigSaved) update({ initialsSigSaved: false }); }}
@@ -823,7 +835,7 @@ function Step4Signatures({
               className="mt-0.5 h-4 w-4 accent-primary"
             />
             <span className="text-sm text-neutral-700">
-              I confirm that the signatures above are my own and I authorise their use in official SADC-PF documents and approvals.
+              {t("setup.sigConfirm")}
             </span>
           </label>
         )}
@@ -832,40 +844,41 @@ function Step4Signatures({
         onBack={onBack}
         onNext={onNext}
         nextDisabled={!bothSaved || !state.sigConfirmed}
-        nextLabel="Continue"
+        nextLabel={t("setup.continue")}
       />
     </StepCard>
   );
 }
 
 function Step5Security({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+  const { t } = useI18n();
   return (
-    <StepCard title="Security Setup" description="Your account security status is shown below." step={5}>
+    <StepCard title={t("setup.s5.title")} description={t("setup.s5.description")} step={5}>
       <div className="space-y-4">
         <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200">
           <span className="material-symbols-outlined text-green-600 text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
           <div>
-            <p className="text-sm font-semibold text-green-800">Password configured</p>
-            <p className="text-xs text-green-600">Your account password has been set and is secure.</p>
+            <p className="text-sm font-semibold text-green-800">{t("setup.passwordConfigured")}</p>
+            <p className="text-xs text-green-600">{t("setup.passwordSecure")}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 p-4 rounded-xl bg-neutral-50 border border-neutral-200">
           <span className="material-symbols-outlined text-neutral-500 text-[22px]">shield_lock</span>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-neutral-700">Multi-Factor Authentication (MFA)</p>
+            <p className="text-sm font-semibold text-neutral-700">{t("setup.mfa")}</p>
             <p className="text-xs text-neutral-500">
-              Privileged roles (Admin, Finance, HR, SG) must enable MFA. You can set it up now or from Profile → Security after finishing setup.
+              {t("setup.mfaHint")}
             </p>
           </div>
           <a
             href="/profile/security"
             className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full font-medium whitespace-nowrap hover:bg-primary/20 transition-colors"
           >
-            Set up MFA
+            {t("setup.setUpMfa")}
           </a>
         </div>
       </div>
-      <StepFooter onBack={onBack} onNext={onNext} nextLabel="Continue" />
+      <StepFooter onBack={onBack} onNext={onNext} nextLabel={t("setup.continue")} />
     </StepCard>
   );
 }
@@ -874,6 +887,7 @@ function Step6Preferences({
   state, update, onNext, onBack,
 }: { state: WizardState; update: (p: Partial<WizardState>) => void; onNext: () => void; onBack: () => void }) {
   const { setTheme } = useTheme();
+  const { t } = useI18n();
   function handleNext() {
     localStorage.setItem("sadcpf_user_prefs", JSON.stringify({
       language: state.language,
@@ -888,54 +902,54 @@ function Step6Preferences({
   }
 
   return (
-    <StepCard title="Preferences" description="These are optional and can be changed at any time in your account settings." step={6}>
+    <StepCard title={t("setup.step.preferences")} description={t("setup.s6.description")} step={6}>
       <div className="space-y-6">
         <div>
-          <FieldLabel label="Language" />
+          <FieldLabel label={t("setup.field.language")} />
           <select value={state.language} onChange={(e) => update({ language: e.target.value })} className="form-input w-full max-w-xs">
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-            <option value="pt">Português</option>
+            <option value="en">English</option> {/* i18n-ignore */}
+            <option value="fr">Français</option> {/* i18n-ignore */}
+            <option value="pt">Português</option> {/* i18n-ignore */}
           </select>
         </div>
         <div>
-          <FieldLabel label="Theme" />
+          <FieldLabel label={t("setup.field.theme")} />
           <div className="flex gap-3">
-            {[{ value: "light", icon: "light_mode", label: "Light" }, { value: "dark", icon: "dark_mode", label: "Dark" }].map((t) => (
+            {[{ value: "light", icon: "light_mode", label: t("setup.light") }, { value: "dark", icon: "dark_mode", label: t("setup.dark") }].map((th) => (
               <button
-                key={t.value}
+                key={th.value}
                 type="button"
-                onClick={() => update({ theme: t.value })}
+                onClick={() => update({ theme: th.value })}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all",
-                  state.theme === t.value
+                  state.theme === th.value
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
                 )}
               >
-                <span className="material-symbols-outlined text-[18px]">{t.icon}</span>
-                {t.label}
+                <span className="material-symbols-outlined text-[18px]">{th.icon}</span>
+                {th.label}
               </button>
             ))}
           </div>
         </div>
         <div>
-          <FieldLabel label="Notifications" />
+          <FieldLabel label={t("setup.field.notifications")} />
           <div className="space-y-2">
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={state.notifEmail} onChange={(e) => update({ notifEmail: e.target.checked })}
                 className="h-4 w-4 accent-primary" />
-              <span className="text-sm text-neutral-700">Email notifications</span>
+              <span className="text-sm text-neutral-700">{t("setup.emailNotifications")}</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={state.notifInApp} onChange={(e) => update({ notifInApp: e.target.checked })}
                 className="h-4 w-4 accent-primary" />
-              <span className="text-sm text-neutral-700">In-app notifications</span>
+              <span className="text-sm text-neutral-700">{t("setup.inAppNotifications")}</span>
             </label>
           </div>
         </div>
       </div>
-      <StepFooter onBack={onBack} onNext={handleNext} nextLabel="Save & Continue" />
+      <StepFooter onBack={onBack} onNext={handleNext} nextLabel={t("setup.saveContinue")} />
     </StepCard>
   );
 }
@@ -946,41 +960,43 @@ function Step7Review({
   const deptName = options?.departments.find((d) => d.id === state.departmentId)?.name ?? "—";
   const posName  = options?.positions.find((p) => p.id === state.positionId)?.title ?? "—";
   const address  = [state.addressLine1, state.city, state.country].filter(Boolean).join(", ");
+  const { t } = useI18n();
+  const genderLabel = state.gender === "male" ? t("setup.gender.male") : state.gender === "female" ? t("setup.gender.female") : state.gender === "other" ? t("correspondence.channel.other") : state.gender === "prefer_not_to_say" ? t("setup.gender.na") : state.gender;
 
   return (
-    <StepCard title="Review & Confirm" description="Please review all your information before completing setup." step={7}>
+    <StepCard title={t("setup.s7.title")} description={t("setup.s7.description")} step={7}>
       <div className="space-y-4">
-        <ReviewSection title="Identity & Employment" items={[
-          ["Full Name", state.name],
-          ["Email", state.email],
-          ["Employee Number", state.employeeNumber],
-          ["Department", deptName],
-          ["Position", posName],
+        <ReviewSection title={t("setup.r.identity")} items={[
+          [t("setup.field.fullName"), state.name],
+          [t("correspondence.contacts.email"), state.email],
+          [t("setup.field.employeeNumber"), state.employeeNumber],
+          [t("setup.field.department"), deptName],
+          [t("setup.field.position"), posName],
         ]} />
-        <ReviewSection title="Personal Information" items={[
-          ["Mobile", state.phone],
-          ["Gender", state.gender],
-          ["Nationality", state.nationality],
-          ["Date of Birth", state.dateOfBirth],
-          ["Address", address],
-          ["Emergency Contact", state.emergencyContactName ? `${state.emergencyContactName} · ${state.emergencyContactPhone}` : ""],
+        <ReviewSection title={t("setup.s2.title")} items={[
+          [t("setup.r.mobile"), state.phone],
+          [t("setup.field.gender"), genderLabel],
+          [t("setup.field.nationality"), state.nationality],
+          [t("setup.field.dob"), state.dateOfBirth],
+          [t("setup.r.address"), address],
+          [t("setup.emergency.title"), state.emergencyContactName ? `${state.emergencyContactName} · ${state.emergencyContactPhone}` : ""],
         ]} />
-        <ReviewSection title="Emergency Contact" items={[
-          ["Contact Name", state.emergencyContactName],
-          ["Relationship", state.nextOfKin],
-          ["Primary Number", state.emergencyContactPhone],
-          ["Secondary Number", state.altContact],
+        <ReviewSection title={t("setup.emergency.title")} items={[
+          [t("setup.r.contactName"), state.emergencyContactName],
+          [t("setup.r.relationship"), state.nextOfKin],
+          [t("setup.r.primary"), state.emergencyContactPhone],
+          [t("setup.r.secondary"), state.altContact],
         ]} />
-        <ReviewSection title="Documents" items={[
-          ["Profile Photo", state.photoUploaded ? "✓ Uploaded" : "Not uploaded"],
-          ["Full Signature", state.fullSigSaved ? "✓ Saved" : "Not saved"],
-          ["Initials", state.initialsSigSaved ? "✓ Saved" : "Not saved"],
+        <ReviewSection title={t("setup.r.documents")} items={[
+          [t("setup.s3.title"), state.photoUploaded ? t("setup.r.uploaded") : t("setup.r.notUploaded")],
+          [t("setup.fullSignature"), state.fullSigSaved ? t("setup.r.saved") : t("setup.r.notSaved")],
+          [t("setup.initials"), state.initialsSigSaved ? t("setup.r.saved") : t("setup.r.notSaved")],
         ]} />
-        <ReviewSection title="Preferences" items={[
-          ["Language", state.language === "en" ? "English" : state.language === "fr" ? "Français" : "Português"],
-          ["Theme", state.theme === "dark" ? "Dark" : "Light"],
-          ["Email Notifications", state.notifEmail ? "Enabled" : "Disabled"],
-          ["In-App Notifications", state.notifInApp ? "Enabled" : "Disabled"],
+        <ReviewSection title={t("setup.step.preferences")} items={[
+          [t("setup.field.language"), state.language === "en" ? "English" : state.language === "fr" ? "Français" : "Português"], // i18n-ignore
+          [t("setup.field.theme"), state.theme === "dark" ? t("setup.dark") : t("setup.light")],
+          [t("setup.r.emailNotif"), state.notifEmail ? t("setup.r.enabled") : t("setup.r.disabled")],
+          [t("setup.r.inAppNotif"), state.notifInApp ? t("setup.r.enabled") : t("setup.r.disabled")],
         ]} />
         <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl bg-neutral-50 border border-neutral-200">
           <input
@@ -990,13 +1006,13 @@ function Step7Review({
             className="mt-0.5 h-4 w-4 accent-primary"
           />
           <span className="text-sm text-neutral-700">
-            I confirm that all information entered above is accurate and complete. I understand that providing false information may result in disciplinary action.
+            {t("setup.reviewConfirm")}
           </span>
         </label>
       </div>
       <div className="flex gap-3 mt-8 pt-6 border-t border-neutral-100">
         <button type="button" onClick={onBack} className="btn-secondary flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[16px]">arrow_back</span>Back
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>{t("common.back")}
         </button>
         <button
           type="button"
@@ -1005,9 +1021,9 @@ function Step7Review({
           className="btn-primary flex-1 justify-center flex items-center gap-2 py-3 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {submitting ? (
-            <><span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>Completing…</>
+            <><span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>{t("setup.completing")}</>
           ) : (
-            <><span className="material-symbols-outlined text-[18px]">check_circle</span>Complete Setup &amp; Go to Dashboard</>
+            <><span className="material-symbols-outlined text-[18px]">check_circle</span>{t("setup.complete")}</>
           )}
         </button>
       </div>
@@ -1019,6 +1035,7 @@ function Step7Review({
 
 export default function SetupWizardPage() {
   const toast = useToast();
+  const { t } = useI18n();
   const [step, setStep] = useState<number>(1);
   const [options, setOptions] = useState<SetupOptions | null>(null);
   const [state, setState] = useState<WizardState>(getInitialState());
@@ -1038,8 +1055,8 @@ export default function SetupWizardPage() {
         const message = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
         setOptionsError(
           status === 401
-            ? "Your session expired before setup data could load. Sign in again to continue."
-            : (message ?? "Failed to load departments and positions for setup.")
+            ? t("setup.sessionExpired")
+            : (message ?? t("setup.optionsFailed"))
         );
       });
 
@@ -1071,17 +1088,17 @@ export default function SetupWizardPage() {
   function back() { setError(null); setStep((s) => Math.max(s - 1, 1)); }
 
   function validateBeforeSubmit() {
-    if (!state.name.trim()) return "Full name is required.";
-    if (!state.email.trim()) return "Email is required.";
-    if (!state.phone.trim()) return "Mobile number is required.";
-    if (!state.addressLine1.trim()) return "Residential address is required.";
-    if (!state.emergencyContactName.trim()) return "Emergency contact name is required.";
-    if (!state.nextOfKin.trim()) return "Emergency contact relationship is required.";
-    if (!state.emergencyContactPhone.trim()) return "Emergency contact number is required.";
-    if (!state.photoUploaded) return "Please upload your profile photo before completing setup.";
-    if (!state.fullSigSaved || !state.initialsSigSaved) return "Please save both your full signature and initials.";
-    if (!state.sigConfirmed) return "Please confirm your signature declaration before completing setup.";
-    if (!state.reviewConfirmed) return "Please confirm that your review information is accurate.";
+    if (!state.name.trim()) return t("setup.err.name");
+    if (!state.email.trim()) return t("setup.err.email");
+    if (!state.phone.trim()) return t("setup.err.phone");
+    if (!state.addressLine1.trim()) return t("setup.err.address");
+    if (!state.emergencyContactName.trim()) return t("setup.err.emergencyName");
+    if (!state.nextOfKin.trim()) return t("setup.err.relationship");
+    if (!state.emergencyContactPhone.trim()) return t("setup.err.emergencyPhone");
+    if (!state.photoUploaded) return t("setup.err.photo");
+    if (!state.fullSigSaved || !state.initialsSigSaved) return t("setup.err.signatures");
+    if (!state.sigConfirmed) return t("setup.err.sigConfirm");
+    if (!state.reviewConfirmed) return t("setup.err.review");
     return null;
   }
 
@@ -1133,11 +1150,11 @@ export default function SetupWizardPage() {
       }
       setSetupCompleteCookie();
       sessionStorage.removeItem(SESSION_KEY);
-      toast.success("Setup complete", "Your profile has been saved.");
+      toast.success(t("setup.done"), t("setup.doneDetail"));
       window.location.href = "/dashboard";
     } catch (e: unknown) {
-      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to complete setup. Please try again.");
-      toast.error("Setup not completed", apiErrorMessage(e, "Failed to complete setup. Please try again."));
+      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("setup.completeFailed"));
+      toast.error(t("setup.notCompleted"), apiErrorMessage(e, t("setup.completeFailed")));
       setSubmitting(false);
     }
   }
@@ -1148,7 +1165,7 @@ export default function SetupWizardPage() {
 
       {/* Stepper */}
       <div className="mx-auto w-full max-w-3xl px-4 py-6">
-        <Stepper steps={STEPS} currentStep={step} />
+        <Stepper steps={STEPS.map((s) => ({ label: t(s.label) }))} currentStep={step} />
       </div>
 
       {/* Step content */}

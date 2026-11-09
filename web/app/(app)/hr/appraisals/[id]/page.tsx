@@ -15,6 +15,7 @@ import { safeExternalUrl } from "@/lib/safeExternalUrl";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -43,6 +44,20 @@ const RATING_POINTS: Record<RatingOption, number> = {
   Poor: 0,
 };
 
+const RATING_KEYS: Record<string, string> = {
+  Excellent: "hr.appraisals.rating.excellent",
+  Good: "hr.appraisals.rating.good",
+  Average: "hr.appraisals.rating.average",
+  "Below Average": "hr.appraisals.rating.belowAverage",
+  Poor: "hr.appraisals.rating.poor",
+};
+
+/** Catalog key for a stored factor name (the English name is what is saved). */
+function factorKey(factor: string): string {
+  const i = (PERFORMANCE_FACTORS as readonly string[]).indexOf(factor);
+  return i >= 0 ? `hr.appraisals.factor.${i}` : factor;
+}
+
 const RATING_CLS: Record<string, string> = {
   Excellent: "bg-green-100 text-green-800 border-green-200",
   Good: "bg-primary/10 text-primary border-primary/20",
@@ -52,12 +67,12 @@ const RATING_CLS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  draft: "Draft",
-  employee_submitted: "Employee Submitted",
-  supervisor_reviewed: "Supervisor Reviewed",
-  hod_reviewed: "HOD Reviewed",
-  hr_reviewed: "HR Reviewed",
-  finalized: "Finalized",
+  draft: "hr.appraisals.detail.status.draft",
+  employee_submitted: "hr.appraisals.detail.status.employee_submitted",
+  supervisor_reviewed: "hr.appraisals.detail.status.supervisor_reviewed",
+  hod_reviewed: "hr.appraisals.detail.status.hod_reviewed",
+  hr_reviewed: "hr.appraisals.detail.status.hr_reviewed",
+  finalized: "hr.appraisals.status.finalized",
 };
 
 const STATUS_CLS: Record<string, string> = {
@@ -191,6 +206,7 @@ function SectionHeader({
   subtitle?: string;
   badge?: React.ReactNode;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-start gap-3 mb-4">
       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">
@@ -198,28 +214,30 @@ function SectionHeader({
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wide">{title}</h2>
+          <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wide">{t(title)}</h2>
           {badge}
         </div>
-        {subtitle && <p className="text-xs text-neutral-500 mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="text-xs text-neutral-500 mt-0.5">{t(subtitle)}</p>}
       </div>
     </div>
   );
 }
 
 function CompletedBadge() {
+  const { t } = useI18n();
   return (
     <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
       <span className="material-symbols-outlined text-[12px]">check_circle</span>
-      Submitted
+      {t("hr.appraisals.detail.submitted")}
     </span>
   );
 }
 
 function RatingPill({ rating }: { rating: string }) {
+  const { t } = useI18n();
   return (
     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${RATING_CLS[rating] ?? "bg-neutral-100 text-neutral-700 border-neutral-200"}`}>
-      {rating}
+      {RATING_KEYS[rating] ? t(RATING_KEYS[rating]) : rating}
     </span>
   );
 }
@@ -237,10 +255,11 @@ function RatingRadioRow({
   onChange: (v: string) => void;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <tr className="border-b border-neutral-100 last:border-0">
       <td className="py-2 pr-3 text-sm text-neutral-800 w-8 text-center font-medium text-neutral-400">{index + 1}</td>
-      <td className="py-2 pr-4 text-sm text-neutral-800">{factor}</td>
+      <td className="py-2 pr-4 text-sm text-neutral-800">{t(factorKey(factor))}</td>
       {RATING_OPTIONS.map((opt) => (
         <td key={opt} className="py-2 text-center w-24">
           {disabled ? (
@@ -289,10 +308,11 @@ function SupervisorRatingRow({
   onCommentChange: (v: string) => void;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <tr className="border-b border-neutral-100 last:border-0 align-top">
       <td className="py-2 pr-2 text-sm text-neutral-400 font-medium text-center w-8">{index + 1}</td>
-      <td className="py-2 pr-3 text-sm text-neutral-800 min-w-[180px]">{factor}</td>
+      <td className="py-2 pr-3 text-sm text-neutral-800 min-w-[180px]">{t(factorKey(factor))}</td>
       <td className="py-2 pr-3 w-36">
         {disabled ? (
           rating ? <RatingPill rating={rating} /> : <span className="text-neutral-400 text-xs">—</span>
@@ -302,9 +322,9 @@ function SupervisorRatingRow({
             value={rating}
             onChange={(e) => onRatingChange(e.target.value)}
           >
-            <option value="">Select…</option>
+            <option value="">{t("hr.appraisals.detail.select")}</option>
             {RATING_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
+              <option key={opt} value={opt}>{t(RATING_KEYS[opt])}</option>
             ))}
           </select>
         )}
@@ -316,7 +336,7 @@ function SupervisorRatingRow({
           <input
             type="text"
             className="form-input w-full text-xs py-1"
-            placeholder="Comment (optional)"
+            placeholder={t("hr.appraisals.detail.commentOptional")}
             value={comment}
             onChange={(e) => onCommentChange(e.target.value)}
           />
@@ -332,6 +352,7 @@ export default function AppraisalDetailPage() {
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const id = params?.id != null ? Number(params.id) : NaN;
 
   const [appraisal, setAppraisal] = useState<Appraisal | null>(null);
@@ -440,11 +461,11 @@ export default function AppraisalDetailPage() {
       setEvidenceLinks(Array.isArray(data.evidence_links) ? data.evidence_links : []);
       setAttachments(data.attachments ?? []);
     } catch {
-      setError("Failed to load appraisal.");
+      setError(t("hr.appraisals.detail.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [id, router]);
+  }, [id, router, t]);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -477,14 +498,14 @@ export default function AppraisalDetailPage() {
         self_overall_rating: overallRating,
         evidence_links: evidenceLinks.length ? evidenceLinks : undefined,
       });
-      toast.success("Self-assessment submitted");
+      toast.success(t("hr.appraisals.detail.toast.selfSubmitted"));
       load();
     } catch (err: unknown) {
-      toast.error("Self-assessment not submitted", apiErrorMessage(err, "Failed to submit self-assessment."));
+      toast.error(t("hr.appraisals.detail.toast.selfNotSubmitted"), apiErrorMessage(err, t("hr.appraisals.detail.toast.selfFailed")));
       setError(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
-          : "Failed to submit self-assessment."
+          : t("hr.appraisals.detail.toast.selfFailed")
       );
     } finally {
       setSubmitting(false);
@@ -517,14 +538,14 @@ export default function AppraisalDetailPage() {
         supervisor_comments: JSON.stringify(svData),
         supervisor_rating: svOverallRating,
       });
-      toast.success("Supervisor review submitted");
+      toast.success(t("hr.appraisals.detail.toast.svSubmitted"));
       load();
     } catch (err: unknown) {
-      toast.error("Supervisor review not submitted", apiErrorMessage(err, "Failed to submit supervisor review."));
+      toast.error(t("hr.appraisals.detail.toast.svNotSubmitted"), apiErrorMessage(err, t("hr.appraisals.detail.toast.svFailed")));
       setError(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
-          : "Failed to submit supervisor review."
+          : t("hr.appraisals.detail.toast.svFailed")
       );
     } finally {
       setSvSubmitting(false);
@@ -541,11 +562,11 @@ export default function AppraisalDetailPage() {
         self_assessment: JSON.stringify(saData),
         evidence_links: Array.isArray(appraisal.evidence_links) ? appraisal.evidence_links : [],
       });
-      toast.success("Comments saved");
+      toast.success(t("hr.appraisals.detail.toast.commentsSaved"));
       load();
     } catch (err) {
-      setError("Failed to save comments.");
-      toast.error("Comments not saved", apiErrorMessage(err, "Failed to save comments."));
+      setError(t("hr.appraisals.detail.toast.commentsFailed"));
+      toast.error(t("hr.appraisals.detail.toast.commentsNotSaved"), apiErrorMessage(err, t("hr.appraisals.detail.toast.commentsFailed")));
     }
     finally { setSection4Saving(false); }
   };
@@ -562,14 +583,14 @@ export default function AppraisalDetailPage() {
         hod_comments: JSON.stringify(hodData),
         hod_rating: hodRating,
       });
-      toast.success("HOD review submitted");
+      toast.success(t("hr.appraisals.detail.toast.hodSubmitted"));
       load();
     } catch (err: unknown) {
-      toast.error("HOD review not submitted", apiErrorMessage(err, "Failed to submit HOD review."));
+      toast.error(t("hr.appraisals.detail.toast.hodNotSubmitted"), apiErrorMessage(err, t("hr.appraisals.detail.toast.hodFailed")));
       setError(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
-          : "Failed to submit HOD review."
+          : t("hr.appraisals.detail.toast.hodFailed")
       );
     } finally {
       setHodSubmitting(false);
@@ -586,11 +607,11 @@ export default function AppraisalDetailPage() {
         self_assessment: JSON.stringify(saData),
         evidence_links: Array.isArray(appraisal.evidence_links) ? appraisal.evidence_links : [],
       });
-      toast.success("Comments saved");
+      toast.success(t("hr.appraisals.detail.toast.commentsSaved"));
       load();
     } catch (err) {
-      setError("Failed to save comments.");
-      toast.error("Comments not saved", apiErrorMessage(err, "Failed to save comments."));
+      setError(t("hr.appraisals.detail.toast.commentsFailed"));
+      toast.error(t("hr.appraisals.detail.toast.commentsNotSaved"), apiErrorMessage(err, t("hr.appraisals.detail.toast.commentsFailed")));
     }
     finally { setSection6Saving(false); }
   };
@@ -611,14 +632,14 @@ export default function AppraisalDetailPage() {
         development_plan: developmentPlan || undefined,
         sg_decision: sgDecision || undefined,
       });
-      toast.success("Appraisal finalised");
+      toast.success(t("hr.appraisals.detail.toast.finalised"));
       load();
     } catch (err: unknown) {
-      toast.error("Appraisal not finalised", apiErrorMessage(err, "Failed to finalize appraisal."));
+      toast.error(t("hr.appraisals.detail.toast.notFinalised"), apiErrorMessage(err, t("hr.appraisals.detail.toast.finaliseFailed")));
       setError(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
-          : "Failed to finalize appraisal."
+          : t("hr.appraisals.detail.toast.finaliseFailed")
       );
     } finally {
       setFinalSubmitting(false);
@@ -638,11 +659,11 @@ export default function AppraisalDetailPage() {
         });
       }
       await appraisalApi.acknowledge(appraisal.id);
-      toast.success("Appraisal acknowledged");
+      toast.success(t("hr.appraisals.detail.toast.acknowledged"));
       load();
     } catch (err) {
-      setError("Failed to acknowledge appraisal.");
-      toast.error("Appraisal not acknowledged", apiErrorMessage(err, "Failed to acknowledge appraisal."));
+      setError(t("hr.appraisals.detail.toast.ackFailed"));
+      toast.error(t("hr.appraisals.detail.toast.notAcknowledged"), apiErrorMessage(err, t("hr.appraisals.detail.toast.ackFailed")));
     }
     finally { setAcknowledging(false); }
   };
@@ -656,10 +677,10 @@ export default function AppraisalDetailPage() {
       }
       const listRes = await appraisalAttachmentsApi.list(appraisal.id);
       setAttachments(listRes.data?.data ?? []);
-      toast.success("File(s) uploaded");
+      toast.success(t("hr.appraisals.detail.toast.uploaded"));
     } catch (err) {
-      setError("Failed to upload file(s).");
-      toast.error("Upload failed", apiErrorMessage(err, "Failed to upload file(s)."));
+      setError(t("hr.appraisals.detail.toast.uploadFailedDetail"));
+      toast.error(t("hr.appraisals.detail.toast.uploadFailed"), apiErrorMessage(err, t("hr.appraisals.detail.toast.uploadFailedDetail")));
     }
     finally { setUploading(false); e.target.value = ""; }
   };
@@ -669,10 +690,10 @@ export default function AppraisalDetailPage() {
     try {
       await appraisalAttachmentsApi.delete(appraisal.id, attachmentId);
       setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
-      toast.success("Attachment deleted");
+      toast.success(t("hr.appraisals.detail.toast.attachmentDeleted"));
     } catch (err) {
-      setError("Failed to delete attachment.");
-      toast.error("Attachment not deleted", apiErrorMessage(err, "Failed to delete attachment."));
+      setError(t("hr.appraisals.detail.toast.attachmentDeleteFailed"));
+      toast.error(t("hr.appraisals.detail.toast.attachmentNotDeleted"), apiErrorMessage(err, t("hr.appraisals.detail.toast.attachmentDeleteFailed")));
     }
   };
 
@@ -684,7 +705,7 @@ export default function AppraisalDetailPage() {
       const link = document.createElement("a");
       link.href = url; link.download = a.original_filename; link.click();
       URL.revokeObjectURL(url);
-    } catch { setError("Failed to download file."); }
+    } catch { setError(t("hr.appraisals.detail.toast.downloadFailed")); }
   };
 
   // ─── Loading / error states ───────────────────────────────────────────────────
@@ -693,7 +714,7 @@ export default function AppraisalDetailPage() {
     return (
       <div className="flex items-center justify-center py-20 text-neutral-500">
         <span className="material-symbols-outlined animate-spin text-[28px]">progress_activity</span>
-        <span className="ml-2">Loading appraisal…</span>
+        <span className="ml-2">{t("hr.appraisals.detail.loading")}</span>
       </div>
     );
   }
@@ -702,7 +723,7 @@ export default function AppraisalDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
-        <Link href="/hr/appraisals" className="btn-secondary text-sm">Back to Appraisals</Link>
+        <Link href="/hr/appraisals" className="btn-secondary text-sm">{t("hr.appraisals.detail.backToList")}</Link>
       </div>
     );
   }
@@ -710,8 +731,8 @@ export default function AppraisalDetailPage() {
   if (!appraisal) {
     return (
       <div className="w-full min-w-0 space-y-4">
-        <div className="rounded-xl bg-neutral-50 border border-neutral-200 px-4 py-3 text-sm text-neutral-600">Appraisal not found.</div>
-        <Link href="/hr/appraisals" className="btn-secondary text-sm">Back to Appraisals</Link>
+        <div className="rounded-xl bg-neutral-50 border border-neutral-200 px-4 py-3 text-sm text-neutral-600">{t("hr.appraisals.detail.notFound")}</div>
+        <Link href="/hr/appraisals" className="btn-secondary text-sm">{t("hr.appraisals.detail.backToList")}</Link>
       </div>
     );
   }
@@ -735,7 +756,7 @@ export default function AppraisalDetailPage() {
   const section5Done = ["hod_reviewed", "hr_reviewed", "finalized"].includes(appraisal.status);
   const sections78Done = ["hr_reviewed", "finalized"].includes(appraisal.status);
 
-  const employeeName = appraisal.employee?.name ?? `Employee #${appraisal.employee_id}`;
+  const employeeName = appraisal.employee?.name ?? t("hr.appraisals.detail.employeeNumber", { id: appraisal.employee_id });
   const sa = parseSelfAssessment(appraisal.self_assessment);
   const svData = parseSupervisorAssessment(appraisal.supervisor_comments);
   const hodData = parseHodAssessment(appraisal.hod_comments);
@@ -749,12 +770,12 @@ export default function AppraisalDetailPage() {
 
       <ModulePageHeader
         title={employeeName}
-        subtitle={`${appraisal.cycle?.title ?? `Cycle #${appraisal.cycle_id}`}${appraisal.cycle?.period_start && appraisal.cycle?.period_end ? ` · ${formatDate(appraisal.cycle.period_start)} – ${formatDate(appraisal.cycle.period_end)}` : ""}`}
+        subtitle={`${appraisal.cycle?.title ?? t("hr.appraisals.list.cycleNumber", { id: appraisal.cycle_id })}${appraisal.cycle?.period_start && appraisal.cycle?.period_end ? ` · ${formatDate(appraisal.cycle.period_start)} – ${formatDate(appraisal.cycle.period_end)}` : ""}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Appraisals", href: "/hr/appraisals" },
+              { label: "hr.appraisals.list.crumb", href: "/hr/appraisals" },
               { label: employeeName },
             ]}
           />
@@ -764,30 +785,30 @@ export default function AppraisalDetailPage() {
       {/* Status bar */}
       <div className="card p-4 flex flex-wrap items-center gap-4">
         <span className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold ${STATUS_CLS[appraisal.status] ?? ""}`}>
-          {STATUS_LABELS[appraisal.status] ?? appraisal.status}
+          {STATUS_LABELS[appraisal.status] ? t(STATUS_LABELS[appraisal.status]) : appraisal.status}
         </span>
         <div className="text-sm text-neutral-600">
-          <span className="font-medium text-neutral-700">Supervisor:</span>{" "}
-          {appraisal.supervisor?.name ?? <span className="text-neutral-400">Not assigned</span>}
+          <span className="font-medium text-neutral-700">{t("hr.appraisals.detail.supervisorLabel")}</span>{" "}
+          {appraisal.supervisor?.name ?? <span className="text-neutral-400">{t("hr.appraisals.detail.notAssigned")}</span>}
         </div>
         <div className="text-sm text-neutral-600">
-          <span className="font-medium text-neutral-700">HOD:</span>{" "}
-          {appraisal.hod?.name ?? <span className="text-neutral-400">Not assigned</span>}
+          <span className="font-medium text-neutral-700">{t("hr.appraisals.detail.hodLabel")}</span>{" "}
+          {appraisal.hod?.name ?? <span className="text-neutral-400">{t("hr.appraisals.detail.notAssigned")}</span>}
         </div>
         {appraisal.submitted_at && (
           <div className="text-xs text-neutral-500 ml-auto">
-            Submitted {formatDate(appraisal.submitted_at)}
+            {t("hr.appraisals.detail.submittedOn", { date: formatDate(appraisal.submitted_at) })}
           </div>
         )}
         {appraisal.finalized_at && (
           <div className="text-xs text-neutral-500">
-            Finalized {formatDate(appraisal.finalized_at)}
+            {t("hr.appraisals.detail.finalizedOn", { date: formatDate(appraisal.finalized_at) })}
           </div>
         )}
         {appraisal.employee_acknowledged && (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5 ml-auto">
             <span className="material-symbols-outlined text-[12px]">verified</span>
-            Employee acknowledged {formatDate(appraisal.employee_acknowledged_at ?? null)}
+            {t("hr.appraisals.detail.acknowledgedOn", { date: formatDate(appraisal.employee_acknowledged_at ?? null) })}
           </span>
         )}
       </div>
@@ -802,18 +823,18 @@ export default function AppraisalDetailPage() {
 
       {/* ─── SECTION 1: Personal Details ──────────────────────────────────────── */}
       <div className="card p-5">
-        <SectionHeader number="1" title="Personal Details" subtitle="Auto-populated from employment record" />
+        <SectionHeader number="1" title="hr.appraisals.detail.s1.title" subtitle="hr.appraisals.detail.s1.subtitle" />
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 text-sm">
           <div>
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Name</p>
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">{t("hr.appraisals.detail.name")}</p>
             <p className="text-neutral-800 font-medium">{employeeName}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Email</p>
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">{t("hr.appraisals.detail.email")}</p>
             <p className="text-neutral-700">{appraisal.employee?.email ?? "—"}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Period of Review</p>
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">{t("hr.appraisals.detail.periodOfReview")}</p>
             <p className="text-neutral-700">
               {appraisal.cycle?.period_start ? formatDate(appraisal.cycle.period_start) : "—"}
               {" – "}
@@ -821,15 +842,15 @@ export default function AppraisalDetailPage() {
             </p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Appraisal Cycle</p>
-            <p className="text-neutral-700">{appraisal.cycle?.title ?? `Cycle #${appraisal.cycle_id}`}</p>
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">{t("hr.appraisals.detail.appraisalCycle")}</p>
+            <p className="text-neutral-700">{appraisal.cycle?.title ?? t("hr.appraisals.list.cycleNumber", { id: appraisal.cycle_id })}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Supervisor</p>
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">{t("hr.appraisals.new.supervisor")}</p>
             <p className="text-neutral-700">{appraisal.supervisor?.name ?? "—"}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Head of Department</p>
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">{t("hr.appraisals.detail.headOfDepartment")}</p>
             <p className="text-neutral-700">{appraisal.hod?.name ?? "—"}</p>
           </div>
         </div>
@@ -839,8 +860,8 @@ export default function AppraisalDetailPage() {
       <div className="card p-5">
         <SectionHeader
           number="2"
-          title="Staff Member Self-Assessment"
-          subtitle={canFillSection2 ? "Complete all subsections, then click Submit." : undefined}
+          title="hr.appraisals.detail.s2.title"
+          subtitle={canFillSection2 ? "hr.appraisals.detail.s2.subtitle" : undefined}
           badge={section2Done ? <CompletedBadge /> : undefined}
         />
 
@@ -851,23 +872,23 @@ export default function AppraisalDetailPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-800">2.A&nbsp; Major Achievements</h3>
-                  <p className="text-xs text-neutral-500">List significant outputs delivered during this period.</p>
+                  <h3 className="text-sm font-semibold text-neutral-800">2.A&nbsp; {t("hr.appraisals.detail.s2.achievements")}</h3>{/* i18n-ignore */}
+                  <p className="text-xs text-neutral-500">{t("hr.appraisals.detail.s2.achievementsHint")}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setAchievements((p) => [...p, { category: "", description: "" }])}
                   className="btn-secondary text-xs flex items-center gap-1"
                 >
-                  <span className="material-symbols-outlined text-[14px]">add</span>Add row
+                  <span className="material-symbols-outlined text-[14px]">add</span>{t("hr.appraisals.detail.addRow")}
                 </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border border-neutral-200 rounded-lg overflow-hidden">
                   <thead className="bg-neutral-50">
                     <tr>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600 w-40">Category</th>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600">Description of Achievement</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600 w-40">{t("hr.appraisals.detail.category")}</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600">{t("hr.appraisals.detail.achievementDescription")}</th>
                       <th className="w-8"></th>
                     </tr>
                   </thead>
@@ -878,7 +899,7 @@ export default function AppraisalDetailPage() {
                           <input
                             type="text"
                             className="form-input w-full text-xs"
-                            placeholder="e.g. Programme"
+                            placeholder={t("hr.appraisals.detail.categoryPlaceholder")}
                             value={row.category}
                             onChange={(e) => setAchievements((p) => p.map((r, idx) => idx === i ? { ...r, category: e.target.value } : r))}
                           />
@@ -887,14 +908,14 @@ export default function AppraisalDetailPage() {
                           <input
                             type="text"
                             className="form-input w-full text-xs"
-                            placeholder="Describe the achievement"
+                            placeholder={t("hr.appraisals.detail.describeAchievement")}
                             value={row.description}
                             onChange={(e) => setAchievements((p) => p.map((r, idx) => idx === i ? { ...r, description: e.target.value } : r))}
                           />
                         </td>
                         <td className="px-1 text-center">
                           {achievements.length > 1 && (
-                            <button type="button" onClick={() => setAchievements((p) => p.filter((_, idx) => idx !== i))} aria-label={`Remove achievement ${i + 1}`} className="text-neutral-300 hover:text-red-500">
+                            <button type="button" onClick={() => setAchievements((p) => p.filter((_, idx) => idx !== i))} aria-label={t("hr.appraisals.detail.removeAchievement", { n: i + 1 })} className="text-neutral-300 hover:text-red-500">
                               <span className="material-symbols-outlined text-[18px]">close</span>
                             </button>
                           )}
@@ -908,10 +929,10 @@ export default function AppraisalDetailPage() {
 
             {/* 2.B Outputs Not Achieved */}
             <div>
-              <h3 className="text-sm font-semibold text-neutral-800 mb-1">2.B&nbsp; Expected Outputs Not Achieved and Reasons</h3>
+              <h3 className="text-sm font-semibold text-neutral-800 mb-1">2.B&nbsp; {t("hr.appraisals.detail.s2.notAchieved")}</h3>{/* i18n-ignore */}
               <textarea
                 className="form-input w-full min-h-[80px] resize-y text-sm"
-                placeholder="List any expected outputs you did not achieve and explain the reasons."
+                placeholder={t("hr.appraisals.detail.s2.notAchievedPlaceholder")}
                 value={outputsNotAchieved}
                 onChange={(e) => setOutputsNotAchieved(e.target.value)}
               />
@@ -919,10 +940,10 @@ export default function AppraisalDetailPage() {
 
             {/* 2.C Assignments Outside Work Plan */}
             <div>
-              <h3 className="text-sm font-semibold text-neutral-800 mb-1">2.C&nbsp; Assignments Outside Normal Work Plan</h3>
+              <h3 className="text-sm font-semibold text-neutral-800 mb-1">2.C&nbsp; {t("hr.appraisals.detail.s2.outside")}</h3>{/* i18n-ignore */}
               <textarea
                 className="form-input w-full min-h-[70px] resize-y text-sm"
-                placeholder="List any tasks or projects assigned to you that were outside your agreed work plan."
+                placeholder={t("hr.appraisals.detail.s2.outsidePlaceholder")}
                 value={outsideAssignments}
                 onChange={(e) => setOutsideAssignments(e.target.value)}
               />
@@ -930,10 +951,10 @@ export default function AppraisalDetailPage() {
 
             {/* 2.D Resources */}
             <div>
-              <h3 className="text-sm font-semibold text-neutral-800 mb-1">2.D&nbsp; Resources Available / Not Available</h3>
+              <h3 className="text-sm font-semibold text-neutral-800 mb-1">2.D&nbsp; {t("hr.appraisals.detail.s2.resources")}</h3>{/* i18n-ignore */}
               <textarea
                 className="form-input w-full min-h-[70px] resize-y text-sm"
-                placeholder="Describe resources that supported or hindered your performance."
+                placeholder={t("hr.appraisals.detail.s2.resourcesPlaceholder")}
                 value={resources}
                 onChange={(e) => setResources(e.target.value)}
               />
@@ -941,19 +962,19 @@ export default function AppraisalDetailPage() {
 
             {/* 2.E Self-Rating Table */}
             <div>
-              <h3 className="text-sm font-semibold text-neutral-800 mb-2">2.E&nbsp; Self-Rating</h3>
+              <h3 className="text-sm font-semibold text-neutral-800 mb-2">2.E&nbsp; {t("hr.appraisals.detail.s2.selfRating")}</h3>{/* i18n-ignore */}
               <p className="text-xs text-neutral-500 mb-3">
-                For each factor, select the rating that best describes your performance.
+                {t("hr.appraisals.detail.s2.selfRatingHint")}
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border border-neutral-200 rounded-lg overflow-hidden">
                   <thead className="bg-neutral-50">
                     <tr>
                       <th className="text-center px-2 py-2 text-xs font-semibold text-neutral-600 w-8">#</th>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600">Performance Factor</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600">{t("hr.appraisals.detail.performanceFactor")}</th>
                       {RATING_OPTIONS.map((opt) => (
                         <th key={opt} className="text-center px-2 py-2 text-xs font-semibold text-neutral-600 w-24">
-                          {opt}
+                          {t(RATING_KEYS[opt])}
                         </th>
                       ))}
                     </tr>
@@ -973,19 +994,19 @@ export default function AppraisalDetailPage() {
               </div>
               {Object.keys(factorRatings).length > 0 && (
                 <p className="text-xs text-neutral-500 mt-2">
-                  Computed average score:{" "}
+                  {t("hr.appraisals.detail.computedAverage")}{" "}
                   <strong className="text-neutral-700">{computeOverallRating(factorRatings)} / 10</strong>{" "}
-                  ({Object.values(factorRatings).filter(Boolean).length} of {PERFORMANCE_FACTORS.length} factors rated)
+                  {t("hr.appraisals.detail.factorsRated", { rated: Object.values(factorRatings).filter(Boolean).length, total: PERFORMANCE_FACTORS.length })}
                 </p>
               )}
             </div>
 
             {/* 2.F General Comments */}
             <div>
-              <h3 className="text-sm font-semibold text-neutral-800 mb-1">2.F&nbsp; General Comments</h3>
+              <h3 className="text-sm font-semibold text-neutral-800 mb-1">2.F&nbsp; {t("hr.appraisals.detail.s2.generalComments")}</h3>{/* i18n-ignore */}
               <textarea
                 className="form-input w-full min-h-[90px] resize-y text-sm"
-                placeholder="Any additional comments you would like your supervisor and HOD to consider."
+                placeholder={t("hr.appraisals.detail.s2.generalCommentsPlaceholder")}
                 value={generalComments}
                 onChange={(e) => setGeneralComments(e.target.value)}
               />
@@ -995,12 +1016,12 @@ export default function AppraisalDetailPage() {
             <div className="border-t border-neutral-100 pt-5">
               <h3 className="text-sm font-semibold text-neutral-800 mb-2 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px] text-neutral-400">attach_file</span>
-                Supporting Evidence
+                {t("hr.appraisals.detail.supportingEvidence")}
               </h3>
               <div className="flex flex-wrap gap-2 mb-3">
                 <label htmlFor="hr-appraisals-detail-upload-file" className="btn-secondary py-1.5 px-3 text-xs cursor-pointer flex items-center gap-1">
                   <span className="material-symbols-outlined text-[16px]">upload_file</span>
-                  {uploading ? "Uploading…" : "Upload files"}
+                  {uploading ? t("hr.appraisals.detail.uploading") : t("hr.appraisals.detail.uploadFiles")}
                   <input id="hr-appraisals-detail-upload-file" type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
                 </label>
               </div>
@@ -1010,23 +1031,23 @@ export default function AppraisalDetailPage() {
                     <li key={a.id} className="flex items-center justify-between rounded-lg border border-neutral-100 px-3 py-2 text-xs">
                       <span className="font-medium text-neutral-800 truncate">{a.original_filename}</span>
                       <div className="flex gap-2 flex-shrink-0">
-                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="btn-secondary text-xs">Download</button>
-                        <button type="button" onClick={() => handleDeleteAttachment(a.id)} className="btn-secondary text-xs text-red-600">Delete</button>
+                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="btn-secondary text-xs">{t("common.download")}</button>
+                        <button type="button" onClick={() => handleDeleteAttachment(a.id)} className="btn-secondary text-xs text-red-600">{t("common.delete")}</button>
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
               <div className="flex flex-wrap gap-2 items-end">
-                <input type="url" className="form-input flex-1 min-w-[180px] text-sm" placeholder="https://…" value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)} />
-                <input type="text" className="form-input w-36 text-sm" placeholder="Link title" value={newLinkTitle} onChange={(e) => setNewLinkTitle(e.target.value)} />
+                <input type="url" className="form-input flex-1 min-w-[180px] text-sm" placeholder="https://…" value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)} />{/* i18n-ignore */}
+                <input type="text" className="form-input w-36 text-sm" placeholder={t("hr.appraisals.detail.linkTitle")} value={newLinkTitle} onChange={(e) => setNewLinkTitle(e.target.value)} />
                 <button
                   type="button"
                   onClick={() => {
                     if (!newLinkUrl.trim()) return;
                     const url = safeExternalUrl(newLinkUrl);
                     if (!url) {
-                      setError("Evidence links must be web addresses starting with http:// or https://.");
+                      setError(t("hr.appraisals.detail.linkInvalid"));
                       return;
                     }
                     setError(null);
@@ -1035,7 +1056,7 @@ export default function AppraisalDetailPage() {
                   }}
                   className="btn-secondary py-1.5 px-3 text-xs"
                 >
-                  Add link
+                  {t("hr.appraisals.detail.addLink")}
                 </button>
               </div>
               {evidenceLinks.length > 0 && (
@@ -1047,7 +1068,7 @@ export default function AppraisalDetailPage() {
                       ) : (
                         <span className="text-xs text-neutral-500 truncate">{link.title || link.url}</span>
                       )}
-                      <button type="button" onClick={() => setEvidenceLinks((p) => p.filter((_, idx) => idx !== i))} className="btn-secondary text-xs text-red-600 flex-shrink-0">Remove</button>
+                      <button type="button" onClick={() => setEvidenceLinks((p) => p.filter((_, idx) => idx !== i))} className="btn-secondary text-xs text-red-600 flex-shrink-0">{t("contracts.detail.remove")}</button>
                     </li>
                   ))}
                 </ul>
@@ -1057,7 +1078,7 @@ export default function AppraisalDetailPage() {
             <div className="flex gap-3 pt-2 border-t border-neutral-100">
               <button type="submit" disabled={submitting} className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px]">{submitting ? "progress_activity" : "send"}</span>
-                {submitting ? "Submitting…" : "Submit self-assessment"}
+                {submitting ? t("hr.appraisals.detail.submitting") : t("hr.appraisals.detail.submitSelf")}
               </button>
             </div>
           </form>
@@ -1067,12 +1088,12 @@ export default function AppraisalDetailPage() {
             {/* 2.A */}
             {sa.achievements?.some((a) => a.description) && (
               <div>
-                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">2.A — Major Achievements</h3>
+                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">2.A — {t("hr.appraisals.detail.s2.achievements")}</h3>
                 <table className="w-full border border-neutral-100 rounded-lg overflow-hidden text-sm">
                   <thead className="bg-neutral-50">
                     <tr>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600 w-36">Category</th>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600">Description</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600 w-36">{t("hr.appraisals.detail.category")}</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600">{t("hr.positions.form.description")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1088,34 +1109,34 @@ export default function AppraisalDetailPage() {
             )}
             {sa.outputs_not_achieved && (
               <div>
-                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">2.B — Outputs Not Achieved</h3>
+                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">2.B — {t("hr.appraisals.detail.ro.notAchieved")}</h3>
                 <p className="text-neutral-700 whitespace-pre-wrap">{sa.outputs_not_achieved}</p>
               </div>
             )}
             {sa.outside_assignments && (
               <div>
-                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">2.C — Outside Assignments</h3>
+                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">2.C — {t("hr.appraisals.detail.ro.outside")}</h3>
                 <p className="text-neutral-700 whitespace-pre-wrap">{sa.outside_assignments}</p>
               </div>
             )}
             {sa.resources && (
               <div>
-                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">2.D — Resources</h3>
+                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">2.D — {t("hr.appraisals.detail.ro.resources")}</h3>
                 <p className="text-neutral-700 whitespace-pre-wrap">{sa.resources}</p>
               </div>
             )}
             {/* 2.E self-ratings */}
             {Object.keys(sa.factor_ratings ?? {}).length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">2.E — Self-Rating</h3>
+                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">2.E — {t("hr.appraisals.detail.s2.selfRating")}</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full border border-neutral-100 rounded-lg overflow-hidden text-sm">
                     <thead className="bg-neutral-50">
                       <tr>
                         <th className="text-center px-2 py-2 text-xs font-semibold text-neutral-500 w-8">#</th>
-                        <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-500">Factor</th>
+                        <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-500">{t("hr.appraisals.detail.factor")}</th>
                         {RATING_OPTIONS.map((opt) => (
-                          <th key={opt} className="text-center px-2 py-2 text-xs font-semibold text-neutral-500 w-24">{opt}</th>
+                          <th key={opt} className="text-center px-2 py-2 text-xs font-semibold text-neutral-500 w-24">{t(RATING_KEYS[opt])}</th>
                         ))}
                       </tr>
                     </thead>
@@ -1134,26 +1155,26 @@ export default function AppraisalDetailPage() {
                   </table>
                 </div>
                 <p className="text-xs text-neutral-500 mt-1">
-                  Computed score: <strong className="text-neutral-700">{computeOverallRating(sa.factor_ratings ?? {})} / 10</strong>
+                  {t("hr.appraisals.detail.computedScore")} <strong className="text-neutral-700">{computeOverallRating(sa.factor_ratings ?? {})} / 10</strong>
                 </p>
               </div>
             )}
             {sa.general_comments && (
               <div>
-                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">2.F — General Comments</h3>
+                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">2.F — {t("hr.appraisals.detail.s2.generalComments")}</h3>
                 <p className="text-neutral-700 whitespace-pre-wrap">{sa.general_comments}</p>
               </div>
             )}
             {/* Evidence read-only */}
             {(attachments.length > 0 || evidenceLinks.length > 0) && (
               <div>
-                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Supporting Evidence</h3>
+                <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">{t("hr.appraisals.detail.supportingEvidence")}</h3>
                 {attachments.length > 0 && (
                   <ul className="space-y-1.5 mb-2">
                     {attachments.map((a) => (
                       <li key={a.id} className="flex items-center justify-between rounded-lg border border-neutral-100 px-3 py-2 text-xs">
                         <span className="font-medium text-neutral-800">{a.original_filename}</span>
-                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="btn-secondary text-xs">Download</button>
+                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="btn-secondary text-xs">{t("common.download")}</button>
                       </li>
                     ))}
                   </ul>
@@ -1176,7 +1197,7 @@ export default function AppraisalDetailPage() {
           </div>
         ) : (
           <div className="py-6 text-center text-sm text-neutral-400">
-            {isEmployee ? "Your self-assessment is not yet due." : "Staff member has not yet submitted their self-assessment."}
+            {isEmployee ? t("hr.appraisals.detail.selfNotDue") : t("hr.appraisals.detail.selfNotSubmitted")}
           </div>
         )}
       </div>
@@ -1186,8 +1207,8 @@ export default function AppraisalDetailPage() {
         <div className="card p-5">
           <SectionHeader
             number="3"
-            title="Supervisor Assessment"
-            subtitle={canFillSection3 ? "Rate each factor and complete the recommendation and development plan." : undefined}
+            title="hr.appraisals.detail.s3.title"
+            subtitle={canFillSection3 ? "hr.appraisals.detail.s3.subtitle" : undefined}
             badge={section3Done ? <CompletedBadge /> : undefined}
           />
 
@@ -1196,15 +1217,15 @@ export default function AppraisalDetailPage() {
 
               {/* 3.A Rating Table */}
               <div>
-                <h3 className="text-sm font-semibold text-neutral-800 mb-2">3.A&nbsp; Supervisor Rating</h3>
+                <h3 className="text-sm font-semibold text-neutral-800 mb-2">3.A&nbsp; {t("hr.appraisals.detail.s3.rating")}</h3>{/* i18n-ignore */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm border border-neutral-200 rounded-lg overflow-hidden">
                     <thead className="bg-neutral-50">
                       <tr>
                         <th className="text-center px-2 py-2 text-xs font-semibold text-neutral-600 w-8">#</th>
-                        <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600">Performance Factor</th>
-                        <th className="text-center px-3 py-2 text-xs font-semibold text-neutral-600 w-36">Rating</th>
-                        <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600">Comments</th>
+                        <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600">{t("hr.appraisals.detail.performanceFactor")}</th>
+                        <th className="text-center px-3 py-2 text-xs font-semibold text-neutral-600 w-36">{t("hr.appraisals.detail.rating")}</th>
+                        <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-600">{t("hr.appraisals.detail.comments")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1226,17 +1247,17 @@ export default function AppraisalDetailPage() {
 
               {/* 3.B Rating Summary */}
               <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4">
-                <h3 className="text-sm font-semibold text-neutral-800 mb-2">3.B&nbsp; Rating Scale Key</h3>
+                <h3 className="text-sm font-semibold text-neutral-800 mb-2">3.B&nbsp; {t("hr.appraisals.detail.s3.scaleKey")}</h3>{/* i18n-ignore */}
                 <div className="flex flex-wrap gap-3 text-xs">
                   {RATING_OPTIONS.map((opt) => (
                     <span key={opt} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium ${RATING_CLS[opt]}`}>
-                      {opt} = {RATING_POINTS[opt]} pts
+                      {t("hr.appraisals.detail.ratingPoints", { rating: t(RATING_KEYS[opt]), points: RATING_POINTS[opt] })}
                     </span>
                   ))}
                 </div>
                 {Object.keys(svFactorRatings).length > 0 && (
                   <p className="mt-3 text-xs text-neutral-600">
-                    Your computed average:{" "}
+                    {t("hr.appraisals.detail.yourAverage")}{" "}
                     <strong className="text-neutral-800">
                       {computeOverallRating(Object.fromEntries(Object.entries(svFactorRatings).map(([k, v]) => [k, v.rating])))} / 10
                     </strong>
@@ -1246,30 +1267,30 @@ export default function AppraisalDetailPage() {
 
               {/* 3.C Recommendation */}
               <div>
-                <h3 className="text-sm font-semibold text-neutral-800 mb-2">3.C&nbsp; Recommendation</h3>
+                <h3 className="text-sm font-semibold text-neutral-800 mb-2">3.C&nbsp; {t("hr.appraisals.detail.s3.recommendation")}</h3>{/* i18n-ignore */}
                 <div className="flex flex-wrap gap-4 mb-3">
                   {[
-                    { label: "Promotion", state: svPromotion, set: setSvPromotion },
-                    { label: "Merit Increase", state: svMerit, set: setSvMerit },
-                    { label: "Confirmation", state: svConfirmation, set: setSvConfirmation },
-                    { label: "Demotion", state: svDemotion, set: setSvDemotion },
-                  ].map(({ label, state, set }) => (
-                    <label htmlFor={`hr-appraisals-detail-recommend-${label.toLowerCase().replace(/\s+/g, "-")}`} key={label} className="flex items-center gap-2 cursor-pointer text-sm text-neutral-700">
-                      <input id={`hr-appraisals-detail-recommend-${label.toLowerCase().replace(/\s+/g, "-")}`}
+                    { slug: "promotion", label: "hr.appraisals.detail.rec.promotion", state: svPromotion, set: setSvPromotion },
+                    { slug: "merit-increase", label: "hr.appraisals.detail.rec.merit", state: svMerit, set: setSvMerit },
+                    { slug: "confirmation", label: "hr.appraisals.detail.rec.confirmation", state: svConfirmation, set: setSvConfirmation },
+                    { slug: "demotion", label: "hr.appraisals.detail.rec.demotion", state: svDemotion, set: setSvDemotion },
+                  ].map(({ slug, label, state, set }) => (
+                    <label htmlFor={`hr-appraisals-detail-recommend-${slug}`} key={slug} className="flex items-center gap-2 cursor-pointer text-sm text-neutral-700">
+                      <input id={`hr-appraisals-detail-recommend-${slug}`}
                         type="checkbox"
                         checked={state}
                         onChange={(e) => set(e.target.checked)}
                         className="rounded border-neutral-300 text-primary"
                       />
-                      {label}
+                      {t(label)}
                     </label>
                   ))}
                 </div>
                 <div>
-                  <label htmlFor="hr-appraisals-detail-other-recommended-actions" className="block text-xs font-semibold text-neutral-600 mb-1">Other recommended actions</label>
+                  <label htmlFor="hr-appraisals-detail-other-recommended-actions" className="block text-xs font-semibold text-neutral-600 mb-1">{t("hr.appraisals.detail.otherActions")}</label>
                   <textarea id="hr-appraisals-detail-other-recommended-actions"
                     className="form-input w-full min-h-[60px] resize-y text-sm"
-                    placeholder="Describe any other recommended actions"
+                    placeholder={t("hr.appraisals.detail.otherActionsPlaceholder")}
                     value={svOtherAction}
                     onChange={(e) => setSvOtherAction(e.target.value)}
                   />
@@ -1278,37 +1299,37 @@ export default function AppraisalDetailPage() {
 
               {/* 3.D Development Plan */}
               <div>
-                <h3 className="text-sm font-semibold text-neutral-800 mb-3">3.D&nbsp; Recommended Development Plan</h3>
+                <h3 className="text-sm font-semibold text-neutral-800 mb-3">3.D&nbsp; {t("hr.appraisals.detail.s3.devPlan")}</h3>{/* i18n-ignore */}
                 <div className="space-y-3">
                   <div>
-                    <label htmlFor="hr-appraisals-detail-i-scope-role-changes" className="block text-xs font-semibold text-neutral-600 mb-1">i. Scope / role changes</label>
-                    <textarea id="hr-appraisals-detail-i-scope-role-changes" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Describe recommended scope or role changes" value={svScopeChanges} onChange={(e) => setSvScopeChanges(e.target.value)} />
+                    <label htmlFor="hr-appraisals-detail-i-scope-role-changes" className="block text-xs font-semibold text-neutral-600 mb-1">{t("hr.appraisals.detail.dev.scope")}</label>
+                    <textarea id="hr-appraisals-detail-i-scope-role-changes" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder={t("hr.appraisals.detail.dev.scopePlaceholder")} value={svScopeChanges} onChange={(e) => setSvScopeChanges(e.target.value)} />
                   </div>
                   <div>
-                    <label htmlFor="hr-appraisals-detail-ii-a-skills-and-knowledge-development" className="block text-xs font-semibold text-neutral-600 mb-1">ii.a Skills and knowledge development</label>
-                    <textarea id="hr-appraisals-detail-ii-a-skills-and-knowledge-development" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Identify skill gaps and learning needs" value={svSkillsKnowledge} onChange={(e) => setSvSkillsKnowledge(e.target.value)} />
+                    <label htmlFor="hr-appraisals-detail-ii-a-skills-and-knowledge-development" className="block text-xs font-semibold text-neutral-600 mb-1">{t("hr.appraisals.detail.dev.skills")}</label>
+                    <textarea id="hr-appraisals-detail-ii-a-skills-and-knowledge-development" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder={t("hr.appraisals.detail.dev.skillsPlaceholder")} value={svSkillsKnowledge} onChange={(e) => setSvSkillsKnowledge(e.target.value)} />
                   </div>
                   <div>
-                    <label htmlFor="hr-appraisals-detail-ii-b-developmental-actions" className="block text-xs font-semibold text-neutral-600 mb-1">ii.b Developmental actions</label>
-                    <textarea id="hr-appraisals-detail-ii-b-developmental-actions" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Specific training, coaching, or assignments" value={svDevActions} onChange={(e) => setSvDevActions(e.target.value)} />
+                    <label htmlFor="hr-appraisals-detail-ii-b-developmental-actions" className="block text-xs font-semibold text-neutral-600 mb-1">{t("hr.appraisals.detail.dev.actions")}</label>
+                    <textarea id="hr-appraisals-detail-ii-b-developmental-actions" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder={t("hr.appraisals.detail.dev.actionsPlaceholder")} value={svDevActions} onChange={(e) => setSvDevActions(e.target.value)} />
                   </div>
                   <div>
-                    <label htmlFor="hr-appraisals-detail-iii-career-development" className="block text-xs font-semibold text-neutral-600 mb-1">iii. Career development</label>
-                    <textarea id="hr-appraisals-detail-iii-career-development" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Long-term career development considerations" value={svCareer} onChange={(e) => setSvCareer(e.target.value)} />
+                    <label htmlFor="hr-appraisals-detail-iii-career-development" className="block text-xs font-semibold text-neutral-600 mb-1">{t("hr.appraisals.detail.dev.career")}</label>
+                    <textarea id="hr-appraisals-detail-iii-career-development" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder={t("hr.appraisals.detail.dev.careerPlaceholder")} value={svCareer} onChange={(e) => setSvCareer(e.target.value)} />
                   </div>
                 </div>
               </div>
 
               {/* 3.E Supplemental Review */}
               <div>
-                <h3 className="text-sm font-semibold text-neutral-800 mb-1">3.E&nbsp; Supplemental Review / Additional Comments</h3>
-                <textarea className="form-input w-full min-h-[70px] resize-y text-sm" placeholder="Any additional observations or context" value={svSupplemental} onChange={(e) => setSvSupplemental(e.target.value)} />
+                <h3 className="text-sm font-semibold text-neutral-800 mb-1">3.E&nbsp; {t("hr.appraisals.detail.s3.supplemental")}</h3>{/* i18n-ignore */}
+                <textarea className="form-input w-full min-h-[70px] resize-y text-sm" placeholder={t("hr.appraisals.detail.s3.supplementalPlaceholder")} value={svSupplemental} onChange={(e) => setSvSupplemental(e.target.value)} />
               </div>
 
               <div className="flex gap-3 pt-2 border-t border-neutral-100">
                 <button type="submit" disabled={svSubmitting} className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px]">{svSubmitting ? "progress_activity" : "rate_review"}</span>
-                  {svSubmitting ? "Submitting…" : "Submit supervisor review"}
+                  {svSubmitting ? t("hr.appraisals.detail.submitting") : t("hr.appraisals.detail.submitSv")}
                 </button>
               </div>
             </form>
@@ -1317,15 +1338,15 @@ export default function AppraisalDetailPage() {
               {/* 3.A read-only */}
               {Object.keys(svData.factor_ratings ?? {}).length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">3.A — Supervisor Ratings</h3>
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">3.A — {t("hr.appraisals.detail.ro.svRatings")}</h3>
                   <div className="overflow-x-auto">
                     <table className="w-full border border-neutral-100 rounded-lg overflow-hidden text-sm">
                       <thead className="bg-neutral-50">
                         <tr>
                           <th className="text-center px-2 py-2 text-xs font-semibold text-neutral-500 w-8">#</th>
-                          <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-500">Factor</th>
-                          <th className="text-center px-3 py-2 text-xs font-semibold text-neutral-500 w-36">Rating</th>
-                          <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-500">Comments</th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-500">{t("hr.appraisals.detail.factor")}</th>
+                          <th className="text-center px-3 py-2 text-xs font-semibold text-neutral-500 w-36">{t("hr.appraisals.detail.rating")}</th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-neutral-500">{t("hr.appraisals.detail.comments")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1345,19 +1366,19 @@ export default function AppraisalDetailPage() {
                     </table>
                   </div>
                   <p className="text-xs text-neutral-500 mt-1">
-                    Computed score: <strong className="text-neutral-700">{svOverallScore} / 10</strong>
+                    {t("hr.appraisals.detail.computedScore")} <strong className="text-neutral-700">{svOverallScore} / 10</strong>
                   </p>
                 </div>
               )}
               {/* 3.C recommendations */}
               {(svData.promotion || svData.merit_increase || svData.confirmation || svData.demotion || svData.other_action) && (
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">3.C — Recommendation</h3>
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">3.C — {t("hr.appraisals.detail.s3.recommendation")}</h3>
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {svData.promotion && <span className="badge badge-primary">Promotion</span>}
-                    {svData.merit_increase && <span className="badge badge-primary">Merit Increase</span>}
-                    {svData.confirmation && <span className="badge badge-success">Confirmation</span>}
-                    {svData.demotion && <span className="badge badge-danger">Demotion</span>}
+                    {svData.promotion && <span className="badge badge-primary">{t("hr.appraisals.detail.rec.promotion")}</span>}
+                    {svData.merit_increase && <span className="badge badge-primary">{t("hr.appraisals.detail.rec.merit")}</span>}
+                    {svData.confirmation && <span className="badge badge-success">{t("hr.appraisals.detail.rec.confirmation")}</span>}
+                    {svData.demotion && <span className="badge badge-danger">{t("hr.appraisals.detail.rec.demotion")}</span>}
                   </div>
                   {svData.other_action && <p className="text-neutral-700">{svData.other_action}</p>}
                 </div>
@@ -1365,23 +1386,23 @@ export default function AppraisalDetailPage() {
               {/* 3.D development plan */}
               {(svData.scope_changes || svData.skills_knowledge || svData.developmental_actions || svData.career_development) && (
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">3.D — Development Plan</h3>
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">3.D — {t("hr.appraisals.detail.ro.devPlan")}</h3>
                   <div className="space-y-2">
-                    {svData.scope_changes && <div><span className="text-xs font-medium text-neutral-500">Scope changes:</span><p className="text-neutral-700 mt-0.5">{svData.scope_changes}</p></div>}
-                    {svData.skills_knowledge && <div><span className="text-xs font-medium text-neutral-500">Skills / knowledge:</span><p className="text-neutral-700 mt-0.5">{svData.skills_knowledge}</p></div>}
-                    {svData.developmental_actions && <div><span className="text-xs font-medium text-neutral-500">Developmental actions:</span><p className="text-neutral-700 mt-0.5">{svData.developmental_actions}</p></div>}
-                    {svData.career_development && <div><span className="text-xs font-medium text-neutral-500">Career development:</span><p className="text-neutral-700 mt-0.5">{svData.career_development}</p></div>}
+                    {svData.scope_changes && <div><span className="text-xs font-medium text-neutral-500">{t("hr.appraisals.detail.ro.scope")}</span><p className="text-neutral-700 mt-0.5">{svData.scope_changes}</p></div>}
+                    {svData.skills_knowledge && <div><span className="text-xs font-medium text-neutral-500">{t("hr.appraisals.detail.ro.skills")}</span><p className="text-neutral-700 mt-0.5">{svData.skills_knowledge}</p></div>}
+                    {svData.developmental_actions && <div><span className="text-xs font-medium text-neutral-500">{t("hr.appraisals.detail.ro.actions")}</span><p className="text-neutral-700 mt-0.5">{svData.developmental_actions}</p></div>}
+                    {svData.career_development && <div><span className="text-xs font-medium text-neutral-500">{t("hr.appraisals.detail.ro.career")}</span><p className="text-neutral-700 mt-0.5">{svData.career_development}</p></div>}
                   </div>
                 </div>
               )}
               {svData.supplemental_review && (
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">3.E — Supplemental Review</h3>
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">3.E — {t("hr.appraisals.detail.ro.supplemental")}</h3>
                   <p className="text-neutral-700 whitespace-pre-wrap">{svData.supplemental_review}</p>
                 </div>
               )}
               {appraisal.supervisor_reviewed_at && (
-                <p className="text-xs text-neutral-400">Reviewed {formatDate(appraisal.supervisor_reviewed_at)} by {appraisal.supervisor?.name ?? "supervisor"}</p>
+                <p className="text-xs text-neutral-400">{t("hr.appraisals.detail.reviewedBy", { date: formatDate(appraisal.supervisor_reviewed_at), name: appraisal.supervisor?.name ?? t("hr.appraisals.detail.supervisorLower") })}</p>
               )}
             </div>
           ) : null}
@@ -1393,15 +1414,15 @@ export default function AppraisalDetailPage() {
         <div className="card p-5">
           <SectionHeader
             number="4"
-            title="Staff Member's Comments on Supervisor Rating"
-            subtitle="You may respond to the supervisor's assessment before it proceeds to the HOD."
+            title="hr.appraisals.detail.s4.title"
+            subtitle="hr.appraisals.detail.s4.subtitle"
             badge={sa.section4_comments ? <CompletedBadge /> : undefined}
           />
           {canFillSection4 ? (
             <div className="space-y-3">
               <textarea
                 className="form-input w-full min-h-[90px] resize-y text-sm"
-                placeholder="Share your comments on the supervisor's rating (optional but recommended)."
+                placeholder={t("hr.appraisals.detail.s4.placeholder")}
                 value={section4Comments}
                 onChange={(e) => setSection4Comments(e.target.value)}
               />
@@ -1412,13 +1433,13 @@ export default function AppraisalDetailPage() {
                 className="btn-primary px-4 py-2 text-sm disabled:opacity-50 flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px]">{section4Saving ? "progress_activity" : "save"}</span>
-                {section4Saving ? "Saving…" : "Save comments"}
+                {section4Saving ? t("hr.positions.form.saving") : t("hr.appraisals.detail.saveComments")}
               </button>
             </div>
           ) : sa.section4_comments ? (
             <p className="text-sm text-neutral-700 whitespace-pre-wrap">{sa.section4_comments}</p>
           ) : (
-            <p className="text-sm text-neutral-400 italic">No comments provided.</p>
+            <p className="text-sm text-neutral-400 italic">{t("hr.appraisals.detail.noComments")}</p>
           )}
         </div>
       )}
@@ -1428,52 +1449,52 @@ export default function AppraisalDetailPage() {
         <div className="card p-5">
           <SectionHeader
             number="5"
-            title="HOD Review and Recommendation to Secretary General"
-            subtitle={canFillSection5 ? "Review the employee and supervisor assessments, then submit your recommendation." : undefined}
+            title="hr.appraisals.detail.s5.title"
+            subtitle={canFillSection5 ? "hr.appraisals.detail.s5.subtitle" : undefined}
             badge={section5Done ? <CompletedBadge /> : undefined}
           />
           {canFillSection5 ? (
             <form onSubmit={handleSubmitSection5} className="space-y-4">
               <div>
-                <label htmlFor="hr-appraisals-detail-recommendation-to-sg" className="block text-sm font-semibold text-neutral-700 mb-1">Recommendation to SG</label>
+                <label htmlFor="hr-appraisals-detail-recommendation-to-sg" className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.detail.s5.recommendation")}</label>
                 <textarea id="hr-appraisals-detail-recommendation-to-sg"
                   className="form-input w-full min-h-[80px] resize-y text-sm"
-                  placeholder="Your recommendation to the Secretary General regarding this employee's performance."
+                  placeholder={t("hr.appraisals.detail.s5.recommendationPlaceholder")}
                   value={hodRecommendation}
                   onChange={(e) => setHodRecommendation(e.target.value)}
                   required
                 />
               </div>
               <div>
-                <label htmlFor="hr-appraisals-detail-comments" className="block text-sm font-semibold text-neutral-700 mb-1">Comments</label>
+                <label htmlFor="hr-appraisals-detail-comments" className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.detail.comments")}</label>
                 <textarea id="hr-appraisals-detail-comments"
                   className="form-input w-full min-h-[70px] resize-y text-sm"
-                  placeholder="Additional HOD comments."
+                  placeholder={t("hr.appraisals.detail.s5.commentsPlaceholder")}
                   value={hodComments}
                   onChange={(e) => setHodComments(e.target.value)}
                 />
               </div>
               <button type="submit" disabled={hodSubmitting} className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px]">{hodSubmitting ? "progress_activity" : "verified_user"}</span>
-                {hodSubmitting ? "Submitting…" : "Submit HOD review"}
+                {hodSubmitting ? t("hr.appraisals.detail.submitting") : t("hr.appraisals.detail.submitHod")}
               </button>
             </form>
           ) : section5Done ? (
             <div className="space-y-3 text-sm">
               {hodData.recommendation && (
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Recommendation to SG</h3>
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">{t("hr.appraisals.detail.s5.recommendation")}</h3>
                   <p className="text-neutral-700 whitespace-pre-wrap">{hodData.recommendation}</p>
                 </div>
               )}
               {hodData.comments && (
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">HOD Comments</h3>
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">{t("hr.appraisals.detail.s5.hodComments")}</h3>
                   <p className="text-neutral-700 whitespace-pre-wrap">{hodData.comments}</p>
                 </div>
               )}
               {appraisal.hod_reviewed_at && (
-                <p className="text-xs text-neutral-400">Reviewed {formatDate(appraisal.hod_reviewed_at)} by {appraisal.hod?.name ?? "HOD"}</p>
+                <p className="text-xs text-neutral-400">{t("hr.appraisals.detail.reviewedBy", { date: formatDate(appraisal.hod_reviewed_at), name: appraisal.hod?.name ?? t("hr.appraisals.new.hod") })}</p>
               )}
             </div>
           ) : null}
@@ -1485,14 +1506,14 @@ export default function AppraisalDetailPage() {
         <div className="card p-5">
           <SectionHeader
             number="6"
-            title="Staff Member's Comments on HOD Review"
+            title="hr.appraisals.detail.s6.title"
             badge={sa.section6_comments ? <CompletedBadge /> : undefined}
           />
           {canFillSection6 ? (
             <div className="space-y-3">
               <textarea
                 className="form-input w-full min-h-[90px] resize-y text-sm"
-                placeholder="Your comments on the HOD's review (optional)."
+                placeholder={t("hr.appraisals.detail.s6.placeholder")}
                 value={section6Comments}
                 onChange={(e) => setSection6Comments(e.target.value)}
               />
@@ -1503,13 +1524,13 @@ export default function AppraisalDetailPage() {
                 className="btn-primary px-4 py-2 text-sm disabled:opacity-50 flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px]">{section6Saving ? "progress_activity" : "save"}</span>
-                {section6Saving ? "Saving…" : "Save comments"}
+                {section6Saving ? t("hr.positions.form.saving") : t("hr.appraisals.detail.saveComments")}
               </button>
             </div>
           ) : sa.section6_comments ? (
             <p className="text-sm text-neutral-700 whitespace-pre-wrap">{sa.section6_comments}</p>
           ) : (
-            <p className="text-sm text-neutral-400 italic">No comments provided.</p>
+            <p className="text-sm text-neutral-400 italic">{t("hr.appraisals.detail.noComments")}</p>
           )}
         </div>
       )}
@@ -1519,49 +1540,49 @@ export default function AppraisalDetailPage() {
         <div className="card p-5">
           <SectionHeader
             number="7–8"
-            title="Consolidation and Secretary General Review"
-            subtitle={canFillSections78 ? "HR consolidates and the SG makes the final decision." : undefined}
+            title="hr.appraisals.detail.s78.title"
+            subtitle={canFillSections78 ? "hr.appraisals.detail.s78.subtitle" : undefined}
             badge={sections78Done ? <CompletedBadge /> : undefined}
           />
           {canFillSections78 ? (
             <form onSubmit={handleFinalize} className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="hr-appraisals-detail-overall-rating-numeric-0-10" className="block text-sm font-semibold text-neutral-700 mb-1">Overall Rating (numeric, 0–10)</label>
+                  <label htmlFor="hr-appraisals-detail-overall-rating-numeric-0-10" className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.detail.s78.overallNumeric")}</label>
                   <input id="hr-appraisals-detail-overall-rating-numeric-0-10"
                     type="number"
                     min={0}
                     max={10}
                     step={0.1}
                     className="form-input w-full text-sm"
-                    placeholder="e.g. 7.5"
+                    placeholder={t("hr.appraisals.detail.s78.overallPlaceholder")}
                     value={finalOverallRating}
                     onChange={(e) => setFinalOverallRating(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label htmlFor="hr-appraisals-detail-overall-rating-label" className="block text-sm font-semibold text-neutral-700 mb-1">Overall Rating Label</label>
+                  <label htmlFor="hr-appraisals-detail-overall-rating-label" className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.detail.s78.overallLabel")}</label>
                   <select id="hr-appraisals-detail-overall-rating-label" className="form-input w-full text-sm" value={finalOverallLabel} onChange={(e) => setFinalOverallLabel(e.target.value)}>
-                    <option value="">Select label</option>
-                    {RATING_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                    <option value="">{t("hr.appraisals.detail.s78.selectLabel")}</option>
+                    {RATING_OPTIONS.map((opt) => <option key={opt} value={opt}>{t(RATING_KEYS[opt])}</option>)}
                   </select>
                 </div>
               </div>
               <div>
-                <label htmlFor="hr-appraisals-detail-hr-consolidation-comments-section-7" className="block text-sm font-semibold text-neutral-700 mb-1">HR Consolidation Comments (Section 7)</label>
-                <textarea id="hr-appraisals-detail-hr-consolidation-comments-section-7" className="form-input w-full min-h-[80px] resize-y text-sm" placeholder="HR consolidation notes" value={hrComments} onChange={(e) => setHrComments(e.target.value)} />
+                <label htmlFor="hr-appraisals-detail-hr-consolidation-comments-section-7" className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.detail.s78.hrComments")}</label>
+                <textarea id="hr-appraisals-detail-hr-consolidation-comments-section-7" className="form-input w-full min-h-[80px] resize-y text-sm" placeholder={t("hr.appraisals.detail.s78.hrPlaceholder")} value={hrComments} onChange={(e) => setHrComments(e.target.value)} />
               </div>
               <div>
-                <label htmlFor="hr-appraisals-detail-sg-decision-section-8" className="block text-sm font-semibold text-neutral-700 mb-1">SG Decision (Section 8)</label>
-                <textarea id="hr-appraisals-detail-sg-decision-section-8" className="form-input w-full min-h-[80px] resize-y text-sm" placeholder="Secretary General's decision and comments" value={sgDecision} onChange={(e) => setSgDecision(e.target.value)} />
+                <label htmlFor="hr-appraisals-detail-sg-decision-section-8" className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.detail.s78.sgDecision")}</label>
+                <textarea id="hr-appraisals-detail-sg-decision-section-8" className="form-input w-full min-h-[80px] resize-y text-sm" placeholder={t("hr.appraisals.detail.s78.sgPlaceholder")} value={sgDecision} onChange={(e) => setSgDecision(e.target.value)} />
               </div>
               <div>
-                <label htmlFor="hr-appraisals-detail-final-development-plan" className="block text-sm font-semibold text-neutral-700 mb-1">Final Development Plan</label>
-                <textarea id="hr-appraisals-detail-final-development-plan" className="form-input w-full min-h-[80px] resize-y text-sm" placeholder="Consolidated development plan for the employee" value={developmentPlan} onChange={(e) => setDevelopmentPlan(e.target.value)} />
+                <label htmlFor="hr-appraisals-detail-final-development-plan" className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.detail.s78.finalPlan")}</label>
+                <textarea id="hr-appraisals-detail-final-development-plan" className="form-input w-full min-h-[80px] resize-y text-sm" placeholder={t("hr.appraisals.detail.s78.finalPlanPlaceholder")} value={developmentPlan} onChange={(e) => setDevelopmentPlan(e.target.value)} />
               </div>
               <button type="submit" disabled={finalSubmitting || !finalOverallLabel} className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px]">{finalSubmitting ? "progress_activity" : "gavel"}</span>
-                {finalSubmitting ? "Finalizing…" : "Finalize appraisal"}
+                {finalSubmitting ? t("hr.appraisals.detail.finalizing") : t("hr.appraisals.detail.finalize")}
               </button>
             </form>
           ) : sections78Done ? (
@@ -1569,37 +1590,37 @@ export default function AppraisalDetailPage() {
               <div className="flex flex-wrap gap-4">
                 {appraisal.overall_rating != null && (
                   <div>
-                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Overall Score</p>
+                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">{t("hr.appraisals.detail.overallScore")}</p>
                     <p className="text-2xl font-bold text-neutral-900">{appraisal.overall_rating}<span className="text-sm font-normal text-neutral-500">/10</span></p>
                   </div>
                 )}
                 {appraisal.overall_rating_label && (
                   <div>
-                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">Overall Rating</p>
+                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-0.5">{t("hr.appraisals.detail.overallRating")}</p>
                     <RatingPill rating={appraisal.overall_rating_label} />
                   </div>
                 )}
               </div>
               {appraisal.hr_comments && (
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Section 7 — HR Consolidation</h3>
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">{t("hr.appraisals.detail.ro.section7")}</h3>
                   <p className="text-neutral-700 whitespace-pre-wrap">{appraisal.hr_comments}</p>
                 </div>
               )}
               {appraisal.sg_decision && (
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Section 8 — SG Decision</h3>
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">{t("hr.appraisals.detail.ro.section8")}</h3>
                   <p className="text-neutral-700 whitespace-pre-wrap">{appraisal.sg_decision}</p>
                 </div>
               )}
               {appraisal.development_plan && (
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Final Development Plan</h3>
+                  <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">{t("hr.appraisals.detail.s78.finalPlan")}</h3>
                   <p className="text-neutral-700 whitespace-pre-wrap">{appraisal.development_plan}</p>
                 </div>
               )}
               {appraisal.finalized_at && (
-                <p className="text-xs text-neutral-400">Finalized {formatDate(appraisal.finalized_at)}</p>
+                <p className="text-xs text-neutral-400">{t("hr.appraisals.detail.finalizedOn", { date: formatDate(appraisal.finalized_at) })}</p>
               )}
             </div>
           ) : null}
@@ -1611,21 +1632,21 @@ export default function AppraisalDetailPage() {
         <div className="card p-5">
           <SectionHeader
             number="9"
-            title="Final Comments by Staff Member"
-            subtitle={canFillSection9 ? "Review the finalized appraisal, add any final comments, then acknowledge." : undefined}
+            title="hr.appraisals.detail.s9.title"
+            subtitle={canFillSection9 ? "hr.appraisals.detail.s9.subtitle" : undefined}
             badge={appraisal.employee_acknowledged ? <CompletedBadge /> : undefined}
           />
           {canFillSection9 ? (
             <div className="space-y-4">
               <textarea
                 className="form-input w-full min-h-[90px] resize-y text-sm"
-                placeholder="Your final comments on the completed appraisal (optional)."
+                placeholder={t("hr.appraisals.detail.s9.placeholder")}
                 value={section9Comments}
                 onChange={(e) => setSection9Comments(e.target.value)}
               />
               <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
                 <span className="material-symbols-outlined text-[18px] mt-0.5 shrink-0">info</span>
-                <p>By clicking Acknowledge, you confirm that you have read and understood this appraisal. This action cannot be undone.</p>
+                <p>{t("hr.appraisals.detail.s9.notice")}</p>
               </div>
               <button
                 type="button"
@@ -1634,13 +1655,13 @@ export default function AppraisalDetailPage() {
                 className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px]">{acknowledging ? "progress_activity" : "verified"}</span>
-                {acknowledging ? "Acknowledging…" : "Acknowledge appraisal"}
+                {acknowledging ? t("hr.appraisals.detail.acknowledging") : t("hr.appraisals.detail.acknowledge")}
               </button>
             </div>
           ) : sa.section9_comments ? (
             <p className="text-sm text-neutral-700 whitespace-pre-wrap">{sa.section9_comments}</p>
           ) : (
-            <p className="text-sm text-neutral-400 italic">No final comments provided.</p>
+            <p className="text-sm text-neutral-400 italic">{t("hr.appraisals.detail.noFinalComments")}</p>
           )}
         </div>
       )}
@@ -1649,7 +1670,7 @@ export default function AppraisalDetailPage() {
       <div className="flex justify-end gap-3 pt-2">
         <Link href="/hr/appraisals" className="btn-secondary text-sm flex items-center gap-1">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Appraisals
+          {t("hr.appraisals.detail.backToList")}
         </Link>
       </div>
     </div>

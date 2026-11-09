@@ -2,51 +2,53 @@
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const correspondenceSettings = [
   {
-    title: "Subject Files",
-    description: "Maintain file codes and subject-file structure for registry classification.",
+    title: "admin.correspondence.subjectFiles",
+    description: "admin.correspondence.subjectFilesDesc",
     href: "/correspondence/subject-files",
     icon: "folder_managed",
   },
   {
-    title: "Letterhead",
-    description: "Configure official correspondence branding and letterhead templates.",
+    title: "admin.correspondence.letterhead",
+    description: "admin.correspondence.letterheadDesc",
     href: "/correspondence/letterhead",
     icon: "branding_watermark",
   },
   {
-    title: "Retention Rules",
-    description: "Manage retention periods and disposal controls for correspondence records.",
+    title: "admin.correspondence.retention",
+    description: "admin.correspondence.retentionDesc",
     href: "/correspondence/retention",
     icon: "policy",
   },
   {
-    title: "Contacts",
-    description: "Maintain organisation contacts used in correspondence workflows.",
+    title: "admin.correspondence.contacts",
+    description: "admin.correspondence.contactsDesc",
     href: "/correspondence/contacts",
     icon: "contacts",
   },
   {
-    title: "Registry",
-    description: "Review the correspondence registry and reference-number sequence.",
+    title: "admin.correspondence.registry",
+    description: "admin.correspondence.registryDesc",
     href: "/correspondence/registry",
     icon: "mark_email_read",
   },
 ];
 
 export default function AdminCorrespondencePage() {
+  const { t } = useI18n();
   return (
     <div className="space-y-6">
       <ModulePageHeader
-        title="Correspondence Settings"
-        subtitle="Registry configuration, file codes, retention controls, and correspondence templates."
+        title={t("admin.correspondence.title")}
+        subtitle={t("admin.correspondence.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Correspondence Settings" },
+              { label: t("admin.homeLabel"), href: "/admin" },
+              { label: t("admin.correspondence.title") },
             ]}
           />
         }
@@ -69,10 +71,10 @@ export default function AdminCorrespondencePage() {
             </div>
             <div className="space-y-1">
               <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                {item.title}
+                {t(item.title)}
               </h2>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                {item.description}
+                {t(item.description)}
               </p>
             </div>
           </Link>

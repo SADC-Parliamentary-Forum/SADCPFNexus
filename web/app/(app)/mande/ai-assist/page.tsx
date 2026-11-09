@@ -6,8 +6,11 @@ import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { mandeApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
+// Stub drafts only, human confirm required. Never auto-mutates indicators.
 export default function MandeAiAssistPage() {
+  const { t } = useI18n();
   const [scope, setScope] = useState("narrative_draft");
   const [context, setContext] = useState("Q2 donor indicators without actuals");
   const [last, setLast] = useState<Record<string, unknown> | null>(null);
@@ -26,22 +29,22 @@ export default function MandeAiAssistPage() {
   return (
     <div className="w-full min-w-0 space-y-4 p-6">
       <ModulePageHeader
-        title="M&E narrative assist"
-        subtitle="Stub drafts and filter suggestions only. Human confirm required. Live LLM stays operator-owned (CR-8). Never auto-mutates indicators."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "M&E", href: "/mande" }, { label: "Narrative assist" }]} />}
+        title={t("mande.aiAssist.title")}
+        subtitle={t("mande.aiAssist.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("mande.crumb"), href: "/mande" }, { label: t("mande.aiAssist.crumb") }]} />}
       />
       <div className="card space-y-3 p-4 text-sm" data-testid="mande-ai-assist">
         <label htmlFor="mande-ai-assist-scope-setscope-e-target-value-narrative-draft-nl" className="block">
-          Scope
+          {t("mande.aiAssist.scope")}
           <select id="mande-ai-assist-scope-setscope-e-target-value-narrative-draft-nl" className="form-input mt-1" value={scope} onChange={(e) => setScope(e.target.value)}>
-            <option value="narrative_draft">Narrative draft</option>
-            <option value="nl_filter_suggest">NL filter suggest</option>
-            <option value="indicator_summary">Indicator summary</option>
+            <option value="narrative_draft">{t("mande.aiAssist.narrativeDraft")}</option>
+            <option value="nl_filter_suggest">{t("mande.aiAssist.nlFilter")}</option>
+            <option value="indicator_summary">{t("mande.aiAssist.indicatorSummary")}</option>
           </select>
         </label>
-        <textarea className="form-input min-h-[80px]" value={context} onChange={(e) => setContext(e.target.value)} />
+        <textarea className="form-input min-h-[80px]" aria-label={t("mande.aiAssist.context")} value={context} onChange={(e) => setContext(e.target.value)} />
         <button type="button" className="btn-primary" onClick={() => draft.mutate()} disabled={draft.isPending}>
-          Generate draft
+          {t("mande.aiAssist.generate")}
         </button>
       </div>
       {last && (
@@ -51,14 +54,14 @@ export default function MandeAiAssistPage() {
             <div className="flex flex-wrap gap-2" data-testid="mande-nl-filter-hrefs">
               {filters.map((row) => (
                 <Link key={row.key} href={row.href || "/mande/indicators"} className="btn-secondary text-sm">
-                  Apply {row.label}
+                  {t("mande.aiAssist.apply", { label: row.label })}
                 </Link>
               ))}
             </div>
           ) : null}
           {last.requires_confirmation ? (
             <button type="button" className="btn-secondary" onClick={() => confirm.mutate()} disabled={confirm.isPending}>
-              Confirm for my notes only
+              {t("mande.aiAssist.confirm")}
             </button>
           ) : null}
         </div>

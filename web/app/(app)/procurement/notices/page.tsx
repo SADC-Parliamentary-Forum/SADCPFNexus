@@ -8,6 +8,7 @@ import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Notice = {
   id?: number;
@@ -22,6 +23,7 @@ type Notice = {
 export default function StaffNoticeBoardPage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [ticks, setTicks] = useState<Record<string, boolean>>({});
   const [templateKey, setTemplateKey] = useState("open_tender");
@@ -47,10 +49,10 @@ export default function StaffNoticeBoardPage() {
     mutationFn: () => noticeBoardApi.saveNewspaperChecklist(selectedId as number, { ticks, template_key: templateKey }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["procurement", "newspaper-pack", selectedId] });
-      toast.success("Publication checklist saved");
+      toast.success(t("procurement.notices.checklistSaved"));
     },
     onError: (err: unknown) => {
-      toast.error("Checklist not saved", apiErrorMessage(err, "Failed to save the publication checklist."));
+      toast.error(t("procurement.notices.checklistNotSaved"), apiErrorMessage(err, t("procurement.notices.checklistSaveFailed")));
     },
   });
 
@@ -58,36 +60,37 @@ export default function StaffNoticeBoardPage() {
     mutationFn: () => noticeBoardApi.newspaperLlmDraft(selectedId as number, { template_key: templateKey }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["procurement", "newspaper-pack", selectedId] });
-      toast.success("Notice draft generated");
+      toast.success(t("procurement.notices.draftGenerated"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not generate notice draft", apiErrorMessage(err, "Failed to generate the notice draft."));
+      toast.error(t("procurement.notices.draftNotGenerated"), apiErrorMessage(err, t("procurement.notices.draftFailed")));
     },
   });
 
   return (
     <div className="space-y-5">
       <ModulePageHeader
-        title="Tender Notice Board"
-        subtitle="Published advertisements plus newspaper-notice templates and a human publication checklist. This never auto-awards a supplier."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Tender Notice Board" }]} />}
+        title={t("procurement.notices.title")}
+        subtitle={t("procurement.notices.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("procurement.notices.title") }]} />}
       />
 
       {isError && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">Failed to load notices.</div>
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{t("procurement.notices.loadError")}</div>
       )}
-      {isLoading && <div className="card p-8 text-center text-sm text-neutral-400">Loading…</div>}
+      {isLoading && <div className="card p-8 text-center text-sm text-neutral-400">{t("common.loading")}</div>}
 
       <div className="card space-y-2 p-4 text-sm" data-testid="newspaper-notice-templates">
-        <p className="font-medium">Newspaper notice templates</p>
+        <p className="font-medium">{t("procurement.notices.templatesTitle")}</p>
         <p className="text-neutral-600">
-          Live LLM drafting stays operator-owned. Templates fill from the tender; publication ticks are human.
-          Auto-award: {templates.data?.auto_award ? "on" : "off"}.
-          HTTP LLM suggestion: {templates.data?.llm_live ? "configured" : "off until PROCUREMENT_NOTICE_LLM_URL is set"}.
+          {t("procurement.notices.templatesHint", {
+            autoAward: templates.data?.auto_award ? t("procurement.notices.on") : t("procurement.notices.off"),
+            llm: templates.data?.llm_live ? t("procurement.notices.configured") : t("procurement.notices.llmOff"),
+          })}
         </p>
         <ul className="list-disc pl-5 text-neutral-700">
-          {(templates.data?.templates ?? []).map((t) => (
-            <li key={String(t.key)}>{String(t.label)}</li>
+          {(templates.data?.templates ?? []).map((tpl) => (
+            <li key={String(tpl.key)}>{String(tpl.label)}</li>
           ))}
         </ul>
       </div>
@@ -104,30 +107,30 @@ export default function StaffNoticeBoardPage() {
             </div>
             {n.notice && <p className="text-sm text-neutral-700 whitespace-pre-wrap">{n.notice}</p>}
             <p className="text-xs text-neutral-500">
-              Deadline: {n.submission_deadline ?? "—"} · Sealed: {n.sealed_mode ? "Yes" : "No"}
+              {t("procurement.notices.meta", { deadline: n.submission_deadline ?? "—", sealed: n.sealed_mode ? t("procurement.yes") : t("procurement.no") })}
             </p>
             {n.id ? (
               <button type="button" className="btn-secondary text-sm" onClick={() => setSelectedId(n.id as number)}>
-                Open newspaper checklist
+                {t("procurement.notices.openChecklist")}
               </button>
             ) : null}
           </article>
         ))}
         {!isLoading && (data?.length ?? 0) === 0 && (
           <div className="card">
-            <EmptyState icon="campaign" title="No published notices." />
+            <EmptyState icon="campaign" title={t("procurement.notices.empty")} />
           </div>
         )}
       </div>
 
       {pack.data ? (
         <div className="card space-y-3 p-4 text-sm" data-testid="newspaper-notice-checklist">
-          <p className="font-medium">Checklist for {String(pack.data.reference_number)}</p>
+          <p className="font-medium">{t("procurement.notices.checklistFor", { ref: String(pack.data.reference_number) })}</p>
           <label htmlFor="procurement-notices-template-settemplatekey-e-target-value" className="block text-sm">
-            Template
+            {t("procurement.notices.template")}
             <select id="procurement-notices-template-settemplatekey-e-target-value" className="form-input mt-1" value={templateKey} onChange={(e) => setTemplateKey(e.target.value)}>
-              {(templates.data?.templates ?? []).map((t) => (
-                <option key={String(t.key)} value={String(t.key)}>{String(t.label)}</option>
+              {(templates.data?.templates ?? []).map((tpl) => (
+                <option key={String(tpl.key)} value={String(tpl.key)}>{String(tpl.label)}</option>
               ))}
             </select>
           </label>
@@ -142,17 +145,17 @@ export default function StaffNoticeBoardPage() {
               data-testid="copy-filled-notice"
               onClick={async () => {
                 await navigator.clipboard.writeText(String(pack.data.filled_notice));
-                setCopyMsg("Filled notice copied. Publication still requires a human.");
+                setCopyMsg(t("procurement.notices.copied"));
               }}
             >
-              Copy filled notice
+              {t("procurement.notices.copy")}
             </button>
             <button
               type="button"
               className="btn-secondary text-sm"
               onClick={() => window.print()}
             >
-              Print
+              {t("common.print")}
             </button>
             <button
               type="button"
@@ -160,7 +163,7 @@ export default function StaffNoticeBoardPage() {
               disabled={llmDraft.isPending || !selectedId}
               onClick={() => llmDraft.mutate()}
             >
-              {llmDraft.isPending ? "Drafting…" : "Request LLM draft"}
+              {llmDraft.isPending ? t("procurement.notices.drafting") : t("procurement.notices.requestDraft")}
             </button>
           </div>
           {copyMsg ? <p className="text-xs text-green-700">{copyMsg}</p> : null}
@@ -172,11 +175,11 @@ export default function StaffNoticeBoardPage() {
                 disabled={!item.manual}
                 onChange={(e) => setTicks((prev) => ({ ...prev, [String(item.key)]: e.target.checked }))}
               />
-              <span>{String(item.label)} {item.manual ? "" : "(detected)"}</span>
+              <span>{String(item.label)} {item.manual ? "" : t("procurement.notices.detected")}</span>
             </label>
           ))}
           <button type="button" className="btn-primary text-sm" disabled={save.isPending} onClick={() => save.mutate()}>
-            Save human ticks
+            {t("procurement.notices.saveTicks")}
           </button>
           <LabelledRecord value={{ auto_award: pack.data.auto_award }} />
         </div>

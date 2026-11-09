@@ -8,6 +8,7 @@ import { formatDateShort } from "@/lib/utils";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const OFFLINE_QUEUE_KEY = "sadcpf.stocktake.offlineQueue";
 
@@ -29,6 +30,7 @@ function readBrowserQueue(): BrowserQueueLine[] {
 }
 
 export default function StocktakeDetailPage() {
+  const { t } = useI18n();
   const params = useParams();
   const id = Number(params.id);
   const { toast } = useToast();
@@ -48,8 +50,8 @@ export default function StocktakeDetailPage() {
         });
         setCounts(map);
       })
-      .catch(() => toast("error", "Failed to load stocktake"));
-  }, [id, toast]);
+      .catch(() => toast("error", t("stock.stocktake.loadFailed")));
+  }, [id, toast, t]);
 
   useEffect(() => {
     setCanIssue(canIssueStock(getStoredUser()));
@@ -68,9 +70,9 @@ export default function StocktakeDetailPage() {
       }));
       const res = await stocktakesApi.updateCounts(stocktake.id, lines);
       setStocktake(res.data.data);
-      toast("success", "Counts saved");
+      toast("success", t("stock.stocktake.countsSaved"));
     } catch {
-      toast("error", "Failed to save counts");
+      toast("error", t("stock.stocktake.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -86,11 +88,11 @@ export default function StocktakeDetailPage() {
       toast(
         "success",
         res.data.data.status === "pending_approval"
-          ? "Submitted — variance approval required"
-          : "Stocktake completed — no variances"
+          ? t("stock.stocktake.submittedApproval")
+          : t("stock.stocktake.completedNoVariance")
       );
     } catch {
-      toast("error", "Complete failed — ensure every line has a count");
+      toast("error", t("stock.stocktake.completeFailed"));
     } finally {
       setSaving(false);
     }
@@ -102,9 +104,9 @@ export default function StocktakeDetailPage() {
     try {
       const res = await stocktakesApi.approveVariances(stocktake.id);
       setStocktake(res.data.data);
-      toast("success", "Variances approved and posted to ledger");
+      toast("success", t("stock.stocktake.variancesApproved"));
     } catch {
-      toast("error", "Variance approval failed");
+      toast("error", t("stock.stocktake.varianceApproveFailed"));
     } finally {
       setSaving(false);
     }
@@ -127,7 +129,7 @@ export default function StocktakeDetailPage() {
       if (data.conflicts && data.conflicts.length > 0 && !force) {
         setSyncConflicts(data.conflicts);
         setShowSyncModal(true);
-        toast("warning", `${data.conflicts.length} count conflicts detected! Confirm overwrite.`);
+        toast("warning", t("stock.stocktake.conflictsDetected", { count: data.conflicts.length }));
       } else {
         setStocktake(data.stocktake);
         const map: Record<number, string> = {};
@@ -141,10 +143,10 @@ export default function StocktakeDetailPage() {
         if (clearBrowserQueue) {
           localStorage.removeItem(OFFLINE_QUEUE_KEY);
         }
-        toast("success", `Offline sync complete! Applied ${data.applied.length} lines.`);
+        toast("success", t("stock.stocktake.syncComplete", { count: data.applied.length }));
       }
     } catch {
-      toast("error", "Offline sync failed.");
+      toast("error", t("stock.stocktake.syncFailed"));
     } finally {
       setSaving(false);
     }
@@ -177,7 +179,7 @@ export default function StocktakeDetailPage() {
   const applyBrowserQueue = async (force = false) => {
     const queue = readBrowserQueue();
     if (queue.length === 0) {
-      toast("error", "Browser queue is empty. Scan items first.");
+      toast("error", t("stock.stocktake.queueEmpty"));
       return;
     }
     await applyLines(
@@ -192,40 +194,43 @@ export default function StocktakeDetailPage() {
     );
   };
 
-  if (!stocktake) return <p className="text-sm text-neutral-500">Loading…</p>;
+  if (!stocktake) return <p className="text-sm text-neutral-500">{t("common.loading")}</p>;
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={stocktake.name}
-        subtitle={`Status: ${stocktake.status.replace("_", " ")} · Count date: ${formatDateShort(stocktake.count_date)}${stocktake.is_blind ? " · Blind count" : ""}`}
+        subtitle={t(stocktake.is_blind ? "stock.stocktake.subtitleBlind" : "stock.stocktake.subtitle", {
+          status: stocktake.status.replace("_", " "),
+          date: formatDateShort(stocktake.count_date),
+        })}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.stock", href: "/stock" },
-              { label: "Stocktakes", href: "/stock/stocktakes" },
+              { label: t("stock.stocktakes.title"), href: "/stock/stocktakes" },
               { label: stocktake.reference_number || stocktake.name },
             ]}
           />
         }
         actions={
           <div className="flex gap-2 flex-wrap">
-            <Link href="/stock/stocktakes" className="btn-secondary">Back</Link>
+            <Link href="/stock/stocktakes" className="btn-secondary">{t("common.back")}</Link>
             {canIssue && editable && (
               <>
                 <button type="button" className="btn-secondary" disabled={saving} onClick={() => applyBrowserQueue(false)}>
-                  Apply browser queue
+                  {t("stock.common.applyBrowserQueue")}
                 </button>
                 <button type="button" className="btn-secondary" disabled={saving} onClick={() => setShowSyncModal(true)}>
-                  Offline Sync Queue
+                  {t("stock.stocktake.offlineSyncQueue")}
                 </button>
-                <button type="button" className="btn-secondary" disabled={saving} onClick={saveCounts}>Save counts</button>
-                <button type="button" className="btn-primary" disabled={saving} onClick={complete}>Submit / Complete</button>
+                <button type="button" className="btn-secondary" disabled={saving} onClick={saveCounts}>{t("stock.stocktake.saveCounts")}</button>
+                <button type="button" className="btn-primary" disabled={saving} onClick={complete}>{t("stock.stocktake.submitComplete")}</button>
               </>
             )}
             {canIssue && stocktake.status === "pending_approval" && (
               <button type="button" className="btn-primary" disabled={saving} onClick={approveVariances}>
-                Approve variances
+                {t("stock.stocktake.approveVariances")}
               </button>
             )}
           </div>
@@ -235,24 +240,24 @@ export default function StocktakeDetailPage() {
       {showSyncModal && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
           <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-amber-900 text-sm">Offline Stocktake Queue Sync</h3>
-            <button type="button" className="text-xs text-neutral-500 hover:text-neutral-700" onClick={() => setShowSyncModal(false)}>Close</button>
+            <h3 className="font-semibold text-amber-900 text-sm">{t("stock.stocktake.syncTitle")}</h3>
+            <button type="button" className="text-xs text-neutral-500 hover:text-neutral-700" onClick={() => setShowSyncModal(false)}>{t("common.close")}</button>
           </div>
           <p className="text-xs text-amber-800">
-            Paste offline count lines as JSON array or CSV format (<code className="font-mono">stock_item_id or barcode, counted_qty</code> per line):
+            {t("stock.stocktake.pasteHintBefore")} (<code className="font-mono">{t("stock.stocktake.pasteHintFormat")}</code> {t("stock.stocktake.pasteHintAfter")}
           </p>
           <textarea
             rows={4}
             className="w-full form-input text-xs font-mono"
-            placeholder={'Example CSV:\n101, 15\nBARCODE123, 8\n\nOr JSON:\n[{"stock_item_id": 101, "counted_qty": 15}]'}
+            placeholder={t("stock.stocktake.pastePlaceholder")}
             value={offlineInput}
             onChange={(e) => setOfflineInput(e.target.value)}
           />
           {syncConflicts.length > 0 && (
             <div className="p-2 bg-red-100 border border-red-300 rounded text-xs text-red-800 space-y-1">
-              <p className="font-semibold">{syncConflicts.length} conflict(s) detected:</p>
+              <p className="font-semibold">{t("stock.stocktake.conflictsHeading", { count: syncConflicts.length })}</p>
               {syncConflicts.map((c) => (
-                <p key={c.line_id}>Line {c.line_id}: Server has {c.server_counted_qty}, Incoming has {c.incoming_counted_qty}</p>
+                <p key={c.line_id}>{t("stock.stocktake.conflictLine", { line: c.line_id, server: c.server_counted_qty, incoming: c.incoming_counted_qty })}</p>
               ))}
             </div>
           )}
@@ -264,11 +269,11 @@ export default function StocktakeDetailPage() {
                 disabled={saving}
                 onClick={() => (offlineInput.trim() ? handleOfflineSync(true) : applyBrowserQueue(true))}
               >
-                Force Overwrite Conflicts
+                {t("stock.stocktake.forceOverwrite")}
               </button>
             ) : (
               <button type="button" className="btn-primary" disabled={saving || !offlineInput.trim()} onClick={() => handleOfflineSync(false)}>
-                Apply Offline Queue
+                {t("stock.stocktake.applyOffline")}
               </button>
             )}
           </div>
@@ -278,10 +283,10 @@ export default function StocktakeDetailPage() {
       <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
           <tr>
-            <th className="px-4 py-2">Item</th>
-            <th className="px-4 py-2">System qty</th>
-            <th className="px-4 py-2">Counted</th>
-            <th className="px-4 py-2">Variance</th>
+            <th className="px-4 py-2">{t("stock.common.item")}</th>
+            <th className="px-4 py-2">{t("stock.common.systemQty")}</th>
+            <th className="px-4 py-2">{t("stock.common.counted")}</th>
+            <th className="px-4 py-2">{t("stock.common.variance")}</th>
           </tr>
         </thead>
         <tbody>

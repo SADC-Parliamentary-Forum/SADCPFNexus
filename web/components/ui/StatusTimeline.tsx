@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { formatDateShort } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface Step {
   key: string;
@@ -23,6 +24,7 @@ export function StatusTimeline({
   rejectedAt,
   rejectionReason,
 }: StatusTimelineProps) {
+  const { t } = useI18n();
   const currentIndex = steps.findIndex((s) => s.key === currentStatus);
   const isRejected = !!rejectedAt;
 
@@ -190,7 +192,7 @@ export function StatusTimeline({
             cancel
           </span>
           <div>
-            <p className="text-xs font-semibold text-red-700">Rejection reason</p>
+            <p className="text-xs font-semibold text-red-700">{t("ui.statusTimeline.rejectionReason")}</p>
             <p className="text-sm text-red-600 mt-0.5">{rejectionReason}</p>
           </div>
         </div>

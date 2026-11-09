@@ -27,21 +27,23 @@ import {
 } from "@/lib/constants";
 import { formatDateRange } from "@/lib/utils";
 import { commaListHas, inclusiveDayCount, optionsWithCurrent, toggleCommaList } from "@/lib/pifForm";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STEPS = [
-  "Overview",
-  "Venue",
-  "Budget",
-  "Personnel",
-  "Language",
-  "Support",
-  "Attachments",
+  "pif.edit.step.overview",
+  "pif.edit.step.venue",
+  "pif.edit.step.budget",
+  "pif.edit.step.personnel",
+  "pif.edit.step.language",
+  "pif.edit.step.support",
+  "pif.edit.step.attachments",
 ] as const;
 
 type StepIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export default function PifEditPage() {
   const { success } = useToast();
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [step, setStep] = useState<StepIndex>(0);
@@ -153,7 +155,7 @@ export default function PifEditPage() {
         if (cancelled) return;
         const p = unwrapEntity<Programme>(r.data);
         if (!p) {
-          setError("Programme not found or returned unexpected data.");
+          setError(t("pif.detail.notFoundUnexpected"));
           return;
         }
         setProgramme(p);
@@ -239,7 +241,7 @@ export default function PifEditPage() {
         setError(null);
       })
       .catch(() => {
-        if (!cancelled) setError("Failed to load programme.");
+        if (!cancelled) setError(t("pif.edit.loadFailed"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -366,37 +368,37 @@ export default function PifEditPage() {
   ]);
 
   const validateStep = (s: StepIndex): string | null => {
-    if (s === 0 && !title.trim()) return "Programme title is required.";
+    if (s === 0 && !title.trim()) return t("pif.create.titleRequired");
     if (s === 2) {
       if (
         proposedDsaRate !== "" && originalBudgetRate !== ""
         && parseFloat(proposedDsaRate) !== parseFloat(originalBudgetRate)
         && !dsaVarianceReason.trim()
       ) {
-        return "Reason for DSA rate variance is required when rates differ.";
+        return t("pif.edit.err.dsaVariance");
       }
       if (
         proposedParticipants !== "" && budgetedParticipants !== ""
         && parseInt(proposedParticipants, 10) !== parseInt(budgetedParticipants, 10)
         && !participantsVarianceReason.trim()
       ) {
-        return "Reason for participants variance is required when counts differ.";
+        return t("pif.edit.err.participantsVariance");
       }
     }
     if (s === 4) {
       if (interpreterSource === "other" && !interpreterSourceOtherNote.trim()) {
-        return "Please describe the interpreter source.";
+        return t("pif.edit.err.interpreterSource");
       }
       if (translationRequired && !languagesRequired.trim()) {
-        return "Languages required is required when translation is selected.";
+        return t("pif.edit.err.languages");
       }
     }
     if (s === 5) {
       if (supportServices.includes("other") && !supportServicesOtherNote.trim()) {
-        return "Please describe other support services.";
+        return t("pif.edit.err.otherSupport");
       }
       if (conflictDeclared && (!conflictDetails.trim() || !conflictMitigation.trim())) {
-        return "Conflict details and mitigation are required when a conflict is declared.";
+        return t("pif.edit.err.conflict");
       }
     }
     return null;
@@ -420,7 +422,7 @@ export default function PifEditPage() {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       const msg = ax.response?.data?.message
         ?? (ax.response?.data?.errors && Object.values(ax.response.data.errors).flat()[0])
-        ?? "Failed to save this page. Please try again.";
+        ?? t("pif.edit.saveFailed");
       setError(msg);
       return false;
     } finally {
@@ -432,7 +434,7 @@ export default function PifEditPage() {
     const ok = await saveStep(step);
     if (!ok) return;
     if (step < STEPS.length - 1) {
-      success(`${STEPS[step]} saved.`);
+      success(t("pif.edit.stepSaved", { step: t(STEPS[step]) }));
       setStep((step + 1) as StepIndex);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -448,7 +450,7 @@ export default function PifEditPage() {
   const finish = async () => {
     const ok = await saveStep(step);
     if (!ok || !programme) return;
-    success("Programme updated.");
+    success(t("pif.edit.updated"));
     router.push(`/pif/${programme.id}`);
   };
 
@@ -463,14 +465,14 @@ export default function PifEditPage() {
 
   const saveThisPage = async () => {
     const ok = await saveStep(step);
-    if (ok) success(`${STEPS[step]} saved.`);
+    if (ok) success(t("pif.edit.stepSaved", { step: t(STEPS[step]) }));
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-neutral-400">
         <span className="material-symbols-outlined animate-spin text-[24px] mr-2">progress_activity</span>
-        <span className="text-sm">Loading…</span>
+        <span className="text-sm">{t("common.loading")}</span>
       </div>
     );
   }
@@ -483,7 +485,7 @@ export default function PifEditPage() {
         </div>
         <Link href="/pif" className="btn-secondary px-4 py-2 text-sm inline-flex items-center gap-1">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Programmes
+          {t("pif.detail.backToList")}
         </Link>
       </div>
     );
@@ -493,11 +495,11 @@ export default function PifEditPage() {
       <div className="space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
-          Programme not found.
+          {t("pif.detail.notFound")}
         </div>
         <Link href="/pif" className="btn-secondary px-4 py-2 text-sm inline-flex items-center gap-1">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Programmes
+          {t("pif.detail.backToList")}
         </Link>
       </div>
     );
@@ -507,10 +509,10 @@ export default function PifEditPage() {
     return (
       <div className="space-y-4">
         <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-          Only draft or amendment-draft programmes can be edited.
+          {t("pif.edit.notEditable")}
         </div>
         <Link href={`/pif/${programme.id}`} className="btn-secondary px-4 py-2 text-sm inline-flex items-center gap-1">
-          Back to programme
+          {t("pif.edit.backToProgramme")}
         </Link>
       </div>
     );
@@ -521,8 +523,8 @@ export default function PifEditPage() {
   const dayCount = inclusiveDayCount(startDate, endDate);
   const dateRangeHint =
     startDate && endDate
-      ? `${formatDateRange(startDate, endDate)}${dayCount ? ` · ${dayCount} day${dayCount === 1 ? "" : "s"}` : ""}`
-      : "Dates show as 21 Aug 2026.";
+      ? `${formatDateRange(startDate, endDate)}${dayCount ? ` · ${t(dayCount === 1 ? "pif.edit.dayOne" : "pif.edit.dayOther", { count: dayCount })}` : ""}`
+      : t("pif.edit.datesHint");
   const venueCities =
     destinationCountries.find((country) => country.name === venueCountry)?.cities ?? [];
   const dsaDiff =
@@ -548,7 +550,7 @@ export default function PifEditPage() {
           className="btn-secondary px-5 py-2.5 text-sm disabled:opacity-50 inline-flex items-center gap-1"
         >
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back
+          {t("common.back")}
         </button>
       )}
       <button
@@ -557,11 +559,11 @@ export default function PifEditPage() {
         disabled={submitting}
         className="btn-secondary px-5 py-2.5 text-sm disabled:opacity-50"
       >
-        Save this page
+        {t("pif.edit.saveThisPage")}
       </button>
       <div className="flex-1" />
       <Link href={`/pif/${programme.id}`} className="btn-secondary px-5 py-2.5 text-sm">
-        Cancel
+        {t("common.cancel")}
       </Link>
       {!isLast ? (
         <button
@@ -575,7 +577,7 @@ export default function PifEditPage() {
           ) : (
             <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
           )}
-          {submitting ? "Saving…" : "Save & continue"}
+          {submitting ? t("hr.positions.form.saving") : t("pif.edit.saveContinue")}
         </button>
       ) : (
         <button
@@ -589,7 +591,7 @@ export default function PifEditPage() {
           ) : (
             <span className="material-symbols-outlined text-[18px]">check</span>
           )}
-          {submitting ? "Saving…" : "Save & finish"}
+          {submitting ? t("hr.positions.form.saving") : t("pif.edit.saveFinish")}
         </button>
       )}
     </div>
@@ -598,34 +600,34 @@ export default function PifEditPage() {
   return (
     <div className="w-full min-w-0 space-y-6 pb-4">
       <ModulePageHeader
-        title="Edit Programme Implementation Form"
-        subtitle="Answer only what this activity needs. Each page saves when you continue — leave and return anytime."
+        title="pif.edit.title"
+        subtitle="pif.edit.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Programmes", href: "/pif" },
-              { label: programme.reference_number ?? `PIF #${programme.id}`, href: `/pif/${programme.id}` },
-              { label: "Edit" },
+              { label: "pif.common.programmes", href: "/pif" },
+              { label: programme.reference_number ?? t("pif.detail.pifNumber", { id: programme.id }), href: `/pif/${programme.id}` },
+              { label: "common.edit" },
             ]}
           />
         }
         actions={
           <Link href={`/pif/${programme.id}`} className="btn-secondary text-sm">
             <span className="material-symbols-outlined text-[18px]">visibility</span>
-            View
+            {t("hr.appraisals.list.view")}
           </Link>
         }
       />
 
       <div className="card overflow-x-auto p-4 sm:p-5">
         <Stepper
-          steps={STEPS.map((label) => ({ label }))}
+          steps={STEPS.map((label) => ({ label: t(label) }))}
           currentStep={step + 1}
           onStepSelect={(index) => void jumpToStep(index as StepIndex)}
         />
         <p className="mt-3 text-xs text-neutral-500 md:hidden">
-          Page {step + 1} of {STEPS.length}:{" "}
-          <span className="font-semibold text-neutral-800">{STEPS[step]}</span>
+          {t("pif.edit.pageOf", { page: step + 1, total: STEPS.length })}{" "}
+          <span className="font-semibold text-neutral-800">{t(STEPS[step])}</span>
         </p>
       </div>
 
@@ -637,72 +639,72 @@ export default function PifEditPage() {
 
       {step === 0 && (
         <FormSection
-          title="Overview"
-          description="Name the programme, who owns it, and when it runs."
+          title="pif.detail.tab.overview"
+          description="pif.edit.overviewDescription"
           icon="description"
         >
           <div className="space-y-4">
-            <FormField label="Title" required>
-              <input className="form-input w-full" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Programme title" />
+            <FormField label="pif.list.title" required>
+              <input className="form-input w-full" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("pif.create.programmeTitle")} />
             </FormField>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField label="Strategic pillar">
+              <FormField label="pif.create.strategicPillar">
                 <select className="form-input w-full" value={strategicPillar} onChange={(e) => setStrategicPillar(e.target.value)}>
-                  <option value="">Select pillar…</option>
+                  <option value="">{t("pif.edit.selectPillar")}</option>
                   {optionsWithCurrent(PIF_STRATEGIC_PILLARS, strategicPillar).map((pillar) => (
                     <option key={pillar} value={pillar}>{pillar}</option>
                   ))}
                 </select>
               </FormField>
-              <FormField label="Implementing department">
+              <FormField label="pif.create.implementingDepartment">
                 <select className="form-input w-full" value={implementingDepartment} onChange={(e) => setImplementingDepartment(e.target.value)}>
-                  <option value="">Select department…</option>
+                  <option value="">{t("hr.positions.form.selectDepartment")}</option>
                   {optionsWithCurrent(DEPARTMENTS, implementingDepartment).map((dept) => (
                     <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
               </FormField>
             </div>
-            <FormField label="Background" hint="Why this activity is needed.">
+            <FormField label="pif.detail.background" hint="pif.edit.backgroundHint">
               <textarea rows={4} className="form-input w-full resize-y" value={background} onChange={(e) => setBackground(e.target.value)} />
             </FormField>
-            <FormField label="Overall objective" hint="What success looks like.">
+            <FormField label="pif.edit.overallObjective" hint="pif.edit.objectiveHint">
               <textarea rows={3} className="form-input w-full resize-y" value={overallObjective} onChange={(e) => setOverallObjective(e.target.value)} />
             </FormField>
-            <FormField label="Responsible officer" hint="Must be a user registered in the system">
+            <FormField label="pif.edit.responsibleOfficer" hint="pif.edit.officerHint">
               <select
                 className="form-input w-full"
                 value={responsibleOfficerId === "" ? "" : String(responsibleOfficerId)}
                 onChange={(e) => setResponsibleOfficerId(e.target.value === "" ? "" : Number(e.target.value))}
               >
-                <option value="">Select responsible officer…</option>
+                <option value="">{t("pif.edit.selectOfficer")}</option>
                 {tenantUsers.map((u) => (
                   <option key={u.id} value={u.id}>{u.name} {u.email ? `(${u.email})` : ""}</option>
                 ))}
               </select>
             </FormField>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField label="Start date" hint={dateRangeHint}>
+              <FormField label="common.startDate" hint={dateRangeHint}>
                 <input type="date" className="form-input w-full" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </FormField>
-              <FormField label="End date">
+              <FormField label="common.endDate">
                 <input type="date" className="form-input w-full" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </FormField>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <NeedToggle
-                label="Travel required"
-                hint="Staff or delegates will travel for this activity."
+                label="pif.edit.travelRequired"
+                hint="pif.edit.travelHint"
                 checked={travelRequired}
                 onChange={setTravelRequired}
               >
-                <FormField label="Delegates count">
+                <FormField label="pif.edit.delegatesCount">
                   <input type="number" min="0" className="form-input w-full max-w-[160px]" value={delegatesCount} onChange={(e) => setDelegatesCount(e.target.value)} />
                 </FormField>
               </NeedToggle>
               <NeedToggle
-                label="Procurement required"
-                hint="Goods or services will be bought for this activity."
+                label="pif.edit.procurementRequired"
+                hint="pif.edit.procurementHint"
                 checked={procurementRequired}
                 onChange={setProcurementRequired}
               />
@@ -712,10 +714,10 @@ export default function PifEditPage() {
       )}
 
       {step === 1 && (
-        <FormSection title="Venue" description="Where the activity takes place, and whether rooms or conferencing are needed." icon="location_on">
+        <FormSection title="pif.field.venue" description="pif.edit.venueDescription" icon="location_on">
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField label="Venue country">
+              <FormField label="pif.edit.venueCountry">
                 <>
                   <input list="pif-venue-countries" className="form-input w-full" value={venueCountry} onChange={(e) => setVenueCountry(e.target.value)} />
                   <datalist id="pif-venue-countries">
@@ -725,7 +727,7 @@ export default function PifEditPage() {
                   </datalist>
                 </>
               </FormField>
-              <FormField label="Venue city">
+              <FormField label="pif.edit.venueCity">
                 <>
                   <input list="pif-venue-cities" className="form-input w-full" value={venueCity} onChange={(e) => setVenueCity(e.target.value)} />
                   <datalist id="pif-venue-cities">
@@ -736,48 +738,48 @@ export default function PifEditPage() {
                 </>
               </FormField>
             </div>
-            <FormField label="Proposed hotel">
+            <FormField label="pif.field.proposedHotel">
               <input className="form-input w-full" value={venueProposedHotel} onChange={(e) => setVenueProposedHotel(e.target.value)} />
             </FormField>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <NeedToggle
-                label="Accommodation required"
-                hint={headcountHint ? `Prefills from ${headcountHint} people if you leave the count blank.` : "Rooms for overnight stay."}
+                label="pif.field.accommodationRequired"
+                hint={headcountHint ? t("pif.edit.prefillHint", { count: headcountHint }) : t("pif.edit.roomsHint")}
                 checked={venueAccommodationRequired}
                 onChange={(next) => {
                   setVenueAccommodationRequired(next);
                   if (next && !venueAccommodationCount && headcountHint) setVenueAccommodationCount(headcountHint);
                 }}
               >
-                <FormField label="Accommodation count">
+                <FormField label="pif.field.accommodationCount">
                   <input type="number" min="0" className="form-input w-full" value={venueAccommodationCount} onChange={(e) => setVenueAccommodationCount(e.target.value)} />
                 </FormField>
               </NeedToggle>
               <NeedToggle
-                label="Conferencing required"
-                hint="Meeting rooms, hybrid links, or a conference package."
+                label="pif.field.conferencingRequired"
+                hint="pif.edit.conferencingHint"
                 checked={venueConferencingRequired}
                 onChange={(next) => {
                   setVenueConferencingRequired(next);
                   if (next && !venueConferencingParticipants && headcountHint) setVenueConferencingParticipants(headcountHint);
                 }}
               >
-                <FormField label="Conferencing participants">
+                <FormField label="pif.field.conferencingParticipants">
                   <input type="number" min="0" className="form-input w-full" value={venueConferencingParticipants} onChange={(e) => setVenueConferencingParticipants(e.target.value)} />
                 </FormField>
               </NeedToggle>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <NeedToggle label="Venue quotation attached" checked={venueQuotationAttached} onChange={setVenueQuotationAttached} />
-              <NeedToggle label="Hotel quotation attached" checked={venueHotelQuotationAttached} onChange={setVenueHotelQuotationAttached} />
+              <NeedToggle label="pif.field.venueQuotationAttached" checked={venueQuotationAttached} onChange={setVenueQuotationAttached} />
+              <NeedToggle label="pif.field.hotelQuotationAttached" checked={venueHotelQuotationAttached} onChange={setVenueHotelQuotationAttached} />
             </div>
-            <FormField label="Accessibility requirements">
+            <FormField label="pif.field.accessibilityRequirements">
               <textarea rows={2} className="form-input w-full resize-y" value={venueAccessibilityRequirements} onChange={(e) => setVenueAccessibilityRequirements(e.target.value)} />
             </FormField>
-            <FormField label="Security considerations">
+            <FormField label="pif.field.securityConsiderations">
               <textarea rows={2} className="form-input w-full resize-y" value={venueSecurityConsiderations} onChange={(e) => setVenueSecurityConsiderations(e.target.value)} />
             </FormField>
-            <FormField label="Venue comments">
+            <FormField label="pif.edit.venueComments">
               <textarea rows={2} className="form-input w-full resize-y" value={venueComments} onChange={(e) => setVenueComments(e.target.value)} />
             </FormField>
           </div>
@@ -786,21 +788,21 @@ export default function PifEditPage() {
 
       {step === 2 && (
         <>
-          <FormSection title="Budget" description="Currency, envelope, and who is paying." icon="payments">
+          <FormSection title="pif.list.budget" description="pif.edit.budgetDescription" icon="payments">
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField label="Primary currency">
+                <FormField label="pif.edit.primaryCurrency">
                   <select className="form-input w-full" value={primaryCurrency} onChange={(e) => setPrimaryCurrency(e.target.value)}>
                     {optionsWithCurrent(CURRENCIES, primaryCurrency).map((code) => (
                       <option key={code} value={code}>{code}</option>
                     ))}
                   </select>
                 </FormField>
-                <FormField label="Total budget">
+                <FormField label="pif.edit.totalBudget">
                   <input type="number" min="0" step="any" className="form-input w-full" value={totalBudget} onChange={(e) => setTotalBudget(e.target.value)} />
                 </FormField>
               </div>
-              <FormField label="Funding source" hint="Core Budget, Donor, or a named fund.">
+              <FormField label="pif.edit.fundingSource" hint="pif.edit.fundingHint">
                 <>
                   <input list="pif-funding-sources" className="form-input w-full" value={fundingSource} onChange={(e) => setFundingSource(e.target.value)} />
                   <datalist id="pif-funding-sources">
@@ -812,13 +814,13 @@ export default function PifEditPage() {
               </FormField>
             </div>
           </FormSection>
-          <FormSection title="Budget variance" description="Only explain a difference when the proposed figure is not the budgeted one." icon="difference">
+          <FormSection title="pif.edit.budgetVariance" description="pif.edit.varianceDescription" icon="difference">
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField label="Proposed DSA rate">
+                <FormField label="pif.field.proposedDsaRate">
                   <input type="number" min="0" step="any" className="form-input w-full" value={proposedDsaRate} onChange={(e) => setProposedDsaRate(e.target.value)} />
                 </FormField>
-                <FormField label="Original budget rate">
+                <FormField label="pif.field.originalBudgetRate">
                   <input type="number" min="0" step="any" className="form-input w-full" value={originalBudgetRate} onChange={(e) => setOriginalBudgetRate(e.target.value)} />
                 </FormField>
               </div>
@@ -828,15 +830,15 @@ export default function PifEditPage() {
                 </p>
               )}
               {proposedDsaRate !== "" && originalBudgetRate !== "" && parseFloat(proposedDsaRate) !== parseFloat(originalBudgetRate) && (
-                <FormField label="Reason for DSA rate variance" required>
+                <FormField label="pif.edit.dsaVarianceReason" required>
                   <textarea rows={2} className="form-input w-full resize-y" value={dsaVarianceReason} onChange={(e) => setDsaVarianceReason(e.target.value)} />
                 </FormField>
               )}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField label="Proposed participants">
+                <FormField label="pif.field.proposedParticipants">
                   <input type="number" min="0" className="form-input w-full" value={proposedParticipants} onChange={(e) => setProposedParticipants(e.target.value)} />
                 </FormField>
-                <FormField label="Budgeted participants">
+                <FormField label="pif.field.budgetedParticipants">
                   <input type="number" min="0" className="form-input w-full" value={budgetedParticipants} onChange={(e) => setBudgetedParticipants(e.target.value)} />
                 </FormField>
               </div>
@@ -846,15 +848,15 @@ export default function PifEditPage() {
                 </p>
               )}
               {proposedParticipants !== "" && budgetedParticipants !== "" && parseInt(proposedParticipants, 10) !== parseInt(budgetedParticipants, 10) && (
-                <FormField label="Reason for participants variance" required>
+                <FormField label="pif.edit.participantsVarianceReason" required>
                   <textarea rows={2} className="form-input w-full resize-y" value={participantsVarianceReason} onChange={(e) => setParticipantsVarianceReason(e.target.value)} />
                 </FormField>
               )}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField label="Proposed funding difference">
+                <FormField label="pif.field.proposedFundingDifference">
                   <input type="number" min="0" step="any" className="form-input w-full" value={proposedFundingDifference} onChange={(e) => setProposedFundingDifference(e.target.value)} />
                 </FormField>
-                <FormField label="Estimated activity amount">
+                <FormField label="pif.field.estimatedActivityAmount">
                   <input type="number" min="0" step="any" className="form-input w-full" value={estimatedActivityAmount} onChange={(e) => setEstimatedActivityAmount(e.target.value)} />
                 </FormField>
               </div>
@@ -864,66 +866,66 @@ export default function PifEditPage() {
       )}
 
       {step === 3 && (
-        <FormSection title="Personnel & consultants" description="Turn on only the roles this activity needs. Extra fields appear for that role." icon="groups">
+        <FormSection title="pif.edit.personnel" description="pif.edit.personnelDescription" icon="groups">
           <div className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <NeedToggle label="Secretariat staff required" checked={secretariatStaffRequired} onChange={setSecretariatStaffRequired}>
-                <FormField label="Staff count">
+              <NeedToggle label="pif.field.secretariatStaffRequired" checked={secretariatStaffRequired} onChange={setSecretariatStaffRequired}>
+                <FormField label="pif.edit.staffCount">
                   <input type="number" min="0" className="form-input w-full" value={secretariatStaffCount} onChange={(e) => setSecretariatStaffCount(e.target.value)} />
                 </FormField>
               </NeedToggle>
-              <NeedToggle label="Consultants required" checked={consultantsRequired} onChange={setConsultantsRequired}>
+              <NeedToggle label="pif.field.consultantsRequired" checked={consultantsRequired} onChange={setConsultantsRequired}>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <FormField label="Consultants count">
+                  <FormField label="pif.field.consultantsCount">
                     <input type="number" min="0" className="form-input w-full" value={consultantsCount} onChange={(e) => setConsultantsCount(e.target.value)} />
                   </FormField>
-                  <FormField label="Consultant rate">
+                  <FormField label="pif.field.consultantRate">
                     <input type="number" min="0" step="any" className="form-input w-full" value={consultantsRate} onChange={(e) => setConsultantsRate(e.target.value)} />
                   </FormField>
                 </div>
               </NeedToggle>
-              <NeedToggle label="Resource persons required" checked={resourcePersonsRequired} onChange={setResourcePersonsRequired}>
+              <NeedToggle label="pif.field.resourcePersonsRequired" checked={resourcePersonsRequired} onChange={setResourcePersonsRequired}>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <FormField label="Resource persons count">
+                  <FormField label="pif.field.resourcePersonsCount">
                     <input type="number" min="0" className="form-input w-full" value={resourcePersonsCount} onChange={(e) => setResourcePersonsCount(e.target.value)} />
                   </FormField>
-                  <FormField label="Resource person rate">
+                  <FormField label="pif.field.resourcePersonRate">
                     <input type="number" min="0" step="any" className="form-input w-full" value={resourcePersonsRate} onChange={(e) => setResourcePersonsRate(e.target.value)} />
                   </FormField>
                 </div>
               </NeedToggle>
-              <NeedToggle label="Rapporteurs required" checked={rapporteursRequired} onChange={setRapporteursRequired}>
+              <NeedToggle label="pif.field.rapporteursRequired" checked={rapporteursRequired} onChange={setRapporteursRequired}>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <FormField label="Rapporteurs count">
+                  <FormField label="pif.field.rapporteursCount">
                     <input type="number" min="0" className="form-input w-full" value={rapporteursCount} onChange={(e) => setRapporteursCount(e.target.value)} />
                   </FormField>
-                  <FormField label="Rapporteur rate">
+                  <FormField label="pif.field.rapporteurRate">
                     <input type="number" min="0" step="any" className="form-input w-full" value={rapporteursRate} onChange={(e) => setRapporteursRate(e.target.value)} />
                   </FormField>
                 </div>
               </NeedToggle>
-              <NeedToggle label="Media liaison required" checked={mediaLiaisonRequired} onChange={setMediaLiaisonRequired}>
+              <NeedToggle label="pif.field.mediaLiaisonRequired" checked={mediaLiaisonRequired} onChange={setMediaLiaisonRequired}>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <FormField label="Media liaison count">
+                  <FormField label="pif.field.mediaLiaisonCount">
                     <input type="number" min="0" className="form-input w-full" value={mediaLiaisonCount} onChange={(e) => setMediaLiaisonCount(e.target.value)} />
                   </FormField>
-                  <FormField label="Media liaison rate">
+                  <FormField label="pif.field.mediaLiaisonRate">
                     <input type="number" min="0" step="any" className="form-input w-full" value={mediaLiaisonRate} onChange={(e) => setMediaLiaisonRate(e.target.value)} />
                   </FormField>
                 </div>
               </NeedToggle>
-              <NeedToggle label="Local support required" checked={localSupportRequired} onChange={setLocalSupportRequired}>
+              <NeedToggle label="pif.field.localSupportRequired" checked={localSupportRequired} onChange={setLocalSupportRequired}>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <FormField label="Local support count">
+                  <FormField label="pif.field.localSupportCount">
                     <input type="number" min="0" className="form-input w-full" value={localSupportCount} onChange={(e) => setLocalSupportCount(e.target.value)} />
                   </FormField>
-                  <FormField label="Local support rate">
+                  <FormField label="pif.field.localSupportRate">
                     <input type="number" min="0" step="any" className="form-input w-full" value={localSupportRate} onChange={(e) => setLocalSupportRate(e.target.value)} />
                   </FormField>
                 </div>
               </NeedToggle>
             </div>
-            <FormField label="Personnel comments">
+            <FormField label="pif.field.personnelComments">
               <textarea rows={2} className="form-input w-full resize-y" value={personnelComments} onChange={(e) => setPersonnelComments(e.target.value)} />
             </FormField>
           </div>
@@ -931,51 +933,51 @@ export default function PifEditPage() {
       )}
 
       {step === 4 && (
-        <FormSection title="Interpretation & translation" description="SADC working languages only appear when you need them." icon="translate">
+        <FormSection title="pif.edit.interpretation" description="pif.edit.interpretationDescription" icon="translate">
           <div className="space-y-4">
-            <NeedToggle label="Interpretation required" hint="Live interpreting in the room or on a hybrid link." checked={interpretationRequired} onChange={setInterpretationRequired}>
+            <NeedToggle label="pif.field.interpretationRequired" hint="pif.edit.interpretationHint" checked={interpretationRequired} onChange={setInterpretationRequired}>
               <div className="space-y-3">
-                <NeedToggle label="English ↔ French interpreters required" checked={enFrRequired} onChange={setEnFrRequired}>
-                  <FormField label="EN/FR interpreters count">
+                <NeedToggle label="pif.edit.enFrRequired" checked={enFrRequired} onChange={setEnFrRequired}>
+                  <FormField label="pif.edit.enFrCount">
                     <input type="number" min="0" className="form-input w-full max-w-[160px]" value={enFrInterpretersCount} onChange={(e) => setEnFrInterpretersCount(e.target.value)} />
                   </FormField>
                 </NeedToggle>
-                <NeedToggle label="English ↔ Portuguese interpreters required" checked={enPtRequired} onChange={setEnPtRequired}>
-                  <FormField label="EN/PT interpreters count">
+                <NeedToggle label="pif.edit.enPtRequired" checked={enPtRequired} onChange={setEnPtRequired}>
+                  <FormField label="pif.edit.enPtCount">
                     <input type="number" min="0" className="form-input w-full max-w-[160px]" value={enPtInterpretersCount} onChange={(e) => setEnPtInterpretersCount(e.target.value)} />
                   </FormField>
                 </NeedToggle>
-                <NeedToggle label="French ↔ Portuguese interpreters required" checked={frPtRequired} onChange={setFrPtRequired}>
-                  <FormField label="FR/PT interpreters count">
+                <NeedToggle label="pif.edit.frPtRequired" checked={frPtRequired} onChange={setFrPtRequired}>
+                  <FormField label="pif.edit.frPtCount">
                     <input type="number" min="0" className="form-input w-full max-w-[160px]" value={frPtInterpretersCount} onChange={(e) => setFrPtInterpretersCount(e.target.value)} />
                   </FormField>
                 </NeedToggle>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <FormField label="Interpreter rate">
+                  <FormField label="pif.field.interpreterRate">
                     <input type="number" min="0" step="any" className="form-input w-full" value={interpreterRate} onChange={(e) => setInterpreterRate(e.target.value)} />
                   </FormField>
-                  <FormField label="Interpreter source">
+                  <FormField label="pif.field.interpreterSource">
                     <select className="form-input w-full" value={interpreterSource} onChange={(e) => setInterpreterSource(e.target.value)}>
-                      <option value="">Select source…</option>
-                      <option value="internal">Internal</option>
-                      <option value="supplier">Supplier</option>
-                      <option value="partner">Partner</option>
-                      <option value="other">Other</option>
+                      <option value="">{t("pif.edit.selectSource")}</option>
+                      <option value="internal">{t("pif.interpreterSource.internal")}</option>
+                      <option value="supplier">{t("pif.interpreterSource.supplier")}</option>
+                      <option value="partner">{t("pif.interpreterSource.partner")}</option>
+                      <option value="other">{t("pif.interpreterSource.other")}</option>
                     </select>
                   </FormField>
                 </div>
                 {interpreterSource === "other" && (
-                  <FormField label="Interpreter source (other)" required>
+                  <FormField label="pif.edit.interpreterSourceOther" required>
                     <input className="form-input w-full" value={interpreterSourceOtherNote} onChange={(e) => setInterpreterSourceOtherNote(e.target.value)} />
                   </FormField>
                 )}
-                <NeedToggle label="Interpretation equipment required" checked={interpretationEquipmentRequired} onChange={setInterpretationEquipmentRequired} />
+                <NeedToggle label="pif.field.interpretationEquipmentRequired" checked={interpretationEquipmentRequired} onChange={setInterpretationEquipmentRequired} />
               </div>
             </NeedToggle>
-            <NeedToggle label="Translation required" hint="Written documents, not live interpreting." checked={translationRequired} onChange={setTranslationRequired}>
+            <NeedToggle label="pif.field.translationRequired" hint="pif.edit.translationHint" checked={translationRequired} onChange={setTranslationRequired}>
               <div className="space-y-2">
                 <span className="block text-xs font-semibold text-neutral-700">
-                  Languages required <span className="text-red-500">*</span>
+                  {t("pif.field.languagesRequired")} <span className="text-red-500">*</span>
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {["English", "French", "Portuguese"].map((lang) => {
@@ -987,22 +989,22 @@ export default function PifEditPage() {
                         onClick={() => setLanguagesRequired(toggleCommaList(languagesRequired, lang))}
                         className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${on ? "border-primary bg-primary text-white" : "border-neutral-200 bg-white text-neutral-700"}`}
                       >
-                        {lang}
+                        {t(`pif.edit.lang.${lang}`)}
                       </button>
                     );
                   })}
                 </div>
                 <input
-                  aria-label="Languages required"
+                  aria-label={t("pif.field.languagesRequired")}
                   className="form-input w-full"
                   value={languagesRequired}
                   onChange={(e) => setLanguagesRequired(e.target.value)}
-                  placeholder="English, French"
+                  placeholder={t("pif.edit.languagesPlaceholder")}
                 />
-                <p className="text-[11px] text-neutral-400">Tap a working language. You can still type extras.</p>
+                <p className="text-[11px] text-neutral-400">{t("pif.edit.languagesHint")}</p>
               </div>
             </NeedToggle>
-            <FormField label="Interpretation comments">
+            <FormField label="pif.field.interpretationComments">
               <textarea rows={2} className="form-input w-full resize-y" value={interpretationComments} onChange={(e) => setInterpretationComments(e.target.value)} />
             </FormField>
           </div>
@@ -1011,7 +1013,7 @@ export default function PifEditPage() {
 
       {step === 5 && (
         <>
-          <FormSection title="Support services" description="Tick only the services this activity will actually use." icon="handyman">
+          <FormSection title="pif.edit.supportServices" description="pif.edit.supportDescription" icon="handyman">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {SUPPORT_SERVICE_OPTIONS.map((opt) => (
                 <label
@@ -1033,21 +1035,21 @@ export default function PifEditPage() {
               ))}
             </div>
             {supportServices.includes("other") && (
-              <FormField label="Other support services" required className="mt-4">
+              <FormField label="pif.edit.otherSupportServices" required className="mt-4">
                 <input required className="form-input w-full" value={supportServicesOtherNote} onChange={(e) => setSupportServicesOtherNote(e.target.value)} />
               </FormField>
             )}
           </FormSection>
-          <FormSection title="Conflict of interest" description="Declare only if a conflict exists for this programme." icon="policy">
+          <FormSection title="pif.edit.conflict" description="pif.edit.conflictDescription" icon="policy">
             <NeedToggle
-              label="A conflict of interest is declared for this programme"
+              label="pif.edit.conflictDeclared"
               checked={conflictDeclared}
               onChange={setConflictDeclared}
             >
-              <FormField label="Conflict details" required>
+              <FormField label="pif.edit.conflictDetails" required>
                 <textarea required rows={3} className="form-input w-full resize-y" value={conflictDetails} onChange={(e) => setConflictDetails(e.target.value)} />
               </FormField>
-              <FormField label="Mitigation measures" required>
+              <FormField label="pif.field.mitigationMeasures" required>
                 <textarea required rows={3} className="form-input w-full resize-y" value={conflictMitigation} onChange={(e) => setConflictMitigation(e.target.value)} />
               </FormField>
             </NeedToggle>
@@ -1057,7 +1059,7 @@ export default function PifEditPage() {
 
       {step === 6 && (
         <>
-          <FormSection title="Documents" description="Each row is saved as soon as it is added — it is not held until you finish." icon="attach_file">
+          <FormSection title="pif.field.documents" description="pif.edit.rowsSavedHint" icon="attach_file">
             <DocumentsSection
               programmeId={programme.id}
               initialRows={programme.documents ?? []}
@@ -1065,7 +1067,7 @@ export default function PifEditPage() {
               onToast={success}
             />
           </FormSection>
-          <FormSection title="Arrival / Departure" description="Each row is saved as soon as it is added — it is not held until you finish." icon="flight_land">
+          <FormSection title="pif.field.arrivalDeparture" description="pif.edit.rowsSavedHint" icon="flight_land">
             <ArrivalDepartureSection
               programmeId={programme.id}
               initialRows={programme.arrival_departures ?? []}

@@ -6,27 +6,28 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  draft: { label: "Draft", cls: "badge-muted" },
-  pending_review: { label: "Pending Review", cls: "badge-warning" },
-  pending_approval: { label: "Pending Approval", cls: "badge-warning" },
-  approved: { label: "Approved", cls: "badge-success" },
-  signed: { label: "Signed", cls: "badge-success" },
-  ready_dispatch: { label: "Ready Dispatch", cls: "badge-success" },
-  sent: { label: "Sent", cls: "badge-success" },
-  archived: { label: "Archived", cls: "badge-muted" },
-  pending_sg_routing: { label: "Pending SG Routing", cls: "badge-warning" },
-  routed: { label: "Routed", cls: "badge-warning" },
-  in_progress: { label: "In Progress", cls: "badge-warning" },
-  voided: { label: "Voided", cls: "badge-muted" },
+  draft: { label: "status.draft", cls: "badge-muted" },
+  pending_review: { label: "correspondence.status.pendingReview", cls: "badge-warning" },
+  pending_approval: { label: "correspondence.status.pendingApproval", cls: "badge-warning" },
+  approved: { label: "status.approved", cls: "badge-success" },
+  signed: { label: "correspondence.status.signed", cls: "badge-success" },
+  ready_dispatch: { label: "correspondence.status.readyDispatch", cls: "badge-success" },
+  sent: { label: "correspondence.status.sent", cls: "badge-success" },
+  archived: { label: "correspondence.status.archived", cls: "badge-muted" },
+  pending_sg_routing: { label: "correspondence.status.pendingSgRouting", cls: "badge-warning" },
+  routed: { label: "correspondence.status.routed", cls: "badge-warning" },
+  in_progress: { label: "correspondence.status.inProgress", cls: "badge-warning" },
+  voided: { label: "correspondence.status.voided", cls: "badge-muted" },
 };
 
 const typeLabel: Record<string, string> = {
-  internal_memo: "Memo",
-  external: "External",
-  diplomatic_note: "Diplomatic",
-  procurement: "Procurement",
+  internal_memo: "correspondence.type.memo",
+  external: "correspondence.type.external",
+  diplomatic_note: "correspondence.type.diplomatic",
+  procurement: "nav.procurement",
 };
 
 function safeIsoDay(value: string): string {
@@ -37,6 +38,7 @@ function safeIsoDay(value: string): string {
 
 function CorrespondenceRegistryPageInner() {
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const [letters, setLetters] = useState<CorrespondenceLetter[]>([]);
   const [total, setTotal] = useState(0);
   const [lastPage, setLastPage] = useState(1);
@@ -70,11 +72,11 @@ function CorrespondenceRegistryPageInner() {
 
   function exportCsv() {
     const rows = [
-      ["Reference", "Subject", "Type", "Direction", "Status", "Owner", "Created By", "Date"],
+      [t("correspondence.col.reference"), t("correspondence.col.subject"), t("correspondence.col.type"), t("correspondence.col.direction"), t("correspondence.col.status"), t("correspondence.col.owner"), t("correspondence.col.createdBy"), t("correspondence.col.date")],
       ...letters.map((l) => [
         l.registry_reference || l.reference_number || "",
         l.subject,
-        typeLabel[l.type] ?? l.type,
+        typeLabel[l.type] ? t(typeLabel[l.type]) : l.type,
         l.direction,
         l.status,
         l.primary_owner?.name ?? "",
@@ -96,21 +98,21 @@ function CorrespondenceRegistryPageInner() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
-        title="Correspondence Register"
-        subtitle="Incoming and outgoing official correspondence (access-scoped)."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Correspondence Register" }]} />}
+        title={t("correspondence.hub.title")}
+        subtitle={t("correspondence.registry.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("correspondence.hub.title") }]} />}
       />
         <div className="flex gap-2">
-          <Link href="/correspondence/incoming" className="btn-secondary text-sm">Register Incoming</Link>
-          <Link href="/correspondence/create" className="btn-primary text-sm">Draft Outgoing</Link>
-          <button type="button" className="btn-secondary text-sm" onClick={exportCsv}>Export CSV</button>
+          <Link href="/correspondence/incoming" className="btn-secondary text-sm">{t("correspondence.hub.registerIncoming")}</Link>
+          <Link href="/correspondence/create" className="btn-primary text-sm">{t("correspondence.hub.draftOutgoing")}</Link>
+          <button type="button" className="btn-secondary text-sm" onClick={exportCsv}>{t("correspondence.exportCsv")}</button>
         </div>
       </div>
 
       <div className="card p-4 grid gap-3 sm:grid-cols-4">
         <input
           className="form-input sm:col-span-2"
-          placeholder="Search…"
+          placeholder={t("correspondence.search")}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -125,9 +127,9 @@ function CorrespondenceRegistryPageInner() {
             setPage(1);
           }}
         >
-          <option value="all">All directions</option>
-          <option value="incoming">Incoming</option>
-          <option value="outgoing">Outgoing</option>
+          <option value="all">{t("correspondence.allDirections")}</option>
+          <option value="incoming">{t("correspondence.direction.incoming")}</option>
+          <option value="outgoing">{t("correspondence.direction.outgoing")}</option>
         </select>
         <select
           className="form-input"
@@ -137,9 +139,9 @@ function CorrespondenceRegistryPageInner() {
             setPage(1);
           }}
         >
-          <option value="all">All statuses</option>
+          <option value="all">{t("correspondence.allStatuses")}</option>
           {Object.entries(statusConfig).map(([k, v]) => (
-            <option key={k} value={k}>{v.label}</option>
+            <option key={k} value={k}>{t(v.label)}</option>
           ))}
         </select>
       </div>
@@ -148,24 +150,25 @@ function CorrespondenceRegistryPageInner() {
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
             <tr>
-              <th className="px-4 py-3">Reference</th>
-              <th className="px-4 py-3">Subject</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Dir</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Owner</th>
-              <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3">{t("correspondence.col.reference")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.subject")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.type")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.dir")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.status")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.owner")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.date")}</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-neutral-400">Loading…</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-neutral-400">{t("common.loading")}</td></tr>
             )}
             {!loading && letters.length === 0 && (
-              <TableEmpty colSpan={7} title="No records." />
+              <TableEmpty colSpan={7} title={t("correspondence.registry.empty")} />
             )}
             {letters.map((l) => {
-              const st = statusConfig[l.status] ?? { label: l.status, cls: "badge-muted" };
+              const cfg = statusConfig[l.status];
+              const st = cfg ? { label: t(cfg.label), cls: cfg.cls } : { label: l.status, cls: "badge-muted" };
               return (
                 <tr key={l.id} className="border-t border-neutral-100 hover:bg-neutral-50">
                   <td className="px-4 py-3 font-mono text-xs">
@@ -174,7 +177,7 @@ function CorrespondenceRegistryPageInner() {
                     </Link>
                   </td>
                   <td className="px-4 py-3">{l.subject}</td>
-                  <td className="px-4 py-3">{typeLabel[l.type] ?? l.type}</td>
+                  <td className="px-4 py-3">{typeLabel[l.type] ? t(typeLabel[l.type]) : l.type}</td>
                   <td className="px-4 py-3 capitalize">{l.direction}</td>
                   <td className="px-4 py-3"><span className={st.cls}>{st.label}</span></td>
                   <td className="px-4 py-3">{l.primary_owner?.name || "—"}</td>
@@ -187,11 +190,11 @@ function CorrespondenceRegistryPageInner() {
       </div>
 
       <div className="flex items-center justify-between text-sm text-neutral-500">
-        <span>{total} record(s)</span>
+        <span>{t("correspondence.registry.records", { count: total })}</span>
         <div className="flex gap-2">
-          <button type="button" className="btn-secondary text-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
-          <span>Page {page} / {lastPage}</span>
-          <button type="button" className="btn-secondary text-xs" disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>Next</button>
+          <button type="button" className="btn-secondary text-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{t("common.previous")}</button>
+          <span>{t("correspondence.registry.page", { page, total: lastPage })}</span>
+          <button type="button" className="btn-secondary text-xs" disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</button>
         </div>
       </div>
     </div>
@@ -199,8 +202,9 @@ function CorrespondenceRegistryPageInner() {
 }
 
 export default function CorrespondenceRegistryPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">Loading registry...</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">{t("correspondence.registry.loading")}</div>}>
       <CorrespondenceRegistryPageInner />
     </Suspense>
   );

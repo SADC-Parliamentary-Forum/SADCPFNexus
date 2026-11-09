@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { settingsApi, type AdminEmailSettings } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type SmtpForm = {
   enabled: boolean;
@@ -53,6 +54,7 @@ const emptyImap = (port = "993"): ImapForm => ({
 });
 
 export default function AdminEmailPage() {
+  const { t } = useI18n();
   const { success, error } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -102,7 +104,7 @@ export default function AdminEmailPage() {
       });
       setInvoicesMeta({ configured: data.procurement_imap.configured, has_password: data.procurement_imap.has_password });
     } catch {
-      error("Could not load email settings.");
+      error(t("admin.email.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -151,10 +153,10 @@ export default function AdminEmailPage() {
       setSmtp((s) => ({ ...s, password: "" }));
       setRegistry((s) => ({ ...s, password: "" }));
       setInvoices((s) => ({ ...s, password: "" }));
-      success("Email settings saved.");
+      success(t("admin.email.saved"));
       await load();
     } catch {
-      error("Could not save email settings.");
+      error(t("admin.email.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -163,15 +165,15 @@ export default function AdminEmailPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/admin" className="transition-colors hover:text-primary">Admin</Link>
+        <Link href="/admin" className="transition-colors hover:text-primary">{t("admin.homeLabel")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="font-medium text-neutral-900">Email</span>
+        <span className="font-medium text-neutral-900">{t("admin.home.email")}</span>
       </div>
 
       <ModulePageHeader
-        title="Email"
-        subtitle="Outgoing SMTP for notifications, plus designated incoming mailboxes. Passwords are stored encrypted and never displayed. These are not all-employee inboxes."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Admin", href: "/admin" }, { label: "Email" }]} />}
+        title={t("admin.home.email")}
+        subtitle={t("admin.email.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.homeLabel"), href: "/admin" }, { label: t("admin.home.email") }]} />}
       />
 
       {loading ? (
@@ -181,46 +183,46 @@ export default function AdminEmailPage() {
           <section className="card space-y-4 p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-sm font-semibold text-neutral-900">Outgoing SMTP</h2>
-                <p className="mt-1 text-xs text-neutral-500">Used for notifications, password resets, and LPO emails. Env MAIL_* is used if this form is incomplete.</p>
+                <h2 className="text-sm font-semibold text-neutral-900">{t("admin.email.smtpTitle")}</h2>
+                <p className="mt-1 text-xs text-neutral-500">{t("admin.email.smtpDesc")}</p>
               </div>
               <StatusPill configured={smtpMeta.configured} />
             </div>
             <label htmlFor="smtp-enabled" className="flex items-center gap-2 text-sm">
               <input id="smtp-enabled" type="checkbox" checked={smtp.enabled} onChange={(e) => setSmtp((s) => ({ ...s, enabled: e.target.checked }))} />
-              Enable Admin SMTP
+              {t("admin.email.enableSmtp")}
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="smtp-host" className="mb-1 block text-xs font-semibold text-neutral-700">Host</label>
+                <label htmlFor="smtp-host" className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.host")}</label>
                 <input id="smtp-host" className="form-input" value={smtp.host} onChange={(e) => setSmtp((s) => ({ ...s, host: e.target.value }))} autoComplete="off" />
               </div>
               <div>
-                <label htmlFor="smtp-port" className="mb-1 block text-xs font-semibold text-neutral-700">Port</label>
+                <label htmlFor="smtp-port" className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.port")}</label>
                 <input id="smtp-port" className="form-input" value={smtp.port} onChange={(e) => setSmtp((s) => ({ ...s, port: e.target.value }))} inputMode="numeric" />
               </div>
               <div>
-                <label htmlFor="smtp-encryption" className="mb-1 block text-xs font-semibold text-neutral-700">Encryption</label>
+                <label htmlFor="smtp-encryption" className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.encryption")}</label>
                 <select id="smtp-encryption" className="form-input" value={smtp.encryption} onChange={(e) => setSmtp((s) => ({ ...s, encryption: e.target.value }))}>
-                  <option value="tls">TLS</option>
-                  <option value="ssl">SSL</option>
-                  <option value="none">None</option>
+                  <option value="tls">{"TLS"}</option>
+                  <option value="ssl">{"SSL"}</option>
+                  <option value="none">{t("admin.auditTrail.ingestion.none")}</option>
                 </select>
               </div>
               <div>
-                <label htmlFor="smtp-username" className="mb-1 block text-xs font-semibold text-neutral-700">Username</label>
+                <label htmlFor="smtp-username" className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.username")}</label>
                 <input id="smtp-username" className="form-input" value={smtp.username} onChange={(e) => setSmtp((s) => ({ ...s, username: e.target.value }))} autoComplete="off" />
               </div>
               <div className="sm:col-span-2">
-                <label htmlFor="smtp-password" className="mb-1 block text-xs font-semibold text-neutral-700">Password</label>
-                <input id="smtp-password" type="password" className="form-input" value={smtp.password} onChange={(e) => setSmtp((s) => ({ ...s, password: e.target.value }))} placeholder={smtpMeta.has_password ? "Leave blank to keep the saved password" : "SMTP password"} autoComplete="new-password" />
+                <label htmlFor="smtp-password" className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.password")}</label>
+                <input id="smtp-password" type="password" className="form-input" value={smtp.password} onChange={(e) => setSmtp((s) => ({ ...s, password: e.target.value }))} placeholder={smtpMeta.has_password ? t("admin.email.keepPassword") : t("admin.email.smtpPassword")} autoComplete="new-password" />
               </div>
               <div>
-                <label htmlFor="smtp-from-address" className="mb-1 block text-xs font-semibold text-neutral-700">From address</label>
+                <label htmlFor="smtp-from-address" className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.fromAddress")}</label>
                 <input id="smtp-from-address" className="form-input" value={smtp.from_address} onChange={(e) => setSmtp((s) => ({ ...s, from_address: e.target.value }))} />
               </div>
               <div>
-                <label htmlFor="smtp-from-name" className="mb-1 block text-xs font-semibold text-neutral-700">From name</label>
+                <label htmlFor="smtp-from-name" className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.fromName")}</label>
                 <input id="smtp-from-name" className="form-input" value={smtp.from_name} onChange={(e) => setSmtp((s) => ({ ...s, from_name: e.target.value }))} />
               </div>
             </div>
@@ -229,8 +231,8 @@ export default function AdminEmailPage() {
           <section className="card space-y-4 p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-sm font-semibold text-neutral-900">Incoming — correspondence registry</h2>
-                <p className="mt-1 text-xs text-neutral-500">Designated registry mailbox only. Suggestions are never auto-registered. <Link href="/correspondence/mailbox" className="btn-secondary text-xs py-1 px-2">Open mailbox queue</Link></p>
+                <h2 className="text-sm font-semibold text-neutral-900">{t("admin.email.registryTitle")}</h2>
+                <p className="mt-1 text-xs text-neutral-500">{t("admin.email.registryDesc")} <Link href="/correspondence/mailbox" className="btn-secondary text-xs py-1 px-2">{t("admin.email.openMailbox")}</Link></p>
               </div>
               <StatusPill configured={registryMeta.configured} />
             </div>
@@ -240,8 +242,8 @@ export default function AdminEmailPage() {
           <section className="card space-y-4 p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-sm font-semibold text-neutral-900">Incoming — procurement invoices</h2>
-                <p className="mt-1 text-xs text-neutral-500">Designated invoice mailbox. Attachments become intakes for review and are never auto-confirmed. <Link href="/procurement/inbox" className="btn-secondary text-xs py-1 px-2">Open procurement inbox</Link></p>
+                <h2 className="text-sm font-semibold text-neutral-900">{t("admin.email.invoicesTitle")}</h2>
+                <p className="mt-1 text-xs text-neutral-500">{t("admin.email.invoicesDesc")} <Link href="/procurement/inbox" className="btn-secondary text-xs py-1 px-2">{t("admin.email.openInbox")}</Link></p>
               </div>
               <StatusPill configured={invoicesMeta.configured} />
             </div>
@@ -250,7 +252,7 @@ export default function AdminEmailPage() {
 
           <div className="flex justify-end">
             <button type="button" className="btn-primary px-6 py-2.5 text-sm disabled:opacity-60" onClick={() => void handleSave()} disabled={saving}>
-              {saving ? "Saving…" : "Save email settings"}
+              {saving ? t("admin.common.saving") : t("admin.email.save")}
             </button>
           </div>
         </>
@@ -260,9 +262,10 @@ export default function AdminEmailPage() {
 }
 
 function StatusPill({ configured }: { configured: boolean }) {
+  const { t } = useI18n();
   return (
     <span className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${configured ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>
-      {configured ? "Configured" : "Not configured"}
+      {configured ? t("admin.settings.configured") : t("admin.email.notConfigured")}
     </span>
   );
 }
@@ -282,50 +285,51 @@ function ImapFields({
   showNotes?: boolean;
   showAllowlist?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <>
       <label htmlFor={`${idPrefix}-enabled`} className="flex items-center gap-2 text-sm">
         <input id={`${idPrefix}-enabled`} type="checkbox" checked={form.enabled} onChange={(e) => setForm((s) => ({ ...s, enabled: e.target.checked }))} />
-        Enable this mailbox
+        {t("admin.email.enableMailbox")}
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label htmlFor={`${idPrefix}-mailbox`} className="mb-1 block text-xs font-semibold text-neutral-700">Mailbox address</label>
+          <label htmlFor={`${idPrefix}-mailbox`} className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.mailboxAddress")}</label>
           <input id={`${idPrefix}-mailbox`} className="form-input" value={form.mailbox_address} onChange={(e) => setForm((s) => ({ ...s, mailbox_address: e.target.value }))} />
         </div>
         <div>
-          <label htmlFor={`${idPrefix}-host`} className="mb-1 block text-xs font-semibold text-neutral-700">IMAP host</label>
+          <label htmlFor={`${idPrefix}-host`} className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.imapHost")}</label>
           <input id={`${idPrefix}-host`} className="form-input" value={form.host} onChange={(e) => setForm((s) => ({ ...s, host: e.target.value }))} autoComplete="off" />
         </div>
         <div>
-          <label htmlFor={`${idPrefix}-port`} className="mb-1 block text-xs font-semibold text-neutral-700">Port</label>
+          <label htmlFor={`${idPrefix}-port`} className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.port")}</label>
           <input id={`${idPrefix}-port`} className="form-input" value={form.port} onChange={(e) => setForm((s) => ({ ...s, port: e.target.value }))} inputMode="numeric" />
         </div>
         <div>
-          <label htmlFor={`${idPrefix}-encryption`} className="mb-1 block text-xs font-semibold text-neutral-700">Encryption</label>
+          <label htmlFor={`${idPrefix}-encryption`} className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.encryption")}</label>
           <select id={`${idPrefix}-encryption`} className="form-input" value={form.encryption} onChange={(e) => setForm((s) => ({ ...s, encryption: e.target.value }))}>
-            <option value="ssl">SSL</option>
-            <option value="tls">TLS</option>
-            <option value="none">None</option>
+            <option value="ssl">{"SSL"}</option>
+            <option value="tls">{"TLS"}</option>
+            <option value="none">{t("admin.auditTrail.ingestion.none")}</option>
           </select>
         </div>
         <div>
-          <label htmlFor={`${idPrefix}-username`} className="mb-1 block text-xs font-semibold text-neutral-700">Username</label>
+          <label htmlFor={`${idPrefix}-username`} className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.username")}</label>
           <input id={`${idPrefix}-username`} className="form-input" value={form.username} onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))} autoComplete="off" />
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor={`${idPrefix}-password`} className="mb-1 block text-xs font-semibold text-neutral-700">Password</label>
-          <input id={`${idPrefix}-password`} type="password" className="form-input" value={form.password} onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))} placeholder={hasPassword ? "Leave blank to keep the saved password" : "IMAP password"} autoComplete="new-password" />
+          <label htmlFor={`${idPrefix}-password`} className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.password")}</label>
+          <input id={`${idPrefix}-password`} type="password" className="form-input" value={form.password} onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))} placeholder={hasPassword ? t("admin.email.keepPassword") : t("admin.email.imapPassword")} autoComplete="new-password" />
         </div>
         {showAllowlist ? (
           <div className="sm:col-span-2">
-            <label htmlFor={`${idPrefix}-allowlist`} className="mb-1 block text-xs font-semibold text-neutral-700">Sender allowlist (optional)</label>
-            <input id={`${idPrefix}-allowlist`} className="form-input" value={form.allowlist ?? ""} onChange={(e) => setForm((s) => ({ ...s, allowlist: e.target.value }))} placeholder="trusted@example.org, accounts@supplier.test" />
+            <label htmlFor={`${idPrefix}-allowlist`} className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.email.allowlist")}</label>
+            <input id={`${idPrefix}-allowlist`} className="form-input" value={form.allowlist ?? ""} onChange={(e) => setForm((s) => ({ ...s, allowlist: e.target.value }))} placeholder="trusted@example.org, accounts@supplier.test" />{/* i18n-ignore */}
           </div>
         ) : null}
         {showNotes ? (
           <div className="sm:col-span-2">
-            <label htmlFor={`${idPrefix}-notes`} className="mb-1 block text-xs font-semibold text-neutral-700">Notes</label>
+            <label htmlFor={`${idPrefix}-notes`} className="mb-1 block text-xs font-semibold text-neutral-700">{t("admin.common.notes")}</label>
             <textarea id={`${idPrefix}-notes`} className="form-input" rows={2} value={form.notes ?? ""} onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))} />
           </div>
         ) : null}

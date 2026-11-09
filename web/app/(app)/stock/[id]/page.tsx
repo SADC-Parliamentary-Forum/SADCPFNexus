@@ -11,8 +11,10 @@ import { stockCategoriesApi, type StockCategory } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function StockItemDetailPage() {
+  const { t } = useI18n();
   const params = useParams();
   const id = Number(params.id);
   const [item, setItem] = useState<StockItem | null>(null);
@@ -26,7 +28,7 @@ export default function StockItemDetailPage() {
   const load = () => {
     stockItemsApi.get(id)
       .then((res) => setItem(res.data.data))
-      .catch(() => setError("Failed to load stock item."));
+      .catch(() => setError(t("stock.item.loadFailed")));
   };
 
   useEffect(() => {
@@ -38,13 +40,17 @@ export default function StockItemDetailPage() {
   }, [id]);
 
   if (error) return <p className="text-sm text-red-600">{error}</p>;
-  if (!item) return <p className="text-sm text-neutral-500">Loading…</p>;
+  if (!item) return <p className="text-sm text-neutral-500">{t("common.loading")}</p>;
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={item.name}
-        subtitle={`Balance ${item.current_balance} ${item.unit ?? ""} · Reorder ${item.reorder_level}${item.is_low_stock ? " · Low stock" : ""}`}
+        subtitle={t(item.is_low_stock ? "stock.item.subtitleLow" : "stock.item.subtitle", {
+          balance: item.current_balance,
+          unit: item.unit ?? "",
+          reorder: item.reorder_level,
+        })}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
@@ -55,12 +61,12 @@ export default function StockItemDetailPage() {
         }
         actions={
           <>
-            <Link href="/stock" className="btn-secondary">Register</Link>
+            <Link href="/stock" className="btn-secondary">{t("stock.item.register")}</Link>
             {canManage && (
-              <button type="button" className="btn-secondary" onClick={() => setShowEdit(true)}>Edit</button>
+              <button type="button" className="btn-secondary" onClick={() => setShowEdit(true)}>{t("common.edit")}</button>
             )}
             {canIssue && (
-              <button type="button" className="btn-primary" onClick={() => setShowMovement(true)}>Record movement</button>
+              <button type="button" className="btn-primary" onClick={() => setShowMovement(true)}>{t("stock.item.recordMovement")}</button>
             )}
           </>
         }
@@ -68,15 +74,15 @@ export default function StockItemDetailPage() {
 
       <div className="grid md:grid-cols-3 gap-4">
         <div className="rounded-xl border border-neutral-200 bg-white p-4">
-          <p className="text-xs text-neutral-500">Category</p>
+          <p className="text-xs text-neutral-500">{t("stock.common.category")}</p>
           <p className="font-medium">{item.category?.name ?? "—"}</p>
         </div>
         <div className="rounded-xl border border-neutral-200 bg-white p-4">
-          <p className="text-xs text-neutral-500">Location</p>
+          <p className="text-xs text-neutral-500">{t("stock.common.location")}</p>
           <p className="font-medium">{item.location?.name ?? item.storage_location ?? "—"}</p>
         </div>
         <div className="rounded-xl border border-neutral-200 bg-white p-4">
-          <p className="text-xs text-neutral-500">Unit / value</p>
+          <p className="text-xs text-neutral-500">{t("stock.item.unitValue")}</p>
           <p className="font-medium">
             {item.unit_of_measure?.name ?? item.unit ?? "—"} · {item.stock_value != null ? Number(item.stock_value).toFixed(2) : "—"}
           </p>
@@ -84,16 +90,16 @@ export default function StockItemDetailPage() {
       </div>
 
       <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
-        <div className="px-4 py-3 border-b border-neutral-100 font-semibold text-sm">Issue / movement history</div>
+        <div className="px-4 py-3 border-b border-neutral-100 font-semibold text-sm">{t("stock.item.history")}</div>
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
             <tr>
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Type</th>
-              <th className="px-4 py-2">Qty</th>
-              <th className="px-4 py-2">Reason</th>
-              <th className="px-4 py-2">Issued to</th>
-              <th className="px-4 py-2">Balance after</th>
+              <th className="px-4 py-2">{t("stock.common.date")}</th>
+              <th className="px-4 py-2">{t("stock.common.type")}</th>
+              <th className="px-4 py-2">{t("stock.common.qty")}</th>
+              <th className="px-4 py-2">{t("stock.common.reason")}</th>
+              <th className="px-4 py-2">{t("stock.common.issuedTo")}</th>
+              <th className="px-4 py-2">{t("stock.common.balanceAfter")}</th>
             </tr>
           </thead>
           <tbody>
@@ -110,7 +116,7 @@ export default function StockItemDetailPage() {
               </tr>
             ))}
             {(item.transactions ?? []).length === 0 && (
-              <TableEmpty colSpan={6} title="No movements yet." />
+              <TableEmpty colSpan={6} title={t("stock.item.noMovements")} />
             )}
           </tbody>
         </table>

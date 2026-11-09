@@ -7,10 +7,12 @@ import { procurementWorkbenchApi } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function ProcurementExceptionsPage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["procurement", "exceptions"],
     queryFn: () => procurementWorkbenchApi.exceptions().then((r) => r.data),
@@ -19,10 +21,10 @@ export default function ProcurementExceptionsPage() {
     mutationFn: (id: number) => procurementWorkbenchApi.approveException(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["procurement", "exceptions"] });
-      toast.success("Exception approved");
+      toast.success(t("procurement.exceptions.approved"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not approve exception", apiErrorMessage(err, "Failed to approve the exception."));
+      toast.error(t("procurement.exceptions.approveFailedTitle"), apiErrorMessage(err, t("procurement.exceptions.approveFailed")));
     },
   });
   const rows = (data as { data?: Array<{ id: number; exception_type: string; reason: string; status: string }> })?.data ?? [];
@@ -30,15 +32,15 @@ export default function ProcurementExceptionsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Procurement exception register"
-        subtitle="Retrospective invoice-to-LPO, sole source, emergency, void and related controls."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement", href: "/procurement" }, { label: "Exceptions" }]} />}
+        title={t("procurement.exceptions.title")}
+        subtitle={t("procurement.exceptions.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("nav.procurement"), href: "/procurement" }, { label: t("procurement.exceptions.crumb") }]} />}
       />
-      {isLoading && <p className="text-sm text-neutral-500">Loading exceptions…</p>}
-      {isError && <p className="text-sm text-rose-700">Could not load the exception register.</p>}
+      {isLoading && <p className="text-sm text-neutral-500">{t("procurement.exceptions.loading")}</p>}
+      {isError && <p className="text-sm text-rose-700">{t("procurement.exceptions.loadError")}</p>}
       {!isLoading && rows.length === 0 && (
         <div className="card">
-          <EmptyState icon="gavel" title="No exceptions recorded." />
+          <EmptyState icon="gavel" title={t("procurement.exceptions.empty")} />
         </div>
       )}
       <ul className="space-y-2">
@@ -51,13 +53,13 @@ export default function ProcurementExceptionsPage() {
             <div className="flex items-center gap-2">
               <span className="text-xs uppercase text-neutral-500">{row.status}</span>
               {row.status === "requested" && (
-                <button type="button" className="btn-primary text-xs" onClick={() => approve.mutate(row.id)}>Approve</button>
+                <button type="button" className="btn-primary text-xs" onClick={() => approve.mutate(row.id)}>{t("common.approve")}</button>
               )}
             </div>
           </li>
         ))}
       </ul>
-      <Link href="/procurement" className="text-sm text-primary">Back to procurement</Link>
+      <Link href="/procurement" className="text-sm text-primary">{t("procurement.backToProcurement")}</Link>
     </div>
   );
 }

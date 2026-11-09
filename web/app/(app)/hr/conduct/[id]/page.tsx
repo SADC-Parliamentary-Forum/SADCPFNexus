@@ -6,17 +6,18 @@ import { useParams, useRouter } from "next/navigation";
 import { conductApi, type ConductRecord } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Lookup Tables ─────────────────────────────────────────────────────────────
 
 const RECORD_TYPE_LABELS: Record<string, string> = {
-  commendation: "Commendation",
-  verbal_counseling: "Verbal Counseling",
-  written_warning: "Written Warning",
-  final_warning: "Final Warning",
-  suspension: "Suspension",
-  dismissal: "Dismissal",
-  performance_improvement: "Performance Improvement",
+  commendation: "hr.conduct.type.commendation",
+  verbal_counseling: "hr.conduct.type.verbalCounseling",
+  written_warning: "hr.conduct.type.writtenWarning",
+  final_warning: "hr.conduct.type.finalWarning",
+  suspension: "hr.conduct.type.suspension",
+  dismissal: "hr.conduct.type.dismissal",
+  performance_improvement: "hr.conduct.type.performanceImprovement",
 };
 
 const RECORD_TYPE_CLS: Record<string, string> = {
@@ -50,11 +51,11 @@ const RECORD_TYPE_SEVERITY: Record<string, "positive" | "low" | "medium" | "high
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  open: "Open",
-  acknowledged: "Acknowledged",
-  under_appeal: "Under Appeal",
-  resolved: "Resolved",
-  closed: "Closed",
+  open: "hr.conduct.status.open",
+  acknowledged: "hr.conduct.status.acknowledged",
+  under_appeal: "hr.conduct.detail.statusUnderAppeal",
+  resolved: "hr.conduct.status.resolved",
+  closed: "hr.conduct.status.closed",
 };
 
 const STATUS_ORDER: Record<string, number> = {
@@ -149,6 +150,7 @@ function TimelineStep({
   record: ConductRecord;
   isLast: boolean;
 }) {
+  const { t } = useI18n();
   const completed = step.completedWhen(record);
   const active = step.activeWhen(record);
   const applicable = step.applicableWhen(record);
@@ -194,12 +196,12 @@ function TimelineStep({
           </span>
           {active && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
-              Current
+              {t("hr.conduct.detail.current")}
             </span>
           )}
           {completed && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
-              Done
+              {t("hr.conduct.detail.done")}
             </span>
           )}
         </div>
@@ -215,7 +217,7 @@ function TimelineStep({
           </div>
         )}
         {!completed && !active && (
-          <p className="text-xs text-neutral-400 italic">Not yet reached</p>
+          <p className="text-xs text-neutral-400 italic">{t("hr.conduct.detail.notReached")}</p>
         )}
       </div>
     </div>
@@ -233,40 +235,41 @@ function ActionPanel({
   saving: boolean;
   onStatusChange: (newStatus: string) => void;
 }) {
+  const { t } = useI18n();
   const statusRank = STATUS_ORDER[record.status] ?? 0;
   const isCommendation = record.record_type === "commendation";
 
   const actions: Array<{ label: string; icon: string; nextStatus: string; style: string; condition: boolean }> = [
     {
-      label: "Mark as Investigated",
+      label: t("hr.conduct.detail.markInvestigated"),
       icon: "manage_search",
       nextStatus: "acknowledged",
       style: "btn-secondary w-full justify-start",
       condition: record.status === "open" && !isCommendation,
     },
     {
-      label: "Record Hearing Outcome",
+      label: t("hr.conduct.detail.recordHearing"),
       icon: "record_voice_over",
       nextStatus: "resolved",
       style: "btn-primary w-full justify-start",
       condition: statusRank >= 2 && statusRank < 4 && !isCommendation,
     },
     {
-      label: "Close Record",
+      label: t("hr.conduct.detail.closeRecord"),
       icon: "lock",
       nextStatus: "closed",
       style: "btn-secondary w-full justify-start",
       condition: record.status === "resolved" || record.status === "acknowledged",
     },
     {
-      label: "Acknowledge Commendation",
+      label: t("hr.conduct.detail.acknowledgeCommendation"),
       icon: "thumb_up",
       nextStatus: "acknowledged",
       style: "btn-primary w-full justify-start",
       condition: isCommendation && record.status === "open",
     },
     {
-      label: "Close Commendation",
+      label: t("hr.conduct.detail.closeCommendation"),
       icon: "lock",
       nextStatus: "closed",
       style: "btn-secondary w-full justify-start",
@@ -284,8 +287,8 @@ function ActionPanel({
         </span>
         <p className="text-xs text-neutral-500">
           {record.status === "closed"
-            ? "This record has been closed and requires no further action."
-            : "No available actions for the current status."}
+            ? t("hr.conduct.detail.closedNoAction")
+            : t("hr.conduct.detail.noActions")}
         </p>
       </div>
     );
@@ -294,7 +297,7 @@ function ActionPanel({
   return (
     <div className="card p-4 space-y-2">
       <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">
-        Available Actions
+        {t("hr.conduct.detail.availableActions")}
       </h3>
       {available.map((action) => (
         <button
@@ -305,7 +308,7 @@ function ActionPanel({
           className={`${action.style} gap-2 py-2.5 px-3 text-sm disabled:opacity-50`}
         >
           <span className="material-symbols-outlined text-[16px]">{action.icon}</span>
-          {saving ? "Saving…" : action.label}
+          {saving ? t("hr.conduct.saving") : action.label}
         </button>
       ))}
     </div>
@@ -315,6 +318,7 @@ function ActionPanel({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ConductDetailPage() {
+  const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -342,12 +346,12 @@ export default function ConductDetailPage() {
       setRecord(data);
       setNotes(data.appeal_notes ?? "");
     } catch {
-      setError("Failed to load conduct record.");
+      setError(t("hr.conduct.detail.loadFailed"));
       setRecord(null);
     } finally {
       setLoading(false);
     }
-  }, [id, router]);
+  }, [id, router, t]);
 
   useEffect(() => {
     load();
@@ -359,9 +363,9 @@ export default function ConductDetailPage() {
     try {
       const res = await conductApi.update(id, { status: newStatus });
       setRecord(res.data as ConductRecord);
-      toast("success", "Status updated", `Record marked as ${STATUS_LABELS[newStatus] ?? newStatus}.`);
+      toast("success", t("hr.conduct.detail.statusUpdated"), t("hr.conduct.detail.markedAs", { status: STATUS_LABELS[newStatus] ? t(STATUS_LABELS[newStatus]) : newStatus }));
     } catch {
-      toast("error", "Update failed", "Could not update record status.");
+      toast("error", t("hr.conduct.detail.updateFailed"), t("hr.conduct.detail.updateFailedHint"));
     } finally {
       setSaving(false);
     }
@@ -373,9 +377,9 @@ export default function ConductDetailPage() {
     try {
       const res = await conductApi.update(id, { appeal_notes: notes });
       setRecord(res.data as ConductRecord);
-      toast("success", "Notes saved", "Investigation notes have been saved.");
+      toast("success", t("hr.conduct.detail.notesSaved"), t("hr.conduct.detail.notesSavedHint"));
     } catch {
-      toast("error", "Save failed", "Could not save investigation notes.");
+      toast("error", t("hr.conduct.detail.saveFailed"), t("hr.conduct.detail.saveFailedHint"));
     } finally {
       setSavingNotes(false);
     }
@@ -426,20 +430,20 @@ export default function ConductDetailPage() {
       <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          {error ?? "Conduct record not found."}
+          {error ?? t("hr.conduct.detail.notFound")}
         </div>
         <Link
           href="/hr/conduct"
           className="btn-secondary text-sm inline-flex items-center gap-1"
         >
           <span className="material-symbols-outlined text-[15px]">arrow_back</span>
-          Back to Conduct & Recognition
+          {t("hr.conduct.detail.backToList")}
         </Link>
       </div>
     );
   }
 
-  const employeeName = record.employee?.name ?? `Employee #${record.employee_id}`;
+  const employeeName = record.employee?.name ?? t("hr.conduct.detail.employeeFallback", { id: record.employee_id });
   const recordedByName = record.recorded_by?.name ?? (record.recorded_by_id ? `#${record.recorded_by_id}` : "—");
   const severity = RECORD_TYPE_SEVERITY[record.record_type] ?? "medium";
 
@@ -447,7 +451,7 @@ export default function ConductDetailPage() {
   const WORKFLOW_STEPS: WorkflowStep[] = [
     {
       key: "opened",
-      label: "Record Opened",
+      label: t("hr.conduct.detail.stepOpened"),
       icon: "folder_open",
       applicableWhen: () => true,
       completedWhen: () => true,
@@ -456,24 +460,24 @@ export default function ConductDetailPage() {
       content: (r) => (
         <div className="space-y-1">
           <p>
-            Record created by{" "}
+            {t("hr.conduct.detail.createdBy")}{" "}
             <span className="font-semibold text-neutral-800">{recordedByName}</span>.
           </p>
           {r.incident_date && (
             <p>
-              Incident date:{" "}
+              {t("hr.conduct.detail.incidentDateLabel")}{" "}
               <span className="font-semibold text-neutral-800">{formatDate(r.incident_date)}</span>
             </p>
           )}
           <p className="text-neutral-500 text-xs">
-            Issue date: {formatDate(r.issue_date)}
+            {t("hr.conduct.detail.issueDateValue", { date: formatDate(r.issue_date) })}
           </p>
         </div>
       ),
     },
     {
       key: "investigation",
-      label: "Investigation",
+      label: t("hr.conduct.detail.stepInvestigation"),
       icon: "manage_search",
       applicableWhen: (r) =>
         r.record_type !== "commendation",
@@ -487,14 +491,14 @@ export default function ConductDetailPage() {
           {r.appeal_notes ? (
             <p className="whitespace-pre-wrap">{r.appeal_notes}</p>
           ) : (
-            <p className="text-neutral-400 italic text-xs">No investigation notes recorded yet.</p>
+            <p className="text-neutral-400 italic text-xs">{t("hr.conduct.detail.noNotes")}</p>
           )}
         </div>
       ),
     },
     {
       key: "hearing",
-      label: "Hearing / Meeting",
+      label: t("hr.conduct.detail.stepHearing"),
       icon: "groups",
       applicableWhen: (r) =>
         !["commendation", "performance_improvement"].includes(r.record_type),
@@ -505,19 +509,19 @@ export default function ConductDetailPage() {
         <div className="space-y-1">
           {r.reviewed_by ? (
             <p>
-              Chaired by{" "}
+              {t("hr.conduct.detail.chairedBy")}{" "}
               <span className="font-semibold text-neutral-800">{r.reviewed_by.name}</span>
             </p>
           ) : null}
           <p className="text-neutral-500 text-xs">
-            Hearing completed — outcome recorded below.
+            {t("hr.conduct.detail.hearingCompleted")}
           </p>
         </div>
       ),
     },
     {
       key: "outcome",
-      label: "Outcome / Decision",
+      label: t("hr.conduct.detail.outcome"),
       icon: "gavel",
       applicableWhen: () => true,
       completedWhen: (r) => Boolean(r.outcome) || ["resolved", "closed"].includes(r.status),
@@ -530,8 +534,8 @@ export default function ConductDetailPage() {
           ) : (
             <p className="text-neutral-400 italic text-xs">
               {r.record_type === "commendation"
-                ? "Commendation issued."
-                : "No formal outcome text recorded."}
+                ? t("hr.conduct.detail.commendationIssued")
+                : t("hr.conduct.detail.noOutcome")}
             </p>
           )}
         </div>
@@ -539,7 +543,7 @@ export default function ConductDetailPage() {
     },
     {
       key: "closed",
-      label: "Closed / Resolved",
+      label: t("hr.conduct.detail.stepClosed"),
       icon: "lock",
       applicableWhen: () => true,
       completedWhen: (r) => r.status === "closed",
@@ -549,13 +553,13 @@ export default function ConductDetailPage() {
         <div className="space-y-1">
           {r.resolution_date && (
             <p>
-              Closed on{" "}
+              {t("hr.conduct.detail.closedOn")}{" "}
               <span className="font-semibold text-neutral-800">{formatDate(r.resolution_date)}</span>
             </p>
           )}
           {r.reviewed_by && (
             <p className="text-xs text-neutral-500">
-              Reviewed by {r.reviewed_by.name}
+              {t("hr.conduct.detail.reviewedByName", { name: r.reviewed_by.name })}
             </p>
           )}
         </div>
@@ -569,12 +573,12 @@ export default function ConductDetailPage() {
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={record.title}
-        subtitle={`Progressive discipline record for ${employeeName}`}
+        subtitle={t("hr.conduct.detail.subtitle", { name: employeeName })}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Conduct & Recognition", href: "/hr/conduct" },
+              { label: t("hr.conduct.detail.crumb"), href: "/hr/conduct" },
               { label: record.title },
             ]}
           />
@@ -593,7 +597,7 @@ export default function ConductDetailPage() {
               {record.is_confidential && (
                 <span className="badge-warning flex items-center gap-1">
                   <span className="material-symbols-outlined text-[11px]">lock</span>
-                  Confidential
+                  {t("hr.conduct.detail.confidential")}
                 </span>
               )}
             </div>
@@ -607,26 +611,26 @@ export default function ConductDetailPage() {
                 <span className="material-symbols-outlined text-[13px]">
                   {RECORD_TYPE_ICON[record.record_type] ?? "info"}
                 </span>
-                {RECORD_TYPE_LABELS[record.record_type] ?? record.record_type}
+                {RECORD_TYPE_LABELS[record.record_type] ? t(RECORD_TYPE_LABELS[record.record_type]) : record.record_type}
               </span>
 
               {/* Status badge */}
               <span className="badge-muted flex items-center gap-1">
                 <span className="material-symbols-outlined text-[11px]">flag</span>
-                {STATUS_LABELS[record.status] ?? record.status}
+                {STATUS_LABELS[record.status] ? t(STATUS_LABELS[record.status]) : record.status}
               </span>
 
               {/* Severity indicator */}
               {severity === "positive" && (
                 <span className="badge-success flex items-center gap-1">
                   <span className="material-symbols-outlined text-[11px]">sentiment_satisfied</span>
-                  Positive Record
+                  {t("hr.conduct.detail.positive")}
                 </span>
               )}
               {severity === "high" && (
                 <span className="badge-danger flex items-center gap-1">
                   <span className="material-symbols-outlined text-[11px]">priority_high</span>
-                  High Severity
+                  {t("hr.conduct.detail.highSeverity")}
                 </span>
               )}
             </div>
@@ -635,28 +639,28 @@ export default function ConductDetailPage() {
             <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-neutral-500">
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-[13px]">calendar_today</span>
-                Issue date: <span className="text-neutral-700 font-medium ml-1">{formatDate(record.issue_date)}</span>
+                {t("hr.conduct.detail.issueDateLabel")} <span className="text-neutral-700 font-medium ml-1">{formatDate(record.issue_date)}</span>
               </span>
               {record.incident_date && (
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-[13px]">event_available</span>
-                  Incident: <span className="text-neutral-700 font-medium ml-1">{formatDate(record.incident_date)}</span>
+                  {t("hr.conduct.detail.incidentLabel")} <span className="text-neutral-700 font-medium ml-1">{formatDate(record.incident_date)}</span>
                 </span>
               )}
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-[13px]">person</span>
-                Recorded by: <span className="text-neutral-700 font-medium ml-1">{recordedByName}</span>
+                {t("hr.conduct.detail.recordedByLabel")} <span className="text-neutral-700 font-medium ml-1">{recordedByName}</span>
               </span>
               {record.reviewed_by && (
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-[13px]">supervisor_account</span>
-                  Reviewed by: <span className="text-neutral-700 font-medium ml-1">{record.reviewed_by.name}</span>
+                  {t("hr.conduct.detail.reviewedByLabel")} <span className="text-neutral-700 font-medium ml-1">{record.reviewed_by.name}</span>
                 </span>
               )}
               {record.resolution_date && (
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-[13px]">check_circle</span>
-                  Resolved: <span className="text-neutral-700 font-medium ml-1">{formatDate(record.resolution_date)}</span>
+                  {t("hr.conduct.detail.resolvedLabel")} <span className="text-neutral-700 font-medium ml-1">{formatDate(record.resolution_date)}</span>
                 </span>
               )}
             </div>
@@ -675,8 +679,8 @@ export default function ConductDetailPage() {
               <div className="flex items-center gap-2">
                 <SectionIcon icon="account_tree" colorClass="text-primary" bgClass="bg-primary/10" />
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-900">Discipline Workflow</h3>
-                  <p className="text-xs text-neutral-400">Progressive discipline timeline</p>
+                  <h3 className="text-sm font-semibold text-neutral-900">{t("hr.conduct.detail.workflow")}</h3>
+                  <p className="text-xs text-neutral-400">{t("hr.conduct.detail.workflowHint")}</p>
                 </div>
               </div>
             </div>
@@ -697,7 +701,7 @@ export default function ConductDetailPage() {
             <div className="card-header">
               <div className="flex items-center gap-2">
                 <SectionIcon icon="description" colorClass="text-neutral-600" bgClass="bg-neutral-100" />
-                <h3 className="text-sm font-semibold text-neutral-900">Full Description</h3>
+                <h3 className="text-sm font-semibold text-neutral-900">{t("hr.conduct.detail.fullDescription")}</h3>
               </div>
             </div>
             <div className="p-5">
@@ -713,7 +717,7 @@ export default function ConductDetailPage() {
               <div className="card-header">
                 <div className="flex items-center gap-2">
                   <SectionIcon icon="gavel" colorClass="text-primary" bgClass="bg-primary/10" />
-                  <h3 className="text-sm font-semibold text-neutral-900">Outcome / Decision</h3>
+                  <h3 className="text-sm font-semibold text-neutral-900">{t("hr.conduct.detail.outcome")}</h3>
                 </div>
               </div>
               <div className="p-5">
@@ -730,9 +734,9 @@ export default function ConductDetailPage() {
               <div className="flex items-center gap-2">
                 <SectionIcon icon="edit_note" colorClass="text-amber-700" bgClass="bg-amber-50" />
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-900">Investigation Notes</h3>
+                  <h3 className="text-sm font-semibold text-neutral-900">{t("hr.conduct.detail.investigationNotes")}</h3>
                   <p className="text-xs text-neutral-400">
-                    HR-only notes and evidence. Not visible to the employee.
+                    {t("hr.conduct.detail.notesHint")}
                   </p>
                 </div>
               </div>
@@ -741,14 +745,14 @@ export default function ConductDetailPage() {
               <textarea
                 rows={5}
                 className="form-input resize-none text-sm"
-                placeholder="Record investigation findings, evidence, meeting summaries, witness statements…"
+                placeholder={t("hr.conduct.detail.notesPlaceholder")}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
               <div className="flex items-center justify-between">
                 <p className="text-xs text-neutral-400 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[12px]">lock</span>
-                  Confidential — HR use only
+                  {t("hr.conduct.detail.hrOnly")}
                 </p>
                 <button
                   type="button"
@@ -757,7 +761,7 @@ export default function ConductDetailPage() {
                   className="btn-secondary py-2 px-4 text-xs gap-1.5 disabled:opacity-40"
                 >
                   <span className="material-symbols-outlined text-[14px]">save</span>
-                  {savingNotes ? "Saving…" : "Save notes"}
+                  {savingNotes ? t("hr.conduct.saving") : t("hr.conduct.detail.saveNotes")}
                 </button>
               </div>
             </div>
@@ -774,17 +778,17 @@ export default function ConductDetailPage() {
           {/* Record details card */}
           <div className="card p-4 space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-              Record Details
+              {t("hr.conduct.new.recordDetails")}
             </h3>
             <dl className="space-y-2.5">
               {[
-                { label: "Record ID", value: `#${record.id}` },
-                { label: "Type", value: RECORD_TYPE_LABELS[record.record_type] ?? record.record_type },
-                { label: "Status", value: STATUS_LABELS[record.status] ?? record.status },
-                { label: "Issue Date", value: formatDate(record.issue_date) },
-                { label: "Incident Date", value: formatDate(record.incident_date) },
-                { label: "Resolution Date", value: formatDate(record.resolution_date) },
-                { label: "Confidential", value: record.is_confidential ? "Yes" : "No" },
+                { label: t("hr.conduct.detail.recordId"), value: `#${record.id}` },
+                { label: t("hr.conduct.type"), value: RECORD_TYPE_LABELS[record.record_type] ? t(RECORD_TYPE_LABELS[record.record_type]) : record.record_type },
+                { label: t("hr.conduct.statusLabel"), value: STATUS_LABELS[record.status] ? t(STATUS_LABELS[record.status]) : record.status },
+                { label: t("hr.conduct.issueDate"), value: formatDate(record.issue_date) },
+                { label: t("hr.conduct.detail.incidentDate"), value: formatDate(record.incident_date) },
+                { label: t("hr.conduct.detail.resolutionDate"), value: formatDate(record.resolution_date) },
+                { label: t("hr.conduct.detail.confidential"), value: record.is_confidential ? t("hr.conduct.detail.yes") : t("hr.conduct.detail.no") },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between gap-2 text-xs">
                   <dt className="text-neutral-500 flex-shrink-0">{label}</dt>
@@ -797,14 +801,14 @@ export default function ConductDetailPage() {
           {/* Related parties card */}
           <div className="card p-4 space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-              Parties Involved
+              {t("hr.conduct.detail.parties")}
             </h3>
             {/* Employee */}
             <div className="flex items-center gap-2">
               <Avatar name={employeeName} size="sm" />
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-neutral-800 truncate">{employeeName}</p>
-                <p className="text-[10px] text-neutral-400">{record.employee?.email ?? "Employee"}</p>
+                <p className="text-[10px] text-neutral-400">{record.employee?.email ?? t("hr.conduct.employee")}</p>
               </div>
             </div>
             {/* Recorded by */}
@@ -815,7 +819,7 @@ export default function ConductDetailPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-neutral-800 truncate">{record.recorded_by.name}</p>
-                  <p className="text-[10px] text-neutral-400">Recorded by</p>
+                  <p className="text-[10px] text-neutral-400">{t("hr.conduct.detail.recordedBy")}</p>
                 </div>
               </div>
             )}
@@ -827,7 +831,7 @@ export default function ConductDetailPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-neutral-800 truncate">{record.reviewed_by.name}</p>
-                  <p className="text-[10px] text-neutral-400">Reviewed by</p>
+                  <p className="text-[10px] text-neutral-400">{t("hr.conduct.detail.reviewedBy")}</p>
                 </div>
               </div>
             )}
@@ -837,7 +841,7 @@ export default function ConductDetailPage() {
           {record.appeal_notes && record.appeal_notes !== notes && (
             <div className="card p-4">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">
-                Appeal Notes
+                {t("hr.conduct.detail.appealNotes")}
               </h3>
               <p className="text-xs text-neutral-600 whitespace-pre-wrap">{record.appeal_notes}</p>
             </div>
@@ -849,7 +853,7 @@ export default function ConductDetailPage() {
             className="inline-flex items-center gap-1.5 text-sm font-medium text-neutral-500 hover:text-primary transition-colors"
           >
             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-            All Conduct Records
+            {t("hr.conduct.detail.allRecords")}
           </Link>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { settingsApi, type SystemSettings } from "@/lib/api";
 import { MONTHS_OF_YEAR, CURRENCIES, TIMEZONES } from "@/lib/constants";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const DEFAULTS: SystemSettings = {
   org_name: "SADC Parliamentary Forum",
@@ -33,6 +34,7 @@ type CredentialRow = {
 };
 
 export default function AdminSettingsPage() {
+  const { t } = useI18n();
   const { success, error, info } = useToast();
   const [settings, setSettings] = useState<SystemSettings>(DEFAULTS);
   const [credentials, setCredentials] = useState<CredentialRow[]>([]);
@@ -52,9 +54,9 @@ export default function AdminSettingsPage() {
     try {
       const res = await settingsApi.update(settings);
       setSettings({ ...DEFAULTS, ...res.data });
-      success("Settings saved.");
+      success(t("admin.settings.saved"));
     } catch {
-      error("Failed to save settings. Please try again.");
+      error(t("admin.settings.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -65,15 +67,15 @@ export default function AdminSettingsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
 <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
+        <Link href="/admin" className="hover:text-primary transition-colors">{t("admin.homeLabel")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">System Settings</span>
+        <span className="text-neutral-900 font-medium">{t("admin.home.systemSettings")}</span>
       </div>
 
       <ModulePageHeader
-        title="System Settings"
-        subtitle="Configure organisation details, fiscal year, and platform-wide settings."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "System Settings" }]} />}
+        title={t("admin.home.systemSettings")}
+        subtitle={t("admin.settings.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.home.systemSettings") }]} />}
       />
 
       {loading ? (
@@ -88,23 +90,23 @@ export default function AdminSettingsPage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                 <span className="material-symbols-outlined text-primary text-[18px]">corporate_fare</span>
               </div>
-              <h2 className="text-sm font-semibold text-neutral-900">Organisation</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{t("admin.settings.organisation")}</h2>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label htmlFor="admin-settings-organisation-name" className="block text-xs font-semibold text-neutral-700 mb-1">Organisation Name</label>
+                <label htmlFor="admin-settings-organisation-name" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.orgName")}</label>
                 <input id="admin-settings-organisation-name" className="form-input" value={settings.org_name} onChange={(e) => setSettings({ ...settings, org_name: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="admin-settings-abbreviation" className="block text-xs font-semibold text-neutral-700 mb-1">Abbreviation</label>
+                <label htmlFor="admin-settings-abbreviation" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.abbreviation")}</label>
                 <input id="admin-settings-abbreviation" className="form-input" value={settings.org_abbreviation} onChange={(e) => setSettings({ ...settings, org_abbreviation: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="admin-settings-logo-url" className="block text-xs font-semibold text-neutral-700 mb-1">Logo URL</label>
+                <label htmlFor="admin-settings-logo-url" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.logoUrl")}</label>
                 <input id="admin-settings-logo-url" className="form-input" value={settings.org_logo_url} onChange={(e) => setSettings({ ...settings, org_logo_url: e.target.value })} />
               </div>
               <div className="col-span-2">
-                <label htmlFor="admin-settings-address" className="block text-xs font-semibold text-neutral-700 mb-1">Address</label>
+                <label htmlFor="admin-settings-address" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.address")}</label>
                 <textarea id="admin-settings-address" rows={2} className="form-input resize-none" value={settings.org_address} onChange={(e) => setSettings({ ...settings, org_address: e.target.value })} />
               </div>
             </div>
@@ -115,23 +117,23 @@ export default function AdminSettingsPage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
                 <span className="material-symbols-outlined text-amber-600 text-[18px]">calendar_today</span>
               </div>
-              <h2 className="text-sm font-semibold text-neutral-900">Fiscal Year & Locale</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{t("admin.settings.fiscalLocale")}</h2>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="admin-settings-fiscal-start-month" className="block text-xs font-semibold text-neutral-700 mb-1">Fiscal start month</label>
+                <label htmlFor="admin-settings-fiscal-start-month" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.fiscalStart")}</label>
                 <select id="admin-settings-fiscal-start-month" className="form-input" value={settings.fiscal_start_month} onChange={(e) => setSettings({ ...settings, fiscal_start_month: e.target.value })}>
-                  {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
+                  {MONTHS.map((m) => <option key={m} value={m}>{t(`admin.month.${m}`)}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="admin-settings-currency" className="block text-xs font-semibold text-neutral-700 mb-1">Currency</label>
+                <label htmlFor="admin-settings-currency" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.currency")}</label>
                 <select id="admin-settings-currency" className="form-input" value={settings.default_currency} onChange={(e) => setSettings({ ...settings, default_currency: e.target.value })}>
                   {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div className="col-span-2">
-                <label htmlFor="admin-settings-timezone" className="block text-xs font-semibold text-neutral-700 mb-1">Timezone</label>
+                <label htmlFor="admin-settings-timezone" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.timezone")}</label>
                 <select id="admin-settings-timezone" className="form-input" value={settings.timezone} onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}>
                   {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
                 </select>
@@ -144,23 +146,23 @@ export default function AdminSettingsPage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50">
                 <span className="material-symbols-outlined text-sky-700 text-[18px]">description</span>
               </div>
-              <h2 className="text-sm font-semibold text-neutral-900">Letterhead</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{t("admin.correspondence.letterhead")}</h2>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label htmlFor="admin-settings-tagline" className="block text-xs font-semibold text-neutral-700 mb-1">Tagline</label>
+                <label htmlFor="admin-settings-tagline" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.tagline")}</label>
                 <input id="admin-settings-tagline" className="form-input" value={settings.letterhead_tagline ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_tagline: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="admin-settings-phone" className="block text-xs font-semibold text-neutral-700 mb-1">Phone</label>
+                <label htmlFor="admin-settings-phone" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.phone")}</label>
                 <input id="admin-settings-phone" className="form-input" value={settings.letterhead_phone ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_phone: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="admin-settings-fax" className="block text-xs font-semibold text-neutral-700 mb-1">Fax</label>
+                <label htmlFor="admin-settings-fax" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.fax")}</label>
                 <input id="admin-settings-fax" className="form-input" value={settings.letterhead_fax ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_fax: e.target.value })} />
               </div>
               <div className="col-span-2">
-                <label htmlFor="admin-settings-website" className="block text-xs font-semibold text-neutral-700 mb-1">Website</label>
+                <label htmlFor="admin-settings-website" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.website")}</label>
                 <input id="admin-settings-website" className="form-input" value={settings.letterhead_website ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_website: e.target.value })} />
               </div>
             </div>
@@ -171,11 +173,11 @@ export default function AdminSettingsPage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50">
                 <span className="material-symbols-outlined text-violet-700 text-[18px]">event_available</span>
               </div>
-              <h2 className="text-sm font-semibold text-neutral-900">Leave in Lieu (Travel TOIL)</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{t("admin.settings.toilTitle")}</h2>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="admin-settings-toil-expiry" className="block text-xs font-semibold text-neutral-700 mb-1">TOIL expiry (days after credit)</label>
+                <label htmlFor="admin-settings-toil-expiry" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.settings.toilExpiry")}</label>
                 <input
                   id="admin-settings-toil-expiry"
                   type="number"
@@ -185,7 +187,7 @@ export default function AdminSettingsPage() {
                   value={settings.toil_expiry_days ?? 30}
                   onChange={(e) => setSettings({ ...settings, toil_expiry_days: Number(e.target.value) })}
                 />
-                <p className="mt-1 text-xs text-neutral-500">Credited Leave in Lieu days lapse this many days after HR credits them, unless the Secretary General extends a specific case.</p>
+                <p className="mt-1 text-xs text-neutral-500">{t("admin.settings.toilHint")}</p>
               </div>
             </div>
           </div>
@@ -195,12 +197,12 @@ export default function AdminSettingsPage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50">
                 <span className="material-symbols-outlined text-emerald-700 text-[18px]">vpn_key</span>
               </div>
-              <h2 className="text-sm font-semibold text-neutral-900">Operator credentials</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{t("admin.settings.operatorCreds")}</h2>
             </div>
             <p className="text-xs text-neutral-500">
-              Outgoing SMTP and designated IMAP mailboxes are configured on{" "}
-              <Link href="/admin/email" className="btn-secondary text-xs py-1 px-2">Admin → Email</Link>.
-              Other integration keys stay in server env and are never shown here.
+              {t("admin.settings.credsIntro")}{" "}
+              <Link href="/admin/email" className="btn-secondary text-xs py-1 px-2">{t("admin.settings.adminEmailLink")}</Link>.{" "}
+              {t("admin.settings.credsOutro")}
             </p>
             <ul className="divide-y divide-neutral-100">
               {credentials.map((row) => (
@@ -209,7 +211,7 @@ export default function AdminSettingsPage() {
                     <div className="text-sm font-medium text-neutral-900">{row.label}</div>
                     <div className="text-xs text-neutral-500">{row.guidance}</div>
                     {row.driver ? (
-                      <div className="mt-1 text-xs text-neutral-400">Driver: {row.driver}</div>
+                      <div className="mt-1 text-xs text-neutral-400">{t("admin.settings.driver", { driver: row.driver })}</div>
                     ) : null}
                   </div>
                   <span
@@ -218,15 +220,15 @@ export default function AdminSettingsPage() {
                     }`}
                   >
                     {row.configured
-                      ? "Configured"
+                      ? t("admin.settings.configured")
                       : ["smtp_mailer", "correspondence_imap", "procurement_imap"].includes(row.key)
-                        ? "Not configured — set in Admin → Email"
-                        : "Not configured — set via server env"}
+                        ? t("admin.settings.notConfiguredEmail")
+                        : t("admin.settings.notConfiguredEnv")}
                   </span>
                 </li>
               ))}
               {credentials.length === 0 ? (
-                <li className="py-3 text-sm text-neutral-500">Credential status unavailable.</li>
+                <li className="py-3 text-sm text-neutral-500">{t("admin.settings.credsUnavailable")}</li>
               ) : null}
             </ul>
           </div>
@@ -243,7 +245,7 @@ export default function AdminSettingsPage() {
               ) : (
                 <span className="material-symbols-outlined text-[18px]">save</span>
               )}
-              {saving ? "Saving…" : "Save Settings"}
+              {saving ? t("admin.common.saving") : t("admin.settings.save")}
             </button>
           </div>
         </>

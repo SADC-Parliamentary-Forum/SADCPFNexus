@@ -1,4 +1,9 @@
+"use client";
+
 import { cn, formatDateShort } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
 
 const ISO_DATE_VALUE =
   /^\d{4}-\d{2}-\d{2}(?:[T ][\d:.]+(?:Z|[+-]\d{2}:?\d{2})?)?$/;
@@ -11,9 +16,9 @@ function formatKey(key: string) {
   return key.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
-function formatPrimitive(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "None";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
+function formatPrimitive(value: unknown, t: Translate): string {
+  if (value === null || value === undefined || value === "") return t("ui.objectSummary.none");
+  if (typeof value === "boolean") return value ? t("ui.labelledRecord.yes") : t("ui.labelledRecord.no");
   if (typeof value === "number") return value.toLocaleString();
   const text = String(value);
   if (ISO_DATE_VALUE.test(text)) return formatDateShort(text);
@@ -29,24 +34,27 @@ function getColumns(rows: Record<string, unknown>[]) {
 }
 
 function ValueCell({ value }: { value: unknown }) {
+  const { t } = useI18n();
   if (Array.isArray(value)) {
-    return <span>{value.length.toLocaleString()} item{value.length === 1 ? "" : "s"}</span>;
+    return <span>{t(value.length === 1 ? "ui.objectSummary.item" : "ui.objectSummary.items", { count: value.length.toLocaleString() })}</span>;
   }
   if (isRecord(value)) {
-    return <span>{Object.keys(value).length.toLocaleString()} field{Object.keys(value).length === 1 ? "" : "s"}</span>;
+    return <span>{t(Object.keys(value).length === 1 ? "ui.objectSummary.field" : "ui.objectSummary.fields", { count: Object.keys(value).length.toLocaleString() })}</span>;
   }
-  return <span>{formatPrimitive(value)}</span>;
+  return <span>{formatPrimitive(value, t)}</span>;
 }
 
 export function ObjectSummary({
   value,
-  emptyLabel = "No data returned.",
+  emptyLabel: emptyLabelProp,
   className,
 }: {
   value: unknown;
   emptyLabel?: string;
   className?: string;
 }) {
+  const { t } = useI18n();
+  const emptyLabel = emptyLabelProp ?? t("ui.objectSummary.empty");
   if (value === null || value === undefined) {
     return (
       <div className={cn("rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-500", className)}>
@@ -70,7 +78,7 @@ export function ObjectSummary({
       return (
         <div className={cn("overflow-x-auto rounded-lg border border-neutral-200", className)}>
           <table className="data-table">
-            <caption className="sr-only">Result items</caption>
+            <caption className="sr-only">{t("ui.objectSummary.caption")}</caption>
             <thead>
               <tr>
                 {columns.map((column) => (
@@ -92,7 +100,7 @@ export function ObjectSummary({
           </table>
           {records.length > 10 ? (
             <div className="border-t border-neutral-100 px-4 py-2 text-xs text-neutral-500">
-              Showing 10 of {records.length.toLocaleString()} items.
+              {t("ui.objectSummary.showing", { total: records.length.toLocaleString() })}
             </div>
           ) : null}
         </div>
@@ -136,7 +144,7 @@ export function ObjectSummary({
 
   return (
     <div className={cn("rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900", className)}>
-      {formatPrimitive(value)}
+      {formatPrimitive(value, t)}
     </div>
   );
 }

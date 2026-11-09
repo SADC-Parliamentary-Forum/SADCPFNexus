@@ -6,17 +6,20 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { lifecycleApi, tenantUsersApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
+/** Journey types; `label` and `start` are catalog keys translated where they render. */
 const TYPES = [
-  { value: "transfer", label: "Internal transfer", code: "transfer-internal" },
-  { value: "promotion", label: "Promotion", code: "promotion" },
-  { value: "probation", label: "Probation review", code: "probation-review" },
+  { value: "transfer", label: "lifecycle.journeyNew.type.transfer", start: "lifecycle.journeyNew.start.transfer", code: "transfer-internal" },
+  { value: "promotion", label: "lifecycle.journeyNew.type.promotion", start: "lifecycle.journeyNew.start.promotion", code: "promotion" },
+  { value: "probation", label: "lifecycle.journeyNew.type.probation", start: "lifecycle.journeyNew.start.probation", code: "probation-review" },
 ] as const;
 
 function JourneyCreateForm() {
+  const { t } = useI18n();
   const router = useRouter();
   const search = useSearchParams();
-  const initial = TYPES.some((t) => t.value === search.get("type")) ? (search.get("type") as string) : "transfer";
+  const initial = TYPES.some((opt) => opt.value === search.get("type")) ? (search.get("type") as string) : "transfer";
   const [lifecycleType, setLifecycleType] = useState(initial);
   const [employeeId, setEmployeeId] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -26,7 +29,7 @@ function JourneyCreateForm() {
     queryFn: async () => (await tenantUsersApi.list()).data.data ?? [],
   });
 
-  const selected = TYPES.find((t) => t.value === lifecycleType) ?? TYPES[0];
+  const selected = TYPES.find((opt) => opt.value === lifecycleType) ?? TYPES[0];
 
   const create = useMutation({
     mutationFn: () =>
@@ -39,27 +42,27 @@ function JourneyCreateForm() {
       const id = (res.data as { data?: { id?: number } }).data?.id;
       if (id) router.push(`/lifecycle/cases/${id}`);
     },
-    onError: () => setErr("Could not start this journey. Check HR authorisation and published templates."),
+    onError: () => setErr(t("lifecycle.journeyNew.failed")),
   });
 
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Start internal journey"
-        subtitle="Opens a transfer, promotion, or probation case from a published template."
+        title={t("lifecycle.journeyNew.title")}
+        subtitle={t("lifecycle.journeyNew.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Employee Lifecycle", href: "/lifecycle" },
-              { label: "Start journey" },
+              { label: t("lifecycle.common.breadcrumb"), href: "/lifecycle" },
+              { label: t("lifecycle.journeys.start") },
             ]}
           />
         }
       />
 
-      <FormSection title="Case details">
+      <FormSection title={t("lifecycle.journeyNew.caseDetails")}>
         <div className="space-y-4">
-          <FormField label="Journey type" htmlFor="lifecycle-journey-type">
+          <FormField label={t("lifecycle.journeys.typeLabel")} htmlFor="lifecycle-journey-type">
             <select
               id="lifecycle-journey-type"
               className="input w-full"
@@ -68,20 +71,20 @@ function JourneyCreateForm() {
             >
               {TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
-                  {type.label}
+                  {t(type.label)}
                 </option>
               ))}
             </select>
           </FormField>
 
-          <FormField label="Employee" htmlFor="lifecycle-journey-employee">
+          <FormField label={t("lifecycle.common.employee")} htmlFor="lifecycle-journey-employee">
             <select
               id="lifecycle-journey-employee"
               className="input w-full"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
             >
-              <option value="">Select employee…</option>
+              <option value="">{t("lifecycle.common.selectEmployee")}</option>
               {(usersQuery.data ?? []).map((u: { id: number; name: string }) => (
                 <option key={u.id} value={u.id}>
                   {u.name}
@@ -98,7 +101,7 @@ function JourneyCreateForm() {
             disabled={!employeeId || create.isPending}
             onClick={() => create.mutate()}
           >
-            {create.isPending ? "Starting…" : `Start ${selected.label.toLowerCase()}`}
+            {create.isPending ? t("lifecycle.common.starting") : t(selected.start)}
           </button>
         </div>
       </FormSection>
@@ -107,8 +110,9 @@ function JourneyCreateForm() {
 }
 
 export default function LifecycleJourneyCreatePage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<p className="p-6 text-sm text-neutral-500">Loading…</p>}>
+    <Suspense fallback={<p className="p-6 text-sm text-neutral-500">{t("common.loading")}</p>}>
       <JourneyCreateForm />
     </Suspense>
   );

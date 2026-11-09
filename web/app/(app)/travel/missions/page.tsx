@@ -8,8 +8,10 @@ import { exportToCsv } from "@/lib/csvExport";
 import { getListData } from "@/lib/listPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function TravelMissionsPage() {
+  const { t } = useI18n();
   const [rows, setRows] = useState<TravelMission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +24,12 @@ export default function TravelMissionsPage() {
       const res = await travelApi.listMissions({ per_page: 100 });
       setRows(getListData<TravelMission>(res.data));
     } catch {
-      setError("Failed to load missions.");
+      setError(t("travel.missions.loadFailed"));
       setRows([]);
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -66,13 +69,13 @@ export default function TravelMissionsPage() {
         pending: m.summary?.pending ?? "",
       })),
       [
-        { key: "title", header: "Mission" },
-        { key: "destination", header: "Destination" },
-        { key: "start_date", header: "Start" },
-        { key: "end_date", header: "End" },
-        { key: "travellers", header: "Travellers" },
-        { key: "ready", header: "Ready" },
-        { key: "pending", header: "Pending" },
+        { key: "title", header: t("travel.missions.col.mission") },
+        { key: "destination", header: t("travel.missions.col.destination") },
+        { key: "start_date", header: t("travel.missions.csv.start") },
+        { key: "end_date", header: t("travel.missions.csv.end") },
+        { key: "travellers", header: t("travel.mission.travellers") },
+        { key: "ready", header: t("travel.mission.ready") },
+        { key: "pending", header: t("travel.mission.pending") },
       ],
     );
   };
@@ -80,13 +83,13 @@ export default function TravelMissionsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Travel Mission Readiness"
-        subtitle="Group readiness for travellers, tickets, visa, hotel, and Finance DSA."
+        title={t("travel.missions.title")}
+        subtitle={t("travel.missions.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.travel", href: "/travel" },
-              { label: "Missions" },
+              { label: t("travel.mission.crumbMissions") },
             ]}
           />
         }
@@ -99,10 +102,10 @@ export default function TravelMissionsPage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("travel.missions.export")}
           </button>
           <Link href="/pif" className="btn-secondary text-sm">
-            Browse PIF
+            {t("travel.missions.browsePif")}
           </Link>
           </>
         }
@@ -113,7 +116,7 @@ export default function TravelMissionsPage() {
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error}</span>
           <button type="button" className="btn-secondary text-xs" onClick={() => void load()}>
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       )}
@@ -121,12 +124,12 @@ export default function TravelMissionsPage() {
       {!loading && rows.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: "Missions", value: stats.missions, icon: "groups", color: "text-primary", bg: "bg-primary/10" },
-            { label: "Travellers", value: stats.travellers, icon: "person", color: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Ready", value: stats.ready, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
-            { label: "Pending", value: stats.pending, icon: "pending", color: "text-neutral-600", bg: "bg-neutral-100" },
+            { key: "missions", label: t("travel.mission.crumbMissions"), value: stats.missions, icon: "groups", color: "text-primary", bg: "bg-primary/10" },
+            { key: "travellers", label: t("travel.mission.travellers"), value: stats.travellers, icon: "person", color: "text-amber-600", bg: "bg-amber-50" },
+            { key: "ready", label: t("travel.mission.ready"), value: stats.ready, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
+            { key: "pending", label: t("travel.mission.pending"), value: stats.pending, icon: "pending", color: "text-neutral-600", bg: "bg-neutral-100" },
           ].map((s) => (
-            <div key={s.label} className="card p-4">
+            <div key={s.key} className="card p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-neutral-500">{s.label}</p>
@@ -149,7 +152,7 @@ export default function TravelMissionsPage() {
           <input
             type="search"
             className="form-input pl-10"
-            placeholder="Search missions or destinations…"
+            placeholder={t("travel.missions.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -166,11 +169,11 @@ export default function TravelMissionsPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon="flight"
-            title={rows.length === 0 ? "No missions yet" : "No matches for your search"}
+            title={rows.length === 0 ? t("travel.missions.empty") : t("travel.missions.noMatches")}
             description={
               rows.length === 0
-                ? "Create via PIF send-to-travel, or wait for grouped travel packages."
-                : "Try a different search term."
+                ? t("travel.missions.emptyHint")
+                : t("travel.missions.noMatchesHint")
             }
           />
         ) : (
@@ -178,11 +181,11 @@ export default function TravelMissionsPage() {
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th>Mission</th>
-                  <th>Destination</th>
-                  <th>Dates</th>
-                  <th>Travellers</th>
-                  <th>Readiness</th>
+                  <th>{t("travel.missions.col.mission")}</th>
+                  <th>{t("travel.missions.col.destination")}</th>
+                  <th>{t("travel.missions.col.dates")}</th>
+                  <th>{t("travel.mission.travellers")}</th>
+                  <th>{t("travel.mission.col.readiness")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -206,8 +209,8 @@ export default function TravelMissionsPage() {
                       <td className="text-xs text-neutral-600">
                         {ready != null || pending != null ? (
                           <span>
-                            <span className="badge badge-success text-xs mr-1">{ready ?? 0} ready</span>
-                            <span className="badge badge-warning text-xs">{pending ?? 0} pending</span>
+                            <span className="badge badge-success text-xs mr-1">{t("travel.missions.readyCount", { count: ready ?? 0 })}</span>
+                            <span className="badge badge-warning text-xs">{t("travel.missions.pendingCount", { count: pending ?? 0 })}</span>
                           </span>
                         ) : (
                           "—"
@@ -218,7 +221,7 @@ export default function TravelMissionsPage() {
                           href={`/travel/missions/${m.id}`}
                           className="btn-secondary text-xs"
                         >
-                          View
+                          {t("travel.missions.view")}
                         </Link>
                       </td>
                     </tr>

@@ -9,6 +9,10 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LabelledRecord, labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { TranslateVars } from "@/lib/i18n/messages";
+
+type Translate = (key: string, vars?: TranslateVars) => string;
 
 type PeriodSummary = {
   id?: number;
@@ -53,18 +57,18 @@ function labelledText(value: unknown): string {
   return labelled == null ? "" : String(labelled);
 }
 
-function ownerLabel(row: Record<string, unknown>): unknown {
+function ownerLabel(row: Record<string, unknown>, t: Translate): unknown {
   if (typeof row.employee_name === "string" && row.employee_name.trim()) return row.employee_name;
   if (row.employee) return row.employee;
   if (typeof row.name === "string" && row.name.trim()) return row.name;
-  return "Unknown owner";
+  return t("weeklySummaries.unknownOwner");
 }
 
-function personLabel(row: Record<string, unknown>): unknown {
+function personLabel(row: Record<string, unknown>, t: Translate): unknown {
   if (typeof row.name === "string" && row.name.trim()) return row.name;
   if (typeof row.employee_name === "string" && row.employee_name.trim()) return row.employee_name;
   if (row.employee) return row.employee;
-  return "Unknown person";
+  return t("weeklySummaries.unknownPerson");
 }
 
 function departmentLabel(row: Record<string, unknown>): unknown {
@@ -83,11 +87,11 @@ function reportId(row: Record<string, unknown>): number | null {
   return Number.isFinite(id) && id > 0 ? id : null;
 }
 
-function daysLateLabel(row: Record<string, unknown>): string {
+function daysLateLabel(row: Record<string, unknown>, t: Translate): string {
   const raw = row.days_late;
   const days = typeof raw === "number" ? raw : Number(raw);
   if (Number.isFinite(days) && days > 0) {
-    return days === 1 ? "1 day" : `${days} days`;
+    return days === 1 ? t("weeklySummaries.oneDay") : t("weeklySummaries.days", { count: days });
   }
   return "—";
 }
@@ -108,6 +112,7 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export default function WeeklySummariesReviewPage() {
+  const { t } = useI18n();
   const allowed = canReviewWeeklySummaries(getStoredUser());
   const [pendingCount, setPendingCount] = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
@@ -144,7 +149,7 @@ export default function WeeklySummariesReviewPage() {
         setForbidden(true);
         setError(null);
       } else {
-        setError(errorMessage(e, "Failed to load the review queue"));
+        setError(errorMessage(e, t("weeklySummaries.review.loadFailed")));
       }
     } finally {
       setBusy(false);
@@ -172,13 +177,13 @@ export default function WeeklySummariesReviewPage() {
         return false;
       }
       if (!staffTerm) return true;
-      const haystack = [ownerLabel(row), row.reference]
+      const haystack = [ownerLabel(row, t), row.reference]
         .map((value) => (typeof value === "string" ? value : labelledText(value)))
         .join(" ")
         .toLowerCase();
       return haystack.includes(staffTerm);
     });
-  }, [queue, departmentName, staffTerm]);
+  }, [queue, departmentName, staffTerm, t]);
 
   const filteredMissing = useMemo(() => {
     return missing.filter((row) => {
@@ -186,24 +191,24 @@ export default function WeeklySummariesReviewPage() {
         return false;
       }
       if (!staffTerm) return true;
-      const haystack = [personLabel(row), ownerLabel(row)]
+      const haystack = [personLabel(row, t), ownerLabel(row, t)]
         .map((value) => (typeof value === "string" ? value : labelledText(value)))
         .join(" ")
         .toLowerCase();
       return haystack.includes(staffTerm);
     });
-  }, [missing, departmentName, staffTerm]);
+  }, [missing, departmentName, staffTerm, t]);
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Review queue"
-        subtitle="Pending and missing weekly summaries for supervisors and the Secretary General. Accept and return happen on the report detail page — this queue never auto-accepts."
+        title="weeklySummaries.review.title"
+        subtitle="weeklySummaries.review.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Weekly Summaries", href: "/weekly-summaries" },
-              { label: "Team review" },
+              { label: "weeklySummaries.crumb", href: "/weekly-summaries" },
+              { label: "weeklySummaries.review.crumb" },
             ]}
           />
         }
@@ -212,20 +217,20 @@ export default function WeeklySummariesReviewPage() {
       {forbidden ? (
         <EmptyState
           icon="lock"
-          title="Review queue is for supervisors and the Secretary General"
-          description="Staff who do not review weekly summaries cannot open this queue. Supervisors see their team or department; the Secretary General sees the full tenant queue."
+          title="weeklySummaries.review.forbidden"
+          description="weeklySummaries.review.forbiddenHint"
         />
       ) : null}
 
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-          {error.startsWith("Failed to load") ? error : `Failed to load the review queue: ${error}`}
+          {error === t("weeklySummaries.review.loadFailed") ? error : t("weeklySummaries.review.loadFailedWith", { error })}
         </div>
       ) : null}
 
       {busy ? (
         <div className="card space-y-3 p-6" aria-busy="true">
-          <p className="text-sm text-neutral-500">Loading…</p>
+          <p className="text-sm text-neutral-500">{t("common.loading")}</p>
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-10 animate-pulse rounded bg-neutral-100" />
           ))}
@@ -235,43 +240,43 @@ export default function WeeklySummariesReviewPage() {
       {!busy && !error && !forbidden ? (
         <>
           <FormSection
-            title="Review metrics"
-            description="Honest counts from the current-period review queue. This page does not invent sign-off or UAT status."
+            title="weeklySummaries.review.metrics"
+            description="weeklySummaries.review.metricsHint"
             icon="monitoring"
           >
             <LabelledRecord
               value={{
-                pending_review: pendingCount,
-                missing_reports: missing.length,
-                overdue: overdueCount,
-                period: periodLabel(period),
+                [t("weeklySummaries.review.field.pendingReview")]: pendingCount,
+                [t("weeklySummaries.review.field.missingReports")]: missing.length,
+                [t("weeklySummaries.review.field.overdue")]: overdueCount,
+                [t("weeklySummaries.review.field.period")]: periodLabel(period),
               }}
             />
           </FormSection>
 
           <FormSection
-            title="Filter the queue"
-            description="Search by staff name and department name. Filters never use numeric IDs."
+            title="weeklySummaries.review.filter"
+            description="weeklySummaries.review.filterHint"
             icon="filter_alt"
           >
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Staff name" htmlFor="weekly-review-staff">
+              <FormField label="weeklySummaries.staffName" htmlFor="weekly-review-staff">
                 <input
                   id="weekly-review-staff"
                   className="form-input"
                   value={staffQuery}
                   onChange={(event) => setStaffQuery(event.target.value)}
-                  placeholder="Search by staff name"
+                  placeholder={t("weeklySummaries.searchStaff")}
                 />
               </FormField>
-              <FormField label="Department" htmlFor="weekly-review-department">
+              <FormField label="weeklySummaries.col.department" htmlFor="weekly-review-department">
                 <select
                   id="weekly-review-department"
                   className="form-input"
                   value={departmentName}
                   onChange={(event) => setDepartmentName(event.target.value)}
                 >
-                  <option value="">All departments</option>
+                  <option value="">{t("weeklySummaries.allDepartments")}</option>
                   {departmentNames.map((name) => (
                     <option key={name} value={name}>
                       {name}
@@ -283,29 +288,29 @@ export default function WeeklySummariesReviewPage() {
           </FormSection>
 
           <FormSection
-            title="Pending review queue"
-            description="Open a report to accept or return it. Accept and return stay on the detail page so there is one authority path."
+            title="weeklySummaries.review.pendingQueue"
+            description="weeklySummaries.review.pendingQueueHint"
             icon="rate_review"
           >
             {filteredQueue.length === 0 ? (
               <EmptyState
                 icon="inbox"
-                title="No reports pending review"
-                description="Submitted summaries in your review scope will appear here."
+                title="weeklySummaries.review.noPending"
+                description="weeklySummaries.review.noPendingHint"
               />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <caption className="sr-only">Pending weekly summaries</caption>
+                  <caption className="sr-only">{t("weeklySummaries.review.pendingCaption")}</caption>
                   <thead>
                     <tr className="border-b border-neutral-100 text-neutral-500">
-                      <th className="py-2 pr-3 font-medium">Reference</th>
-                      <th className="py-2 pr-3 font-medium">Staff</th>
-                      <th className="py-2 pr-3 font-medium">Department</th>
-                      <th className="py-2 pr-3 font-medium">Period</th>
-                      <th className="py-2 pr-3 font-medium">Status</th>
-                      <th className="py-2 pr-3 font-medium">Submitted</th>
-                      <th className="py-2 font-medium">Days late</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.reference")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.staff")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.department")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.period")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.status")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.submitted")}</th>
+                      <th className="py-2 font-medium">{t("weeklySummaries.col.daysLate")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -316,18 +321,18 @@ export default function WeeklySummariesReviewPage() {
                           <td className="py-2 pr-3">
                             {id ? (
                               <Link href={`/weekly-summaries/${id}`} className="font-medium text-primary">
-                                {String(row.reference ?? `Report ${id}`)}
+                                {String(row.reference ?? t("weeklySummaries.reportNumber", { id }))}
                               </Link>
                             ) : (
                               labelledObjectCell(row.reference ?? "—")
                             )}
                           </td>
-                          <td className="py-2 pr-3">{labelledObjectCell(ownerLabel(row))}</td>
+                          <td className="py-2 pr-3">{labelledObjectCell(ownerLabel(row, t))}</td>
                           <td className="py-2 pr-3">{labelledObjectCell(departmentLabel(row))}</td>
                           <td className="py-2 pr-3">{labelledObjectCell(periodLabel(row.period ?? period))}</td>
                           <td className="py-2 pr-3 capitalize">{labelledObjectCell(row.status ?? "—")}</td>
                           <td className="py-2 pr-3">{shortDate(row.submitted_at) || "—"}</td>
-                          <td className="py-2">{daysLateLabel(row)}</td>
+                          <td className="py-2">{daysLateLabel(row, t)}</td>
                         </tr>
                       );
                     })}
@@ -338,35 +343,35 @@ export default function WeeklySummariesReviewPage() {
           </FormSection>
 
           <FormSection
-            title="Missing reports"
-            description="People in your review scope who have not submitted for this period."
+            title="weeklySummaries.review.missing"
+            description="weeklySummaries.review.missingHint"
             icon="person_off"
           >
             {filteredMissing.length === 0 ? (
               <EmptyState
                 icon="check_circle"
-                title="No missing reports"
-                description="None listed for your scope."
+                title="weeklySummaries.review.noMissing"
+                description="weeklySummaries.review.noMissingHint"
               />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <caption className="sr-only">People missing weekly summaries</caption>
+                  <caption className="sr-only">{t("weeklySummaries.review.missingCaption")}</caption>
                   <thead>
                     <tr className="border-b border-neutral-100 text-neutral-500">
-                      <th className="py-2 pr-3 font-medium">Person</th>
-                      <th className="py-2 pr-3 font-medium">Department</th>
-                      <th className="py-2 pr-3 font-medium">Period</th>
-                      <th className="py-2 font-medium">Days late</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.person")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.department")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.period")}</th>
+                      <th className="py-2 font-medium">{t("weeklySummaries.col.daysLate")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredMissing.map((row, idx) => (
                       <tr key={row.id != null && row.id !== "" ? String(row.id) : `missing-${idx}`} className="border-b border-neutral-50">
-                        <td className="py-2 pr-3">{labelledObjectCell(personLabel(row))}</td>
+                        <td className="py-2 pr-3">{labelledObjectCell(personLabel(row, t))}</td>
                         <td className="py-2 pr-3">{labelledObjectCell(departmentLabel(row))}</td>
                         <td className="py-2 pr-3">{labelledObjectCell(periodLabel(row.period ?? period))}</td>
-                        <td className="py-2">{daysLateLabel(row)}</td>
+                        <td className="py-2">{daysLateLabel(row, t)}</td>
                       </tr>
                     ))}
                   </tbody>

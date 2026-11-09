@@ -7,6 +7,7 @@ import { travelApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type CalEvent = {
   id: number;
@@ -19,12 +20,13 @@ type CalEvent = {
   status: string;
 };
 
+/** Event type labels as catalog keys, translated where they render. */
 const TYPE_LABEL: Record<string, string> = {
-  departure: "Departure",
-  return: "Return",
-  away: "Away",
-  pending: "Pending",
-  approved: "Approved",
+  departure: "travel.calendar.type.departure",
+  return: "travel.calendar.type.return",
+  away: "travel.calendar.type.away",
+  pending: "travel.calendar.type.pending",
+  approved: "travel.calendar.type.approved",
 };
 
 const TYPE_CLASS: Record<string, string> = {
@@ -44,22 +46,22 @@ const TYPE_RANK: Record<string, number> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  approved: "Approved",
-  submitted: "Submitted",
-  resubmitted: "Resubmitted",
+  approved: "travel.calendar.type.approved",
+  submitted: "travel.calendar.status.submitted",
+  resubmitted: "travel.calendar.status.resubmitted",
 };
 
 function localIso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function monthBounds(d = new Date()) {
+function monthBounds(d = new Date(), localeTag = "en-GB") {
   const from = new Date(d.getFullYear(), d.getMonth(), 1);
   const to = new Date(d.getFullYear(), d.getMonth() + 1, 0);
   return {
     from: localIso(from),
     to: localIso(to),
-    label: from.toLocaleString("en-GB", { month: "long", year: "numeric" }),
+    label: from.toLocaleString(localeTag, { month: "long", year: "numeric" }),
     year: from.getFullYear(),
     month: from.getMonth(),
   };
@@ -78,9 +80,19 @@ function firstName(name?: string): string {
 }
 
 export default function TravelCalendarPage() {
+  const { t, localeTag } = useI18n();
   const [cursor, setCursor] = useState(() => new Date());
   const [view, setView] = useState<"grid" | "list">("grid");
-  const bounds = useMemo(() => monthBounds(cursor), [cursor]);
+  const bounds = useMemo(() => monthBounds(cursor, localeTag), [cursor, localeTag]);
+  // 2023-01-01 was a Sunday; format seven consecutive days in the active locale.
+  const weekdays = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) =>
+        new Date(2023, 0, 1 + i).toLocaleDateString(localeTag, { weekday: "short" }),
+      ),
+    [localeTag],
+  );
+  const typeLabel = (type: string) => (TYPE_LABEL[type] ? t(TYPE_LABEL[type]) : type);
   const todayIso = localIso(new Date());
 
   const { data: events = [], isLoading, isError, refetch } = useQuery({
@@ -114,10 +126,10 @@ export default function TravelCalendarPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Travel calendar"
-        subtitle={`Departures, returns, and travellers away in ${bounds.label}.`}
+        title={t("travel.calendar.title")}
+        subtitle={t("travel.calendar.subtitle", { month: bounds.label })}
         breadcrumbs={
-          <PageBreadcrumbs items={[{ label: "Travel", href: "/travel" }, { label: "Calendar" }]} />
+          <PageBreadcrumbs items={[{ label: t("nav.travel"), href: "/travel" }, { label: t("travel.calendar.crumb") }]} />
         }
         actions={
           <>
@@ -126,31 +138,31 @@ export default function TravelCalendarPage() {
               className={view === "grid" ? "btn-primary text-sm" : "btn-secondary text-sm"}
               onClick={() => setView("grid")}
             >
-              Month grid
+              {t("travel.calendar.monthGrid")}
             </button>
             <button
               type="button"
               className={view === "list" ? "btn-primary text-sm" : "btn-secondary text-sm"}
               onClick={() => setView("list")}
             >
-              List
+              {t("travel.calendar.list")}
             </button>
             <button
               type="button"
               className="btn-secondary text-sm"
               onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
             >
-              Previous
+              {t("common.previous")}
             </button>
             <button type="button" className="btn-secondary text-sm" onClick={() => setCursor(new Date())}>
-              This month
+              {t("travel.calendar.thisMonth")}
             </button>
             <button
               type="button"
               className="btn-secondary text-sm"
               onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
             >
-              Next
+              {t("common.next")}
             </button>
           </>
         }
@@ -169,9 +181,9 @@ export default function TravelCalendarPage() {
       {isError ? (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
-          <span className="flex-1">Failed to load travel calendar.</span>
+          <span className="flex-1">{t("travel.calendar.loadFailed")}</span>
           <button type="button" className="btn-secondary text-xs" onClick={() => void refetch()}>
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       ) : null}
@@ -184,12 +196,12 @@ export default function TravelCalendarPage() {
                 key={type}
                 className={`inline-flex items-center rounded-full border px-2 py-0.5 ${TYPE_CLASS[type]}`}
               >
-                {TYPE_LABEL[type]}
+                {typeLabel(type)}
               </span>
             ))}
           </div>
           <div className="card grid grid-cols-7 gap-px overflow-hidden border border-neutral-200 bg-neutral-200 p-px">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+            {weekdays.map((d) => (
               <div
                 key={d}
                 className="bg-neutral-50 px-2 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-500"
@@ -220,9 +232,9 @@ export default function TravelCalendarPage() {
                         <Link
                           href={`/travel/${ev.id}`}
                           className={`block truncate rounded px-1.5 py-0.5 text-[11px] hover:opacity-90 ${TYPE_CLASS[ev.type] ?? "bg-neutral-100 text-neutral-700"}`}
-                          title={`${ev.reference} · ${TYPE_LABEL[ev.type] ?? ev.type}${ev.traveller ? ` · ${ev.traveller}` : ""}`}
+                          title={`${ev.reference} · ${typeLabel(ev.type)}${ev.traveller ? ` · ${ev.traveller}` : ""}`}
                         >
-                          {firstName(ev.traveller) || ev.reference} · {TYPE_LABEL[ev.type] ?? ev.type}
+                          {firstName(ev.traveller) || ev.reference} · {typeLabel(ev.type)}
                         </Link>
                       </li>
                     ))}
@@ -243,11 +255,11 @@ export default function TravelCalendarPage() {
             <div className="card">
               <EmptyState
                 icon="calendar_month"
-                title="No travel in this month"
-                description="Try another month, or open the travel register."
+                title={t("travel.calendar.empty")}
+                description={t("travel.calendar.emptyHint")}
                 action={
                   <Link href="/travel" className="btn-secondary text-sm">
-                    Travel hub
+                    {t("travel.calendar.hub")}
                   </Link>
                 }
               />
@@ -263,7 +275,7 @@ export default function TravelCalendarPage() {
                         <span
                           className={`mr-2 inline-block rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide ${TYPE_CLASS[ev.type] ?? "bg-neutral-100 text-neutral-600"}`}
                         >
-                          {TYPE_LABEL[ev.type] ?? ev.type}
+                          {typeLabel(ev.type)}
                         </span>
                         <Link href={`/travel/${ev.id}`} className="font-medium text-primary">
                           {ev.reference}
@@ -277,7 +289,7 @@ export default function TravelCalendarPage() {
                         ) : null}
                       </div>
                       <span className="text-xs text-neutral-500">
-                        {STATUS_LABEL[ev.status] ?? ev.status.replace(/_/g, " ")}
+                        {STATUS_LABEL[ev.status] ? t(STATUS_LABEL[ev.status]) : ev.status.replace(/_/g, " ")}
                       </span>
                     </li>
                   ))}

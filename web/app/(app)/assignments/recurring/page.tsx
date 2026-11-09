@@ -8,6 +8,7 @@ import { assignmentsApi, type Assignment } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function defaultDueDate(): string {
   const d = new Date();
@@ -18,6 +19,7 @@ function defaultDueDate(): string {
 export default function RecurringAssignmentsPage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -40,14 +42,14 @@ export default function RecurringAssignmentsPage() {
   const generate = useMutation({
     mutationFn: (id: number) => assignmentsApi.generateFromTemplate(id),
     onSuccess: () => {
-      setMsg("Instance generated as a separate assignment.");
+      setMsg(t("assignments.recurring.generated"));
       setErr(null);
-      toast.success("Assignment generated", "Instance generated as a separate assignment.");
+      toast.success(t("assignments.recurring.toast.generated"), t("assignments.recurring.generated"));
       qc.invalidateQueries({ queryKey: ["assignments"] });
     },
     onError: (error) => {
-      setErr("Could not generate an instance from this template.");
-      toast.error("Could not generate assignment", apiErrorMessage(error, "Could not generate an instance from this template."));
+      setErr(t("assignments.recurring.generateFailed"));
+      toast.error(t("assignments.recurring.toast.generateFailed"), apiErrorMessage(error, t("assignments.recurring.generateFailed")));
     },
   });
 
@@ -63,9 +65,9 @@ export default function RecurringAssignmentsPage() {
         },
       }),
     onSuccess: () => {
-      setMsg("Recurring template created.");
+      setMsg(t("assignments.recurring.created"));
       setErr(null);
-      toast.success("Recurring template created");
+      toast.success(t("assignments.recurring.toast.created"));
       setForm({
         title: "",
         description: "",
@@ -76,16 +78,16 @@ export default function RecurringAssignmentsPage() {
       qc.invalidateQueries({ queryKey: ["assignments", "templates"] });
     },
     onError: (error) => {
-      const message = "Could not create the template. Title, description, and a future due date are required.";
+      const message = t("assignments.recurring.createFailed");
       setErr(message);
-      toast.error("Template not created", apiErrorMessage(error, message));
+      toast.error(t("assignments.recurring.toast.notCreated"), apiErrorMessage(error, message));
     },
   });
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form.title.trim() || !form.description.trim() || !form.due_date) {
-      setErr("Title, description, and due date are required.");
+      setErr(t("assignments.recurring.required"));
       return;
     }
     create.mutate();
@@ -95,12 +97,12 @@ export default function RecurringAssignmentsPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <ModulePageHeader
-          title="Recurring Tasks"
-          subtitle="Templates generate separate assignment instances — never overwrite history."
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "Recurring Tasks" }]} />}
+          title={t("assignments.recurring.title")}
+          subtitle={t("assignments.recurring.subtitle")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: t("assignments.recurring.title") }]} />}
         />
         <Link href="/assignments/create" className="btn-primary">
-          New Assignment
+          {t("assignments.newAssignment")}
         </Link>
       </div>
 
@@ -108,10 +110,10 @@ export default function RecurringAssignmentsPage() {
       {err && <p className="text-sm text-red-700">{err}</p>}
 
       <form onSubmit={onSubmit} className="card space-y-3 p-4">
-        <h2 className="text-sm font-semibold text-neutral-900">Create template</h2>
+        <h2 className="text-sm font-semibold text-neutral-900">{t("assignments.recurring.createTemplate")}</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <label htmlFor="assignments-recurring-title-setform-f-required" className="block text-sm sm:col-span-2">
-            <span className="mb-1 block text-neutral-600">Title</span>
+            <span className="mb-1 block text-neutral-600">{t("assignments.create.titleLabel")}</span>
             <input id="assignments-recurring-title-setform-f-required"
               className="form-input w-full"
               value={form.title}
@@ -120,7 +122,7 @@ export default function RecurringAssignmentsPage() {
             />
           </label>
           <label htmlFor="assignments-recurring-description-setform-f-required" className="block text-sm sm:col-span-2">
-            <span className="mb-1 block text-neutral-600">Description</span>
+            <span className="mb-1 block text-neutral-600">{t("assignments.create.description")}</span>
             <textarea id="assignments-recurring-description-setform-f-required"
               className="form-input min-h-20 w-full"
               value={form.description}
@@ -129,7 +131,7 @@ export default function RecurringAssignmentsPage() {
             />
           </label>
           <label htmlFor="assignments-recurring-first-due-date-setform-f-required" className="block text-sm">
-            <span className="mb-1 block text-neutral-600">First due date</span>
+            <span className="mb-1 block text-neutral-600">{t("assignments.recurring.firstDueDate")}</span>
             <input id="assignments-recurring-first-due-date-setform-f-required"
               type="date"
               className="form-input w-full"
@@ -139,49 +141,49 @@ export default function RecurringAssignmentsPage() {
             />
           </label>
           <label htmlFor="assignments-recurring-frequency-setform-f-weekly-biweekly-monthly" className="block text-sm">
-            <span className="mb-1 block text-neutral-600">Frequency</span>
+            <span className="mb-1 block text-neutral-600">{t("assignments.recurring.frequency")}</span>
             <select id="assignments-recurring-frequency-setform-f-weekly-biweekly-monthly"
               className="form-input w-full"
               value={form.frequency}
               onChange={(e) => setForm((f) => ({ ...f, frequency: e.target.value }))}
             >
-              <option value="weekly">Weekly</option>
-              <option value="biweekly">Biweekly</option>
-              <option value="monthly">Monthly</option>
+              <option value="weekly">{t("assignments.frequency.weekly")}</option>
+              <option value="biweekly">{t("assignments.recurring.biweekly")}</option>
+              <option value="monthly">{t("assignments.frequency.monthly")}</option>
             </select>
           </label>
         </div>
         <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
-          {create.isPending ? "Saving…" : "Save template"}
+          {create.isPending ? t("assignments.recurring.saving") : t("assignments.recurring.saveTemplate")}
         </button>
       </form>
 
-      {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
+      {isLoading && <p className="text-sm text-neutral-500">{t("common.loading")}</p>}
 
       {(data ?? []).length === 0 && !isLoading && (
         <div className="card">
           <EmptyState
             icon="repeat"
-            title="No recurring templates yet."
-            description="Use the form above to create one."
+            title={t("assignments.recurring.emptyTitle")}
+            description={t("assignments.recurring.emptyDescription")}
           />
         </div>
       )}
 
       <div className="space-y-3">
-        {(data ?? []).map((t) => (
-          <div key={t.id} className="card p-4 flex items-center justify-between gap-3">
+        {(data ?? []).map((tpl) => (
+          <div key={tpl.id} className="card p-4 flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold">{t.title}</p>
-              <p className="text-xs text-neutral-500 font-mono">{t.reference_number}</p>
+              <p className="text-sm font-semibold">{tpl.title}</p>
+              <p className="text-xs text-neutral-500 font-mono">{tpl.reference_number}</p>
             </div>
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => generate.mutate(t.id)}
+              onClick={() => generate.mutate(tpl.id)}
               disabled={generate.isPending}
             >
-              Generate instance
+              {t("assignments.recurring.generate")}
             </button>
           </div>
         ))}

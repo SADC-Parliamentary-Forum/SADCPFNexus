@@ -7,16 +7,17 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
 import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const MODULES = [
-  { value: "", label: "All Modules" },
-  { value: "travel", label: "Travel" },
-  { value: "leave", label: "Leave" },
-  { value: "imprest", label: "Imprest" },
-  { value: "finance", label: "Finance" },
-  { value: "procurement", label: "Procurement" },
-  { value: "hr", label: "HR" },
-  { value: "governance", label: "Governance" },
+  { value: "", label: "settings.hr.matrix.allModules" },
+  { value: "travel", label: "nav.travel" },
+  { value: "leave", label: "nav.leave" },
+  { value: "imprest", label: "nav.imprest" },
+  { value: "finance", label: "nav.finance" },
+  { value: "procurement", label: "nav.procurement" },
+  { value: "hr", label: "nav.hr" },
+  { value: "governance", label: "settings.hr.matrix.governance" },
 ];
 
 const MODULE_COLORS: Record<string, string> = {
@@ -39,6 +40,7 @@ function ApprovalMatrixModal({
   onSave: (data: Partial<HrApprovalMatrix>) => void;
 }) {
   const isEdit = !!item?.id;
+  const { t } = useI18n();
   const [form, setForm] = useState<Partial<HrApprovalMatrix>>(
     item ?? {
       module: "hr",
@@ -62,39 +64,39 @@ function ApprovalMatrixModal({
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-neutral-900">
-            {isEdit ? "Edit Approval Step" : "New Approval Step"}
+            {isEdit ? t("settings.hr.matrix.edit") : t("settings.hr.matrix.new")}
           </h3>
-          <button onClick={onClose} aria-label="Close approval matrix dialog" className="text-neutral-400 hover:text-neutral-700">
+          <button onClick={onClose} aria-label={t("settings.hr.matrix.closeEditor")} className="text-neutral-400 hover:text-neutral-700">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="settings-hr-approval-matrix-module" className="block text-xs font-medium text-neutral-700 mb-1">Module *</label>
+            <label htmlFor="settings-hr-approval-matrix-module" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.matrix.moduleRequired")}</label>
             <select id="settings-hr-approval-matrix-module"
               className="form-input text-sm"
               value={form.module ?? "hr"}
               onChange={(e) => set("module", e.target.value)}
             >
               {MODULES.filter((m) => m.value !== "").map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+                <option key={m.value} value={m.value}>{t(m.label)}</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label htmlFor="settings-hr-approval-matrix-action-name" className="block text-xs font-medium text-neutral-700 mb-1">Action Name *</label>
+            <label htmlFor="settings-hr-approval-matrix-action-name" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.matrix.actionRequired")}</label>
             <input id="settings-hr-approval-matrix-action-name"
               className="form-input text-sm"
               value={form.action_name ?? ""}
               onChange={(e) => set("action_name", e.target.value)}
-              placeholder="e.g. Submit Leave Request"
+              placeholder={t("settings.hr.matrix.actionPlaceholder")}
             />
           </div>
 
           <div>
-            <label htmlFor="settings-hr-approval-matrix-step-number" className="block text-xs font-medium text-neutral-700 mb-1">Step Number</label>
+            <label htmlFor="settings-hr-approval-matrix-step-number" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.matrix.stepNumber")}</label>
             <input id="settings-hr-approval-matrix-step-number"
               type="number"
               className="form-input text-sm"
@@ -103,37 +105,37 @@ function ApprovalMatrixModal({
               value={form.step_number ?? 1}
               onChange={(e) => set("step_number", parseInt(e.target.value) || 1)}
             />
-            <p className="text-xs text-neutral-400 mt-1">Order in which approval steps occur</p>
+            <p className="text-xs text-neutral-400 mt-1">{t("settings.hr.matrix.stepHint")}</p>
           </div>
 
           <div>
-            <label htmlFor="settings-hr-approval-matrix-approver-role-name" className="block text-xs font-medium text-neutral-700 mb-1">Approver Role (name)</label>
+            <label htmlFor="settings-hr-approval-matrix-approver-role-name" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.matrix.roleName")}</label>
             <input id="settings-hr-approval-matrix-approver-role-name"
               className="form-input text-sm"
               value={roleNameInput}
               onChange={(e) => {
                 setRoleNameInput(e.target.value);
               }}
-              placeholder="e.g. HR Manager (optional)"
+              placeholder={t("settings.hr.matrix.rolePlaceholder")}
             />
-            <p className="text-xs text-neutral-400 mt-1">Enter role name; linked by role_id on backend</p>
+            <p className="text-xs text-neutral-400 mt-1">{t("settings.hr.matrix.roleHint")}</p>
           </div>
 
           <div>
-            <label htmlFor="settings-hr-approval-matrix-notes" className="block text-xs font-medium text-neutral-700 mb-1">Notes</label>
+            <label htmlFor="settings-hr-approval-matrix-notes" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.notes")}</label>
             <textarea id="settings-hr-approval-matrix-notes"
               className="form-input text-sm resize-none"
               rows={2}
               value={form.notes ?? ""}
               onChange={(e) => set("notes", e.target.value)}
-              placeholder="Optional notes about this approval step…"
+              placeholder={t("settings.hr.matrix.notesPlaceholder")}
             />
           </div>
 
           <div className="flex items-center justify-between rounded-lg bg-neutral-50 border border-neutral-200 px-3 py-2.5">
             <div>
-              <p className="text-sm font-medium text-neutral-800">Mandatory</p>
-              <p className="text-xs text-neutral-500">Step cannot be skipped</p>
+              <p className="text-sm font-medium text-neutral-800">{t("settings.hr.matrix.mandatory")}</p>
+              <p className="text-xs text-neutral-500">{t("settings.hr.matrix.mandatoryHint")}</p>
             </div>
             <button
               type="button"
@@ -153,26 +155,26 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label htmlFor="settings-hr-approval-matrix-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <label htmlFor="settings-hr-approval-matrix-status" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.status")}</label>
             <select id="settings-hr-approval-matrix-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{t("settings.hr.common.active")}</option>
+              <option value="inactive">{t("settings.hr.common.inactive")}</option>
             </select>
           </div>
         </div>
 
         <div className="flex gap-2 pt-2">
-          <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
+          <button onClick={onClose} className="btn-secondary flex-1 text-sm">{t("common.cancel")}</button>
           <button
             onClick={() => onSave(form)}
             disabled={!form.module || !form.action_name}
             className="btn-primary flex-1 text-sm disabled:opacity-50"
           >
-            {isEdit ? "Save Changes" : "Create Step"}
+            {isEdit ? t("settings.hr.common.saveChanges") : t("settings.hr.matrix.create")}
           </button>
         </div>
       </div>
@@ -183,6 +185,7 @@ function ApprovalMatrixModal({
 export default function ApprovalMatrixPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [modal, setModal] = useState<Partial<HrApprovalMatrix> | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [moduleFilter, setModuleFilter] = useState("");
@@ -200,21 +203,21 @@ export default function ApprovalMatrixPage() {
         ? hrSettingsApi.updateApprovalMatrixEntry(form.id, form).then((r) => r.data)
         : hrSettingsApi.createApprovalMatrixEntry(form).then((r) => r.data),
     onSuccess: (res: any) => {
-      toast("success", res.message ?? "Saved.");
+      toast("success", res.message ?? t("settings.hr.common.saved"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "approval-matrix"] });
       setModal(undefined);
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Failed to save."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.saveFailed")),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => hrSettingsApi.deleteApprovalMatrixEntry(id).then((r) => r.data),
     onSuccess: () => {
-      toast("success", "Approval step deleted.");
+      toast("success", t("settings.hr.matrix.deleted"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "approval-matrix"] });
       setDeleting(null);
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Cannot delete."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.cannotDelete")),
   });
 
   const items = data ?? [];
@@ -229,12 +232,12 @@ export default function ApprovalMatrixPage() {
         />
       )}
       <HrSettingsHeader
-        title="Approval Matrix"
-        subtitle="Define who approves HR actions — recruitment, promotion, salary adjustment, and more."
+        title={t("settings.hr.home.approvalMatrix.title")}
+        subtitle={t("settings.hr.home.approvalMatrix.description")}
         actions={
           <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
-          New Step
+          {t("settings.hr.matrix.newStep")}
         </button>
         }
       />
@@ -251,7 +254,7 @@ export default function ApprovalMatrixPage() {
               moduleFilter === m.value && "active"
             )}
           >
-            {m.label}
+            {t(m.label)}
           </button>
         ))}
       </div>
@@ -260,8 +263,8 @@ export default function ApprovalMatrixPage() {
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
           <p className="text-sm font-medium text-neutral-700">
-            {items.length} approval {items.length === 1 ? "step" : "steps"}
-            {moduleFilter && ` · ${MODULES.find((m) => m.value === moduleFilter)?.label}`}
+            {t(items.length === 1 ? "settings.hr.matrix.countOne" : "settings.hr.matrix.countMany", { count: items.length })}
+            {moduleFilter && ` · ${t(MODULES.find((m) => m.value === moduleFilter)?.label ?? moduleFilter)}`}
           </p>
         </div>
 
@@ -270,18 +273,18 @@ export default function ApprovalMatrixPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : items.length === 0 ? (
-          <EmptyState icon="account_tree" title="No approval steps found." description="Create one to get started." />
+          <EmptyState icon="account_tree" title={t("settings.hr.matrix.emptyTitle")} description={t("settings.hr.common.emptyDescription")} />
         ) : (
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th>Module</th>
-                <th>Action</th>
-                <th>Step</th>
-                <th>Role / Approver</th>
-                <th>Mandatory</th>
-                <th>Status</th>
-                <th className="w-24">Actions</th>
+                <th>{t("settings.hr.matrix.module")}</th>
+                <th>{t("settings.hr.matrix.action")}</th>
+                <th>{t("settings.hr.matrix.step")}</th>
+                <th>{t("settings.hr.matrix.roleApprover")}</th>
+                <th>{t("settings.hr.matrix.mandatory")}</th>
+                <th>{t("settings.hr.common.status")}</th>
+                <th className="w-24">{t("settings.hr.common.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -292,7 +295,10 @@ export default function ApprovalMatrixPage() {
                       "text-xs font-medium px-2 py-0.5 rounded-full capitalize",
                       MODULE_COLORS[item.module] ?? "bg-neutral-100 text-neutral-600"
                     )}>
-                      {item.module}
+                      {(() => {
+                        const known = MODULES.find((m) => m.value === item.module && m.value !== "");
+                        return known ? t(known.label) : item.module;
+                      })()}
                     </span>
                   </td>
                   <td>
@@ -317,14 +323,14 @@ export default function ApprovalMatrixPage() {
                   </td>
                   <td>
                     {item.is_mandatory ? (
-                      <span className="badge badge-warning">Required</span>
+                      <span className="badge badge-warning">{t("settings.hr.matrix.required")}</span>
                     ) : (
-                      <span className="badge badge-muted">Optional</span>
+                      <span className="badge badge-muted">{t("settings.hr.matrix.optional")}</span>
                     )}
                   </td>
                   <td>
                     <span className={cn("badge", item.is_active ? "badge-success" : "badge-muted")}>
-                      {item.is_active ? "Active" : "Inactive"}
+                      {item.is_active ? t("settings.hr.common.active") : t("settings.hr.common.inactive")}
                     </span>
                   </td>
                   <td>
@@ -332,7 +338,7 @@ export default function ApprovalMatrixPage() {
                       <button
                         onClick={() => setModal(item)}
                         className="p-1.5 rounded hover:bg-neutral-100 text-neutral-500 hover:text-primary"
-                        title="Edit"
+                        title={t("common.edit")}
                       >
                         <span className="material-symbols-outlined text-[16px]">edit</span>
                       </button>
@@ -342,17 +348,17 @@ export default function ApprovalMatrixPage() {
                             onClick={() => deleteMutation.mutate(item.id)}
                             className="p-1.5 rounded hover:bg-red-50 text-red-600 text-xs font-medium"
                           >
-                            Confirm
+                            {t("common.confirm")}
                           </button>
                           <button onClick={() => setDeleting(null)} className="p-1.5 rounded hover:bg-neutral-100 text-neutral-500 text-xs">
-                            Cancel
+                            {t("common.cancel")}
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setDeleting(item.id)}
                           className="p-1.5 rounded hover:bg-red-50 text-neutral-500 hover:text-red-600"
-                          title="Delete"
+                          title={t("common.delete")}
                         >
                           <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>

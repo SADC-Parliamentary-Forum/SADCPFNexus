@@ -8,25 +8,29 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LabelledRecord, labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { TranslateVars } from "@/lib/i18n/messages";
+
+type Translate = (key: string, vars?: TranslateVars) => string;
 
 type FocusFilter = "all" | "late" | "missing" | "unaccepted";
 type TableColumn = "reference" | "person" | "period" | "department" | "status" | "days";
 
 const STATUS_LABELS: Record<string, string> = {
-  draft: "Draft",
-  in_progress: "In progress",
-  ready: "Ready",
-  not_started: "Not started",
-  submitted: "Submitted",
-  pending_review: "Pending review",
-  resubmitted: "Resubmitted",
-  returned: "Returned",
-  accepted: "Accepted",
-  published: "Published",
-  exempted: "Exempted",
-  reopened: "Reopened",
-  missing: "Missing",
-  late: "Late",
+  draft: "weeklySummaries.status.draft",
+  in_progress: "weeklySummaries.status.in_progress",
+  ready: "weeklySummaries.status.ready",
+  not_started: "weeklySummaries.status.not_started",
+  submitted: "weeklySummaries.status.submitted",
+  pending_review: "weeklySummaries.status.pending_review",
+  resubmitted: "weeklySummaries.status.resubmitted",
+  returned: "weeklySummaries.status.returned",
+  accepted: "weeklySummaries.status.accepted",
+  published: "weeklySummaries.status.published",
+  exempted: "weeklySummaries.status.exempted",
+  reopened: "weeklySummaries.status.reopened",
+  missing: "weeklySummaries.status.missing",
+  late: "weeklySummaries.status.late",
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -57,25 +61,26 @@ function periodLabel(value: unknown): string {
   return [ref, range].filter(Boolean).join(" · ") || "—";
 }
 
-function humanStatus(status: unknown): string {
+function humanStatus(status: unknown, t: Translate): string {
   if (status == null || status === "") return "—";
   const raw = String(status);
-  if (STATUS_LABELS[raw]) return STATUS_LABELS[raw];
+  if (STATUS_LABELS[raw]) return t(STATUS_LABELS[raw]);
+  if (raw.startsWith("weeklySummaries.compliance.")) return t(raw);
   return raw.replace(/_/g, " ");
 }
 
-function ownerLabel(row: Record<string, unknown>): unknown {
+function ownerLabel(row: Record<string, unknown>, t: Translate): unknown {
   if (typeof row.employee_name === "string" && row.employee_name.trim()) return row.employee_name;
   if (row.employee) return row.employee;
   if (typeof row.name === "string" && row.name.trim()) return row.name;
-  return "Unknown owner";
+  return t("weeklySummaries.unknownOwner");
 }
 
-function personLabel(row: Record<string, unknown>): unknown {
+function personLabel(row: Record<string, unknown>, t: Translate): unknown {
   if (typeof row.name === "string" && row.name.trim()) return row.name;
   if (typeof row.employee_name === "string" && row.employee_name.trim()) return row.employee_name;
   if (row.employee) return row.employee;
-  return "Unknown person";
+  return t("weeklySummaries.unknownPerson");
 }
 
 function reportId(row: Record<string, unknown>): number | null {
@@ -128,13 +133,13 @@ function departmentLabel(row: Record<string, unknown>): unknown {
   return "—";
 }
 
-function daysLate(due: unknown): string {
+function daysLate(due: unknown, t: Translate): string {
   if (due == null || due === "") return "—";
   const dueAt = new Date(String(due));
   if (!Number.isFinite(dueAt.getTime())) return "—";
   const days = Math.floor((Date.now() - dueAt.getTime()) / 86_400_000);
   if (days <= 0) return "—";
-  return days === 1 ? "1 day" : `${days} days`;
+  return days === 1 ? t("weeklySummaries.oneDay") : t("weeklySummaries.days", { count: days });
 }
 
 function dueAt(row: Record<string, unknown>, periodFallback: Record<string, unknown> | null): unknown {
@@ -142,9 +147,9 @@ function dueAt(row: Record<string, unknown>, periodFallback: Record<string, unkn
   return row.employee_due_at ?? nestedPeriod?.employee_due_at ?? periodFallback?.employee_due_at;
 }
 
-function matchesPerson(row: Record<string, unknown>, query: string): boolean {
+function matchesPerson(row: Record<string, unknown>, query: string, t: Translate): boolean {
   if (!query) return true;
-  const haystack = [personLabel(row), ownerLabel(row), row.reference]
+  const haystack = [personLabel(row, t), ownerLabel(row, t), row.reference]
     .map((value) => (typeof value === "string" ? value : labelledText(value)))
     .join(" ")
     .toLowerCase();
@@ -165,12 +170,14 @@ function DepartmentNamePicker({
   selected: string;
   onSelect: (name: string) => void;
 }) {
+  const { t } = useI18n();
+  const allLabel = t("weeklySummaries.allDepartments");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = "compliance-department-list";
-  const options = useMemo(() => ["All departments", ...names], [names]);
+  const options = useMemo(() => [allLabel, ...names], [allLabel, names]);
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -198,8 +205,8 @@ function DepartmentNamePicker({
   }, [query]);
 
   const choose = (name: string) => {
-    onSelect(name === "All departments" ? "" : name);
-    setQuery(name === "All departments" ? "" : name);
+    onSelect(name === allLabel ? "" : name);
+    setQuery(name === allLabel ? "" : name);
     setOpen(false);
   };
 
@@ -213,7 +220,7 @@ function DepartmentNamePicker({
         aria-controls={listId}
         aria-activedescendant={open && filtered[activeIndex] ? `compliance-dept-option-${activeIndex}` : undefined}
         className="form-input"
-        placeholder="Search department by name"
+        placeholder={t("weeklySummaries.compliance.searchDepartment")}
         value={open ? query : selected || query}
         onChange={(event) => {
           setQuery(event.target.value);
@@ -245,11 +252,11 @@ function DepartmentNamePicker({
         <ul
           id={listId}
           role="listbox"
-          aria-label="Departments"
+          aria-label={t("weeklySummaries.department.departments")}
           className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg"
         >
           {filtered.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-neutral-500">No departments match that name.</li>
+            <li className="px-3 py-2 text-sm text-neutral-500">{t("weeklySummaries.department.noMatch")}</li>
           ) : (
             filtered.map((name, index) => (
               <li key={name} role="presentation">
@@ -257,7 +264,7 @@ function DepartmentNamePicker({
                   type="button"
                   role="option"
                   id={`compliance-dept-option-${index}`}
-                  aria-selected={(selected || "All departments") === name}
+                  aria-selected={(selected || allLabel) === name}
                   className={`flex w-full items-center px-3 py-2 text-left text-sm ${
                     index === activeIndex ? "bg-primary/5 text-neutral-900" : "text-neutral-700 hover:bg-neutral-50"
                   }`}
@@ -279,6 +286,7 @@ function DepartmentNamePicker({
 }
 
 export default function WeeklyCompliancePage() {
+  const { t } = useI18n();
   const [period, setPeriod] = useState<Record<string, unknown> | null>(null);
   const [myReport, setMyReport] = useState<Record<string, unknown> | null>(null);
   const [missing, setMissing] = useState<Record<string, unknown>[]>([]);
@@ -311,7 +319,7 @@ export default function WeeklyCompliancePage() {
       setCompliance(asRecord(payload.compliance) ?? {});
       setTrends(trendResult ? asRecord(trendResult.data.data) : null);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load weekly report compliance.");
+      setError(e instanceof Error ? e.message : t("weeklySummaries.compliance.loadFailed"));
     } finally {
       setBusy(false);
     }
@@ -331,9 +339,9 @@ export default function WeeklyCompliancePage() {
     (myReportUnaccepted && myReportId && !unaccepted.some((row) => reportId(row) === myReportId) ? 1 : 0);
   const lateCount = (pastDue ? missing.length : 0) + (myReportLate ? 1 : 0);
   const countCards = [
-    { label: "Late", value: lateCount },
-    { label: "Missing", value: missing.length },
-    { label: "Unaccepted", value: unacceptedCount },
+    { label: "weeklySummaries.status.late", value: lateCount },
+    { label: "weeklySummaries.status.missing", value: missing.length },
+    { label: "weeklySummaries.compliance.unaccepted", value: unacceptedCount },
   ];
 
   const departmentNames = useMemo(() => {
@@ -352,21 +360,21 @@ export default function WeeklyCompliancePage() {
     if (myReportLate && myReport) {
       rows.push({
         ...myReport,
-        finding: "Late",
-        employee_name: "Your report",
+        finding: "weeklySummaries.compliance.finding.late",
+        employee_name: t("weeklySummaries.compliance.yourReport"),
       });
     }
     if (pastDue) {
       for (const row of missing) {
-        rows.push({ ...row, finding: "Late — not submitted", status: "late" });
+        rows.push({ ...row, finding: "weeklySummaries.compliance.finding.lateNotSubmitted", status: "late" });
       }
     }
-    return rows.filter((row) => matchesPerson(row, query) && matchesDepartment(row, departmentName));
-  }, [departmentName, missing, myReport, myReportLate, pastDue, query]);
+    return rows.filter((row) => matchesPerson(row, query, t) && matchesDepartment(row, departmentName));
+  }, [departmentName, missing, myReport, myReportLate, pastDue, query, t]);
 
   const missingRows = useMemo(
-    () => missing.filter((row) => matchesPerson(row, query) && matchesDepartment(row, departmentName)),
-    [departmentName, missing, query],
+    () => missing.filter((row) => matchesPerson(row, query, t) && matchesDepartment(row, departmentName)),
+    [departmentName, missing, query, t],
   );
 
   const unacceptedRows = useMemo(() => {
@@ -375,11 +383,11 @@ export default function WeeklyCompliancePage() {
     if (myReportUnaccepted && myReport) {
       const id = reportId(myReport);
       if (id && !alreadyListed.has(id)) {
-        rows.unshift({ ...myReport, employee_name: "Your report" });
+        rows.unshift({ ...myReport, employee_name: t("weeklySummaries.compliance.yourReport") });
       }
     }
-    return rows.filter((row) => matchesPerson(row, query) && matchesDepartment(row, departmentName));
-  }, [departmentName, myReport, myReportUnaccepted, query, unaccepted]);
+    return rows.filter((row) => matchesPerson(row, query, t) && matchesDepartment(row, departmentName));
+  }, [departmentName, myReport, myReportUnaccepted, query, unaccepted, t]);
 
   const trendSummary = asRecord(trends?.summary);
   const showLate = focus === "all" || focus === "late";
@@ -388,20 +396,20 @@ export default function WeeklyCompliancePage() {
   const dueLabel = shortDate(period?.employee_due_at);
   const periodDescription = [
     periodLabel(period),
-    dueLabel ? `Due ${dueLabel}` : "",
-    pastDue ? "Employee due date has passed" : "",
+    dueLabel ? t("weeklySummaries.compliance.dueOn", { date: dueLabel }) : "",
+    pastDue ? t("weeklySummaries.compliance.duePassed") : "",
   ]
     .filter(Boolean)
     .join(" · ");
 
   const exportMissingCsv = () => {
     const lines = [
-      "Person,Department,Period,Finding",
+      t("weeklySummaries.compliance.csvHeader"),
       ...missingRows.map((row) => {
-        const person = String(labelledText(personLabel(row)) || "Unknown person").replaceAll('"', '""');
+        const person = String(labelledText(personLabel(row, t)) || t("weeklySummaries.unknownPerson")).replaceAll('"', '""');
         const department = String(labelledText(departmentLabel(row)) || "—").replaceAll('"', '""');
         const periodText = periodLabel(row.period ?? period).replaceAll('"', '""');
-        const finding = pastDue ? "Late — not submitted" : "Not submitted";
+        const finding = pastDue ? t("weeklySummaries.compliance.finding.lateNotSubmitted") : t("weeklySummaries.compliance.finding.notSubmitted");
         return `"${person}","${department}","${periodText}","${finding}"`;
       }),
     ];
@@ -412,19 +420,19 @@ export default function WeeklyCompliancePage() {
     a.download = `weekly-compliance-missing-${String(period?.reference ?? "current")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    setNotice("Missing-report CSV exported. Scheduled digests still go out Mondays at 08:40. This does not close findings.");
+    setNotice(t("weeklySummaries.compliance.exported"));
   };
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Weekly report compliance"
-        subtitle="Current-period submitted, late, missing, and unaccepted reports. Findings are not auto-closed — open a report to review it."
+        title="weeklySummaries.compliance.title"
+        subtitle="weeklySummaries.compliance.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Weekly Summaries", href: "/weekly-summaries" },
-              { label: "Compliance" },
+              { label: "weeklySummaries.crumb", href: "/weekly-summaries" },
+              { label: "weeklySummaries.compliance.crumb" },
             ]}
           />
         }
@@ -432,11 +440,11 @@ export default function WeeklyCompliancePage() {
           <div className="flex flex-wrap gap-2">
             {myReportId ? (
               <Link href={`/weekly-summaries/${myReportId}`} className="btn-secondary text-sm">
-                Open your report
+                {t("weeklySummaries.compliance.openYourReport")}
               </Link>
             ) : null}
             <button type="button" className="btn-secondary text-sm" onClick={() => void reload()} disabled={busy}>
-              Refresh
+              {t("weeklySummaries.compliance.refresh")}
             </button>
           </div>
         }
@@ -444,7 +452,7 @@ export default function WeeklyCompliancePage() {
 
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-          {error.startsWith("Failed to load") ? error : `Failed to load weekly report compliance: ${error}`}
+          {error === t("weeklySummaries.compliance.loadFailed") ? error : t("weeklySummaries.compliance.loadFailedWith", { error })}
         </div>
       ) : null}
 
@@ -456,7 +464,7 @@ export default function WeeklyCompliancePage() {
 
       {busy ? (
         <div className="card space-y-3 p-6" aria-busy="true">
-          <p className="text-sm text-neutral-500">Loading…</p>
+          <p className="text-sm text-neutral-500">{t("common.loading")}</p>
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-10 animate-pulse rounded bg-neutral-100" />
           ))}
@@ -466,44 +474,44 @@ export default function WeeklyCompliancePage() {
       {!busy && !error ? (
         <>
           <FormSection
-            title="Filters"
-            description="The current tenant period loads automatically. Filter by finding type, person, or department name — numeric IDs are not required."
+            title="weeklySummaries.compliance.filters"
+            description="weeklySummaries.compliance.filtersHint"
             icon="filter_alt"
           >
             <div className="grid gap-3 md:grid-cols-3">
-              <FormField label="Show" htmlFor="compliance-focus">
+              <FormField label="weeklySummaries.compliance.show" htmlFor="compliance-focus">
                 <select
                   id="compliance-focus"
                   className="form-input"
                   value={focus}
                   onChange={(e) => setFocus(e.target.value as FocusFilter)}
                 >
-                  <option value="all">All findings</option>
-                  <option value="late">Late</option>
-                  <option value="missing">Missing</option>
-                  <option value="unaccepted">Unaccepted</option>
+                  <option value="all">{t("weeklySummaries.compliance.allFindings")}</option>
+                  <option value="late">{t("weeklySummaries.status.late")}</option>
+                  <option value="missing">{t("weeklySummaries.status.missing")}</option>
+                  <option value="unaccepted">{t("weeklySummaries.compliance.unaccepted")}</option>
                 </select>
               </FormField>
-              <FormField label="Person" htmlFor="compliance-person" hint="Filter listed people and reports by name.">
+              <FormField label="weeklySummaries.col.person" htmlFor="compliance-person" hint="weeklySummaries.compliance.personHint">
                 <input
                   id="compliance-person"
                   className="form-input"
                   value={personQuery}
                   onChange={(e) => setPersonQuery(e.target.value)}
-                  placeholder="Search by person or reference"
+                  placeholder={t("weeklySummaries.compliance.personPlaceholder")}
                 />
               </FormField>
-              <FormField label="Department" htmlFor="compliance-department" hint="Filter by department name.">
+              <FormField label="weeklySummaries.col.department" htmlFor="compliance-department" hint="weeklySummaries.compliance.departmentHint">
                 <DepartmentNamePicker names={departmentNames} selected={departmentName} onSelect={setDepartmentName} />
               </FormField>
             </div>
           </FormSection>
 
-          <FormSection title="Compliance snapshot" description={periodDescription} icon="fact_check">
+          <FormSection title="weeklySummaries.compliance.snapshot" description={periodDescription} icon="fact_check">
             <div className="grid gap-3 sm:grid-cols-3">
               {countCards.map((card) => (
                 <div key={card.label} className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{card.label}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t(card.label)}</p>
                   <p className="mt-1 text-2xl font-semibold tabular-nums text-neutral-900">{card.value}</p>
                 </div>
               ))}
@@ -511,21 +519,21 @@ export default function WeeklyCompliancePage() {
             <div className="mt-4">
               <LabelledRecord
                 value={{
-                  period: periodLabel(period),
-                  submitted: Number(compliance.submitted ?? 0),
-                  exempted: Number(compliance.exempted ?? 0),
+                  [t("weeklySummaries.detail.field.period")]: periodLabel(period),
+                  [t("weeklySummaries.compliance.field.submitted")]: Number(compliance.submitted ?? 0),
+                  [t("weeklySummaries.compliance.field.exempted")]: Number(compliance.exempted ?? 0),
                 }}
               />
             </div>
             {trendSummary ? (
               <div className="mt-4 border-t border-neutral-100 pt-4">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Last 12 weeks</h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("weeklySummaries.compliance.last12")}</h3>
                 <LabelledRecord
                   value={{
-                    reports: trendSummary.total_reports ?? 0,
-                    completed: trendSummary.completed ?? 0,
-                    "completion rate": `${trendSummary.completion_rate ?? 0}%`,
-                    "missing or late": trendSummary.missing_or_late ?? 0,
+                    [t("weeklySummaries.compliance.field.reports")]: trendSummary.total_reports ?? 0,
+                    [t("weeklySummaries.compliance.field.completed")]: trendSummary.completed ?? 0,
+                    [t("weeklySummaries.trends.field.completionRate")]: `${trendSummary.completion_rate ?? 0}%`,
+                    [t("weeklySummaries.trends.field.missingOrLate")]: trendSummary.missing_or_late ?? 0,
                   }}
                 />
               </div>
@@ -534,19 +542,19 @@ export default function WeeklyCompliancePage() {
 
           {myReport ? (
             <FormSection
-              title="Your report"
-              description="Open the detail page to continue work. This compliance view never submits or accepts a report."
+              title="weeklySummaries.compliance.yourReport"
+              description="weeklySummaries.compliance.yourReportHint"
               icon="edit_calendar"
             >
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <caption className="sr-only">Your current weekly summary</caption>
+                  <caption className="sr-only">{t("weeklySummaries.compliance.yourReportCaption")}</caption>
                   <thead>
                     <tr className="border-b border-neutral-100 text-neutral-500">
-                      <th className="py-2 pr-3 font-medium">Reference</th>
-                      <th className="py-2 pr-3 font-medium">Period</th>
-                      <th className="py-2 pr-3 font-medium">Department</th>
-                      <th className="py-2 font-medium">Status</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.reference")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.period")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.department")}</th>
+                      <th className="py-2 font-medium">{t("weeklySummaries.col.status")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -557,7 +565,7 @@ export default function WeeklyCompliancePage() {
                             href={`/weekly-summaries/${reportId(myReport)}`}
                             className="font-medium text-primary"
                           >
-                            {String(myReport.reference ?? "Open report")}
+                            {String(myReport.reference ?? t("weeklySummaries.compliance.openReport"))}
                           </Link>
                         ) : (
                           labelledObjectCell(myReport.reference ?? "—")
@@ -565,7 +573,7 @@ export default function WeeklyCompliancePage() {
                       </td>
                       <td className="py-2 pr-3">{labelledObjectCell(periodLabel(myReport.period ?? period))}</td>
                       <td className="py-2 pr-3">{labelledObjectCell(departmentLabel(myReport))}</td>
-                      <td className="py-2">{labelledObjectCell(humanStatus(myReport.status))}</td>
+                      <td className="py-2">{labelledObjectCell(humanStatus(myReport.status, t))}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -575,13 +583,13 @@ export default function WeeklyCompliancePage() {
 
           {showLate ? (
             <FormSection
-              title="Late reports"
-              description="Draft or missing reports after the employee due date. Opening a report does not close the finding."
+              title="weeklySummaries.compliance.late"
+              description="weeklySummaries.compliance.lateHint"
               icon="schedule"
               actions={
                 missingRows.length > 0 && pastDue ? (
                   <button type="button" className="btn-secondary text-sm" onClick={exportMissingCsv}>
-                    Export missing CSV
+                    {t("weeklySummaries.compliance.exportMissing")}
                   </button>
                 ) : null
               }
@@ -589,16 +597,16 @@ export default function WeeklyCompliancePage() {
               {lateRows.length === 0 ? (
                 <EmptyState
                   icon="check_circle"
-                  title="No late reports"
+                  title="weeklySummaries.compliance.noLate"
                   description={
                     pastDue
-                      ? "Everyone in scope has submitted or is exempt for this period."
-                      : "The employee due date has not passed yet."
+                      ? "weeklySummaries.compliance.noLateHint"
+                      : "weeklySummaries.compliance.notDueYet"
                   }
                 />
               ) : (
                 <ComplianceTable
-                  caption="Late weekly summaries"
+                  caption={t("weeklySummaries.compliance.lateCaption")}
                   rows={lateRows}
                   columns={["person", "department", "period", "days", "status"]}
                   periodFallback={period}
@@ -610,13 +618,13 @@ export default function WeeklyCompliancePage() {
 
           {showMissing ? (
             <FormSection
-              title="Missing reports"
-              description="People in scope who have not submitted for this period. Names are listed until a report exists to open."
+              title="weeklySummaries.compliance.missing"
+              description="weeklySummaries.compliance.missingHint"
               icon="person_off"
               actions={
                 missingRows.length > 0 ? (
                   <button type="button" className="btn-secondary text-sm" onClick={exportMissingCsv}>
-                    Export missing CSV
+                    {t("weeklySummaries.compliance.exportMissing")}
                   </button>
                 ) : null
               }
@@ -624,12 +632,12 @@ export default function WeeklyCompliancePage() {
               {missingRows.length === 0 ? (
                 <EmptyState
                   icon="check_circle"
-                  title="No missing reports"
-                  description="None listed for your scope in the current period."
+                  title="weeklySummaries.review.noMissing"
+                  description="weeklySummaries.compliance.noMissingHint"
                 />
               ) : (
                 <ComplianceTable
-                  caption="People missing weekly summaries"
+                  caption={t("weeklySummaries.review.missingCaption")}
                   rows={missingRows}
                   columns={["person", "department", "period", "days", "status"]}
                   periodFallback={period}
@@ -641,19 +649,19 @@ export default function WeeklyCompliancePage() {
 
           {showUnaccepted ? (
             <FormSection
-              title="Unaccepted reports"
-              description="Submitted summaries still waiting for supervisor review. Accept and return stay on the report detail page."
+              title="weeklySummaries.compliance.unacceptedTitle"
+              description="weeklySummaries.compliance.unacceptedHint"
               icon="pending_actions"
             >
               {unacceptedRows.length === 0 ? (
                 <EmptyState
                   icon="inbox"
-                  title="No unaccepted reports"
-                  description="Submitted reports awaiting review will appear here. Nothing is auto-accepted."
+                  title="weeklySummaries.compliance.noUnaccepted"
+                  description="weeklySummaries.compliance.noUnacceptedHint"
                 />
               ) : (
                 <ComplianceTable
-                  caption="Unaccepted weekly summaries"
+                  caption={t("weeklySummaries.compliance.unacceptedCaption")}
                   rows={unacceptedRows}
                   columns={["reference", "person", "department", "period", "status"]}
                   periodFallback={period}
@@ -683,18 +691,19 @@ function ComplianceTable({
   linkReports?: boolean;
   personRows?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr className="border-b border-neutral-100 text-neutral-500">
-            {columns.includes("reference") ? <th className="py-2 pr-3 font-medium">Reference</th> : null}
-            {columns.includes("person") ? <th className="py-2 pr-3 font-medium">Person</th> : null}
-            {columns.includes("department") ? <th className="py-2 pr-3 font-medium">Department</th> : null}
-            {columns.includes("period") ? <th className="py-2 pr-3 font-medium">Period</th> : null}
-            {columns.includes("days") ? <th className="py-2 pr-3 font-medium">Days late</th> : null}
-            {columns.includes("status") ? <th className="py-2 font-medium">Status</th> : null}
+            {columns.includes("reference") ? <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.reference")}</th> : null}
+            {columns.includes("person") ? <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.person")}</th> : null}
+            {columns.includes("department") ? <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.department")}</th> : null}
+            {columns.includes("period") ? <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.period")}</th> : null}
+            {columns.includes("days") ? <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.daysLate")}</th> : null}
+            {columns.includes("status") ? <th className="py-2 font-medium">{t("weeklySummaries.col.status")}</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -707,10 +716,10 @@ function ComplianceTable({
                   <td className="py-2 pr-3">
                     {linkReports && id ? (
                       <Link href={`/weekly-summaries/${id}`} className="font-medium text-primary">
-                        {String(row.reference ?? "Open report")}
+                        {String(row.reference ?? t("weeklySummaries.compliance.openReport"))}
                       </Link>
                     ) : (
-                      labelledObjectCell(row.reference ?? "No report yet")
+                      labelledObjectCell(row.reference ?? t("weeklySummaries.compliance.noReportYet"))
                     )}
                   </td>
                 ) : null}
@@ -718,10 +727,10 @@ function ComplianceTable({
                   <td className="py-2 pr-3">
                     {linkReports && id ? (
                       <Link href={`/weekly-summaries/${id}`} className="font-medium text-primary">
-                        {labelledObjectCell(personRows ? personLabel(row) : ownerLabel(row))}
+                        {labelledObjectCell(personRows ? personLabel(row, t) : ownerLabel(row, t))}
                       </Link>
                     ) : (
-                      labelledObjectCell(personRows ? personLabel(row) : ownerLabel(row))
+                      labelledObjectCell(personRows ? personLabel(row, t) : ownerLabel(row, t))
                     )}
                   </td>
                 ) : null}
@@ -732,10 +741,10 @@ function ComplianceTable({
                   <td className="py-2 pr-3">{labelledObjectCell(periodLabel(row.period ?? periodFallback))}</td>
                 ) : null}
                 {columns.includes("days") ? (
-                  <td className="py-2 pr-3">{labelledObjectCell(daysLate(dueAt(row, periodFallback)))}</td>
+                  <td className="py-2 pr-3">{labelledObjectCell(daysLate(dueAt(row, periodFallback), t))}</td>
                 ) : null}
                 {columns.includes("status") ? (
-                  <td className="py-2">{labelledObjectCell(humanStatus(status))}</td>
+                  <td className="py-2">{labelledObjectCell(humanStatus(status, t))}</td>
                 ) : null}
               </tr>
             );

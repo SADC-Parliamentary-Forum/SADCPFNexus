@@ -17,8 +17,10 @@ import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RegisterMobileCards } from "@/components/ui/RegisterMobileCards";
 import { Badge } from "@/components/ui/Badge";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function MeetingsMinutesPage() {
+  const { t } = useI18n();
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -70,9 +72,9 @@ export default function MeetingsMinutesPage() {
 
   return (
     <RegisterShell
-      title="Meetings & Minutes"
-      subtitle="Record meetings, capture minutes, and open the full record — including notes, action items, and documents."
-      breadcrumbs={<PageBreadcrumbs items={[{ label: "Meetings & Minutes" }]} />}
+      title={t("governance.crumb")}
+      subtitle={t("governance.register.subtitle")}
+      breadcrumbs={<PageBreadcrumbs items={[{ label: "governance.crumb" }]} />}
       density={density}
       onDensityChange={setDensity}
       page={Math.min(page, lastPage)}
@@ -84,11 +86,11 @@ export default function MeetingsMinutesPage() {
         <>
           <Link href="/governance/resolutions" className="btn-secondary text-sm">
             <span className="material-symbols-outlined text-[18px]">gavel</span>
-            Resolutions (legacy)
+            {t("governance.register.resolutionsLegacy")}
           </Link>
           <Link href="/governance/minutes/new" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Record minutes
+            {t("governance.register.recordMinutes")}
           </Link>
         </>
       }
@@ -100,20 +102,20 @@ export default function MeetingsMinutesPage() {
             </span>
             <input
               className="form-input pl-9"
-              placeholder="Search meetings…"
+              placeholder={t("governance.register.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              aria-label="Search meetings and minutes"
+              aria-label={t("governance.register.searchLabel")}
             />
           </div>
           <div className="flex flex-wrap gap-2">
             {[
-              { v: "", l: "All status" },
-              { v: "draft", l: "Draft" },
-              { v: "final", l: "Final" },
+              { v: "", l: t("governance.register.allStatus") },
+              { v: "draft", l: t("governance.register.draft") },
+              { v: "final", l: t("governance.register.final") },
             ].map(({ v, l }) => (
               <button
                 key={v || "all-status"}
@@ -138,19 +140,19 @@ export default function MeetingsMinutesPage() {
                 }}
                 className={`filter-tab${typeFilter === "" ? " active" : ""}`}
               >
-                All types
+                {t("governance.register.allTypes")}
               </button>
-              {(types ?? []).map((t) => (
+              {(types ?? []).map((mt) => (
                 <button
-                  key={t.id}
+                  key={mt.id}
                   type="button"
                   onClick={() => {
-                    setTypeFilter(t.name);
+                    setTypeFilter(mt.name);
                     setPage(1);
                   }}
-                  className={`filter-tab${typeFilter === t.name ? " active" : ""}`}
+                  className={`filter-tab${typeFilter === mt.name ? " active" : ""}`}
                 >
-                  {t.name}
+                  {mt.name}
                 </button>
               ))}
             </div>
@@ -163,22 +165,22 @@ export default function MeetingsMinutesPage() {
             {isError ? (
               <EmptyState
                 icon="error"
-                title="Could not load meetings"
-                description="Refresh the page or try again in a moment."
+                title={t("governance.register.loadFailed")}
+                description={t("governance.register.loadFailedHint")}
               />
             ) : (
               <EmptyState
                 icon="meeting_room"
-                title="No minutes found"
+                title={t("governance.register.empty")}
                 description={
                   search || statusFilter || typeFilter
-                    ? "No rows match the current filters."
-                    : "Record the first meeting minutes to open them from this register."
+                    ? t("governance.register.noMatch")
+                    : t("governance.register.emptyHint")
                 }
                 action={
                   <Link href="/governance/minutes/new" className="btn-primary text-sm">
                     <span className="material-symbols-outlined text-[18px]">add</span>
-                    Record minutes
+                    {t("governance.register.recordMinutes")}
                   </Link>
                 }
               />
@@ -193,22 +195,22 @@ export default function MeetingsMinutesPage() {
             {isError ? (
               <EmptyState
                 icon="error"
-                title="Could not load meetings"
-                description="Refresh the page or try again in a moment."
+                title={t("governance.register.loadFailed")}
+                description={t("governance.register.loadFailedHint")}
               />
             ) : (
               <EmptyState
                 icon="meeting_room"
-                title="No minutes found"
+                title={t("governance.register.empty")}
                 description={
                   search || statusFilter || typeFilter
-                    ? "No rows match the current filters."
-                    : "Scheduled meetings below can still be recorded as minutes."
+                    ? t("governance.register.noMatch")
+                    : t("governance.register.emptyScheduledHint")
                 }
                 action={
                   <Link href="/governance/minutes/new" className="btn-primary text-sm">
                     <span className="material-symbols-outlined text-[18px]">add</span>
-                    Record minutes
+                    {t("governance.register.recordMinutes")}
                   </Link>
                 }
               />
@@ -220,33 +222,33 @@ export default function MeetingsMinutesPage() {
             items={rows}
             getKey={(m) => m.id}
             title={(m) => m.title}
-            subtitle={(m) => m.meeting_type || "Meeting"}
+            subtitle={(m) => m.meeting_type || t("governance.register.meeting")}
             badge={(m) => (
               <Badge variant={m.status === "final" ? "success" : "warning"}>
-                {m.status === "final" ? "Final" : "Draft"}
+                {m.status === "final" ? t("governance.register.final") : t("governance.register.draft")}
               </Badge>
             )}
             fields={(m) => [
-              { label: "Date", value: m.meeting_date ? formatDateShort(m.meeting_date) : "—" },
-              { label: "Venue", value: m.location || "—" },
-              { label: "Chair", value: m.chairperson || "—" },
+              { label: t("governance.register.date"), value: m.meeting_date ? formatDateShort(m.meeting_date) : "—" },
+              { label: t("governance.register.venue"), value: m.location || "—" },
+              { label: t("governance.register.chair"), value: m.chairperson || "—" },
             ]}
             actions={(m) => (
               <Link href={`/governance/minutes/${m.id}`} className="btn-secondary text-xs py-1 px-2">
-                View
+                {t("governance.register.view")}
               </Link>
             )}
           />
           <div className="hidden overflow-x-auto md:block">
             <table className="data-table w-full">
-              <caption className="sr-only">Meeting minutes register</caption>
+              <caption className="sr-only">{t("governance.register.caption")}</caption>
               <thead>
                 <tr>
-                  <th>Meeting</th>
-                  <th>Type</th>
-                  <th>Date</th>
-                  <th>Venue</th>
-                  <th>Status</th>
+                  <th>{t("governance.register.meeting")}</th>
+                  <th>{t("governance.register.type")}</th>
+                  <th>{t("governance.register.date")}</th>
+                  <th>{t("governance.register.venue")}</th>
+                  <th>{t("governance.register.status")}</th>
                   <th className="text-right"> </th>
                 </tr>
               </thead>
@@ -257,7 +259,7 @@ export default function MeetingsMinutesPage() {
                       <Link href={`/governance/minutes/${m.id}`} className="font-medium text-neutral-900 dark:text-neutral-100">
                         {m.title}
                       </Link>
-                      {m.chairperson ? <div className="text-xs text-neutral-500">Chair: {m.chairperson}</div> : null}
+                      {m.chairperson ? <div className="text-xs text-neutral-500">{t("governance.register.chairValue", { name: m.chairperson })}</div> : null}
                     </td>
                     <td>
                       <span className="badge badge-muted text-xs">{m.meeting_type || "—"}</span>
@@ -268,12 +270,12 @@ export default function MeetingsMinutesPage() {
                     <td className="text-sm text-neutral-600 dark:text-neutral-400">{m.location || "—"}</td>
                     <td>
                       <span className={m.status === "final" ? "badge-success" : "badge-warning"}>
-                        {m.status === "final" ? "Final" : "Draft"}
+                        {m.status === "final" ? t("governance.register.final") : t("governance.register.draft")}
                       </span>
                     </td>
                     <td className="text-right">
                       <Link href={`/governance/minutes/${m.id}`} className="btn-secondary text-xs py-1 px-2">
-                        View
+                        {t("governance.register.view")}
                       </Link>
                     </td>
                   </tr>
@@ -287,15 +289,15 @@ export default function MeetingsMinutesPage() {
         {unmatchedScheduled.length > 0 ? (
           <div className="card overflow-hidden">
             <div className="border-b border-neutral-100 px-4 py-3 dark:border-neutral-800">
-              <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Scheduled meetings without minutes</h2>
-              <p className="text-xs text-neutral-500">Workplan meetings that do not yet have a minutes record.</p>
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("governance.register.scheduledTitle")}</h2>
+              <p className="text-xs text-neutral-500">{t("governance.register.scheduledHint")}</p>
             </div>
             <div className="overflow-x-auto">
               <table className="data-table w-full">
                 <thead>
                   <tr>
-                    <th>Meeting</th>
-                    <th>Date</th>
+                    <th>{t("governance.register.meeting")}</th>
+                    <th>{t("governance.register.date")}</th>
                     <th className="text-right"> </th>
                   </tr>
                 </thead>
@@ -316,7 +318,7 @@ export default function MeetingsMinutesPage() {
                             href={`/governance/minutes/new?${params.toString()}`}
                             className="btn-secondary text-xs py-1 px-2"
                           >
-                            Record minutes
+                            {t("governance.register.recordMinutes")}
                           </Link>
                         </td>
                       </tr>

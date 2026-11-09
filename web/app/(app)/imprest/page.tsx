@@ -18,24 +18,25 @@ import {
 import { useRowSelection } from "@/lib/useRowSelection";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-  approved: { label: "Approved", cls: "badge-success" },
-  submitted: { label: "Submitted", cls: "badge-warning" },
-  rejected: { label: "Rejected", cls: "badge-danger" },
-  draft: { label: "Draft", cls: "badge-muted" },
-  liquidated: { label: "Liquidated", cls: "badge-success" },
-  withdrawn: { label: "Withdrawn", cls: "badge-muted" },
-  returned_for_correction: { label: "Returned", cls: "badge-warning" },
+  approved: { label: "status.approved", cls: "badge-success" },
+  submitted: { label: "status.submitted", cls: "badge-warning" },
+  rejected: { label: "status.rejected", cls: "badge-danger" },
+  draft: { label: "status.draft", cls: "badge-muted" },
+  liquidated: { label: "imprest.status.liquidated", cls: "badge-success" },
+  withdrawn: { label: "imprest.status.withdrawn", cls: "badge-muted" },
+  returned_for_correction: { label: "imprest.status.returned", cls: "badge-warning" },
 };
 
 const FILTER_TABS = [
-  { key: "all", label: "All" },
-  { key: "draft", label: "Draft" },
-  { key: "submitted", label: "Submitted" },
-  { key: "approved", label: "Approved" },
-  { key: "liquidated", label: "Liquidated" },
-  { key: "returned_for_correction", label: "Returned" },
+  { key: "all", label: "imprest.list.all" },
+  { key: "draft", label: "status.draft" },
+  { key: "submitted", label: "status.submitted" },
+  { key: "approved", label: "status.approved" },
+  { key: "liquidated", label: "imprest.status.liquidated" },
+  { key: "returned_for_correction", label: "imprest.status.returned" },
 ] as const;
 
 type FilterKey = (typeof FILTER_TABS)[number]["key"];
@@ -53,6 +54,7 @@ function unwrapList(payload: unknown): ImprestRequest[] {
 
 export default function ImprestPage() {
   const { success, error: showErrorToast, info } = useToast();
+  const { t } = useI18n();
   const { fmt: formatDateShort } = useFormatDate();
   const { confirm } = useConfirm();
   const queryClient = useQueryClient();
@@ -116,9 +118,9 @@ export default function ImprestPage() {
     if (ids.length === 0) return;
     if (
       !(await confirm({
-        title: "Delete drafts",
-        message: `Permanently delete ${ids.length} selected draft(s)?`,
-        confirmText: "Delete",
+        title: t("imprest.list.deleteDraftsTitle"),
+        message: t("imprest.list.deleteDraftsMessage", { count: ids.length }),
+        confirmText: t("common.delete"),
         variant: "danger",
       }))
     ) {
@@ -129,10 +131,10 @@ export default function ImprestPage() {
     try {
       await Promise.all(ids.map((id) => imprestApi.delete(id)));
       selection.clear();
-      success("Selected drafts deleted.");
+      success(t("imprest.list.draftsDeleted"));
       await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
     } catch {
-      setError("Some deletions failed.");
+      setError(t("imprest.list.deletionsFailed"));
     } finally {
       setBulkLoading(false);
     }
@@ -146,10 +148,10 @@ export default function ImprestPage() {
     try {
       await Promise.all(ids.map((id) => imprestApi.submit(id)));
       selection.clear();
-      success("Selected drafts submitted.");
+      success(t("imprest.list.draftsSubmitted"));
       await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
     } catch {
-      setError("Some submissions failed.");
+      setError(t("imprest.list.submissionsFailed"));
     } finally {
       setBulkLoading(false);
     }
@@ -158,9 +160,9 @@ export default function ImprestPage() {
   const handleDelete = async (row: ImprestRequest) => {
     if (
       !(await confirm({
-        title: "Delete draft",
-        message: `Permanently remove draft ${row.reference_number}?`,
-        confirmText: "Delete",
+        title: t("imprest.list.deleteDraftTitle"),
+        message: t("imprest.list.deleteDraftMessage", { ref: row.reference_number }),
+        confirmText: t("common.delete"),
         variant: "danger",
       }))
     ) {
@@ -170,10 +172,10 @@ export default function ImprestPage() {
     setError(null);
     try {
       await imprestApi.delete(row.id);
-      success("Draft deleted.");
+      success(t("imprest.list.draftDeleted"));
       await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
     } catch {
-      setError("Failed to delete draft.");
+      setError(t("imprest.list.deleteFailed"));
     } finally {
       setActionId(null);
     }
@@ -182,9 +184,9 @@ export default function ImprestPage() {
   const handleWithdraw = async (row: ImprestRequest) => {
     if (
       !(await confirm({
-        title: "Withdraw request",
-        message: `Withdraw ${row.reference_number} from the approval workflow?`,
-        confirmText: "Withdraw",
+        title: t("imprest.list.withdrawTitle"),
+        message: t("imprest.list.withdrawMessage", { ref: row.reference_number }),
+        confirmText: t("imprest.list.withdraw"),
         variant: "danger",
       }))
     ) {
@@ -194,10 +196,10 @@ export default function ImprestPage() {
     setError(null);
     try {
       await imprestApi.withdraw(row.id);
-      success("Request withdrawn.");
+      success(t("imprest.list.withdrawn"));
       await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
     } catch {
-      setError("Failed to withdraw request.");
+      setError(t("imprest.list.withdrawFailed"));
     } finally {
       setActionId(null);
     }
@@ -220,27 +222,27 @@ export default function ImprestPage() {
         requester: r.requester?.name ?? "",
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "purpose", header: "Purpose" },
-        { key: "budget_line", header: "Budget line" },
-        { key: "status", header: "Status" },
-        { key: "currency", header: "Currency" },
-        { key: "amount_requested", header: "Amount requested" },
-        { key: "amount_approved", header: "Amount approved" },
-        { key: "amount_liquidated", header: "Amount liquidated" },
-        { key: "expected_liquidation_date", header: "Liquidate by" },
-        { key: "requester", header: "Requester" },
+        { key: "reference", header: t("correspondence.col.reference") },
+        { key: "purpose", header: t("imprest.create.purposeLabel") },
+        { key: "budget_line", header: t("imprest.list.budgetLine") },
+        { key: "status", header: t("correspondence.col.status") },
+        { key: "currency", header: t("imprest.create.currency") },
+        { key: "amount_requested", header: t("imprest.list.amountRequested") },
+        { key: "amount_approved", header: t("imprest.list.amountApproved") },
+        { key: "amount_liquidated", header: t("imprest.list.amountLiquidated") },
+        { key: "expected_liquidation_date", header: t("imprest.list.liquidateBy") },
+        { key: "requester", header: t("imprest.certificate.requester") },
       ],
     );
   };
 
   return (
     <RegisterShell
-      title="Imprest Requests"
-      subtitle="Manage petty cash requests and liquidations."
+      title={t("imprest.list.title")}
+      subtitle={t("imprest.list.subtitle")}
       breadcrumbs={
         <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-          <span className="text-neutral-700">Imprest</span>
+          <span className="text-neutral-700">{t("nav.imprest")}</span>
         </div>
       }
       density={density}
@@ -259,11 +261,11 @@ export default function ImprestPage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("correspondence.exportCsv")}
           </button>
           <Link href="/imprest/create" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New Request
+            {t("imprest.create.crumb")}
           </Link>
         </div>
       }
@@ -271,7 +273,7 @@ export default function ImprestPage() {
         <>
           {(isError || error) && (
             <ErrorBanner
-              message={error ?? "Failed to load imprest requests."}
+              message={error ?? t("imprest.list.loadFailed")}
               onRetry={isError ? () => void refetch() : undefined}
               onDismiss={isError ? undefined : () => setError(null)}
             />
@@ -279,21 +281,21 @@ export default function ImprestPage() {
           <div className="grid grid-cols-3 gap-4">
             {[
               {
-                label: "Pending Approval",
+                label: t("correspondence.status.pendingApproval"),
                 value: String(pendingCount),
                 icon: "pending_actions",
                 color: "text-amber-600",
                 bg: "bg-amber-50",
               },
               {
-                label: "Unliquidated",
+                label: t("imprest.list.unliquidated"),
                 value: String(unliquidated),
                 icon: "account_balance_wallet",
                 color: "text-primary",
                 bg: "bg-primary/10",
               },
               {
-                label: "In register",
+                label: t("imprest.list.inRegister"),
                 value: String(requests.length),
                 icon: "receipt_long",
                 color: "text-neutral-600",
@@ -324,13 +326,13 @@ export default function ImprestPage() {
             <input
               type="search"
               className="form-input pl-10"
-              placeholder="Search reference, purpose, budget line…"
+              placeholder={t("imprest.list.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              aria-label="Search imprest requests"
+              aria-label={t("imprest.list.searchLabel")}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -345,7 +347,7 @@ export default function ImprestPage() {
                 }}
                 className={"filter-tab " + (filter === tab.key ? "active" : "")}
               >
-                {tab.label}
+                {t(tab.label)}
               </button>
             ))}
           </div>
@@ -360,7 +362,7 @@ export default function ImprestPage() {
             className="inline-flex items-center gap-1 rounded-lg bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 transition-colors hover:bg-green-100 disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[14px]">send</span>
-            Submit all
+            {t("imprest.list.submitAll")}
           </button>
           <button
             type="button"
@@ -369,7 +371,7 @@ export default function ImprestPage() {
             className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[14px]">delete</span>
-            Delete all
+            {t("imprest.list.deleteAll")}
           </button>
         </BulkSelectionBar>
       }
@@ -378,16 +380,16 @@ export default function ImprestPage() {
           <div className="card">
             <EmptyState
               icon="account_balance_wallet"
-              title="No imprest requests found"
+              title={t("imprest.list.empty")}
               description={
                 filter === "all" && !search
-                  ? "Create a petty cash request to get started."
-                  : "No rows match the current filters."
+                  ? t("imprest.list.emptyHint")
+                  : t("imprest.list.noMatch")
               }
               action={
                 <Link href="/imprest/create" className="btn-primary inline-flex text-sm">
                   <span className="material-symbols-outlined text-[18px]">add</span>
-                  New Imprest Request
+                  {t("imprest.create.title")}
                 </Link>
               }
             />
@@ -398,7 +400,7 @@ export default function ImprestPage() {
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="data-table w-full">
-            <caption className="sr-only">Imprest requests register</caption>
+            <caption className="sr-only">{t("imprest.list.caption")}</caption>
             <thead>
               <tr>
                 <th className={selectionColumnClass.th}>
@@ -409,21 +411,22 @@ export default function ImprestPage() {
                     }
                     onChange={selection.toggleAllSelectable}
                     disabled={selection.selectableIds.length === 0 || bulkLoading}
-                    label="Select all drafts"
+                    label={t("imprest.list.selectAllDrafts")}
                   />
                 </th>
-                <th scope="col">Reference</th>
-                <th scope="col">Purpose</th>
-                <th scope="col">Budget</th>
-                <th scope="col">Amount</th>
-                <th scope="col">Liquidate by</th>
-                <th scope="col">Status</th>
-                <th scope="col"><span className="sr-only">Actions</span></th>
+                <th scope="col">{t("correspondence.col.reference")}</th>
+                <th scope="col">{t("imprest.create.purposeLabel")}</th>
+                <th scope="col">{t("imprest.list.budget")}</th>
+                <th scope="col">{t("imprest.list.amount")}</th>
+                <th scope="col">{t("imprest.list.liquidateBy")}</th>
+                <th scope="col">{t("correspondence.col.status")}</th>
+                <th scope="col"><span className="sr-only">{t("correspondence.col.actions")}</span></th>
               </tr>
             </thead>
             <tbody>
               {paged.map((req) => {
-                const s = STATUS_CONFIG[req.status] ?? { label: req.status, cls: "badge-muted" };
+                const sc = STATUS_CONFIG[req.status];
+                const s = sc ? { label: t(sc.label), cls: sc.cls } : { label: req.status, cls: "badge-muted" };
                 const busy = actionId === req.id || bulkLoading;
                 const needsRetire =
                   req.status === "approved" && (!req.amount_liquidated || req.amount_liquidated === 0);
@@ -434,8 +437,8 @@ export default function ImprestPage() {
                         checked={selection.isSelected(req.id)}
                         onChange={() => selection.toggle(req.id)}
                         disabled={req.status !== "draft" || bulkLoading}
-                        title={req.status === "draft" ? undefined : "Only drafts can be selected"}
-                        label={"Select " + req.reference_number}
+                        title={req.status === "draft" ? undefined : t("imprest.list.onlyDrafts")}
+                        label={t("correspondence.selectRow", { ref: req.reference_number })}
                       />
                     </td>
                     <td className="font-mono text-xs text-neutral-600">{req.reference_number}</td>
@@ -456,7 +459,7 @@ export default function ImprestPage() {
                           href={"/imprest/" + req.id}
                           className="btn-secondary text-xs py-1 px-2"
                         >
-                          View
+                          {t("imprest.list.view")}
                         </Link>
                         {req.status === "draft" && (
                           <>
@@ -464,7 +467,7 @@ export default function ImprestPage() {
                               href={"/imprest/create?edit=" + req.id}
                               className="btn-secondary text-xs py-1 px-2"
                             >
-                              Edit
+                              {t("common.edit")}
                             </Link>
                             <button
                               type="button"
@@ -472,7 +475,7 @@ export default function ImprestPage() {
                               onClick={() => void handleDelete(req)}
                               className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50"
                             >
-                              Delete
+                              {t("common.delete")}
                             </button>
                           </>
                         )}
@@ -483,7 +486,7 @@ export default function ImprestPage() {
                             onClick={() => void handleWithdraw(req)}
                             className="btn-secondary text-xs py-1 px-2 text-amber-700 disabled:opacity-50"
                           >
-                            Withdraw
+                            {t("imprest.list.withdraw")}
                           </button>
                         )}
                         {needsRetire && (
@@ -491,7 +494,7 @@ export default function ImprestPage() {
                             href={"/imprest/" + req.id + "/liquidate"}
                             className="btn-secondary text-xs py-1 px-2"
                           >
-                            Retire
+                            {t("imprest.list.retire")}
                           </Link>
                         )}
                       </div>

@@ -7,8 +7,10 @@ import { useState } from "react";
 import { assignmentsApi } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function AssignmentHandoverPage() {
+  const { t } = useI18n();
   const me = getStoredUser();
   const [q, setQ] = useState("overdue high mine");
   const pack = useQuery({
@@ -30,13 +32,13 @@ export default function AssignmentHandoverPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <ModulePageHeader
-          title="Handover pack"
-          subtitle="Open work for a departing owner. This is not a surveillance ranking and does not close assignments."
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "Assignments", href: "/assignments" }, { label: "Handover" }]} />}
+          title={t("assignments.handover.title")}
+          subtitle={t("assignments.handover.subtitle")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: t("nav.assignments"), href: "/assignments" }, { label: t("assignments.handover.breadcrumb") }]} />}
         />
         {docxHref ? (
           <a className="btn-secondary text-sm" data-testid="handover-pack-docx" href={docxHref}>
-            Download Word pack
+            {t("assignments.handover.downloadWord")}
           </a>
         ) : null}
       </div>
@@ -49,12 +51,12 @@ export default function AssignmentHandoverPage() {
           void suggest.refetch();
         }}
       >
-        <input className="form-input flex-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter suggestion, e.g. overdue high mine" />
-        <button type="submit" className="btn-secondary text-sm">Suggest filters</button>
+        <input className="form-input flex-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("assignments.handover.searchPlaceholder")} />
+        <button type="submit" className="btn-secondary text-sm">{t("assignments.handover.suggest")}</button>
       </form>
       {suggest.data && (
         <div className="card space-y-3 p-4 text-sm">
-          <p className="text-neutral-600">{String(suggest.data.note ?? "Filter suggestions only.")}</p>
+          <p className="text-neutral-600">{String(suggest.data.note ?? t("assignments.handover.suggestionsOnly"))}</p>
           <LabelledRecord value={suggest.data.suggested_filters} />
           <div className="flex flex-wrap gap-2" data-testid="assignment-nl-apply-hrefs">
             {applyHrefs.map((row) => (
@@ -66,16 +68,16 @@ export default function AssignmentHandoverPage() {
         </div>
       )}
 
-      {pack.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
+      {pack.isLoading && <p className="text-sm text-neutral-500">{t("common.loading")}</p>}
       <div className="card overflow-x-auto" data-testid="assignment-handover-pack">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="text-left text-neutral-500">
-              <th className="p-2">Title</th>
-              <th className="p-2">Status</th>
-              <th className="p-2">Due</th>
-              <th className="p-2">Est. hours</th>
-              <th className="p-2">Logged hours</th>
+              <th className="p-2">{t("assignments.handover.colTitle")}</th>
+              <th className="p-2">{t("assignments.handover.colStatus")}</th>
+              <th className="p-2">{t("assignments.handover.colDue")}</th>
+              <th className="p-2">{t("assignments.handover.colEstHours")}</th>
+              <th className="p-2">{t("assignments.handover.colLoggedHours")}</th>
             </tr>
           </thead>
           <tbody>

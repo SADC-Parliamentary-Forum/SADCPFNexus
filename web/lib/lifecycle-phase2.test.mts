@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 import { readApiSource } from "./apiSourceForTests.mts";
 
@@ -22,8 +23,8 @@ test("lifecycle API exposes analytics and internal journeys", () => {
 });
 
 test("internal journey create and queue pages exist", () => {
-  const createPage = readFileSync(join(webRoot, "app/(app)/lifecycle/journeys/new/page.tsx"), "utf8");
-  const queuePage = readFileSync(join(webRoot, "app/(app)/lifecycle/journeys/page.tsx"), "utf8");
+  const createPage = readEnglishSource(join(webRoot, "app/(app)/lifecycle/journeys/new/page.tsx"));
+  const queuePage = readEnglishSource(join(webRoot, "app/(app)/lifecycle/journeys/page.tsx"));
   assert.match(createPage, /lifecycleApi\.initiateJourney/);
   assert.match(queuePage, /Internal journeys/);
 });

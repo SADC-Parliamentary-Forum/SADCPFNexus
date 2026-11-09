@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface PrintButtonProps {
   label?: string;
@@ -69,7 +70,8 @@ const PRINT_STYLES = `
 }
 `;
 
-export function PrintButton({ label = "Print", className }: PrintButtonProps) {
+export function PrintButton({ label, className }: PrintButtonProps) {
+  const { t } = useI18n();
   function handlePrint() {
     window.print();
   }
@@ -88,7 +90,7 @@ export function PrintButton({ label = "Print", className }: PrintButtonProps) {
         )}
       >
         <span className="material-symbols-outlined text-[18px]">print</span>
-        {label}
+        {label ?? t("common.print")}
       </button>
     </>
   );

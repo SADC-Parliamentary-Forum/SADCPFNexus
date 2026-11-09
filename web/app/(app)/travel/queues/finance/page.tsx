@@ -1,15 +1,17 @@
 "use client";
 
 import { TravelQueueTable } from "@/components/travel/TravelQueueTable";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function TravelFinanceQueuePage() {
+  const { t } = useI18n();
   return (
     <TravelQueueTable
       queue="finance"
       variant="finance"
-      title="Finance Review Queue (DSA)"
-      subtitle="Finance Controller calculates authoritative DSA (Rate Types 1/2/3). Traveller estimates are not authoritative."
-      emptyHint="No travel requests are awaiting Finance DSA calculation."
+      title={t("travel.queues.finance.title")}
+      subtitle={t("travel.queues.finance.subtitle")}
+      emptyHint={t("travel.queues.finance.empty")}
     />
   );
 }

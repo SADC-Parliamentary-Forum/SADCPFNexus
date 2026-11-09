@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/Modal";
 import { assetRequestsApi } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export const MIN_ASSET_REQUEST_JUSTIFICATION = 20;
 
@@ -19,6 +20,7 @@ export function NewAssetRequestModal({
 }) {
   // The parent's onCreated shows the success toast; this modal reports failures.
   const toast = useToast();
+  const { t } = useI18n();
   const [justification, setJustification] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,9 +50,9 @@ export function NewAssetRequestModal({
       reset();
       onCreated();
     } catch (err) {
-      const message = apiErrorMessage(err, "Failed to submit request. Please try again.");
+      const message = apiErrorMessage(err, t("assets.requestModal.submitFailed"));
       setError(message);
-      toast.error("Asset request not submitted", message);
+      toast.error(t("assets.requestModal.notSubmitted"), message);
     } finally {
       setSubmitting(false);
     }
@@ -59,14 +61,14 @@ export function NewAssetRequestModal({
   return (
     <Modal
       open={open}
-      title="Request an asset"
-      description="Describe what you need and why. Managers will review the request."
+      title={t("assets.requestModal.title")}
+      description={t("assets.requestModal.description")}
       onClose={handleClose}
       size="md"
       footer={
         <>
           <button type="button" className="btn-secondary py-2 px-4 text-sm" onClick={handleClose} disabled={submitting}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="submit"
@@ -77,12 +79,12 @@ export function NewAssetRequestModal({
             {submitting ? (
               <>
                 <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                Submitting…
+                {t("imprest.create.submitting")}
               </>
             ) : (
               <>
                 <span className="material-symbols-outlined text-[18px]">send</span>
-                Submit request
+                {t("assets.requestModal.submit")}
               </>
             )}
           </button>
@@ -97,7 +99,7 @@ export function NewAssetRequestModal({
         ) : null}
         <div className="space-y-1.5">
           <label htmlFor="asset-request-justification" className="block text-sm font-medium text-neutral-700">
-            Justification <span className="text-red-500">*</span>
+            {t("assets.requestModal.justification")} <span className="text-red-500">*</span>
           </label>
           <textarea
             id="asset-request-justification"
@@ -107,12 +109,12 @@ export function NewAssetRequestModal({
             maxLength={2000}
             value={justification}
             onChange={(e) => setJustification(e.target.value)}
-            placeholder="Describe the asset needed and why it is required…"
+            placeholder={t("assets.requestModal.placeholder")}
             className="form-input resize-none"
             disabled={submitting}
           />
           <p className="text-xs text-neutral-500">
-            Minimum {MIN_ASSET_REQUEST_JUSTIFICATION} characters.
+            {t("assets.requestModal.minimum", { min: MIN_ASSET_REQUEST_JUSTIFICATION })}
             {trimmed.length > 0 ? (
               <span className={trimmed.length >= MIN_ASSET_REQUEST_JUSTIFICATION ? " text-green-700" : " text-amber-700"}>
                 {" "}

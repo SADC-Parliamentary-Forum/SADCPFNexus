@@ -13,9 +13,18 @@ import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageH
 import { EmptyState as SharedEmptyState } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+type TFn = ReturnType<typeof useI18n>["t"];
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAYMENT_TERMS = ["Immediate", "Net 15", "Net 30", "Net 45", "Net 60", "Net 90"] as const;
+
+function paymentTermLabel(t: TFn, term: string): string {
+  if (term === "Immediate") return t("procurement.vendors.term.immediate");
+  const m = /^Net (\d+)$/.exec(term);
+  return m ? t("procurement.vendors.term.net", { days: m[1] }) : term;
+}
 
 const COUNTRIES = [
   "Botswana", "Comoros", "Democratic Republic of Congo", "Eswatini", "Lesotho",
@@ -23,31 +32,56 @@ const COUNTRIES = [
   "South Africa", "Tanzania", "Zambia", "Zimbabwe", "Other",
 ] as const;
 
+const COUNTRY_KEYS: Record<string, string> = {
+  Botswana: "procurement.vendors.country.botswana",
+  Comoros: "procurement.vendors.country.comoros",
+  "Democratic Republic of Congo": "procurement.vendors.country.drc",
+  Eswatini: "procurement.vendors.country.eswatini",
+  Lesotho: "procurement.vendors.country.lesotho",
+  Madagascar: "procurement.vendors.country.madagascar",
+  Malawi: "procurement.vendors.country.malawi",
+  Mauritius: "procurement.vendors.country.mauritius",
+  Mozambique: "procurement.vendors.country.mozambique",
+  Namibia: "procurement.vendors.country.namibia",
+  Seychelles: "procurement.vendors.country.seychelles",
+  "South Africa": "procurement.vendors.country.southAfrica",
+  Tanzania: "procurement.vendors.country.tanzania",
+  Zambia: "procurement.vendors.country.zambia",
+  Zimbabwe: "procurement.vendors.country.zimbabwe",
+  Other: "procurement.vendors.country.other",
+};
+
+function countryLabel(t: TFn, country: string): string {
+  const key = COUNTRY_KEYS[country];
+  return key ? t(key) : country;
+}
+
 // ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_FILTERS = [
-  { key: "all",         label: "All",         icon: "format_list_bulleted" },
-  { key: "approved",    label: "Approved",    icon: "verified"             },
-  { key: "pending",     label: "Pending",     icon: "pending"              },
-  { key: "inactive",    label: "Inactive",    icon: "block"                },
-  { key: "blacklisted", label: "Blacklisted", icon: "gpp_bad"              },
+  { key: "all",         label: "procurement.vendors.status.all",         icon: "format_list_bulleted" },
+  { key: "approved",    label: "procurement.vendors.status.approved",    icon: "verified"             },
+  { key: "pending",     label: "procurement.vendors.status.pending",     icon: "pending"              },
+  { key: "inactive",    label: "procurement.vendors.status.inactive",    icon: "block"                },
+  { key: "blacklisted", label: "procurement.vendors.status.blacklisted", icon: "gpp_bad"              },
 ] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number]["key"];
 
-function statusBadge(vendor: Vendor) {
-  if (vendor.is_blacklisted) return <span className="badge badge-danger">Blacklisted</span>;
-  if (!vendor.is_active)     return <span className="badge badge-muted">Inactive</span>;
-  if (vendor.is_approved)    return <span className="badge badge-success">Approved</span>;
-  return                            <span className="badge badge-warning">Pending</span>;
+function statusBadge(vendor: Vendor, t: TFn) {
+  if (vendor.is_blacklisted) return <span className="badge badge-danger">{t("procurement.vendors.status.blacklisted")}</span>;
+  if (!vendor.is_active)     return <span className="badge badge-muted">{t("procurement.vendors.status.inactive")}</span>;
+  if (vendor.is_approved)    return <span className="badge badge-success">{t("procurement.vendors.status.approved")}</span>;
+  return                            <span className="badge badge-warning">{t("procurement.vendors.status.pending")}</span>;
 }
 
 // ─── Star display ─────────────────────────────────────────────────────────────
 function StarDisplay({ avg, count }: { avg?: number | string | null; count?: number }) {
+  const { t } = useI18n();
   const n = avg != null ? Number(avg) : null;
   if (!n) return <span className="text-xs text-neutral-300">—</span>;
   const full  = Math.floor(n);
   const half  = n - full >= 0.5;
   return (
-    <span className="flex items-center gap-0.5" title={`${n.toFixed(1)} / 5 (${count ?? 0} ratings)`}>
+    <span className="flex items-center gap-0.5" title={t("procurement.vendors.ratingTitle", { avg: n.toFixed(1), count: count ?? 0 })}>
       {Array.from({ length: 5 }, (_, i) => (
         <span key={i} className={`material-symbols-outlined text-[14px] leading-none ${
           i < full ? "text-amber-400" : i === full && half ? "text-amber-300" : "text-neutral-200"
@@ -62,17 +96,18 @@ function StarDisplay({ avg, count }: { avg?: number | string | null; count?: num
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyState({ canManage, onAdd }: { canManage: boolean; onAdd: () => void }) {
+  const { t } = useI18n();
   return (
     <tr>
       <td colSpan={7}>
         <SharedEmptyState
           icon="storefront"
-          title="No vendors found"
-          description={canManage ? "Add your first vendor to the register." : "No vendors match your current filters."}
+          title={t("procurement.vendors.emptyTitle")}
+          description={canManage ? t("procurement.vendors.emptyAdd") : t("procurement.vendors.emptyFiltered")}
           action={
             canManage ? (
               <button type="button" onClick={onAdd} className="btn-primary mt-1 py-1.5 px-4 text-xs">
-                Add Vendor
+                {t("procurement.vendors.addVendor")}
               </button>
             ) : undefined
           }
@@ -149,10 +184,10 @@ function defaultForm(vendor?: Vendor | null): VendorFormValues {
 }
 
 const TAB_LABELS: { key: FormTab; label: string; icon: string }[] = [
-  { key: "basic",   label: "Business",  icon: "business"         },
-  { key: "contact", label: "Contact",   icon: "contacts"         },
-  { key: "banking", label: "Banking",   icon: "account_balance"  },
-  { key: "admin",   label: "Admin",     icon: "settings"         },
+  { key: "basic",   label: "procurement.vendors.tab.basic",  icon: "business"         },
+  { key: "contact", label: "procurement.vendors.tab.contact",   icon: "contacts"         },
+  { key: "banking", label: "procurement.vendors.tab.banking",   icon: "account_balance"  },
+  { key: "admin",   label: "procurement.vendors.tab.admin",     icon: "settings"         },
 ];
 
 function VendorFormModal({ vendor, categories, onClose, onSaved }: {
@@ -162,6 +197,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
   onSaved: () => void;
 }) {
   const isEdit = !!vendor;
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const toast = useToast();
   const firstInputRef = useRef<HTMLInputElement>(null);
@@ -184,21 +220,21 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
-      toast.success(isEdit ? "Vendor updated" : "Vendor created");
+      toast.success(isEdit ? t("procurement.vendors.toast.updated") : t("procurement.vendors.toast.created"));
       onSaved();
     },
     onError: (err: unknown) => {
-      const msg = apiErrorMessage(err, "Failed to save vendor.");
+      const msg = apiErrorMessage(err, t("procurement.vendors.saveFailed"));
       setFormError(msg);
-      toast.error(isEdit ? "Vendor not updated" : "Vendor not created", msg);
+      toast.error(isEdit ? t("procurement.vendors.toast.notUpdated") : t("procurement.vendors.toast.notCreated"), msg);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) { setFormError("Vendor name is required."); setTab("basic"); return; }
+    if (!form.name.trim()) { setFormError(t("procurement.vendors.nameRequired")); setTab("basic"); return; }
     if (form.category_ids.length < 1 || form.category_ids.length > 3) {
-      setFormError("Select between 1 and 3 supplier categories.");
+      setFormError(t("procurement.vendors.categoriesRange"));
       setTab("basic");
       return;
     }
@@ -225,7 +261,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
     </div>
   );
 
-  const sf = (key: keyof VendorFormValues, label: string, options: readonly string[]) => (
+  const sf = (key: keyof VendorFormValues, label: string, options: readonly string[], optionLabel: (o: string) => string) => (
     <div>
       <label htmlFor="procurement-vendors-field-2" className="block text-xs font-semibold text-neutral-600 mb-1">{label}</label>
       <select id="procurement-vendors-field-2"
@@ -233,8 +269,8 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
         value={form[key] as string}
         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
       >
-        <option value="">— Select —</option>
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        <option value="">{t("procurement.vendors.selectPlaceholder")}</option>
+        {options.map((o) => <option key={o} value={o}>{optionLabel(o)}</option>)}
       </select>
     </div>
   );
@@ -255,31 +291,31 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
             </div>
             <div>
               <h2 className="text-sm font-semibold text-neutral-800">
-                {isEdit ? "Edit Vendor" : "New Vendor"}
+                {isEdit ? t("procurement.vendors.editVendor") : t("procurement.vendors.newVendor")}
               </h2>
               <p className="text-xs text-neutral-500">
-                {isEdit ? `Updating ${vendor!.name}` : "Add a supplier or service provider"}
+                {isEdit ? t("procurement.vendors.updating", { name: vendor!.name }) : t("procurement.vendors.addSubtitle")}
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close vendor form" className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700">
+          <button type="button" onClick={onClose} aria-label={t("procurement.vendors.closeForm")} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-0 border-b border-neutral-200 px-6 mt-4 flex-shrink-0">
-          {TAB_LABELS.map((t) => (
+          {TAB_LABELS.map((tabItem) => (
             <button
-              key={t.key}
+              key={tabItem.key}
               type="button"
-              onClick={() => setTab(t.key)}
+              onClick={() => setTab(tabItem.key)}
               className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors ${
-                tab === t.key ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"
+                tab === tabItem.key ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"
               }`}
             >
-              <span className="material-symbols-outlined text-[14px]">{t.icon}</span>
-              {t.label}
+              <span className="material-symbols-outlined text-[14px]">{tabItem.icon}</span>
+              {t(tabItem.label)}
             </button>
           ))}
         </div>
@@ -300,7 +336,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label htmlFor="procurement-vendors-vendor-company-name" className="block text-xs font-semibold text-neutral-600 mb-1">
-                  Vendor / Company Name <span className="text-red-500">*</span>
+                  {t("procurement.vendors.field.name")} <span className="text-red-500">*</span>
                 </label>
                 <input id="procurement-vendors-vendor-company-name"
                   ref={firstInputRef}
@@ -308,15 +344,15 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
                   className="form-input"
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="e.g. Acme Supplies Ltd"
+                  placeholder={t("procurement.vendors.namePlaceholder")}
                 />
               </div>
-              {tf("registration_number", "Company Registration Number", { placeholder: "CC/2021/12345" })}
-              {tf("tax_number", "VAT / Tax Number", { placeholder: "e.g. 2012345678" })}
+              {tf("registration_number", t("procurement.vendors.field.registration"), { placeholder: "CC/2021/12345" })}
+              {tf("tax_number", t("procurement.vendors.field.tax"), { placeholder: t("procurement.vendors.taxPlaceholder") })}
               <div className="sm:col-span-2 space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="block text-xs font-semibold text-neutral-600">Supplier Categories</p>
-                  <span className="text-[11px] text-neutral-400">Select 1 to 3</span>
+                  <p className="block text-xs font-semibold text-neutral-600">{t("procurement.vendors.field.categories")}</p>
+                  <span className="text-[11px] text-neutral-400">{t("procurement.vendors.selectOneToThree")}</span>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {categories.map((category) => (
@@ -344,8 +380,8 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
                   ))}
                 </div>
               </div>
-              {sf("country", "Country of Registration", COUNTRIES)}
-              {tf("website", "Website", { type: "url", placeholder: "https://", span2: true })}
+              {sf("country", t("procurement.vendors.field.country"), COUNTRIES, (o) => countryLabel(t, o))}
+              {tf("website", t("procurement.vendors.field.website"), { type: "url", placeholder: "https://", span2: true })}
 
               <div className="sm:col-span-2">
                 <label htmlFor="procurement-vendors-setform-f-small-or-medium-enterprise-sme" className="flex cursor-pointer items-center gap-2">
@@ -356,7 +392,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
                     onChange={(e) => setForm((f) => ({ ...f, is_sme: e.target.checked }))}
                   />
                   <span className="text-xs font-medium text-neutral-700">
-                    Small or Medium Enterprise (SME)
+                    {t("procurement.vendors.smeLabel")}
                   </span>
                 </label>
               </div>
@@ -366,10 +402,10 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
           {/* ── Contact ───────────────────────────────────────────────────────── */}
           {tab === "contact" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {tf("contact_name", "Primary Contact Person", { placeholder: "Full name", span2: true })}
-              {tf("contact_email", "Contact Email", { type: "email", placeholder: "vendor@example.com" })}
-              {tf("contact_phone", "Contact Phone", { placeholder: "+264 61 000 0000" })}
-              {tf("address", "Physical Address", { placeholder: "Street, City, Country", span2: true })}
+              {tf("contact_name", t("procurement.vendors.field.contactName"), { placeholder: t("procurement.vendors.fullName"), span2: true })}
+              {tf("contact_email", t("procurement.vendors.field.contactEmail"), { type: "email", placeholder: "vendor@example.com" })}
+              {tf("contact_phone", t("procurement.vendors.field.contactPhone"), { placeholder: "+264 61 000 0000" })}
+              {tf("address", t("procurement.vendors.field.address"), { placeholder: t("procurement.vendors.addressPlaceholder"), span2: true })}
             </div>
           )}
 
@@ -377,12 +413,12 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
           {tab === "banking" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <p className="sm:col-span-2 text-xs text-neutral-400 -mb-1">
-                Banking details are stored securely for payment processing.
+                {t("procurement.vendors.bankingNote")}
               </p>
-              {tf("bank_name", "Bank Name", { placeholder: "e.g. First National Bank" })}
-              {sf("payment_terms", "Payment Terms", PAYMENT_TERMS)}
-              {tf("bank_account", "Account Number", { placeholder: "e.g. 62012345678" })}
-              {tf("bank_branch", "Branch / SWIFT Code", { placeholder: "e.g. 250655 or FIRNNAMW" })}
+              {tf("bank_name", t("procurement.vendors.field.bankName"), { placeholder: t("procurement.vendors.bankNamePlaceholder") })}
+              {sf("payment_terms", t("procurement.vendors.field.paymentTerms"), PAYMENT_TERMS, (o) => paymentTermLabel(t, o))}
+              {tf("bank_account", t("procurement.vendors.field.accountNumber"), { placeholder: t("procurement.vendors.accountPlaceholder") })}
+              {tf("bank_branch", t("procurement.vendors.field.branch"), { placeholder: t("procurement.vendors.branchPlaceholder") })}
             </div>
           )}
 
@@ -390,12 +426,12 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
           {tab === "admin" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label htmlFor="procurement-vendors-internal-notes" className="block text-xs font-semibold text-neutral-600 mb-1">Internal Notes</label>
+                <label htmlFor="procurement-vendors-internal-notes" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendors.field.notes")}</label>
                 <textarea id="procurement-vendors-internal-notes"
                   className="form-input h-28 resize-none"
                   value={form.notes}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                  placeholder="Notes visible only to procurement staff…"
+                  placeholder={t("procurement.vendors.notesPlaceholder")}
                 />
               </div>
               <div className="sm:col-span-2 flex gap-6">
@@ -406,7 +442,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
                     checked={form.is_approved}
                     onChange={(e) => setForm((f) => ({ ...f, is_approved: e.target.checked }))}
                   />
-                  <span className="text-xs font-medium text-neutral-700">Mark as Approved</span>
+                  <span className="text-xs font-medium text-neutral-700">{t("procurement.vendors.markApproved")}</span>
                 </label>
                 {isEdit && (
                   <label htmlFor="procurement-vendors-setform-f-active" className="flex cursor-pointer items-center gap-2">
@@ -416,7 +452,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
                       checked={form.is_active}
                       onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
                     />
-                    <span className="text-xs font-medium text-neutral-700">Active</span>
+                    <span className="text-xs font-medium text-neutral-700">{t("procurement.vendors.active")}</span>
                   </label>
                 )}
               </div>
@@ -428,7 +464,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
         {/* Footer */}
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-neutral-100 flex-shrink-0">
           <button type="button" onClick={onClose} className="btn-secondary py-2 px-4 text-sm">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -439,7 +475,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
             {mutation.isPending && (
               <span className="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>
             )}
-            {mutation.isPending ? "Saving…" : isEdit ? "Save Changes" : "Add Vendor"}
+            {mutation.isPending ? t("procurement.vendors.saving") : isEdit ? t("procurement.vendors.saveChanges") : t("procurement.vendors.addVendor")}
           </button>
         </div>
       </div>
@@ -457,6 +493,7 @@ function DeleteDialog({
   onClose: () => void;
   onDeleted: () => void;
 }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const toast = useToast();
 
@@ -464,11 +501,11 @@ function DeleteDialog({
     mutationFn: () => vendorsApi.destroy(vendor.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
-      toast.success("Vendor deactivated");
+      toast.success(t("procurement.vendors.toast.deactivated"));
       onDeleted();
     },
     onError: (err: unknown) => {
-      toast.error("Vendor not deactivated", apiErrorMessage(err, "Failed to deactivate vendor. Please try again."));
+      toast.error(t("procurement.vendors.toast.notDeactivated"), apiErrorMessage(err, t("procurement.vendors.deactivateFailed")));
     },
   });
 
@@ -483,21 +520,23 @@ function DeleteDialog({
             <span className="material-symbols-outlined text-[22px] text-red-600">warning</span>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-neutral-800">Deactivate Vendor?</h3>
+            <h3 className="text-sm font-semibold text-neutral-800">{t("procurement.vendors.deactivateTitle")}</h3>
             <p className="mt-1 text-xs text-neutral-500">
-              <strong className="text-neutral-700">{vendor.name}</strong> will be marked inactive
-              and hidden from procurement forms. Existing quote history is preserved.
+              {(() => {
+                const [before, after = ""] = t("procurement.vendors.deactivateBody").split("{name}");
+                return <>{before}<strong className="text-neutral-700">{vendor.name}</strong>{after}</>;
+              })()}
             </p>
           </div>
         </div>
         {mutation.isError && (
           <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-            Failed to deactivate vendor. Please try again.
+            {t("procurement.vendors.deactivateFailed")}
           </div>
         )}
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-secondary py-2 px-4 text-sm">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -508,7 +547,7 @@ function DeleteDialog({
             {mutation.isPending && (
               <span className="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>
             )}
-            {mutation.isPending ? "Deactivating…" : "Deactivate"}
+            {mutation.isPending ? t("procurement.vendors.deactivating") : t("procurement.vendors.deactivate")}
           </button>
         </div>
       </div>
@@ -518,6 +557,7 @@ function DeleteDialog({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function VendorsPage() {
+  const { t } = useI18n();
   const toast = useToast();
   const [canManageVendors, setCanManageVendors] = useState(false);
   useEffect(() => {
@@ -554,7 +594,7 @@ export default function VendorsPage() {
       setPwPortalUsers(users);
       if (users.length === 1) setPwSelectedUser(users[0]);
     } catch {
-      setPwError("Could not load supplier portal users.");
+      setPwError(t("procurement.vendors.pw.loadFailed"));
     } finally {
       setPwLoading(false);
     }
@@ -564,18 +604,18 @@ export default function VendorsPage() {
 
   const submitPwReset = async () => {
     if (!pwVendorId || !pwSelectedUser) return;
-    if (pw.length < 8) { setPwError("Password must be at least 8 characters."); return; }
-    if (pw !== pwConfirm) { setPwError("Passwords do not match."); return; }
+    if (pw.length < 8) { setPwError(t("procurement.vendors.pw.tooShort")); return; }
+    if (pw !== pwConfirm) { setPwError(t("procurement.vendors.pw.mismatch")); return; }
     setPwSaving(true); setPwError(null);
     try {
       await vendorsApi.changePortalUserPassword(pwVendorId, pwSelectedUser.id, pw, pwConfirm, true);
       setPwSuccess(true);
       setPw(""); setPwConfirm("");
-      toast.success("Portal password reset");
+      toast.success(t("procurement.vendors.toast.pwReset"));
     } catch (e: unknown) {
-      const message = apiErrorMessage(e, "Failed to reset password.");
+      const message = apiErrorMessage(e, t("procurement.vendors.pw.resetFailed"));
       setPwError(message);
-      toast.error("Password not reset", message);
+      toast.error(t("procurement.vendors.toast.pwNotReset"), message);
     } finally {
       setPwSaving(false);
     }
@@ -583,11 +623,11 @@ export default function VendorsPage() {
 
   // Debounce search
   useEffect(() => {
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       setSearch(searchInput);
       setPage(1);
     }, 350);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [searchInput]);
 
   const { data: payload, isLoading, isError } = useQuery({
@@ -637,20 +677,20 @@ export default function VendorsPage() {
         country: v.country ?? "",
         email: v.contact_email ?? "",
         phone: v.contact_phone ?? "",
-        approved: v.is_approved ? "yes" : "no",
-        active: v.is_active ? "yes" : "no",
-        blacklisted: v.is_blacklisted ? "yes" : "no",
+        approved: v.is_approved ? t("procurement.vendors.csv.yes") : t("procurement.vendors.csv.no"),
+        active: v.is_active ? t("procurement.vendors.csv.yes") : t("procurement.vendors.csv.no"),
+        blacklisted: v.is_blacklisted ? t("procurement.vendors.csv.yes") : t("procurement.vendors.csv.no"),
         rating: v.ratings_avg_rating ?? "",
       })),
       [
-        { key: "name", header: "Name" },
-        { key: "country", header: "Country" },
-        { key: "email", header: "Email" },
-        { key: "phone", header: "Phone" },
-        { key: "approved", header: "Approved" },
-        { key: "active", header: "Active" },
-        { key: "blacklisted", header: "Blacklisted" },
-        { key: "rating", header: "Rating" },
+        { key: "name", header: t("procurement.vendors.csv.name") },
+        { key: "country", header: t("procurement.vendors.csv.country") },
+        { key: "email", header: t("procurement.vendors.csv.email") },
+        { key: "phone", header: t("procurement.vendors.csv.phone") },
+        { key: "approved", header: t("procurement.vendors.status.approved") },
+        { key: "active", header: t("procurement.vendors.active") },
+        { key: "blacklisted", header: t("procurement.vendors.status.blacklisted") },
+        { key: "rating", header: t("procurement.vendors.col.rating") },
       ],
     );
   };
@@ -660,11 +700,11 @@ export default function VendorsPage() {
       <div className="w-full min-w-0 space-y-6">
         {/* Page header */}
         <ProcurementPageHeader
-          title="Vendor Register"
-          subtitle="Approved suppliers and service providers for procurement."
+          title="procurement.vendors.title"
+          subtitle="procurement.vendors.subtitle"
           crumbs={[
             { label: "nav.procurement", href: "/procurement" },
-            { label: "Vendors" },
+            { label: "procurement.vendors.crumb" },
           ]}
           actions={
             <>
@@ -675,7 +715,7 @@ export default function VendorsPage() {
               onClick={handleExport}
             >
               <span className="material-symbols-outlined text-[18px]">download</span>
-              Export CSV
+              {t("procurement.vendors.exportCsv")}
             </button>
             {canManageVendors && (
               <button
@@ -684,7 +724,7 @@ export default function VendorsPage() {
                 className="btn-primary flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
-                New Vendor
+                {t("procurement.vendors.newVendor")}
               </button>
             )}
             </>
@@ -695,10 +735,10 @@ export default function VendorsPage() {
         {!isLoading && !isError && (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { label: "Total Vendors",    value: totalVendors,    icon: "storefront", color: "text-primary",   bg: "bg-primary/10" },
-              { label: "Approved",         value: approvedCount,     icon: "verified",   color: "text-green-600", bg: "bg-green-50"   },
-              { label: "Pending Approval", value: pendingCount,      icon: "pending",    color: "text-amber-600", bg: "bg-amber-50"   },
-              { label: "Blacklisted",      value: blacklistedCount,  icon: "gpp_bad",    color: "text-red-600",   bg: "bg-red-50"     },
+              { label: "procurement.vendors.kpi.total",    value: totalVendors,    icon: "storefront", color: "text-primary",   bg: "bg-primary/10" },
+              { label: "procurement.vendors.status.approved",         value: approvedCount,     icon: "verified",   color: "text-green-600", bg: "bg-green-50"   },
+              { label: "procurement.vendors.kpi.pending", value: pendingCount,      icon: "pending",    color: "text-amber-600", bg: "bg-amber-50"   },
+              { label: "procurement.vendors.status.blacklisted",      value: blacklistedCount,  icon: "gpp_bad",    color: "text-red-600",   bg: "bg-red-50"     },
             ].map((kpi) => (
               <div key={kpi.label} className="card p-4 flex items-center gap-3">
                 <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${kpi.bg}`}>
@@ -706,7 +746,7 @@ export default function VendorsPage() {
                 </div>
                 <div>
                   <p className="text-lg font-bold text-neutral-900">{kpi.value}</p>
-                  <p className="text-xs text-neutral-500">{kpi.label}</p>
+                  <p className="text-xs text-neutral-500">{t(kpi.label)}</p>
                 </div>
               </div>
             ))}
@@ -728,7 +768,7 @@ export default function VendorsPage() {
                 className={`filter-tab flex items-center gap-1.5 ${statusFilter === f.key ? "active" : ""}`}
               >
                 <span className="material-symbols-outlined text-[14px]">{f.icon}</span>
-                {f.label}
+                {t(f.label)}
               </button>
             ))}
           </div>
@@ -740,7 +780,7 @@ export default function VendorsPage() {
             <input
               type="text"
               className="form-input pl-9 py-2 text-sm"
-              placeholder="Search vendors…"
+              placeholder={t("procurement.vendors.searchPlaceholder")}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
@@ -748,7 +788,7 @@ export default function VendorsPage() {
               <button
                 type="button"
                 onClick={() => { setSearchInput(""); setSearch(""); }}
-                aria-label="Clear vendor search"
+                aria-label={t("procurement.vendors.clearSearch")}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
@@ -761,7 +801,7 @@ export default function VendorsPage() {
         {isError && (
           <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <span className="material-symbols-outlined text-[18px]">error</span>
-            Failed to load vendors. Please refresh.
+            {t("procurement.vendors.loadFailed")}
           </div>
         )}
 
@@ -769,10 +809,10 @@ export default function VendorsPage() {
         <div className="card overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100">
             <h2 className="text-sm font-semibold text-neutral-800">
-              Vendor List
+              {t("procurement.vendors.listTitle")}
               {!isLoading && (
                 <span className="ml-2 text-xs font-normal text-neutral-400">
-                  ({vendors.length} {vendors.length === 1 ? "vendor" : "vendors"})
+                  {t(vendors.length === 1 ? "procurement.vendors.countOne" : "procurement.vendors.countMany", { count: vendors.length })}
                 </span>
               )}
             </h2>
@@ -781,13 +821,13 @@ export default function VendorsPage() {
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th className="text-left">Vendor</th>
-                  <th className="text-left">Category</th>
-                  <th className="text-left">Contact</th>
-                  <th className="text-left">Quotes</th>
-                  <th className="text-left">Rating</th>
-                  <th className="text-left">Status</th>
-                  <th className="text-right">Actions</th>
+                  <th className="text-left">{t("procurement.col.vendor")}</th>
+                  <th className="text-left">{t("procurement.vendors.col.category")}</th>
+                  <th className="text-left">{t("procurement.vendors.col.contact")}</th>
+                  <th className="text-left">{t("procurement.vendors.col.quotes")}</th>
+                  <th className="text-left">{t("procurement.vendors.col.rating")}</th>
+                  <th className="text-left">{t("procurement.col.status")}</th>
+                  <th className="text-right">{t("procurement.col.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -812,7 +852,7 @@ export default function VendorsPage() {
                               <span className="text-[10px] font-mono text-neutral-400">{v.registration_number}</span>
                             )}
                             {v.is_sme && (
-                              <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-semibold text-blue-600 uppercase tracking-wide">SME</span>
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-semibold text-blue-600 uppercase tracking-wide">{t("procurement.vendors.sme")}</span>
                             )}
                           </span>
                         </Link>
@@ -859,14 +899,14 @@ export default function VendorsPage() {
                         <StarDisplay avg={v.ratings_avg_rating} count={v.ratings_count} />
                       </td>
                       {/* Status */}
-                      <td>{statusBadge(v)}</td>
+                      <td>{statusBadge(v, t)}</td>
                       {/* Actions */}
                       <td className="text-right">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Link
                             href={`/procurement/vendors/${v.id}`}
                             className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary transition-colors"
-                            title="View details"
+                            title={t("procurement.vendors.viewDetails")}
                           >
                             <span className="material-symbols-outlined text-[17px]">open_in_new</span>
                           </Link>
@@ -876,7 +916,7 @@ export default function VendorsPage() {
                                 type="button"
                                 onClick={() => { setEditVendor(v); setShowForm(true); }}
                                 className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
-                                title="Edit vendor"
+                                title={t("procurement.vendors.editTitle")}
                               >
                                 <span className="material-symbols-outlined text-[17px]">edit</span>
                               </button>
@@ -884,7 +924,7 @@ export default function VendorsPage() {
                                 type="button"
                                 onClick={() => openPwModal(v)}
                                 className="rounded-md p-1.5 text-neutral-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
-                                title="Reset supplier password"
+                                title={t("procurement.vendors.resetPwTitle")}
                               >
                                 <span className="material-symbols-outlined text-[17px]">lock_reset</span>
                               </button>
@@ -892,7 +932,7 @@ export default function VendorsPage() {
                                 type="button"
                                 onClick={() => setDeleteVendor(v)}
                                 className="rounded-md p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                                title="Deactivate vendor"
+                                title={t("procurement.vendors.deactivateBtnTitle")}
                               >
                                 <span className="material-symbols-outlined text-[17px]">block</span>
                               </button>
@@ -941,7 +981,7 @@ export default function VendorsPage() {
                 <span className="material-symbols-outlined text-[20px] text-amber-600">lock_reset</span>
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-neutral-800">Reset Supplier Password</h2>
+                <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendors.pw.title")}</h2>
                 <p className="text-xs text-neutral-500">{pwVendorName}</p>
               </div>
             </div>
@@ -949,17 +989,17 @@ export default function VendorsPage() {
             {pwLoading && (
               <div className="flex items-center gap-2 text-xs text-neutral-500 py-4">
                 <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                Loading portal users…
+                {t("procurement.vendors.pw.loading")}
               </div>
             )}
 
             {!pwLoading && pwPortalUsers.length === 0 && !pwError && (
-              <p className="text-sm text-neutral-500 py-2">No supplier portal users linked to this vendor yet.</p>
+              <p className="text-sm text-neutral-500 py-2">{t("procurement.vendors.pw.none")}</p>
             )}
 
             {!pwLoading && pwPortalUsers.length > 1 && !pwSelectedUser && (
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-neutral-600">Select portal user</p>
+                <p className="text-xs font-semibold text-neutral-600">{t("procurement.vendors.pw.select")}</p>
                 {pwPortalUsers.map((u) => (
                   <button
                     key={u.id}
@@ -983,29 +1023,29 @@ export default function VendorsPage() {
                     <p className="text-[11px] text-neutral-500">{pwSelectedUser.email}</p>
                   </div>
                   {pwPortalUsers.length > 1 && (
-                    <button type="button" className="ml-auto btn-secondary text-[11px]" onClick={() => setPwSelectedUser(null)}>Change</button>
+                    <button type="button" className="ml-auto btn-secondary text-[11px]" onClick={() => setPwSelectedUser(null)}>{t("procurement.vendors.pw.change")}</button>
                   )}
                 </div>
                 {pwError && (
                   <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{pwError}</div>
                 )}
                 <div>
-                  <label htmlFor="procurement-vendors-new-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
-                  <input id="procurement-vendors-new-password" type="password" className="form-input" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Minimum 8 characters" />
+                  <label htmlFor="procurement-vendors-new-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("procurement.vendors.pw.new")}</label>
+                  <input id="procurement-vendors-new-password" type="password" className="form-input" value={pw} onChange={(e) => setPw(e.target.value)} placeholder={t("procurement.vendors.pw.minPlaceholder")} />
                 </div>
                 <div>
-                  <label htmlFor="procurement-vendors-confirm-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm Password</label>
-                  <input id="procurement-vendors-confirm-password" type="password" className="form-input" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} placeholder="Repeat password" />
+                  <label htmlFor="procurement-vendors-confirm-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("procurement.vendors.pw.confirm")}</label>
+                  <input id="procurement-vendors-confirm-password" type="password" className="form-input" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} placeholder={t("procurement.vendors.pw.repeat")} />
                 </div>
-                <p className="text-[11px] text-neutral-400">The supplier will be required to set a new password on next login.</p>
+                <p className="text-[11px] text-neutral-400">{t("procurement.vendors.pw.forceNote")}</p>
                 <div className="flex gap-3">
-                  <button className="btn-secondary flex-1" onClick={closePwModal}>Cancel</button>
+                  <button className="btn-secondary flex-1" onClick={closePwModal}>{t("common.cancel")}</button>
                   <button
                     className="btn-primary flex-1 disabled:opacity-60"
                     disabled={pwSaving || !pw || !pwConfirm}
                     onClick={submitPwReset}
                   >
-                    {pwSaving ? "Saving…" : "Reset Password"}
+                    {pwSaving ? t("procurement.vendors.saving") : t("procurement.vendors.pw.reset")}
                   </button>
                 </div>
               </>
@@ -1017,10 +1057,10 @@ export default function VendorsPage() {
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
                     <span className="material-symbols-outlined text-[26px] text-green-600">check_circle</span>
                   </div>
-                  <p className="text-sm font-semibold text-neutral-800">Password reset successfully</p>
-                  <p className="text-xs text-neutral-500 text-center">The supplier has been notified and will be prompted to change their password on next login.</p>
+                  <p className="text-sm font-semibold text-neutral-800">{t("procurement.vendors.pw.success")}</p>
+                  <p className="text-xs text-neutral-500 text-center">{t("procurement.vendors.pw.successNote")}</p>
                 </div>
-                <button className="btn-primary w-full" onClick={closePwModal}>Done</button>
+                <button className="btn-primary w-full" onClick={closePwModal}>{t("procurement.vendors.done")}</button>
               </>
             )}
 

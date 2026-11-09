@@ -5,8 +5,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { stockDemandApi, type StockDemandRow } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function StockDemandForecastPage() {
+  const { t } = useI18n();
   const [lookback, setLookback] = useState(90);
   const query = useQuery({
     queryKey: ["stock", "demand-forecast", lookback],
@@ -21,12 +23,12 @@ export default function StockDemandForecastPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
-        title="Demand / reorder suggestions"
-        subtitle="Exponential smoothing of stock issues over the lookback window, with optional HTTP ML overlay. Not a live ML model unless STOCK_FORECAST_HTTP_URL is set."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Demand / reorder suggestions" }]} />}
+        title={t("stock.forecasting.title")}
+        subtitle={t("stock.forecasting.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("stock.forecasting.title") }]} />}
       />
         <div className="flex items-center gap-2">
-          <label htmlFor="stock-phase2-forecasting-lookback-days" className="text-sm text-neutral-600">Lookback days</label>
+          <label htmlFor="stock-phase2-forecasting-lookback-days" className="text-sm text-neutral-600">{t("stock.forecasting.lookbackDays")}</label>
           <select id="stock-phase2-forecasting-lookback-days" className="form-input w-28" value={lookback} onChange={(e) => setLookback(Number(e.target.value))}>
             <option value={30}>30</option>
             <option value={60}>60</option>
@@ -37,23 +39,23 @@ export default function StockDemandForecastPage() {
       </div>
 
       <div className="card p-4 text-sm text-neutral-700">
-        {needs.length} item{needs.length === 1 ? "" : "s"} suggested for reorder (of {rows.length} active).
-        Method: {method}.
+        {t(needs.length === 1 ? "stock.forecasting.summaryOne" : "stock.forecasting.summary", { count: needs.length, total: rows.length })}{" "}
+        {t("stock.forecasting.method", { method })}
       </div>
 
       <div className="card overflow-x-auto p-4">
-        {query.isLoading && <p className="text-sm text-neutral-500">Loading usage…</p>}
-        {query.isError && <p className="text-sm text-red-700">Failed to load demand forecast.</p>}
+        {query.isLoading && <p className="text-sm text-neutral-500">{t("stock.forecasting.loading")}</p>}
+        {query.isError && <p className="text-sm text-red-700">{t("stock.forecasting.loadFailed")}</p>}
         {!query.isLoading && !query.isError && (
           <table className="min-w-full text-sm">
             <thead className="text-left text-neutral-500">
               <tr>
-                <th className="py-2 pr-3">Item</th>
-                <th className="py-2 pr-3">Available</th>
-                <th className="py-2 pr-3">Usage</th>
-                <th className="py-2 pr-3">Avg/day</th>
-                <th className="py-2 pr-3">Days cover</th>
-                <th className="py-2 pr-3">Suggested reorder</th>
+                <th className="py-2 pr-3">{t("stock.common.item")}</th>
+                <th className="py-2 pr-3">{t("stock.common.available")}</th>
+                <th className="py-2 pr-3">{t("stock.common.usage")}</th>
+                <th className="py-2 pr-3">{t("stock.common.avgPerDay")}</th>
+                <th className="py-2 pr-3">{t("stock.common.daysCover")}</th>
+                <th className="py-2 pr-3">{t("stock.common.suggestedReorder")}</th>
               </tr>
             </thead>
             <tbody>
@@ -71,7 +73,7 @@ export default function StockDemandForecastPage() {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <TableEmpty colSpan={6} title="No stock items." />
+                <TableEmpty colSpan={6} title={t("stock.forecasting.empty")} />
               )}
             </tbody>
           </table>

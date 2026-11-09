@@ -6,6 +6,7 @@ import { hrSettingsApi } from "@/lib/api";
 import { LabelledChangeRows } from "@/components/ui/LabelledRecord";
 import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function EventBadge({ event }: { event: string }) {
   const colorMap: Record<string, string> = {
@@ -24,6 +25,7 @@ function EventBadge({ event }: { event: string }) {
 }
 
 export default function HrSettingsAuditPage() {
+  const { t, localeTag } = useI18n();
   const [page, setPage] = useState(1);
   const perPage = 25;
 
@@ -41,19 +43,19 @@ export default function HrSettingsAuditPage() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
       <HrSettingsHeader
-        title="Settings Audit Log"
-        subtitle="Immutable history of every change made to HR master data, with before/after values."
+        title={t("settings.hr.home.audit.title")}
+        subtitle={t("settings.hr.home.audit.description")}
       />
 
       {/* Table */}
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
           <p className="text-sm font-medium text-neutral-700">
-            {isLoading ? "Loading…" : isError ? "Failed to load" : `${logs.length} events`}
+            {isLoading ? t("common.loading") : isError ? t("settings.hr.audit.failedToLoad") : t("settings.hr.audit.events", { count: logs.length })}
           </p>
           <div className="flex items-center gap-2 text-xs text-neutral-500">
             <span className="material-symbols-outlined text-[16px]">lock</span>
-            Read-only — no changes allowed
+            {t("settings.hr.audit.readOnly")}
           </div>
         </div>
 
@@ -64,25 +66,25 @@ export default function HrSettingsAuditPage() {
         ) : isError ? (
           <div className="p-12 text-center">
             <span className="material-symbols-outlined text-[40px] text-neutral-300">error_outline</span>
-            <p className="mt-2 text-sm text-neutral-500">Unable to load audit log. The endpoint may not be available yet.</p>
-            <p className="text-xs text-neutral-400 mt-1">Check that /admin/audit-logs is accessible.</p>
+            <p className="mt-2 text-sm text-neutral-500">{t("settings.hr.audit.loadFailed")}</p>
+            <p className="text-xs text-neutral-400 mt-1">{t("settings.hr.audit.loadFailedHint")}</p>
           </div>
         ) : logs.length === 0 ? (
           <EmptyState
             icon="receipt_long"
-            title="No HR settings changes recorded yet."
-            description="Changes to contract types, leave profiles, and other settings will appear here."
+            title={t("settings.hr.audit.emptyTitle")}
+            description={t("settings.hr.audit.emptyDescription")}
           />
         ) : (
           <>
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th>Date / Time</th>
-                  <th>Event</th>
-                  <th>Changed By</th>
-                  <th>Record</th>
-                  <th>Changes</th>
+                  <th>{t("settings.hr.audit.dateTime")}</th>
+                  <th>{t("settings.hr.audit.event")}</th>
+                  <th>{t("settings.hr.audit.changedBy")}</th>
+                  <th>{t("settings.hr.audit.record")}</th>
+                  <th>{t("settings.hr.audit.changes")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -91,7 +93,7 @@ export default function HrSettingsAuditPage() {
                     <td>
                       <span className="text-sm text-neutral-700 whitespace-nowrap">
                         {log.created_at
-                          ? new Date(log.created_at).toLocaleString("en-NA", {
+                          ? new Date(log.created_at).toLocaleString(localeTag, {
                               dateStyle: "medium",
                               timeStyle: "short",
                             })
@@ -104,7 +106,7 @@ export default function HrSettingsAuditPage() {
                     <td>
                       <div>
                         <p className="text-sm text-neutral-900">
-                          {log.user?.name ?? log.causer?.name ?? "System"}
+                          {log.user?.name ?? log.causer?.name ?? t("assignments.detail.system")}
                         </p>
                         {(log.user?.email ?? log.causer?.email) && (
                           <p className="text-xs text-neutral-400">
@@ -137,8 +139,8 @@ export default function HrSettingsAuditPage() {
             {(page > 1 || logs.length === perPage) && (
               <div className="px-5 py-3 border-t border-neutral-100 flex items-center justify-between">
                 <p className="text-xs text-neutral-500">
-                  Page {page}
-                  {meta?.total && ` · ${meta.total} total events`}
+                  {t("settings.hr.audit.page", { page })}
+                  {meta?.total && ` · ${t("settings.hr.audit.totalEvents", { count: meta.total })}`}
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -146,14 +148,14 @@ export default function HrSettingsAuditPage() {
                     disabled={page === 1}
                     className="btn-secondary text-xs px-3 py-1.5 disabled:opacity-40"
                   >
-                    Previous
+                    {t("common.previous")}
                   </button>
                   <button
                     onClick={() => setPage((p) => p + 1)}
                     disabled={logs.length < perPage}
                     className="btn-secondary text-xs px-3 py-1.5 disabled:opacity-40"
                   >
-                    Next
+                    {t("common.next")}
                   </button>
                 </div>
               </div>

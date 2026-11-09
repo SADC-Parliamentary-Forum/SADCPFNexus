@@ -10,17 +10,19 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
+/** Country labels are catalog keys, translated where they render. */
 const SADC_COUNTRY_CODES: Record<string, string> = {
-  NA: "Namibia (LIL uses NA only)",
-  ZA: "South Africa",
-  ZW: "Zimbabwe",
-  BW: "Botswana",
-  MZ: "Mozambique",
-  ZM: "Zambia",
-  MW: "Malawi",
-  TZ: "Tanzania",
-  AO: "Angola",
+  NA: "admin.calendar.country.NA",
+  ZA: "admin.calendar.country.ZA",
+  ZW: "admin.calendar.country.ZW",
+  BW: "admin.calendar.country.BW",
+  MZ: "admin.calendar.country.MZ",
+  ZM: "admin.calendar.country.ZM",
+  MW: "admin.calendar.country.MW",
+  TZ: "admin.calendar.country.TZ",
+  AO: "admin.calendar.country.AO",
 };
 
 const BULK_EXAMPLE = `{
@@ -34,6 +36,7 @@ const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
 
 export default function AdminCalendarPage() {
+  const { t } = useI18n();
   const { confirm } = useConfirm();
   const toast = useToast();
   const [tab, setTab] = useState<"manage" | "single" | "bulk">("manage");
@@ -88,9 +91,9 @@ export default function AdminCalendarPage() {
   const handleDeleteRequest = async (entry: CalendarEntry) => {
     if (
       !(await confirm({
-        title: "Delete calendar entry",
-        message: `"${entry.title}" (${formatDateShort(entry.date)}) will be removed.`,
-        confirmText: "Delete",
+        title: t("admin.calendar.deleteTitle"),
+        message: t("admin.calendar.deleteMessage", { title: entry.title, date: formatDateShort(entry.date) }),
+        confirmText: t("common.delete"),
         variant: "danger",
       }))
     ) return;
@@ -98,12 +101,12 @@ export default function AdminCalendarPage() {
     resetMessages();
     try {
       await calendarApi.delete(entry.id);
-      setSuccess("Entry deleted.");
-      toast.success("Calendar entry deleted");
+      setSuccess(t("admin.calendar.deleted"));
+      toast.success(t("admin.calendar.deletedToast"));
       loadList();
     } catch (err) {
-      setError("Failed to delete entry.");
-      toast.error("Could not delete calendar entry", apiErrorMessage(err, "Failed to delete entry."));
+      setError(t("admin.calendar.deleteFailed"));
+      toast.error(t("admin.calendar.deleteFailedTitle"), apiErrorMessage(err, t("admin.calendar.deleteFailed")));
     } finally {
       setSubmitting(false);
     }
@@ -117,11 +120,11 @@ export default function AdminCalendarPage() {
   const handleSingleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !title.trim()) {
-      setError("Date and title are required.");
+      setError(t("admin.calendar.dateTitleRequired"));
       return;
     }
     if (type === "sadc_holiday" && !countryCode) {
-      setError("Country is required for public holidays.");
+      setError(t("admin.calendar.countryRequired"));
       return;
     }
     setSubmitting(true);
@@ -134,13 +137,13 @@ export default function AdminCalendarPage() {
         title: title.trim(),
         is_alert: type === "un_day",
       });
-      setSuccess("Entry created.");
-      toast.success("Calendar entry created");
+      setSuccess(t("admin.calendar.created"));
+      toast.success(t("admin.calendar.createdToast"));
       setTitle("");
       setDate("");
     } catch (err) {
-      setError("Failed to create entry.");
-      toast.error("Calendar entry not created", apiErrorMessage(err, "Failed to create entry."));
+      setError(t("admin.calendar.createFailed"));
+      toast.error(t("admin.calendar.notCreated"), apiErrorMessage(err, t("admin.calendar.createFailed")));
     } finally {
       setSubmitting(false);
     }
@@ -150,7 +153,7 @@ export default function AdminCalendarPage() {
     e.preventDefault();
     const trimmed = bulkJson.trim();
     if (!trimmed) {
-      setError("Paste JSON with entries array.");
+      setError(t("admin.calendar.pasteJson"));
       return;
     }
     setSubmitting(true);
@@ -162,13 +165,13 @@ export default function AdminCalendarPage() {
         throw new Error("entries array required");
       }
       await calendarApi.upload(entries);
-      setSuccess(`${entries.length} entries created.`);
-      toast.success("Calendar entries uploaded", `${entries.length} entries created.`);
+      setSuccess(t("admin.calendar.entriesCreated", { count: entries.length }));
+      toast.success(t("admin.calendar.uploaded"), t("admin.calendar.entriesCreated", { count: entries.length }));
       setBulkJson("");
       if (tab === "manage") loadList();
     } catch (err) {
-      setError("Invalid JSON or upload failed. Check format.");
-      toast.error("Calendar entries not uploaded", apiErrorMessage(err, "Invalid JSON or upload failed. Check format."));
+      setError(t("admin.calendar.invalidJson"));
+      toast.error(t("admin.calendar.notUploaded"), apiErrorMessage(err, t("admin.calendar.invalidJson")));
     } finally {
       setSubmitting(false);
     }
@@ -188,13 +191,13 @@ export default function AdminCalendarPage() {
         description: form.description ?? null,
         is_alert: form.is_alert,
       });
-      setSuccess("Entry updated.");
-      toast.success("Calendar entry updated");
+      setSuccess(t("admin.calendar.updated"));
+      toast.success(t("admin.calendar.updatedToast"));
       setEditEntry(null);
       loadList();
     } catch (err) {
-      setError("Failed to update entry.");
-      toast.error("Calendar entry not updated", apiErrorMessage(err, "Failed to update entry."));
+      setError(t("admin.calendar.updateFailed"));
+      toast.error(t("admin.calendar.notUpdated"), apiErrorMessage(err, t("admin.calendar.updateFailed")));
     } finally {
       setSubmitting(false);
     }
@@ -203,13 +206,13 @@ export default function AdminCalendarPage() {
   return (
     <div className="space-y-6">
       <ModulePageHeader
-        title="Calendar Upload"
-        subtitle="Upload SADC public holidays, UN days, and calendar entries. Leave in lieu uses Namibia holidays only."
+        title={t("admin.home.calendarUpload")}
+        subtitle={t("admin.calendar.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Calendar Upload" },
+              { label: t("admin.homeLabel"), href: "/admin" },
+              { label: t("admin.home.calendarUpload") },
             ]}
           />
         }
@@ -225,7 +228,7 @@ export default function AdminCalendarPage() {
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">list</span>
-          Manage
+          {t("admin.calendar.tabManage")}
         </button>
         {isAdmin && (
           <>
@@ -237,7 +240,7 @@ export default function AdminCalendarPage() {
               }`}
             >
               <span className="material-symbols-outlined text-[18px]">add_circle_outline</span>
-              Single Entry
+              {t("admin.calendar.tabSingle")}
             </button>
             <button
               type="button"
@@ -247,7 +250,7 @@ export default function AdminCalendarPage() {
               }`}
             >
               <span className="material-symbols-outlined text-[18px]">upload_file</span>
-              Bulk Upload
+              {t("admin.calendar.tabBulk")}
             </button>
           </>
         )}
@@ -270,15 +273,15 @@ export default function AdminCalendarPage() {
       {tab === "manage" && (
         <div className="card overflow-hidden">
           <div className="p-4 border-b border-neutral-100 flex flex-wrap items-center gap-3">
-            <span className="text-sm font-semibold text-neutral-700">Filters</span>
+            <span className="text-sm font-semibold text-neutral-700">{t("admin.calendar.filters")}</span>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="form-input py-1.5 text-sm w-40"
             >
-              <option value="">All types</option>
-              <option value="sadc_holiday">Public holidays</option>
-              <option value="un_day">UN days</option>
+              <option value="">{t("admin.calendar.allTypes")}</option>
+              <option value="sadc_holiday">{t("admin.calendar.publicHolidays")}</option>
+              <option value="un_day">{t("admin.calendar.unDays")}</option>
             </select>
             <select
               value={filterYear}
@@ -294,31 +297,31 @@ export default function AdminCalendarPage() {
               onChange={(e) => setFilterCountry(e.target.value)}
               className="form-input py-1.5 text-sm w-44"
             >
-              <option value="">All countries</option>
+              <option value="">{t("admin.calendar.allCountries")}</option>
               {Object.entries(SADC_COUNTRY_CODES).map(([code, label]) => (
-                <option key={code} value={code}>{label}</option>
+                <option key={code} value={code}>{t(label)}</option>
               ))}
             </select>
             <button type="button" onClick={loadList} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
               <span className="material-symbols-outlined text-[18px]">refresh</span>
-              Refresh
+              {t("admin.common.refresh")}
             </button>
           </div>
           {loadingList ? (
-            <div className="p-12 text-center text-neutral-500">Loading…</div>
+            <div className="p-12 text-center text-neutral-500">{t("common.loading")}</div>
           ) : entries.length === 0 ? (
-            <EmptyState icon="calendar_month" title="No entries match the filters." />
+            <EmptyState icon="calendar_month" title={t("admin.calendar.noMatch")} />
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Title</th>
-                    <th>Type</th>
-                    <th>Country</th>
-                    <th>Alert</th>
-                    <th className="w-32">Actions</th>
+                    <th>{t("admin.common.date")}</th>
+                    <th>{t("admin.common.title")}</th>
+                    <th>{t("admin.common.type")}</th>
+                    <th>{t("admin.calendar.country")}</th>
+                    <th>{t("admin.calendar.alert")}</th>
+                    <th className="w-32">{t("admin.common.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -330,18 +333,18 @@ export default function AdminCalendarPage() {
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
                           e.type === "un_day" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800"
                         }`}>
-                          {e.type === "un_day" ? "UN Day" : "Public Holiday"}
+                          {e.type === "un_day" ? t("admin.calendar.unDay") : t("admin.calendar.publicHoliday")}
                         </span>
                       </td>
                       <td className="text-neutral-600">{e.country_code ?? "—"}</td>
-                      <td>{e.is_alert ? "Yes" : "—"}</td>
+                      <td>{e.is_alert ? t("admin.common.yes") : "—"}</td>
                       <td>
                         <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => setViewEntry(e)} className="btn-secondary text-xs">View</button>
+                          <button type="button" onClick={() => setViewEntry(e)} className="btn-secondary text-xs">{t("admin.common.view")}</button>
                           {isAdmin && (
                             <>
-                              <button type="button" onClick={() => setEditEntry(e)} className="btn-secondary text-xs">Edit</button>
-                              <button type="button" onClick={() => handleDeleteRequest(e)} className="btn-secondary text-xs text-red-600">Delete</button>
+                              <button type="button" onClick={() => setEditEntry(e)} className="btn-secondary text-xs">{t("common.edit")}</button>
+                              <button type="button" onClick={() => handleDeleteRequest(e)} className="btn-secondary text-xs text-red-600">{t("common.delete")}</button>
                             </>
                           )}
                         </div>
@@ -358,7 +361,7 @@ export default function AdminCalendarPage() {
       {tab === "single" ? (
         <form onSubmit={handleSingleSubmit} className="card p-6 space-y-6 max-w-xl">
           <div>
-            <p className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Type</p>
+            <p className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">{t("admin.common.type")}</p>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -367,7 +370,7 @@ export default function AdminCalendarPage() {
                   type === "sadc_holiday" ? "bg-primary/10 border-primary text-primary" : "border-neutral-200 hover:bg-neutral-50"
                 }`}
               >
-                Public Holiday
+                {t("admin.calendar.publicHoliday")}
               </button>
               <button
                 type="button"
@@ -376,7 +379,7 @@ export default function AdminCalendarPage() {
                   type === "un_day" ? "bg-primary/10 border-primary text-primary" : "border-neutral-200 hover:bg-neutral-50"
                 }`}
               >
-                UN Day
+                {t("admin.calendar.unDay")}
               </button>
             </div>
           </div>
@@ -384,7 +387,7 @@ export default function AdminCalendarPage() {
           {type === "sadc_holiday" && (
             <div>
               <label htmlFor="country" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">
-                Country (LIL uses Namibia only)
+                {t("admin.calendar.countryLil")}
               </label>
               <select
                 id="country"
@@ -393,14 +396,14 @@ export default function AdminCalendarPage() {
                 className="form-input"
               >
                 {Object.entries(SADC_COUNTRY_CODES).map(([code, label]) => (
-                  <option key={code} value={code}>{label}</option>
+                  <option key={code} value={code}>{t(label)}</option>
                 ))}
               </select>
             </div>
           )}
 
           <div>
-            <label htmlFor="date" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Date</label>
+            <label htmlFor="date" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">{t("admin.common.date")}</label>
             <input
               id="date"
               type="date"
@@ -412,13 +415,13 @@ export default function AdminCalendarPage() {
           </div>
 
           <div>
-            <label htmlFor="title" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Title</label>
+            <label htmlFor="title" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">{t("admin.common.title")}</label>
             <input
               id="title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Independence Day"
+              placeholder={t("admin.calendar.titlePlaceholder")}
               className="form-input"
               required
             />
@@ -428,12 +431,12 @@ export default function AdminCalendarPage() {
             {submitting ? (
               <>
                 <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                Creating…
+                {t("admin.calendar.creating")}
               </>
             ) : (
               <>
                 <span className="material-symbols-outlined text-[18px]">add</span>
-                Add Entry
+                {t("admin.calendar.addEntry")}
               </>
             )}
           </button>
@@ -441,8 +444,9 @@ export default function AdminCalendarPage() {
       ) : (
         <form onSubmit={handleBulkSubmit} className="card p-6 space-y-4 max-w-2xl">
           <p className="text-sm text-neutral-600">
-            Paste JSON with an entries array. Public holidays: use <code className="text-xs bg-neutral-100 px-1 rounded">country_code</code> (NA, ZA, ZW, etc.).
-            UN days: use <code className="text-xs bg-neutral-100 px-1 rounded">type: &quot;un_day&quot;</code>, no country_code.
+            {t("admin.calendar.bulkIntro")}{" "}
+            {t("admin.calendar.bulkHolidays")} <code className="text-xs bg-neutral-100 px-1 rounded">{"country_code"}</code> {t("admin.calendar.bulkHolidaysCodes")}{" "}
+            {t("admin.calendar.bulkUn")} <code className="text-xs bg-neutral-100 px-1 rounded">{`type: "un_day"`}</code>{t("admin.calendar.bulkUnNoCountry")}
           </p>
           <textarea
             value={bulkJson}
@@ -455,12 +459,12 @@ export default function AdminCalendarPage() {
             {submitting ? (
               <>
                 <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                Uploading…
+                {t("admin.calendar.uploading")}
               </>
             ) : (
               <>
                 <span className="material-symbols-outlined text-[18px]">upload</span>
-                Upload
+                {t("common.upload")}
               </>
             )}
           </button>
@@ -471,18 +475,18 @@ export default function AdminCalendarPage() {
       {viewEntry && (
         <Modal
           open
-          title="View entry"
+          title={t("admin.calendar.viewTitle")}
           onClose={() => setViewEntry(null)}
           size="md"
-          footer={<button type="button" onClick={() => setViewEntry(null)} className="btn-secondary px-4 py-2 text-sm">Close</button>}
+          footer={<button type="button" onClick={() => setViewEntry(null)} className="btn-secondary px-4 py-2 text-sm">{t("common.close")}</button>}
         >
           <dl className="space-y-2 text-sm">
-            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Date</dt><dd className="text-neutral-900 dark:text-neutral-100">{formatDateShort(viewEntry.date)}</dd></div>
-            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Title</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.title}</dd></div>
-            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Type</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.type === "un_day" ? "UN Day" : "Public Holiday"}</dd></div>
-            {viewEntry.country_code && <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Country</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.country_code}</dd></div>}
-            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Show as alert</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.is_alert ? "Yes" : "No"}</dd></div>
-            {viewEntry.description && <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Description</dt><dd className="text-neutral-700 dark:text-neutral-300">{viewEntry.description}</dd></div>}
+            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">{t("admin.common.date")}</dt><dd className="text-neutral-900 dark:text-neutral-100">{formatDateShort(viewEntry.date)}</dd></div>
+            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">{t("admin.common.title")}</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.title}</dd></div>
+            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">{t("admin.common.type")}</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.type === "un_day" ? t("admin.calendar.unDay") : t("admin.calendar.publicHoliday")}</dd></div>
+            {viewEntry.country_code && <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">{t("admin.calendar.country")}</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.country_code}</dd></div>}
+            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">{t("admin.calendar.showAsAlert")}</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.is_alert ? t("admin.common.yes") : t("admin.common.no")}</dd></div>
+            {viewEntry.description && <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">{t("admin.common.description")}</dt><dd className="text-neutral-700 dark:text-neutral-300">{viewEntry.description}</dd></div>}
           </dl>
         </Modal>
       )}
@@ -521,47 +525,48 @@ function EditCalendarModal({
   const [title, setTitle] = useState(entry.title);
   const [description, setDescription] = useState(entry.description ?? "");
   const [isAlert, setIsAlert] = useState(entry.is_alert);
+  const { t } = useI18n();
 
   return (
-    <Modal open title="Edit entry" onClose={onClose} size="md">
+    <Modal open title={t("admin.calendar.editTitle")} onClose={onClose} size="md">
       <form onSubmit={(e) => onSubmit(e, { type, country_code: type === "un_day" ? null : countryCode, date, title, description: description || null, is_alert: isAlert })} className="space-y-4">
           <div>
-            <p className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Type</p>
+            <p className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">{t("admin.common.type")}</p>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setType("sadc_holiday")} className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${type === "sadc_holiday" ? "bg-primary/10 border-primary text-primary" : "border-neutral-200"}`}>Public Holiday</button>
-              <button type="button" onClick={() => setType("un_day")} className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${type === "un_day" ? "bg-primary/10 border-primary text-primary" : "border-neutral-200"}`}>UN Day</button>
+              <button type="button" onClick={() => setType("sadc_holiday")} className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${type === "sadc_holiday" ? "bg-primary/10 border-primary text-primary" : "border-neutral-200"}`}>{t("admin.calendar.publicHoliday")}</button>
+              <button type="button" onClick={() => setType("un_day")} className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${type === "un_day" ? "bg-primary/10 border-primary text-primary" : "border-neutral-200"}`}>{t("admin.calendar.unDay")}</button>
             </div>
           </div>
           {type === "sadc_holiday" && (
             <div>
-              <label htmlFor="edit-cal-country" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Country</label>
+              <label htmlFor="edit-cal-country" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">{t("admin.calendar.country")}</label>
               <select id="edit-cal-country" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className="form-input">
-                {Object.entries(countryCodes).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+                {Object.entries(countryCodes).map(([code, label]) => <option key={code} value={code}>{t(label)}</option>)}
               </select>
             </div>
           )}
           <div>
-            <label htmlFor="edit-cal-date" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Date</label>
+            <label htmlFor="edit-cal-date" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">{t("admin.common.date")}</label>
             <input id="edit-cal-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="form-input" required />
           </div>
           <div>
-            <label htmlFor="edit-cal-title" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Title</label>
+            <label htmlFor="edit-cal-title" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">{t("admin.common.title")}</label>
             <input id="edit-cal-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="form-input" required />
           </div>
           <div>
-            <label htmlFor="edit-cal-desc" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Description (optional)</label>
+            <label htmlFor="edit-cal-desc" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">{t("admin.calendar.descOptional")}</label>
             <textarea id="edit-cal-desc" value={description} onChange={(e) => setDescription(e.target.value)} className="form-input resize-none" rows={2} />
           </div>
           {type === "un_day" && (
             <div className="flex items-center gap-2">
               <input type="checkbox" id="edit-is-alert" checked={isAlert} onChange={(e) => setIsAlert(e.target.checked)} className="rounded border-neutral-300" />
-              <label htmlFor="edit-is-alert" className="text-sm text-neutral-700">Show as alert</label>
+              <label htmlFor="edit-is-alert" className="text-sm text-neutral-700">{t("admin.calendar.showAsAlert")}</label>
             </div>
           )}
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+            <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
             <button type="submit" disabled={submitting} className="btn-primary px-4 py-2 text-sm">
-              {submitting ? "Saving…" : "Save"}
+              {submitting ? t("admin.common.saving") : t("common.save")}
             </button>
           </div>
       </form>

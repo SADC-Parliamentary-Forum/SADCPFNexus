@@ -2,6 +2,7 @@
 
 import { vendorsApi, type Vendor } from "@/lib/api";
 import { NexusPicker } from "@/components/ui/NexusPicker";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 /**
  * App-wide vendor/supplier picker preset over NexusPicker. Sourced from
@@ -28,6 +29,7 @@ export function VendorPicker({
   hint?: string;
   placeholder?: string;
 }) {
+  const { t } = useI18n();
   return (
     <NexusPicker<Vendor>
       id={id}
@@ -37,7 +39,7 @@ export function VendorPicker({
       disabled={disabled}
       required={required}
       hint={hint}
-      placeholder={placeholder ?? "Search vendors by name…"}
+      placeholder={placeholder ?? t("ui.vendorPicker.placeholder")}
       fetchOptions={async (search) => {
         const r = await vendorsApi.list({ search: search || undefined, status: "approved", per_page: 20 });
         return r.data.data ?? [];

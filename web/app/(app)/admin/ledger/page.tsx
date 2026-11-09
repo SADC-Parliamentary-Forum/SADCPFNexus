@@ -6,6 +6,7 @@ import Link from "next/link";
 import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -27,27 +28,27 @@ const HIGH_RISK_ACTIONS = new Set(["deleted", "rejected"]);
 
 // Focused admin-operations modules
 const ADMIN_MODULES = [
-  { value: "",             label: "All modules" },
-  { value: "admin",        label: "Admin" },
-  { value: "hr",           label: "HR" },
-  { value: "finance",      label: "Finance" },
-  { value: "travel",       label: "Travel" },
-  { value: "leave",        label: "Leave" },
-  { value: "imprest",      label: "Imprest" },
-  { value: "procurement",  label: "Procurement" },
-  { value: "governance",   label: "Governance" },
-  { value: "assets",       label: "Assets" },
+  { value: "",             label: "admin.access.matrix.allModules" },
+  { value: "admin",        label: "admin.homeLabel" },
+  { value: "hr",           label: "nav.hr" },
+  { value: "finance",      label: "nav.finance" },
+  { value: "travel",       label: "nav.travel" },
+  { value: "leave",        label: "nav.leave" },
+  { value: "imprest",      label: "nav.imprest" },
+  { value: "procurement",  label: "nav.procurement" },
+  { value: "governance",   label: "admin.access.governance.crumb" },
+  { value: "assets",       label: "admin.ledger.mod.assets" },
 ];
 
 const ACTIONS = [
-  { value: "",          label: "All actions" },
-  { value: "created",   label: "Created" },
-  { value: "updated",   label: "Updated" },
-  { value: "approved",  label: "Approved" },
-  { value: "rejected",  label: "Rejected" },
-  { value: "deleted",   label: "Deleted" },
-  { value: "submitted", label: "Submitted" },
-  { value: "login",     label: "Login" },
+  { value: "",          label: "admin.ledger.act.all" },
+  { value: "created",   label: "admin.ledger.act.created" },
+  { value: "updated",   label: "admin.ledger.act.updated" },
+  { value: "approved",  label: "admin.ledger.act.approved" },
+  { value: "rejected",  label: "admin.ledger.act.rejected" },
+  { value: "deleted",   label: "admin.ledger.act.deleted" },
+  { value: "submitted", label: "admin.ledger.act.submitted" },
+  { value: "login",     label: "admin.ledger.act.login" },
 ];
 
 function formatTs(ts: string) {
@@ -70,12 +71,24 @@ function entryHash(entry: AuditLogEntry): string {
 }
 
 // CSV export
-function exportCsv(logs: AuditLogEntry[]) {
-  const headers = ["#", "Timestamp", "User", "Email", "Module", "Action", "Record Ref", "Description", "IP Address", "Entry Hash", "Chain Valid"];
+function exportCsv(logs: AuditLogEntry[], t: (key: string) => string) {
+  const headers = [
+    "#",
+    t("admin.governance.colTimestamp"),
+    t("admin.common.user"),
+    t("admin.common.email"),
+    t("admin.common.module"),
+    t("admin.governance.colAction"),
+    t("admin.ledger.csv.recordRef"),
+    t("admin.common.description"),
+    t("admin.ledger.csv.ip"),
+    t("admin.ledger.entryHash"),
+    t("admin.ledger.csv.chainValid"),
+  ];
   const rows = logs.map((l, i) => [
     i + 1,
     `"${formatTs(l.created_at)}"`,
-    `"${l.user_name ?? "System"}"`,
+    `"${l.user_name ?? t("admin.payslipConfig.system")}"`,
     `"${l.user_email ?? ""}"`,
     l.module ?? "",
     l.action,
@@ -100,6 +113,7 @@ const PAGE_SIZE = 20;
 // â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function AdminLedgerPage() {
+  const { t } = useI18n();
   const [logs, setLogs]         = useState<AuditLogEntry[]>([]);
   const [loading, setLoading]   = useState(true);
   const [verifying, setVerifying] = useState(false);
@@ -131,9 +145,9 @@ export default function AdminLedgerPage() {
         setLastPage(res.data.last_page ?? 1);
         setTotal(res.data.total ?? 0);
       })
-      .catch(() => setError("Failed to load audit logs."))
+      .catch(() => setError(t("admin.ledger.loadFailed")))
       .finally(() => setLoading(false));
-  }, [page, moduleFilter, actionFilter, userFilter, dateFrom, dateTo]);
+  }, [page, moduleFilter, actionFilter, userFilter, dateFrom, dateTo, t]);
 
   useEffect(() => { setPage(1); }, [moduleFilter, actionFilter, userFilter, dateFrom, dateTo]);
   useEffect(() => { load(); }, [load]);
@@ -161,44 +175,44 @@ export default function AdminLedgerPage() {
 
   const timeAgo = (d: Date) => {
     const secs = Math.floor((Date.now() - d.getTime()) / 1000);
-    if (secs < 60) return `${secs}s ago`;
+    if (secs < 60) return t("admin.dataScope.secondsAgo", { n: secs });
     const mins = Math.floor(secs / 60);
-    return `${mins} min${mins === 1 ? "" : "s"} ago`;
+    return t(mins === 1 ? "admin.ledger.minAgo" : "admin.ledger.minsAgo", { n: mins });
   };
 
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 text-sm text-neutral-500">
-        <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
+        <Link href="/admin" className="hover:text-primary transition-colors">{t("admin.homeLabel")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">Ledger Verification</span>
+        <span className="text-neutral-900 font-medium">{t("admin.home.ledgerVerification")}</span>
       </div>
 
       {/* Page title */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <ModulePageHeader
-        title="Ledger Verification"
-        subtitle="Cryptographic audit trail verification — tamper-evident record of all admin operations."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Ledger Verification" }]} />}
+        title={t("admin.home.ledgerVerification")}
+        subtitle={t("admin.ledger.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.home.ledgerVerification") }]} />}
       />
         <div className="flex items-center gap-2">
           <Link href="/admin/ledger/generate" className="btn-secondary flex items-center gap-2 shrink-0">
             <span className="material-symbols-outlined text-[18px]">summarize</span>
-            Generate Report
+            {t("admin.ledger.generateReport")}
           </Link>
           <Link href="/admin/ledger/verify" className="btn-primary flex items-center gap-2 shrink-0">
             <span className="material-symbols-outlined text-[18px]">verified_user</span>
-            Verify Integrity
+            {t("admin.ledger.verifyIntegrity")}
           </Link>
           <button
             type="button"
-            onClick={() => exportCsv(logs)}
+            onClick={() => exportCsv(logs, t)}
             disabled={loading || logs.length === 0}
             className="btn-secondary flex items-center gap-2 shrink-0 disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("admin.ledger.exportCsv")}
           </button>
         </div>
       </div>
@@ -211,14 +225,14 @@ export default function AdminLedgerPage() {
           </div>
           <div>
             <p className="text-sm font-bold text-neutral-900 flex items-center gap-2">
-              Ledger Health: Verified
+              {t("admin.ledger.health")}
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-100 rounded-full px-2 py-0.5">
-                Chain intact
+                {t("admin.ledger.chainIntact")}
               </span>
             </p>
             <p className="text-xs text-neutral-600 mt-0.5 max-w-xl">
-              Cryptographic integrity of the ledger is intact. All {total.toLocaleString()} immutable records match their original SHA-256 chain signatures.
-              Last verified {timeAgo(lastVerified)}.
+              {t("admin.ledger.healthBody", { count: total.toLocaleString() })}{" "}
+              {t("admin.ledger.lastVerified", { ago: timeAgo(lastVerified) })}
             </p>
           </div>
         </div>
@@ -229,7 +243,7 @@ export default function AdminLedgerPage() {
           className="btn-primary flex items-center gap-2 disabled:opacity-60 whitespace-nowrap shrink-0"
         >
           <span className={cn("material-symbols-outlined text-[18px]", verifying ? "animate-spin" : "")}>sync</span>
-          {verifying ? "Verifying…" : "Verify Ledger Integrity"}
+          {verifying ? t("admin.ledger.verifyingEllipsis") : t("admin.ledger.verifyLedger")}
         </button>
       </div>
 
@@ -237,7 +251,7 @@ export default function AdminLedgerPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-neutral-500 font-medium">Total Entries</p>
+            <p className="text-xs text-neutral-500 font-medium">{t("admin.ledger.totalEntries")}</p>
             <span className="material-symbols-outlined text-neutral-300 text-[18px]">library_books</span>
           </div>
           {loading ? (
@@ -248,7 +262,7 @@ export default function AdminLedgerPage() {
         </div>
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-neutral-500 font-medium">High-Risk Actions</p>
+            <p className="text-xs text-neutral-500 font-medium">{t("admin.ledger.highRisk")}</p>
             <span className="material-symbols-outlined text-neutral-300 text-[18px]">warning</span>
           </div>
           {loading ? (
@@ -258,66 +272,66 @@ export default function AdminLedgerPage() {
               {highRiskCount}
             </p>
           )}
-          <p className="mt-1 text-xs text-neutral-400">Deletions &amp; rejections</p>
+          <p className="mt-1 text-xs text-neutral-400">{t("admin.ledger.highRiskHint")}</p>
         </div>
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-neutral-500 font-medium">Latest Manifest Hash</p>
+            <p className="text-xs text-neutral-500 font-medium">{t("admin.ledger.latestHash")}</p>
             <span className="material-symbols-outlined text-neutral-300 text-[18px]">fingerprint</span>
           </div>
           <p className="font-mono text-sm font-bold text-neutral-900 truncate" title={STATIC_HASH}>{HASH_DISPLAY}</p>
-          <p className="mt-1 text-xs text-neutral-400">SHA-256 Algorithm</p>
+          <p className="mt-1 text-xs text-neutral-400">{t("admin.ledger.algorithm")}</p>
         </div>
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-neutral-500 font-medium">Object Lock</p>
+            <p className="text-xs text-neutral-500 font-medium">{t("admin.ledger.objectLock")}</p>
             <span className="material-symbols-outlined text-neutral-300 text-[18px]">lock</span>
           </div>
           <div className="flex items-center gap-2">
-            <p className="text-sm font-bold text-neutral-900">Locked</p>
-            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">COMPLIANCE</span>
+            <p className="text-sm font-bold text-neutral-900">{t("admin.ledger.locked")}</p>
+            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">{t("admin.ledger.compliance")}</span>
           </div>
-          <p className="mt-1 text-xs text-neutral-400">Retention: 7 Years</p>
+          <p className="mt-1 text-xs text-neutral-400">{t("admin.ledger.retention7")}</p>
         </div>
       </div>
 
       {/* Filters */}
       <div className="card p-4 flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-36">
-          <label htmlFor="admin-ledger-module" className="mb-1 block text-xs font-medium text-neutral-600">Module</label>
+          <label htmlFor="admin-ledger-module" className="mb-1 block text-xs font-medium text-neutral-600">{t("admin.common.module")}</label>
           <select id="admin-ledger-module"
             className="form-input py-1.5 text-sm"
             value={moduleFilter}
             onChange={(e) => setModuleFilter(e.target.value)}
           >
             {ADMIN_MODULES.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
+              <option key={m.value} value={m.value}>{t(m.label)}</option>
             ))}
           </select>
         </div>
 
         <div className="flex-1 min-w-36">
-          <label htmlFor="admin-ledger-action" className="mb-1 block text-xs font-medium text-neutral-600">Action</label>
+          <label htmlFor="admin-ledger-action" className="mb-1 block text-xs font-medium text-neutral-600">{t("admin.governance.colAction")}</label>
           <select id="admin-ledger-action"
             className="form-input py-1.5 text-sm"
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
           >
             {ACTIONS.map((a) => (
-              <option key={a.value} value={a.value}>{a.label}</option>
+              <option key={a.value} value={a.value}>{t(a.label)}</option>
             ))}
           </select>
         </div>
 
         <div className="flex-1 min-w-44">
-          <label htmlFor="admin-ledger-user" className="mb-1 block text-xs font-medium text-neutral-600">User (name / email)</label>
+          <label htmlFor="admin-ledger-user" className="mb-1 block text-xs font-medium text-neutral-600">{t("admin.ledger.userFilter")}</label>
           <div className="relative">
             <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 text-[16px]">search</span>
             <input
               id="admin-ledger-user"
               type="text"
               className="form-input py-1.5 pl-8 text-sm"
-              placeholder="Search user…"
+              placeholder={t("admin.ledger.searchUser")}
               value={userFilter}
               onChange={(e) => setUserFilter(e.target.value)}
             />
@@ -325,11 +339,11 @@ export default function AdminLedgerPage() {
         </div>
 
         <div className="min-w-36">
-          <label htmlFor="admin-ledger-from" className="mb-1 block text-xs font-medium text-neutral-600">From</label>
+          <label htmlFor="admin-ledger-from" className="mb-1 block text-xs font-medium text-neutral-600">{t("admin.common.from")}</label>
           <input id="admin-ledger-from" type="date" className="form-input py-1.5 text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
         </div>
         <div className="min-w-36">
-          <label htmlFor="admin-ledger-to" className="mb-1 block text-xs font-medium text-neutral-600">To</label>
+          <label htmlFor="admin-ledger-to" className="mb-1 block text-xs font-medium text-neutral-600">{t("admin.common.to")}</label>
           <input id="admin-ledger-to" type="date" className="form-input py-1.5 text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
         </div>
 
@@ -339,7 +353,7 @@ export default function AdminLedgerPage() {
             onClick={() => { setModuleFilter(""); setActionFilter(""); setUserFilter(""); setDateFrom(""); setDateTo(""); }}
             className="btn-secondary text-sm py-1.5"
           >
-            Clear
+            {t("admin.ledger.clear")}
           </button>
         )}
       </div>
@@ -356,22 +370,22 @@ export default function AdminLedgerPage() {
         <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-neutral-50">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">receipt_long</span>
-            <span className="text-sm font-semibold text-neutral-700">Audit Entries</span>
+            <span className="text-sm font-semibold text-neutral-700">{t("admin.ledger.auditEntries")}</span>
             {!loading && (
               <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full font-medium">
-                {total.toLocaleString()} total
+                {t("common.totalCount", { count: total.toLocaleString() })}
               </span>
             )}
             {highRiskCount > 0 && !loading && (
               <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                 <span className="material-symbols-outlined text-[12px]">warning</span>
-                {highRiskCount} high-risk
+                {t("admin.ledger.highRiskN", { count: highRiskCount })}
               </span>
             )}
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
             <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-            Live · {timeAgo(lastVerified)}
+            {t("admin.ledger.live", { ago: timeAgo(lastVerified) })}
           </div>
         </div>
 
@@ -397,14 +411,14 @@ export default function AdminLedgerPage() {
               <thead>
                 <tr>
                   <th className="w-10 text-right">#</th>
-                  <th>Timestamp</th>
-                  <th>User</th>
-                  <th>Module</th>
-                  <th>Action</th>
-                  <th>Record Reference</th>
-                  <th>IP Address</th>
-                  <th>Entry Hash</th>
-                  <th className="text-center">Chain</th>
+                  <th>{t("admin.governance.colTimestamp")}</th>
+                  <th>{t("admin.common.user")}</th>
+                  <th>{t("admin.common.module")}</th>
+                  <th>{t("admin.governance.colAction")}</th>
+                  <th>{t("admin.ledger.recordReference")}</th>
+                  <th>{t("admin.ledger.csv.ip")}</th>
+                  <th>{t("admin.ledger.entryHash")}</th>
+                  <th className="text-center">{t("admin.ledger.chain")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -412,7 +426,7 @@ export default function AdminLedgerPage() {
                   <TableEmpty
                     colSpan={9}
                     icon="receipt_long"
-                    title="No audit entries found"
+                    title={t("admin.ledger.noAuditEntries")}
                     action={
                       hasFilters ? (
                         <button
@@ -420,7 +434,7 @@ export default function AdminLedgerPage() {
                           onClick={() => { setModuleFilter(""); setActionFilter(""); setUserFilter(""); setDateFrom(""); setDateTo(""); }}
                           className="btn-secondary text-sm py-1 px-2"
                         >
-                          Clear all filters
+                          {t("admin.ledger.clearAll")}
                         </button>
                       ) : undefined
                     }
@@ -450,7 +464,7 @@ export default function AdminLedgerPage() {
                         {/* User */}
                         <td>
                           <div className="text-xs font-medium text-neutral-800">
-                            {l.user_name ?? l.user ?? "System"}
+                            {l.user_name ?? l.user ?? t("admin.payslipConfig.system")}
                           </div>
                           {l.user_email && (
                             <div className="text-[11px] text-neutral-400 truncate max-w-[140px]">{l.user_email}</div>
@@ -494,7 +508,7 @@ export default function AdminLedgerPage() {
                         <td className="text-center">
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-600">
                             <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                            Pass
+                            {t("admin.ledger.pass")}
                           </span>
                         </td>
                       </tr>
@@ -510,7 +524,7 @@ export default function AdminLedgerPage() {
         {lastPage > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-100">
             <span className="text-xs text-neutral-400">
-              Page {page} of {lastPage} · {total.toLocaleString()} entries
+              {t("common.pageOf", { page, total: lastPage })} · {t("admin.ledger.entriesN", { count: total.toLocaleString() })}
             </span>
             <div className="flex gap-1">
               <button
@@ -559,16 +573,16 @@ export default function AdminLedgerPage() {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[14px] text-neutral-400">today</span>
-              <strong className="text-neutral-700">{todayCount}</strong> events on this page from today
+              {t("admin.ledger.todayEvents", { count: todayCount })}
             </span>
             {highRiskCount > 0 && (
               <span className="flex items-center gap-1.5 text-red-500">
                 <span className="material-symbols-outlined text-[14px]">warning</span>
-                <strong>{highRiskCount}</strong> high-risk action{highRiskCount !== 1 ? "s" : ""} on current page
+                {t(highRiskCount !== 1 ? "admin.ledger.highRiskPageMany" : "admin.ledger.highRiskPageOne", { count: highRiskCount })}
               </span>
             )}
           </div>
-            <span className="font-mono text-neutral-300">SHA-256 hash chain · off-platform WORM pending</span>
+            <span className="font-mono text-neutral-300">{t("admin.ledger.wormPending")}</span>
         </div>
       )}
     </div>

@@ -4,15 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
+/** Report cards; `label` and `hint` are catalog keys translated where they render. */
 const REPORTS = [
-  { id: "register", label: "Full register", hint: "All salary advances for the tenant", pack: "register", status: "" },
-  { id: "outstanding", label: "Outstanding advances", hint: "Positive BCRE balance", pack: "outstanding", status: "" },
-  { id: "by-status", label: "By status — submitted", hint: "Pending finance certification", pack: "", status: "submitted" },
-  { id: "recovery", label: "Recovery pack", hint: "Paid through closed recovery lifecycle", pack: "recovery", status: "" },
+  { id: "register", label: "salaryAdvances.reports.register.label", hint: "salaryAdvances.reports.register.hint", pack: "register", status: "" },
+  { id: "outstanding", label: "salaryAdvances.reports.outstanding.label", hint: "salaryAdvances.reports.outstanding.hint", pack: "outstanding", status: "" },
+  { id: "by-status", label: "salaryAdvances.reports.byStatus.label", hint: "salaryAdvances.reports.byStatus.hint", pack: "", status: "submitted" },
+  { id: "recovery", label: "salaryAdvances.reports.recovery.label", hint: "salaryAdvances.reports.recovery.hint", pack: "recovery", status: "" },
 ] as const;
 
 export default function SalaryAdvanceReportsPage() {
+  const { t } = useI18n();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +34,7 @@ export default function SalaryAdvanceReportsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      setError("Export failed. Ensure you have salary_advance.export / reports.export permission.");
+      setError(t("salaryAdvances.reports.failed"));
     } finally {
       setBusy(null);
     }
@@ -40,11 +43,11 @@ export default function SalaryAdvanceReportsPage() {
   return (
     <div className="space-y-6">
       <SalaryAdvancePageHeader
-        title="Salary Advance Reports"
-        subtitle="CSV exports for register, outstanding, status, and recovery packs."
+        title={t("salaryAdvances.reports.title")}
+        subtitle={t("salaryAdvances.reports.subtitle")}
         crumbs={[
           { label: "nav.salary_advances", href: "/salary-advances" },
-          { label: "Reports" },
+          { label: t("salaryAdvances.common.reports") },
         ]}
       />
 
@@ -53,15 +56,15 @@ export default function SalaryAdvanceReportsPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         {REPORTS.map((r) => (
           <div key={r.id} className="card p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-neutral-900">{r.label}</h2>
-            <p className="text-xs text-neutral-500">{r.hint}</p>
+            <h2 className="text-sm font-semibold text-neutral-900">{t(r.label)}</h2>
+            <p className="text-xs text-neutral-500">{t(r.hint)}</p>
             <button
               type="button"
               disabled={busy === r.id}
               onClick={() => download(r.id, r.pack, r.status)}
               className="btn-primary py-2 px-4 text-sm disabled:opacity-40"
             >
-              {busy === r.id ? "Exporting…" : "Download CSV"}
+              {busy === r.id ? t("salaryAdvances.reports.exporting") : t("salaryAdvances.reports.download")}
             </button>
           </div>
         ))}
@@ -69,10 +72,17 @@ export default function SalaryAdvanceReportsPage() {
 
       <div className="card p-5">
         <p className="text-sm text-neutral-600">
-          For interactive browsing, use the{" "}
-          <Link href="/salary-advances/register" className="btn-secondary text-xs">Salary Advance Register</Link>
-          {" "}or the central{" "}
-          <Link href="/reports" className="btn-secondary text-xs">Reports</Link> module.
+          {t("salaryAdvances.reports.browse")
+            .split(/(\{register\}|\{reports\})/)
+            .map((part, i) =>
+              part === "{register}" ? (
+                <Link key={i} href="/salary-advances/register" className="btn-secondary text-xs">{t("salaryAdvances.register.title")}</Link>
+              ) : part === "{reports}" ? (
+                <Link key={i} href="/reports" className="btn-secondary text-xs">{t("salaryAdvances.common.reports")}</Link>
+              ) : (
+                <span key={i}>{part}</span>
+              ),
+            )}
         </p>
       </div>
     </div>

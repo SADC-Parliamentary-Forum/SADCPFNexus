@@ -29,6 +29,10 @@ import {
   parsePeriodValue,
 } from "@/lib/payslipPeriod";
 import { DEFAULT_PAGE_SIZE, clientPageCount, getLastPage, getListData, slicePage } from "@/lib/listPagination";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { TranslateVars } from "@/lib/i18n/messages";
+
+type Translate = (key: string, vars?: TranslateVars) => string;
 
 type EnvelopeRow = {
   key: string;
@@ -50,6 +54,7 @@ function StaffPicker({
   candidates?: PayslipDirectoryPerson[];
   onSelect: (person: PayslipDirectoryPerson | null) => void;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState(value?.name ?? "");
   const [options, setOptions] = useState<PayslipDirectoryPerson[]>(candidates ?? []);
   const [open, setOpen] = useState(false);
@@ -67,7 +72,7 @@ function StaffPicker({
       setOptions(candidates);
       return;
     }
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       setLoading(true);
       adminApi
         .payslipDirectory(q || undefined)
@@ -75,7 +80,7 @@ function StaffPicker({
         .catch(() => setOptions(candidates ?? []))
         .finally(() => setLoading(false));
     }, 220);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [query, open, candidates]);
 
   useEffect(() => {
@@ -91,7 +96,7 @@ function StaffPicker({
       <input
         type="search"
         className="form-input w-full text-xs"
-        placeholder="Assign to staff…"
+        placeholder={t("payslips.desk.assignPlaceholder")}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -100,14 +105,14 @@ function StaffPicker({
         }}
         onFocus={() => setOpen(true)}
         autoComplete="off"
-        aria-label="Assign payslip to staff member"
+        aria-label={t("payslips.desk.assignAria")}
       />
       {open ? (
         <div className="absolute z-30 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
           {loading ? (
-            <p className="px-3 py-2 text-xs text-neutral-400">Searching…</p>
+            <p className="px-3 py-2 text-xs text-neutral-400">{t("payslips.desk.searching")}</p>
           ) : options.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-neutral-400">No staff found</p>
+            <p className="px-3 py-2 text-xs text-neutral-400">{t("payslips.desk.noStaff")}</p>
           ) : (
             options.map((person) => (
               <button
@@ -123,7 +128,7 @@ function StaffPicker({
               >
                 <span className="font-medium text-neutral-800 dark:text-neutral-100">{person.name}</span>
                 <span className="text-neutral-400">
-                  {person.employee_number ?? "No staff number"} · {person.email}
+                  {person.employee_number ?? t("payslips.desk.noStaffNumber")} · {person.email}
                 </span>
               </button>
             ))
@@ -134,11 +139,11 @@ function StaffPicker({
   );
 }
 
-function statusChip(status: EnvelopeRow["status"]) {
-  if (status === "matched") return <span className="badge badge-success">Matched</span>;
-  if (status === "ambiguous") return <span className="badge badge-warning">Needs pick</span>;
-  if (status === "zip") return <span className="badge badge-muted">ZIP</span>;
-  return <span className="badge badge-warning">Unassigned</span>;
+function statusChip(status: EnvelopeRow["status"], t: Translate) {
+  if (status === "matched") return <span className="badge badge-success">{t("payslips.desk.chip.matched")}</span>;
+  if (status === "ambiguous") return <span className="badge badge-warning">{t("payslips.desk.chip.ambiguous")}</span>;
+  if (status === "zip") return <span className="badge badge-muted">{t("payslips.desk.chip.zip")}</span>;
+  return <span className="badge badge-warning">{t("payslips.desk.chip.unassigned")}</span>;
 }
 
 export function PayslipDistributionDesk({
@@ -150,6 +155,7 @@ export function PayslipDistributionDesk({
 }) {
   const { success, error } = useToast();
   const { confirm } = useConfirm();
+  const { t } = useI18n();
   const [periodValue, setPeriodValue] = useState(defaultPayPeriodValue);
   const period = parsePeriodValue(periodValue);
   const [rows, setRows] = useState<EnvelopeRow[]>([]);
@@ -216,9 +222,9 @@ export function PayslipDistributionDesk({
         setIssued(list);
         setCoverage(coverRes.data.data);
       })
-      .catch(() => setIssuedError("Failed to load payslips for this period."))
+      .catch(() => setIssuedError(t("payslips.desk.loadFailed")))
       .finally(() => setLoadingIssued(false));
-  }, [period?.month, period?.year, search]);
+  }, [period?.month, period?.year, search, t]);
 
   useEffect(() => {
     loadIssued();
@@ -268,7 +274,7 @@ export function PayslipDistributionDesk({
             };
           });
         } catch {
-          error("Could not match filenames. You can still assign each file by hand.");
+          error(t("payslips.desk.matchFailed"));
         }
         nextRows.push(...docRows);
       }
@@ -281,7 +287,7 @@ export function PayslipDistributionDesk({
           const preview = await adminApi.matchPayslipUploads(form);
           const items = preview.data.data.items;
           if (items.length === 0) {
-            error(`${zip.name} did not contain any PDF or spreadsheet payslips.`);
+            error(t("payslips.desk.zipEmpty", { name: zip.name }));
             continue;
           }
           nextRows.push(
@@ -300,7 +306,7 @@ export function PayslipDistributionDesk({
             }),
           );
         } catch {
-          error(`Could not open ${zip.name}. Drop the PDFs instead, or issue the ZIP as-is.`);
+          error(t("payslips.desk.zipFailed", { name: zip.name }));
           nextRows.push({
             key: `${zip.name}-${zip.size}-${zip.lastModified}`,
             filename: zip.name,
@@ -356,27 +362,27 @@ export function PayslipDistributionDesk({
     if (!period || rows.length === 0) return;
     if (unassignedCount > 0) {
       const ok = await confirm({
-        title: "Issue without every file assigned?",
-        message: `${unassignedCount} file${unassignedCount === 1 ? "" : "s"} have no staff member. They will be skipped.`,
-        confirmText: "Issue the rest",
+        title: t("payslips.desk.confirm.unassignedTitle"),
+        message: t(unassignedCount === 1 ? "payslips.desk.confirm.unassignedOne" : "payslips.desk.confirm.unassignedMany", { count: unassignedCount }),
+        confirmText: t("payslips.desk.confirm.unassignedOk"),
         variant: "primary",
       });
       if (!ok) return;
     }
     if (duplicatePeople.length > 0) {
       const ok = await confirm({
-        title: "Two files for the same person?",
-        message: "Each staff member can only receive one payslip for this month. Extra files for the same person will be skipped.",
-        confirmText: "Issue the first of each",
+        title: t("payslips.desk.confirm.duplicateTitle"),
+        message: t("payslips.desk.confirm.duplicateMessage"),
+        confirmText: t("payslips.desk.confirm.duplicateOk"),
         variant: "danger",
       });
       if (!ok) return;
     }
     if (replaceCount > 0) {
       const ok = await confirm({
-        title: "Replace existing payslips?",
-        message: `${replaceCount} staff already have a file for ${formatPayPeriod(period.month, period.year)}. Issuing again replaces the document and resets salary confirmation.`,
-        confirmText: "Replace and issue",
+        title: t("payslips.desk.confirm.replaceTitle"),
+        message: t("payslips.desk.confirm.replaceMessage", { count: replaceCount, period: formatPayPeriod(period.month, period.year) }),
+        confirmText: t("payslips.desk.confirm.replaceOk"),
         variant: "danger",
       });
       if (!ok) return;
@@ -401,14 +407,14 @@ export function PayslipDistributionDesk({
       unique.forEach((file) => form.append("files[]", file, file.name));
       const res = await adminApi.distributePayslips(form);
       const failed = res.data.data.failed?.length ?? 0;
-      success(
-        `${res.data.data.issued + res.data.data.replaced} payslip${res.data.data.issued + res.data.data.replaced === 1 ? "" : "s"} issued.${failed ? ` ${failed} skipped.` : ""}`,
-      );
+      const issuedCount = res.data.data.issued + res.data.data.replaced;
+      const issuedMsg = t(issuedCount === 1 ? "payslips.desk.issuedOne" : "payslips.desk.issuedMany", { count: issuedCount });
+      success(failed ? `${issuedMsg} ${t("payslips.desk.skipped", { count: failed })}` : issuedMsg);
       setRows([]);
       loadIssued();
     } catch (err) {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      error(message ?? "Could not issue payslips.");
+      error(message ?? t("payslips.desk.issueFailed"));
     } finally {
       setIssuing(false);
     }
@@ -422,12 +428,12 @@ export function PayslipDistributionDesk({
         confirmation_status: confirmStatus,
         confirmation_notes: confirmNotes || undefined,
       });
-      success(`Payslip ${confirmStatus}.`);
+      success(t(confirmStatus === "confirmed" ? "payslips.desk.payslipConfirmed" : "payslips.desk.payslipRejected"));
       setConfirmTarget(null);
       setConfirmNotes("");
       loadIssued();
     } catch {
-      error("Confirmation failed.");
+      error(t("payslips.desk.confirmFailed"));
     } finally {
       setConfirmLoading(false);
     }
@@ -442,24 +448,24 @@ export function PayslipDistributionDesk({
   return (
     <div className="w-full min-w-0 space-y-5">
       <RegisterShell
-        title="Issue payslips"
-        subtitle="Pick the pay month once, drop the files, assign anyone the filename missed, then issue."
+        title="payslips.issue"
+        subtitle="payslips.desk.subtitle"
         breadcrumbs={
-          <PageBreadcrumbs items={[{ label: homeLabel, href: homeHref }, { label: "Payslips" }]} />
+          <PageBreadcrumbs items={[{ label: homeLabel, href: homeHref }, { label: "finance.hub.payslips" }]} />
         }
         stats={
           coverage ? (
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="card p-4">
-                <p className="text-xs text-neutral-500">Issued this month</p>
+                <p className="text-xs text-neutral-500">{t("payslips.desk.stat.issued")}</p>
                 <p className="mt-1 text-xl font-semibold text-neutral-900 dark:text-neutral-100">{coverage.totals.issued}</p>
               </div>
               <div className="card p-4">
-                <p className="text-xs text-neutral-500">Still missing</p>
+                <p className="text-xs text-neutral-500">{t("payslips.desk.stat.missing")}</p>
                 <p className="mt-1 text-xl font-semibold text-neutral-900 dark:text-neutral-100">{coverage.totals.missing}</p>
               </div>
               <div className="card p-4">
-                <p className="text-xs text-neutral-500">Active staff</p>
+                <p className="text-xs text-neutral-500">{t("payslips.desk.stat.staff")}</p>
                 <p className="mt-1 text-xl font-semibold text-neutral-900 dark:text-neutral-100">{coverage.totals.staff}</p>
               </div>
             </div>
@@ -469,7 +475,7 @@ export function PayslipDistributionDesk({
           <div className="flex flex-wrap items-end gap-3">
             <div>
               <label htmlFor="payslip-period" className="mb-1 block text-xs font-medium text-neutral-500">
-                Pay period
+                {t("payslips.desk.payPeriod")}
               </label>
               <input
                 id="payslip-period"
@@ -485,14 +491,14 @@ export function PayslipDistributionDesk({
             </div>
             <div className="min-w-[200px] flex-1">
               <Input
-                label="Search issued"
+                label={t("payslips.desk.searchIssued")}
                 icon="search"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Name, email, or staff number"
+                placeholder={t("payslips.desk.searchPlaceholder")}
               />
             </div>
           </div>
@@ -507,12 +513,12 @@ export function PayslipDistributionDesk({
         empty={
           !loadingIssued && issued.length === 0 ? (
             issuedError ? (
-              <EmptyState icon="error" title="Could not load payslips" description={issuedError} />
+              <EmptyState icon="error" title="finance.payslips.couldNotLoad" description={issuedError} />
             ) : (
               <EmptyState
                 icon="receipt_long"
-                title={`No payslips for ${period ? formatPayPeriod(period.month, period.year) : "this period"}`}
-                description="Drop files into the envelope below. Filenames such as EMP042_August2026.pdf or Jane_Doe.pdf are matched automatically."
+                title={period ? t("payslips.desk.emptyFor", { period: formatPayPeriod(period.month, period.year) }) : t("payslips.desk.emptyThisPeriod")}
+                description="payslips.desk.emptyHint"
               />
             )
           ) : undefined
@@ -524,12 +530,12 @@ export function PayslipDistributionDesk({
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Employee</th>
-                    <th>Staff no.</th>
-                    <th>Net</th>
-                    <th>File</th>
-                    <th>Salary confirm</th>
-                    {canManage ? <th /> : null}
+                    <th>{t("finance.payrollImports.col.employee")}</th>
+                    <th>{t("payslips.desk.col.staffNo")}</th>
+                    <th>{t("finance.payrollImports.col.net")}</th>
+                    <th>{t("finance.payslips.col.file")}</th>
+                    <th>{t("payslips.desk.col.salaryConfirm")}</th>
+                    {canManage ? <th><span className="sr-only">{t("finance.budget.col.actions")}</span></th> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -540,12 +546,12 @@ export function PayslipDistributionDesk({
                       <td>
                         {p.currency} {Number(p.net_amount || 0).toLocaleString()}
                       </td>
-                      <td>{p.has_file ? <span className="badge badge-success">On file</span> : <span className="badge badge-muted">No file</span>}</td>
+                      <td>{p.has_file ? <span className="badge badge-success">{t("finance.payslips.onFile")}</span> : <span className="badge badge-muted">{t("payslips.desk.noFile")}</span>}</td>
                       <td>
                         {p.confirmation_status === "confirmed" ? (
-                          <span className="badge badge-success">Confirmed</span>
+                          <span className="badge badge-success">{t("finance.payslips.confirmed")}</span>
                         ) : p.confirmation_status === "rejected" ? (
-                          <span className="badge badge-danger">Rejected</span>
+                          <span className="badge badge-danger">{t("status.rejected")}</span>
                         ) : canManage ? (
                           <button
                             type="button"
@@ -556,10 +562,10 @@ export function PayslipDistributionDesk({
                               setConfirmNotes("");
                             }}
                           >
-                            Confirm
+                            {t("common.confirm")}
                           </button>
                         ) : (
-                          <span className="badge badge-muted">Pending</span>
+                          <span className="badge badge-muted">{t("finance.hub.status.pending")}</span>
                         )}
                       </td>
                       {canManage ? (
@@ -567,22 +573,23 @@ export function PayslipDistributionDesk({
                           <div className="flex gap-2">
                             {p.user?.id ? (
                               <Link href={`/admin/payslip-config/${p.user.id}`} className="btn-secondary text-xs">
-                                Lines
+                                {t("payslips.desk.lines")}
                               </Link>
                             ) : null}
                             <button
                               type="button"
                               className="text-neutral-400 hover:text-primary"
-                              title="Refresh auto-fill"
+                              title={t("payslips.desk.refreshAutofill")}
+                              aria-label={t("payslips.desk.refreshAutofill")}
                               disabled={refreshingId === p.id}
                               onClick={async () => {
                                 setRefreshingId(p.id);
                                 try {
                                   await payslipRefreshApi.refresh(p.id);
-                                  success("Auto-fill refreshed.");
+                                  success(t("payslips.desk.refreshed"));
                                   loadIssued();
                                 } catch {
-                                  error("Refresh failed.");
+                                  error(t("payslips.desk.refreshFailed"));
                                 } finally {
                                   setRefreshingId(null);
                                 }
@@ -590,8 +597,8 @@ export function PayslipDistributionDesk({
                             >
                               <span className={`material-symbols-outlined text-[16px] ${refreshingId === p.id ? "animate-spin" : ""}`}>refresh</span>
                             </button>
-                            <button type="button" className="btn-secondary text-xs" onClick={() => adminApi.downloadPayslip(p.id).catch(() => error("Download failed."))}>
-                              Download
+                            <button type="button" className="btn-secondary text-xs" onClick={() => adminApi.downloadPayslip(p.id).catch(() => error(t("payslips.desk.downloadFailed")))}>
+                              {t("common.download")}
                             </button>
                           </div>
                         </td>
@@ -604,18 +611,18 @@ export function PayslipDistributionDesk({
             <RegisterMobileCards
               items={paged}
               getKey={(p) => p.id}
-              title={(p) => p.user?.name ?? "Payslip"}
+              title={(p) => p.user?.name ?? t("payslips.desk.payslip")}
               subtitle={(p) => p.user?.employee_number ?? p.user?.email ?? ""}
               badge={(p) =>
                 p.confirmation_status === "confirmed" ? (
-                  <span className="badge badge-success">Confirmed</span>
+                  <span className="badge badge-success">{t("finance.payslips.confirmed")}</span>
                 ) : (
-                  <span className="badge badge-muted">Pending</span>
+                  <span className="badge badge-muted">{t("finance.hub.status.pending")}</span>
                 )
               }
               fields={(p) => [
-                { label: "Net", value: `${p.currency} ${Number(p.net_amount || 0).toLocaleString()}` },
-                { label: "File", value: p.has_file ? "On file" : "Missing" },
+                { label: t("finance.payrollImports.col.net"), value: `${p.currency} ${Number(p.net_amount || 0).toLocaleString()}` },
+                { label: t("finance.payslips.col.file"), value: p.has_file ? t("finance.payslips.onFile") : t("payslips.desk.missing") },
               ]}
             />
           </>
@@ -624,8 +631,8 @@ export function PayslipDistributionDesk({
 
       {canManage ? (
         <FormSection
-          title={`Envelope — ${period ? formatPayPeriod(period.month, period.year) : "choose a period"}`}
-          description="Drop a ZIP from payroll or many PDFs. We match staff numbers and names; you only assign the leftovers."
+          title={t("payslips.desk.envelope", { period: period ? formatPayPeriod(period.month, period.year) : t("payslips.desk.choosePeriod") })}
+          description="payslips.desk.envelopeHint"
           icon="mail"
         >
           <div
@@ -657,10 +664,10 @@ export function PayslipDistributionDesk({
             />
             <span className="material-symbols-outlined mb-2 block text-4xl text-neutral-300">upload_file</span>
             <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-              {matching ? "Matching staff…" : "Drop payslip PDFs or a ZIP"}
+              {matching ? t("payslips.desk.matching") : t("payslips.desk.dropHint")}
             </p>
             <p className="mt-1 text-xs text-neutral-500">
-              EMP042_August2026.pdf · Jane_Doe.pdf · payroll-export.zip
+              EMP042_August2026.pdf · Jane_Doe.pdf · payroll-export.zip {/* i18n-ignore */}
             </p>
           </div>
 
@@ -668,12 +675,12 @@ export function PayslipDistributionDesk({
             <div className="mt-4 overflow-x-auto">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-xs text-neutral-500">
-                  {readyCount} ready · {unassignedCount} need a person
-                  {replaceCount > 0 ? ` · ${replaceCount} will replace an existing file` : ""}
+                  {t("payslips.desk.readySummary", { ready: readyCount, unassigned: unassignedCount })}
+                  {replaceCount > 0 ? ` · ${t("payslips.desk.willReplace", { count: replaceCount })}` : ""}
                 </p>
                 <div className="flex gap-2">
                   <button type="button" className="btn-secondary text-xs" onClick={() => setRows([])}>
-                    Clear
+                    {t("ui.bulkSelection.clear")}
                   </button>
                   <button
                     type="button"
@@ -681,17 +688,17 @@ export function PayslipDistributionDesk({
                     disabled={issuing || readyCount === 0}
                     onClick={() => void handleIssue()}
                   >
-                    {issuing ? "Issuing…" : `Issue ${readyCount} file${readyCount === 1 ? "" : "s"}`}
+                    {issuing ? t("payslips.desk.issuing") : t(readyCount === 1 ? "payslips.desk.issueOne" : "payslips.desk.issueMany", { count: readyCount })}
                   </button>
                 </div>
               </div>
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>File</th>
-                    <th>Match</th>
-                    <th>Staff</th>
-                    <th />
+                    <th>{t("finance.payslips.col.file")}</th>
+                    <th>{t("payslips.desk.col.match")}</th>
+                    <th>{t("payslips.desk.col.staff")}</th>
+                    <th><span className="sr-only">{t("finance.budget.col.actions")}</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -705,18 +712,18 @@ export function PayslipDistributionDesk({
                           <span className="max-w-[220px] truncate font-mono text-xs">{row.filename}</span>
                           {row.archive ? (
                             <span className="badge badge-muted" title={row.archive}>
-                              ZIP
+                              {t("payslips.desk.chip.zip")}
                             </span>
                           ) : null}
                           {row.existingPayslipId ? (
-                            <span className="badge badge-warning">Replace</span>
+                            <span className="badge badge-warning">{t("payslips.desk.replace")}</span>
                           ) : null}
                         </div>
                       </td>
-                      <td>{statusChip(row.status)}</td>
+                      <td>{statusChip(row.status, t)}</td>
                       <td>
                         {row.status === "zip" ? (
-                          <span className="text-xs text-neutral-500">Unpacked and matched when you issue</span>
+                          <span className="text-xs text-neutral-500">{t("payslips.desk.zipLater")}</span>
                         ) : (
                           <StaffPicker
                             value={row.user}
@@ -737,7 +744,7 @@ export function PayslipDistributionDesk({
                         <button
                           type="button"
                           className="text-neutral-300 hover:text-red-500"
-                          aria-label={`Remove ${row.filename}`}
+                          aria-label={t("payslips.desk.removeFile", { name: row.filename })}
                           onClick={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
                         >
                           <span className="material-symbols-outlined text-[16px]">delete</span>
@@ -754,11 +761,11 @@ export function PayslipDistributionDesk({
 
       {coverage && coverage.missing.length > 0 ? (
         <FormSection
-          title="Still missing a file"
+          title="payslips.desk.missingTitle"
           description={
             unassignedCount > 0
-              ? "Click Assign to attach the next unassigned file in the envelope."
-              : "Active staff with no payslip for this period. Drop their file, or assign an unmatched file to them above."
+              ? "payslips.desk.missingAssignHint"
+              : "payslips.desk.missingHint"
           }
           icon="person_off"
         >
@@ -775,22 +782,22 @@ export function PayslipDistributionDesk({
                     className="shrink-0 btn-secondary text-xs"
                     onClick={() => assignPersonToNextFile(person)}
                   >
-                    Assign
+                    {t("payslips.desk.assign")}
                   </button>
                 ) : null}
               </li>
             ))}
           </ul>
           {coverage.missing.length > 12 ? (
-            <p className="mt-2 text-xs text-neutral-400">{coverage.missing.length - 12} more not shown</p>
+            <p className="mt-2 text-xs text-neutral-400">{t("payslips.desk.moreNotShown", { count: coverage.missing.length - 12 })}</p>
           ) : null}
         </FormSection>
       ) : null}
 
       {confirmTarget ? (
-        <Modal open title="Confirm salary" onClose={() => setConfirmTarget(null)} size="md">
+        <Modal open title={t("payslips.desk.confirmSalary")} onClose={() => setConfirmTarget(null)} size="md">
           <p className="text-sm text-neutral-600">
-            {confirmTarget.user?.name ?? "Staff"} — {formatPayPeriod(confirmTarget.period_month, confirmTarget.period_year)}
+            {confirmTarget.user?.name ?? t("payslips.desk.staff")} — {formatPayPeriod(confirmTarget.period_month, confirmTarget.period_year)}
           </p>
           <div className="mt-4 flex gap-3">
             <button
@@ -798,28 +805,29 @@ export function PayslipDistributionDesk({
               onClick={() => setConfirmStatus("confirmed")}
               className={`flex-1 rounded-xl border py-2 text-sm font-semibold ${confirmStatus === "confirmed" ? "border-green-400 bg-green-50 text-green-700" : "border-neutral-200"}`}
             >
-              Confirm
+              {t("common.confirm")}
             </button>
             <button
               type="button"
               onClick={() => setConfirmStatus("rejected")}
               className={`flex-1 rounded-xl border py-2 text-sm font-semibold ${confirmStatus === "rejected" ? "border-red-400 bg-red-50 text-red-700" : "border-neutral-200"}`}
             >
-              Reject
+              {t("common.reject")}
             </button>
           </div>
           <textarea
             className="form-input mt-3 h-20 resize-none"
-            placeholder="Optional note"
+            placeholder={t("payslips.desk.optionalNote")}
+            aria-label={t("payslips.desk.optionalNote")}
             value={confirmNotes}
             onChange={(e) => setConfirmNotes(e.target.value)}
           />
           <div className="mt-4 flex gap-2">
             <button type="button" className="btn-secondary flex-1" onClick={() => setConfirmTarget(null)}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button type="button" className="btn-primary flex-1" disabled={confirmLoading} onClick={() => void handleConfirm()}>
-              {confirmLoading ? "Saving…" : "Save"}
+              {confirmLoading ? t("decisions.create.saving") : t("common.save")}
             </button>
           </div>
         </Modal>

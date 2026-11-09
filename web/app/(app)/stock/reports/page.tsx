@@ -6,6 +6,7 @@ import { exportToCsv } from "@/lib/csvExport";
 import { loadPdfLibs } from "@/lib/pdf-libs";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function fmtMoney(n: number | string | null | undefined): string {
   if (n === null || n === undefined || n === "") return "";
@@ -13,6 +14,7 @@ function fmtMoney(n: number | string | null | undefined): string {
 }
 
 export default function StockReportsPage() {
+  const { t } = useI18n();
   const [items, setItems] = useState<StockItem[]>([]);
   const [categories, setCategories] = useState<StockCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,9 +32,9 @@ export default function StockReportsPage() {
     stockItemsApi
       .list(params)
       .then((res) => setItems(res.data.data ?? []))
-      .catch(() => setError("Failed to load stock report."))
+      .catch(() => setError(t("stock.reports.loadFailed")))
       .finally(() => setLoading(false));
-  }, [filterCategory, lowOnly]);
+  }, [filterCategory, lowOnly, t]);
 
   useEffect(() => {
     stockCategoriesApi.list().then((res) => setCategories(res.data.data ?? [])).catch(() => {});
@@ -55,34 +57,34 @@ export default function StockReportsPage() {
   }));
 
   const handleCsv = () => {
-    if (rows.length === 0) { setError("No data to export."); return; }
+    if (rows.length === 0) { setError(t("stock.reports.noData")); return; }
     exportToCsv(`stock-report-${new Date().toISOString().slice(0, 10)}.csv`, rows, [
-      { key: "item_code", header: "Item Code" },
-      { key: "name", header: "Name" },
-      { key: "category", header: "Category" },
-      { key: "unit", header: "Unit" },
-      { key: "current_balance", header: "Balance" },
-      { key: "reorder_level", header: "Reorder Level" },
-      { key: "low_stock", header: "Low Stock" },
-      { key: "unit_cost", header: "Unit Cost" },
-      { key: "stock_value", header: "Stock Value" },
-      { key: "storage_location", header: "Location" },
-      { key: "status", header: "Status" },
+      { key: "item_code", header: t("stock.common.itemCode") },
+      { key: "name", header: t("stock.common.name") },
+      { key: "category", header: t("stock.common.category") },
+      { key: "unit", header: t("stock.reports.unit") },
+      { key: "current_balance", header: t("stock.common.balance") },
+      { key: "reorder_level", header: t("stock.common.reorderLevel") },
+      { key: "low_stock", header: t("stock.reports.lowStock") },
+      { key: "unit_cost", header: t("stock.common.unitCost") },
+      { key: "stock_value", header: t("stock.dashboard.stockValue") },
+      { key: "storage_location", header: t("stock.common.location") },
+      { key: "status", header: t("stock.common.status") },
     ]);
   };
 
   const handlePdf = async () => {
-    if (rows.length === 0) { setError("No data to export."); return; }
+    if (rows.length === 0) { setError(t("stock.reports.noData")); return; }
     setExportingPdf(true);
     try {
       const { jsPDF, autoTable } = await loadPdfLibs();
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       doc.setFontSize(14);
-      doc.text("Consumables / Stock Report", 14, 15);
+      doc.text(t("stock.reports.pdfTitle"), 14, 15);
       doc.setFontSize(10);
-      doc.text(`Generated ${new Date().toLocaleDateString("en-GB")} – ${rows.length} item(s)`, 14, 22);
+      doc.text(t("stock.reports.pdfGenerated", { date: new Date().toLocaleDateString("en-GB"), count: rows.length }), 14, 22);
       autoTable(doc, {
-        head: [["Item Code", "Name", "Category", "Balance", "Reorder", "Low", "Unit Cost", "Value", "Location"]],
+        head: [[t("stock.common.itemCode"), t("stock.common.name"), t("stock.common.category"), t("stock.common.balance"), t("stock.common.reorder"), t("stock.reports.low"), t("stock.common.unitCost"), t("stock.common.value"), t("stock.common.location")]],
         body: rows.map((r) => [r.item_code, r.name, r.category, r.current_balance, r.reorder_level, r.low_stock, r.unit_cost, r.stock_value, r.storage_location]),
         startY: 28,
         styles: { fontSize: 8 },
@@ -90,7 +92,7 @@ export default function StockReportsPage() {
       });
       doc.save(`stock-report-${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch {
-      setError("Failed to export PDF.");
+      setError(t("stock.reports.pdfFailed"));
     } finally {
       setExportingPdf(false);
     }
@@ -99,19 +101,20 @@ export default function StockReportsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Stock Reports"
-        subtitle="Consumables register report with CSV and PDF export."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Reports" }]} />}
+        title={t("stock.reports.title")}
+        subtitle={t("stock.reports.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("stock.common.stock"), href: "/stock" }, { label: t("stock.reports.crumb") }]} />}
         actions={
           <div className="flex gap-2">
             <button type="button" onClick={handleCsv} className="btn-secondary">
-              <span className="material-symbols-outlined text-[18px]">download</span>Export CSV
+              <span className="material-symbols-outlined text-[18px]">download</span>
+              {t("stock.reports.exportCsv")}
             </button>
             <button type="button" onClick={handlePdf} disabled={exportingPdf} className="btn-secondary">
               {exportingPdf
                 ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
                 : <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>}
-              Export PDF
+              {t("stock.reports.exportPdf")}
             </button>
           </div>
         }
@@ -125,15 +128,15 @@ export default function StockReportsPage() {
 
       <div className="card p-3 flex flex-wrap gap-3 items-end">
         <div className="min-w-[180px]">
-          <label htmlFor="stock-reports-category" className="block text-xs font-semibold text-neutral-600 mb-1">Category</label>
+          <label htmlFor="stock-reports-category" className="block text-xs font-semibold text-neutral-600 mb-1">{t("stock.common.category")}</label>
           <select id="stock-reports-category" className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-            <option value="all">All Categories</option>
+            <option value="all">{t("stock.categories.all")}</option>
             {categories.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
           </select>
         </div>
         <label htmlFor="stock-reports-setlowonly-e-target-checked-classname-rounded-bo" className="flex items-center gap-2 text-sm text-neutral-700 mb-1.5 cursor-pointer">
           <input id="stock-reports-setlowonly-e-target-checked-classname-rounded-bo" type="checkbox" checked={lowOnly} onChange={(e) => setLowOnly(e.target.checked)} className="rounded border-neutral-300" />
-          Low stock only
+          {t("stock.reports.lowOnly")}
         </label>
       </div>
 
@@ -141,7 +144,7 @@ export default function StockReportsPage() {
         <div className="card p-12 text-center">
           <div className="flex items-center justify-center gap-2 text-neutral-400">
             <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-            <span className="text-sm">Loading…</span>
+            <span className="text-sm">{t("common.loading")}</span>
           </div>
         </div>
       ) : rows.length > 0 ? (
@@ -150,14 +153,14 @@ export default function StockReportsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-100 text-left text-xs font-semibold text-neutral-500">
-                  <th className="px-4 py-3">Item Code</th>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3 text-right">Balance</th>
-                  <th className="px-4 py-3 text-right">Reorder</th>
-                  <th className="px-4 py-3 text-right">Unit Cost</th>
-                  <th className="px-4 py-3 text-right">Value</th>
-                  <th className="px-4 py-3">Location</th>
+                  <th className="px-4 py-3">{t("stock.common.itemCode")}</th>
+                  <th className="px-4 py-3">{t("stock.common.name")}</th>
+                  <th className="px-4 py-3">{t("stock.common.category")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.balance")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.reorder")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.unitCost")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.value")}</th>
+                  <th className="px-4 py-3">{t("stock.common.location")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50">
@@ -166,7 +169,7 @@ export default function StockReportsPage() {
                     <td className="px-4 py-3 font-mono text-xs text-neutral-500">{i.item_code}</td>
                     <td className="px-4 py-3">
                       <span className="font-medium text-neutral-900">{i.name}</span>
-                      {i.is_low_stock && <span className="badge badge-warning ml-2">Low</span>}
+                      {i.is_low_stock && <span className="badge badge-warning ml-2">{t("stock.reports.low")}</span>}
                     </td>
                     <td className="px-4 py-3 text-neutral-600">{i.category?.name ?? "—"}</td>
                     <td className="px-4 py-3 text-right font-semibold text-neutral-900">{i.current_balance}</td>
@@ -182,7 +185,7 @@ export default function StockReportsPage() {
         </div>
       ) : (
         <div className="card">
-          <EmptyState icon="summarize" title="No data for the selected filters" />
+          <EmptyState icon="summarize" title={t("stock.reports.empty")} />
         </div>
       )}
     </div>

@@ -6,8 +6,10 @@ import { stockItemsApi, stockLocationsApi, stockTransfersApi, type StockItem, ty
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function StockTransfersPage() {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [rows, setRows] = useState<StockTransfer[]>([]);
   const [locations, setLocations] = useState<StockLocation[]>([]);
@@ -23,8 +25,8 @@ export default function StockTransfersPage() {
   const load = useCallback(() => {
     stockTransfersApi.list({ per_page: 50 })
       .then((res) => setRows(res.data.data ?? []))
-      .catch(() => toast("error", "Failed to load transfers"));
-  }, [toast]);
+      .catch(() => toast("error", t("stock.transfers.loadFailed")));
+  }, [toast, t]);
 
   useEffect(() => {
     setCanIssue(canIssueStock(getStoredUser()));
@@ -36,7 +38,7 @@ export default function StockTransfersPage() {
   const create = async () => {
     if (creating) return;
     if (fromId && toId && fromId === toId) {
-      setFormError("From and to locations must be different.");
+      setFormError(t("stock.transfers.sameLocation"));
       return;
     }
     setFormError(null);
@@ -47,10 +49,10 @@ export default function StockTransfersPage() {
         to_location_id: Number(toId),
         lines: [{ stock_item_id: Number(itemId), quantity: Number(qty) }],
       });
-      toast("success", "Transfer drafted");
+      toast("success", t("stock.transfers.drafted"));
       load();
     } catch {
-      toast("error", "Could not create transfer");
+      toast("error", t("stock.transfers.createFailed"));
     } finally {
       setCreating(false);
     }
@@ -59,23 +61,23 @@ export default function StockTransfersPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Store Transfers"
-        subtitle="Two-sided dispatch then receive — both sides ledgered."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Store Transfers" }]} />}
+        title={t("stock.transfers.title")}
+        subtitle={t("stock.transfers.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("stock.transfers.title") }]} />}
       />
       {canIssue && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-3">
           <div className="flex flex-wrap gap-3 items-end">
             <select className="form-input disabled:opacity-60" value={fromId} onChange={(e) => setFromId(e.target.value)} disabled={creating}>
-              <option value="">From…</option>
+              <option value="">{t("stock.transfers.fromPlaceholder")}</option>
               {locations.map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
             </select>
             <select className="form-input disabled:opacity-60" value={toId} onChange={(e) => setToId(e.target.value)} disabled={creating}>
-              <option value="">To…</option>
+              <option value="">{t("stock.transfers.toPlaceholder")}</option>
               {locations.map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
             </select>
             <select className="form-input disabled:opacity-60" value={itemId} onChange={(e) => setItemId(e.target.value)} disabled={creating}>
-              <option value="">Item…</option>
+              <option value="">{t("stock.batches.itemPlaceholder")}</option>
               {items.map((i) => <option key={i.id} value={i.id}>{i.item_code}</option>)}
             </select>
             <input type="number" min={1} className="form-input w-24 disabled:opacity-60" value={qty} onChange={(e) => setQty(e.target.value)} disabled={creating} />
@@ -85,7 +87,7 @@ export default function StockTransfersPage() {
               onClick={create}
               disabled={creating || !fromId || !toId || !itemId}
             >
-              {creating ? "Drafting..." : "Draft transfer"}
+              {creating ? t("stock.transfers.drafting") : t("stock.transfers.draft")}
             </button>
           </div>
           {formError && <p className="text-sm text-red-600">{formError}</p>}
@@ -94,10 +96,10 @@ export default function StockTransfersPage() {
       <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
           <tr>
-            <th className="px-4 py-2">Reference</th>
-            <th className="px-4 py-2">From → To</th>
-            <th className="px-4 py-2">Status</th>
-            <th className="px-4 py-2">Actions</th>
+            <th className="px-4 py-2">{t("stock.common.reference")}</th>
+            <th className="px-4 py-2">{t("stock.common.fromTo")}</th>
+            <th className="px-4 py-2">{t("stock.common.status")}</th>
+            <th className="px-4 py-2">{t("stock.common.actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -109,21 +111,21 @@ export default function StockTransfersPage() {
               <td className="px-4 py-2 space-x-2">
                 {canIssue && r.status === "draft" && (
                   <button type="button" className="btn-secondary text-xs" onClick={async () => {
-                    try { await stockTransfersApi.dispatch(r.id); toast("success", "Dispatched"); load(); }
-                    catch { toast("error", "Dispatch failed"); }
-                  }}>Dispatch</button>
+                    try { await stockTransfersApi.dispatch(r.id); toast("success", t("stock.transfers.dispatched")); load(); }
+                    catch { toast("error", t("stock.transfers.dispatchFailed")); }
+                  }}>{t("stock.transfers.dispatch")}</button>
                 )}
                 {canIssue && r.status === "dispatched" && (
                   <button type="button" className="btn-secondary text-xs" onClick={async () => {
-                    try { await stockTransfersApi.receive(r.id); toast("success", "Received"); load(); }
-                    catch { toast("error", "Receive failed"); }
-                  }}>Receive</button>
+                    try { await stockTransfersApi.receive(r.id); toast("success", t("stock.transfers.received")); load(); }
+                    catch { toast("error", t("stock.transfers.receiveFailed")); }
+                  }}>{t("stock.transfers.receive")}</button>
                 )}
               </td>
             </tr>
           ))}
           {rows.length === 0 && (
-            <TableEmpty colSpan={4} title="No transfers yet." />
+            <TableEmpty colSpan={4} title={t("stock.transfers.empty")} />
           )}
         </tbody>
       </table>

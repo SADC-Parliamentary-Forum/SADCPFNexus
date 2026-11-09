@@ -10,20 +10,22 @@ import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { getListData, getLastPage, getTotal } from "@/lib/listPagination";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const MODULE_LABELS: Record<string, string> = {
-  salary_advance: "Salary Advance",
-  imprest: "Imprest",
+  salary_advance: "finance.bcre.module.salary_advance",
+  imprest: "finance.bcre.module.imprest",
 };
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
-  active: { label: "Active", badge: "badge-success" },
-  closed: { label: "Closed", badge: "badge-muted" },
-  disputed: { label: "Disputed", badge: "badge-danger" },
-  locked: { label: "Locked", badge: "badge-warning" },
+  active: { label: "finance.bcre.status.active", badge: "badge-success" },
+  closed: { label: "finance.bcre.status.closed", badge: "badge-muted" },
+  disputed: { label: "finance.bcre.status.disputed", badge: "badge-danger" },
+  locked: { label: "finance.bcre.status.locked", badge: "badge-warning" },
 };
 
 function RegistersPageContent() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const [registers, setRegisters] = useState<BalanceRegister[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,11 +50,11 @@ function RegistersPageContent() {
       setLastPage(getLastPage(res.data));
       setTotal(getTotal(res.data, rows.length));
     } catch {
-      setError("Failed to load registers.");
+      setError(t("finance.bcre.registers.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [moduleFilter, statusFilter]);
+  }, [moduleFilter, statusFilter, t]);
 
   useEffect(() => {
     void load(1, moduleFilter, statusFilter);
@@ -69,17 +71,17 @@ function RegistersPageContent() {
     return registers.filter((reg) => {
       const hay = [
         reg.reference_number,
-        MODULE_LABELS[reg.module_type] ?? reg.module_type,
+        MODULE_LABELS[reg.module_type] ? t(MODULE_LABELS[reg.module_type]) : reg.module_type,
         reg.employee?.name,
         String(reg.employee_id),
-        STATUS_CONFIG[reg.status]?.label ?? reg.status,
+        STATUS_CONFIG[reg.status] ? t(STATUS_CONFIG[reg.status].label) : reg.status,
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [registers, search]);
+  }, [registers, search, t]);
 
   const handleExport = () => {
     if (filtered.length === 0) return;
@@ -87,21 +89,21 @@ function RegistersPageContent() {
       `balance-registers-${new Date().toISOString().slice(0, 10)}.csv`,
       filtered.map((reg) => ({
         reference: reg.reference_number,
-        module: MODULE_LABELS[reg.module_type] ?? reg.module_type,
+        module: MODULE_LABELS[reg.module_type] ? t(MODULE_LABELS[reg.module_type]) : reg.module_type,
         employee: reg.employee?.name ?? `#${reg.employee_id}`,
         approved: reg.approved_amount,
         balance: reg.balance,
-        status: STATUS_CONFIG[reg.status]?.label ?? reg.status,
+        status: STATUS_CONFIG[reg.status] ? t(STATUS_CONFIG[reg.status].label) : reg.status,
         updated_at: reg.updated_at,
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "module", header: "Module" },
-        { key: "employee", header: "Employee" },
-        { key: "approved", header: "Approved" },
-        { key: "balance", header: "Balance" },
-        { key: "status", header: "Status" },
-        { key: "updated_at", header: "Last Updated" },
+        { key: "reference", header: t("decisions.col.reference") },
+        { key: "module", header: t("finance.bcre.col.module") },
+        { key: "employee", header: t("finance.payrollImports.col.employee") },
+        { key: "approved", header: t("finance.bcre.col.approved") },
+        { key: "balance", header: t("finance.bcre.col.balance") },
+        { key: "status", header: t("finance.budget.col.status") },
+        { key: "updated_at", header: t("finance.bcre.col.lastUpdated") },
       ],
     );
   };
@@ -109,18 +111,18 @@ function RegistersPageContent() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/finance" className="hover:text-primary transition-colors">Finance</Link>
+        <Link href="/finance" className="hover:text-primary transition-colors">{t("nav.finance")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <Link href="/finance/balance-register" className="hover:text-primary transition-colors">Balance Register</Link>
+        <Link href="/finance/balance-register" className="hover:text-primary transition-colors">{t("finance.bcre.balanceRegister")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">All Registers</span>
+        <span className="text-neutral-900 font-medium">{t("finance.bcre.allRegisters")}</span>
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <ModulePageHeader
-        title="Balance Registers"
-        subtitle="All controlled balance registers across modules"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Balance Registers" }]} />}
+        title="finance.bcre.registers.title"
+        subtitle="finance.bcre.registers.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "finance.bcre.registers.title" }]} />}
       />
         <button
           type="button"
@@ -129,7 +131,7 @@ function RegistersPageContent() {
           onClick={handleExport}
         >
           <span className="material-symbols-outlined text-[18px]">download</span>
-          Export CSV
+          {t("finance.budget.exportCsv")}
         </button>
       </div>
 
@@ -141,16 +143,17 @@ function RegistersPageContent() {
           <input
             type="search"
             className="form-input pl-10"
-            placeholder="Search reference, employee, module…"
+            placeholder={t("finance.bcre.registers.searchPlaceholder")}
+            aria-label={t("finance.bcre.registers.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="flex flex-wrap gap-2">
           {[
-            { key: "all", label: "All Modules" },
-            { key: "salary_advance", label: "Salary Advance" },
-            { key: "imprest", label: "Imprest" },
+            { key: "all", label: "finance.bcre.registers.allModules" },
+            { key: "salary_advance", label: "finance.bcre.module.salary_advance" },
+            { key: "imprest", label: "finance.bcre.module.imprest" },
           ].map((f) => (
             <button
               key={f.key}
@@ -161,16 +164,16 @@ function RegistersPageContent() {
               }}
               className={`filter-tab${moduleFilter === f.key ? " active" : ""}`}
             >
-              {f.label}
+              {t(f.label)}
             </button>
           ))}
           <div className="border-l border-neutral-200 mx-1" />
           {[
-            { key: "all", label: "All Status" },
-            { key: "active", label: "Active" },
-            { key: "closed", label: "Closed" },
-            { key: "disputed", label: "Disputed" },
-            { key: "locked", label: "Locked" },
+            { key: "all", label: "finance.bcre.registers.allStatus" },
+            { key: "active", label: "finance.bcre.status.active" },
+            { key: "closed", label: "finance.bcre.status.closed" },
+            { key: "disputed", label: "finance.bcre.status.disputed" },
+            { key: "locked", label: "finance.bcre.status.locked" },
           ].map((f) => (
             <button
               key={f.key}
@@ -181,7 +184,7 @@ function RegistersPageContent() {
               }}
               className={`filter-tab${statusFilter === f.key ? " active" : ""}`}
             >
-              {f.label}
+              {t(f.label)}
             </button>
           ))}
         </div>
@@ -198,14 +201,14 @@ function RegistersPageContent() {
         <table className="data-table w-full">
           <thead>
             <tr>
-              <th>Reference</th>
-              <th>Module</th>
-              <th>Employee</th>
-              <th className="text-right">Approved</th>
-              <th className="text-right">Balance</th>
-              <th>Status</th>
-              <th>Last Updated</th>
-              <th />
+              <th>{t("decisions.col.reference")}</th>
+              <th>{t("finance.bcre.col.module")}</th>
+              <th>{t("finance.payrollImports.col.employee")}</th>
+              <th className="text-right">{t("finance.bcre.col.approved")}</th>
+              <th className="text-right">{t("finance.bcre.col.balance")}</th>
+              <th>{t("finance.budget.col.status")}</th>
+              <th>{t("finance.bcre.col.lastUpdated")}</th>
+              <th><span className="sr-only">{t("finance.budget.col.actions")}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -220,12 +223,12 @@ function RegistersPageContent() {
                 </tr>
               ))
             ) : filtered.length === 0 ? (
-              <TableEmpty colSpan={8} title="No registers found." />
+              <TableEmpty colSpan={8} title="finance.bcre.registers.empty" />
             ) : (
               filtered.map((reg) => (
                 <tr key={reg.id} className="hover:bg-neutral-50">
                   <td className="font-mono text-sm font-medium text-neutral-800">{reg.reference_number}</td>
-                  <td className="text-sm">{MODULE_LABELS[reg.module_type] ?? reg.module_type}</td>
+                  <td className="text-sm">{MODULE_LABELS[reg.module_type] ? t(MODULE_LABELS[reg.module_type]) : reg.module_type}</td>
                   <td className="text-sm">{reg.employee?.name ?? `#${reg.employee_id}`}</td>
                   <td className="text-right text-sm font-medium">
                     {Number(reg.approved_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -235,7 +238,7 @@ function RegistersPageContent() {
                   </td>
                   <td>
                     <span className={`badge ${STATUS_CONFIG[reg.status]?.badge ?? "badge-muted"}`}>
-                      {STATUS_CONFIG[reg.status]?.label ?? reg.status}
+                      {STATUS_CONFIG[reg.status] ? t(STATUS_CONFIG[reg.status].label) : reg.status}
                     </span>
                   </td>
                   <td className="text-sm text-neutral-500">{formatDate(reg.updated_at)}</td>
@@ -244,7 +247,7 @@ function RegistersPageContent() {
                       href={`/finance/balance-register/${reg.id}`}
                       className="btn-secondary text-xs py-1 px-2"
                     >
-                      View
+                      {t("finance.hub.view")}
                     </Link>
                   </td>
                 </tr>
@@ -262,8 +265,7 @@ function RegistersPageContent() {
       </div>
       {search.trim() && (
         <p className="text-xs text-neutral-400">
-          Showing {filtered.length} of {registers.length} on this page matching “{search.trim()}”.
-          Clear search to browse all server pages.
+          {t("finance.bcre.registers.searchSummary", { shown: filtered.length, total: registers.length, query: search.trim() })}
         </p>
       )}
     </div>
@@ -271,8 +273,9 @@ function RegistersPageContent() {
 }
 
 export default function RegistersPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">Loading…</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">{t("common.loading")}</div>}>
       <RegistersPageContent />
     </Suspense>
   );

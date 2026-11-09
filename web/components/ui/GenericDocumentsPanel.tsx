@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export interface DocumentTypeOption {
   value: string;
@@ -51,6 +52,7 @@ export default function GenericDocumentsPanel({
   accept = ".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif",
   readOnly = false,
 }: Props) {
+  const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState(defaultType);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -59,9 +61,9 @@ export default function GenericDocumentsPanel({
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const typeLabel = (type: string | null) =>
-    documentTypes.find((t) => t.value === type)?.label ?? type ?? "Document";
+    documentTypes.find((dt) => dt.value === type)?.label ?? type ?? t("ui.documents.document");
   const typeIcon = (type: string | null) =>
-    documentTypes.find((t) => t.value === type)?.icon ?? "attach_file";
+    documentTypes.find((dt) => dt.value === type)?.icon ?? "attach_file";
 
   const handleUpload = async () => {
     if (!selectedFile) return;
@@ -87,7 +89,7 @@ export default function GenericDocumentsPanel({
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {
-      setDownloadError(`Failed to download ${doc.original_filename}.`);
+      setDownloadError(t("ui.documents.downloadFailed", { name: doc.original_filename }));
     }
   };
 
@@ -133,8 +135,8 @@ export default function GenericDocumentsPanel({
             <p className="text-sm font-semibold text-primary">{selectedFile.name} ({formatBytes(selectedFile.size)})</p>
           ) : (
             <>
-              <p className="text-sm font-semibold text-neutral-700">Click to select or drag &amp; drop</p>
-              <p className="text-xs text-neutral-400 mt-1">PDF, Word, JPG, PNG · Max 25 MB</p>
+              <p className="text-sm font-semibold text-neutral-700">{t("ui.documents.dropHint")}</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("ui.documents.formats25")}</p>
             </>
           )}
         </div>
@@ -142,15 +144,15 @@ export default function GenericDocumentsPanel({
         {selectedFile && (
           <div className="flex flex-wrap gap-3 items-end">
             <div className="space-y-1 min-w-[200px]">
-              <label htmlFor="generic-doc-type" className="text-xs font-semibold text-neutral-600">Document Type</label>
+              <label htmlFor="generic-doc-type" className="text-xs font-semibold text-neutral-600">{t("ui.documents.type")}</label>
               <select
                 id="generic-doc-type"
                 value={docType}
                 onChange={(e) => setDocType(e.target.value)}
                 className="form-input"
               >
-                {documentTypes.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                {documentTypes.map((dt) => (
+                  <option key={dt.value} value={dt.value}>{dt.label}</option>
                 ))}
               </select>
             </div>
@@ -166,12 +168,13 @@ export default function GenericDocumentsPanel({
                 ) : (
                   <span className="material-symbols-outlined text-[18px]">cloud_upload</span>
                 )}
-                Upload
+                {t("common.upload")}
               </button>
               <button
                 type="button"
                 onClick={() => { setSelectedFile(null); if (fileRef.current) fileRef.current.value = ""; }}
                 className="btn-secondary px-3"
+                aria-label={t("ui.documents.clearFile")}
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -185,10 +188,10 @@ export default function GenericDocumentsPanel({
       {loading ? (
         <div className="flex items-center justify-center py-10">
           <span className="material-symbols-outlined animate-spin text-primary text-2xl mr-2">progress_activity</span>
-          <span className="text-sm text-neutral-400">Loading documents…</span>
+          <span className="text-sm text-neutral-400">{t("ui.documents.loading")}</span>
         </div>
       ) : documents.length === 0 ? (
-        <div className="py-10 text-center text-sm text-neutral-400 italic">No documents uploaded yet.</div>
+        <div className="py-10 text-center text-sm text-neutral-400 italic">{t("ui.documents.empty")}</div>
       ) : (
         <div className="space-y-2">
           {documents.map((doc) => (
@@ -204,7 +207,7 @@ export default function GenericDocumentsPanel({
                   </span>
                   <span className="text-xs text-neutral-400">{formatBytes(doc.size_bytes)}</span>
                   {doc.uploader && (
-                    <span className="text-xs text-neutral-400">by {doc.uploader.name}</span>
+                    <span className="text-xs text-neutral-400">{t("ui.documents.by", { name: doc.uploader.name })}</span>
                   )}
                   <span className="text-xs text-neutral-400">
                     {new Date(doc.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
@@ -218,13 +221,14 @@ export default function GenericDocumentsPanel({
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-neutral-200 text-neutral-600 hover:text-primary hover:border-primary text-xs font-semibold transition-all"
                 >
                   <span className="material-symbols-outlined text-[16px]">download</span>
-                  Download
+                  {t("common.download")}
                 </button>
                 {!readOnly && (
                 <button
                   type="button"
                   onClick={() => handleDelete(doc.id)}
                   disabled={deletingId === doc.id}
+                  aria-label={t("common.delete")}
                   className="flex items-center justify-center h-8 w-8 rounded-lg border border-red-100 text-red-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[16px]">delete</span>

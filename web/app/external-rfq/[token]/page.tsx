@@ -6,11 +6,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { externalRfqApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
 export default function ExternalRfqPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const { success: showSuccessToast } = useToast();
   const [submitted, setSubmitted] = useState(false);
@@ -52,16 +54,16 @@ export default function ExternalRfqPage({ params }: { params: Promise<{ token: s
       queryClient.invalidateQueries({ queryKey: ["external-rfq", token] });
       setError(null);
       setSubmitted(true);
-      showSuccessToast("Quote submitted", "Your quote has been submitted successfully.");
+      showSuccessToast(t("externalRfq.submittedTitle"), t("externalRfq.submittedBody"));
     },
     onError: (err: unknown) => {
       setSubmitted(false);
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to submit quote.");
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("externalRfq.submitFailed"));
     },
   });
 
-  if (isLoading) return <div className="max-w-4xl mx-auto card p-6 mt-10">Loading invitation...</div>;
-  if (isError || !data) return <div className="max-w-4xl mx-auto card p-6 mt-10">Invitation not found.</div>;
+  if (isLoading) return <div className="max-w-4xl mx-auto card p-6 mt-10">{t("externalRfq.loading")}</div>;
+  if (isError || !data) return <div className="max-w-4xl mx-auto card p-6 mt-10">{t("externalRfq.notFound")}</div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-5 py-10">
@@ -72,9 +74,9 @@ export default function ExternalRfqPage({ params }: { params: Promise<{ token: s
 
       <div className="card p-5 space-y-4">
         <div className="grid gap-4 md:grid-cols-3 text-sm">
-          <div><p className="text-xs text-neutral-400">Invited Supplier</p><p>{data.invitation.invited_name ?? data.invitation.invited_email}</p></div>
-          <div><p className="text-xs text-neutral-400">Deadline</p><p>{data.request.rfq_deadline ? formatDateShort(data.request.rfq_deadline) : "Open"}</p></div>
-          <div><p className="text-xs text-neutral-400">Status</p><p>{data.invitation.status}</p></div>
+          <div><p className="text-xs text-neutral-400">{t("externalRfq.invitedSupplier")}</p><p>{data.invitation.invited_name ?? data.invitation.invited_email}</p></div>
+          <div><p className="text-xs text-neutral-400">{t("externalRfq.deadline")}</p><p>{data.request.rfq_deadline ? formatDateShort(data.request.rfq_deadline) : t("externalRfq.open")}</p></div>
+          <div><p className="text-xs text-neutral-400">{t("hr.timesheets.monthly.status")}</p><p>{data.invitation.status}</p></div>
         </div>
         {data.request.description && <p className="text-sm text-neutral-600">{data.request.description}</p>}
         {data.request.rfq_notes && (
@@ -85,30 +87,30 @@ export default function ExternalRfqPage({ params }: { params: Promise<{ token: s
       </div>
 
       <div className="card p-5 space-y-4">
-        <h2 className="text-sm font-bold text-neutral-800">Submit Quote</h2>
+        <h2 className="text-sm font-bold text-neutral-800">{t("externalRfq.submitQuote")}</h2>
         {submitted && !error && (
           <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
             <span className="material-symbols-outlined text-[16px] mt-0.5">check_circle</span>
-            Your quote has been submitted successfully.
+            {t("externalRfq.submittedBody")}
           </div>
         )}
         {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         {!data.can_submit && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            This invitation can no longer accept quotes.
+            {t("externalRfq.closed")}
           </div>
         )}
         <div className="grid gap-4 md:grid-cols-3">
-          <input className="form-input md:col-span-3" placeholder="Supplier name" value={vendorName} onChange={(e) => setVendorName(e.target.value)} disabled={!data.can_submit} />
-          <input type="number" min="0" className="form-input" placeholder="Quoted amount" value={quotedAmount} onChange={(e) => setQuotedAmount(e.target.value)} disabled={!data.can_submit} />
-          <input className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} disabled={!data.can_submit} />
-          <input type="date" className="form-input" value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} disabled={!data.can_submit} />
+          <input className="form-input md:col-span-3" placeholder={t("externalRfq.supplierName")} aria-label={t("externalRfq.supplierName")} value={vendorName} onChange={(e) => setVendorName(e.target.value)} disabled={!data.can_submit} />
+          <input type="number" min="0" className="form-input" placeholder={t("externalRfq.quotedAmount")} aria-label={t("externalRfq.quotedAmount")} value={quotedAmount} onChange={(e) => setQuotedAmount(e.target.value)} disabled={!data.can_submit} />
+          <input className="form-input" aria-label={t("externalRfq.currency")} value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} disabled={!data.can_submit} />
+          <input type="date" className="form-input" aria-label={t("externalRfq.quoteDate")} value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} disabled={!data.can_submit} />
         </div>
-        <textarea className="form-input h-24 resize-none" placeholder="Notes and conditions" value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!data.can_submit} />
+        <textarea className="form-input h-24 resize-none" placeholder={t("externalRfq.notes")} aria-label={t("externalRfq.notes")} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!data.can_submit} />
         <div className="flex gap-2">
-          <Link href="/login" className="btn-secondary">Portal Login</Link>
+          <Link href="/login" className="btn-secondary">{t("externalRfq.portalLogin")}</Link>
           <button className="btn-primary disabled:opacity-60" disabled={mutation.isPending || !data.can_submit || !vendorName || !quotedAmount} onClick={() => mutation.mutate()}>
-            {mutation.isPending ? "Submitting..." : "Submit Quote"}
+            {mutation.isPending ? t("externalRfq.submitting") : t("externalRfq.submitQuote")}
           </button>
         </div>
       </div>

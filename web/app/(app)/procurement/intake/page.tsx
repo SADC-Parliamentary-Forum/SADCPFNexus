@@ -10,23 +10,24 @@ import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
-  draft: { label: "Draft", badge: "badge-muted" },
-  submitted: { label: "Submitted", badge: "badge-warning" },
-  approved: { label: "Approved", badge: "badge-success" },
-  rejected: { label: "Rejected", badge: "badge-danger" },
-  cancelled: { label: "Cancelled", badge: "badge-muted" },
-  awarded: { label: "Awarded", badge: "badge-success" },
-  in_progress: { label: "In progress", badge: "badge-primary" },
-  completed: { label: "Completed", badge: "badge-success" },
+  draft: { label: "status.draft", badge: "badge-muted" },
+  submitted: { label: "status.submitted", badge: "badge-warning" },
+  approved: { label: "status.approved", badge: "badge-success" },
+  rejected: { label: "status.rejected", badge: "badge-danger" },
+  cancelled: { label: "status.cancelled", badge: "badge-muted" },
+  awarded: { label: "procurement.status.awarded", badge: "badge-success" },
+  in_progress: { label: "procurement.status.inProgress", badge: "badge-primary" },
+  completed: { label: "procurement.status.completed", badge: "badge-success" },
 };
 
 const FILTER_TABS = [
-  { key: "all", label: "All" },
-  { key: "draft", label: "Draft" },
-  { key: "submitted", label: "Submitted" },
-  { key: "approved", label: "Approved" },
+  { key: "all", label: "procurement.filter.all" },
+  { key: "draft", label: "status.draft" },
+  { key: "submitted", label: "status.submitted" },
+  { key: "approved", label: "status.approved" },
 ] as const;
 
 type FilterKey = (typeof FILTER_TABS)[number]["key"];
@@ -41,6 +42,7 @@ function getListData(payload: unknown): ProcurementRequest[] {
 }
 
 export default function ProcurementIntakePage() {
+  const { t } = useI18n();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -93,13 +95,13 @@ export default function ProcurementIntakePage() {
         submitted_at: r.submitted_at ?? "",
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "title", header: "Title" },
-        { key: "status", header: "Status" },
+        { key: "reference", header: t("procurement.col.reference") },
+        { key: "title", header: t("procurement.col.title") },
+        { key: "status", header: t("procurement.col.status") },
         { key: "pif", header: "PIF" },
-        { key: "currency", header: "Currency" },
-        { key: "value", header: "Value" },
-        { key: "submitted_at", header: "Submitted" },
+        { key: "currency", header: t("procurement.col.currency") },
+        { key: "value", header: t("procurement.col.value") },
+        { key: "submitted_at", header: t("procurement.col.submitted") },
       ],
     );
   };
@@ -107,11 +109,11 @@ export default function ProcurementIntakePage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ProcurementPageHeader
-        title="Procurement Intake"
-        subtitle="PIF-linked procurement packages transferred from approved programmes."
+        title={t("procurement.intake.title")}
+        subtitle={t("procurement.intake.subtitle")}
         crumbs={[
           { label: "nav.procurement", href: "/procurement" },
-          { label: "Intake" },
+          { label: t("procurement.intake.crumb") },
         ]}
         actions={
           <button
@@ -121,7 +123,7 @@ export default function ProcurementIntakePage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("procurement.exportCsv")}
           </button>
         }
       />
@@ -129,9 +131,9 @@ export default function ProcurementIntakePage() {
       {isError && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          <span className="flex-1">Failed to load intake queue.</span>
+          <span className="flex-1">{t("procurement.intake.loadError")}</span>
           <button type="button" className="btn-secondary text-xs" onClick={() => void refetch()}>
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       )}
@@ -139,16 +141,16 @@ export default function ProcurementIntakePage() {
       {!isLoading && rows.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {[
-            { label: "Intake packages", value: rows.length, icon: "inbox", color: "text-primary", bg: "bg-primary/10" },
+            { label: t("procurement.intake.kpi.packages"), value: rows.length, icon: "inbox", color: "text-primary", bg: "bg-primary/10" },
             {
-              label: "Matching filter",
+              label: t("procurement.intake.kpi.matching"),
               value: filtered.length,
               icon: "filter_alt",
               color: "text-amber-600",
               bg: "bg-amber-50",
             },
             {
-              label: "Drafts",
+              label: t("procurement.intake.kpi.drafts"),
               value: rows.filter((r) => r.status === "draft").length,
               icon: "edit_note",
               color: "text-neutral-600",
@@ -179,7 +181,7 @@ export default function ProcurementIntakePage() {
             <input
               type="search"
               className="form-input pl-10"
-              placeholder="Search reference, title, PIF…"
+              placeholder={t("procurement.intake.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -198,7 +200,7 @@ export default function ProcurementIntakePage() {
                 }}
                 className={`filter-tab ${filter === tab.key ? "active" : ""}`}
               >
-                {tab.label}
+                {t(tab.label)}
               </button>
             ))}
           </div>
@@ -215,15 +217,15 @@ export default function ProcurementIntakePage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon="inbox"
-            title={rows.length === 0 ? "No PIF-linked requests yet" : "No matches for your filters"}
+            title={rows.length === 0 ? t("procurement.intake.empty") : t("procurement.noMatches")}
             description={
               rows.length === 0
-                ? "Use the Procurement tab on an approved programme to batch selected items into one request. One transfer creates one package; send a subset again if you need separate lots."
-                : "Try a different search or status filter."
+                ? t("procurement.intake.emptyHint")
+                : t("procurement.noMatchesHint")
             }
             action={
               rows.length === 0 ? (
-                <Link href="/pif" className="btn-secondary text-sm">Browse Programmes</Link>
+                <Link href="/pif" className="btn-secondary text-sm">{t("procurement.intake.browseProgrammes")}</Link>
               ) : undefined
             }
           />
@@ -232,21 +234,22 @@ export default function ProcurementIntakePage() {
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Title</th>
-                  <th>PIF</th>
-                  <th>Status</th>
-                  <th>Value</th>
-                  <th>Submitted</th>
+                  <th>{t("procurement.col.reference")}</th>
+                  <th>{t("procurement.col.title")}</th>
+                  <th>PIF</th>{/* i18n-ignore */}
+                  <th>{t("procurement.col.status")}</th>
+                  <th>{t("procurement.col.value")}</th>
+                  <th>{t("procurement.col.submitted")}</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {paged.map((row) => {
                   const sc = STATUS_CONFIG[row.status] ?? {
-                    label: row.status.replace(/_/g, " "),
+                    label: "",
                     badge: "badge-muted",
                   };
+                  const statusLabel = sc.label ? t(sc.label) : row.status.replace(/_/g, " ");
                   return (
                     <tr key={row.id}>
                       <td className="font-mono text-xs">{row.reference_number}</td>
@@ -266,7 +269,7 @@ export default function ProcurementIntakePage() {
                         )}
                       </td>
                       <td>
-                        <span className={`badge text-xs capitalize ${sc.badge}`}>{sc.label}</span>
+                        <span className={`badge text-xs capitalize ${sc.badge}`}>{statusLabel}</span>
                       </td>
                       <td className="whitespace-nowrap font-mono text-sm">
                         {row.currency} {Number(row.estimated_value ?? 0).toLocaleString()}
@@ -279,7 +282,7 @@ export default function ProcurementIntakePage() {
                           href={`/procurement/${row.id}`}
                           className="btn-secondary text-xs"
                         >
-                          View
+                          {t("procurement.view")}
                         </Link>
                       </td>
                     </tr>

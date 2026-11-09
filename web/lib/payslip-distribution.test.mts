@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 import {
   defaultPayPeriodValue,
@@ -32,16 +33,16 @@ test("formatPayPeriod and file type helpers", () => {
 });
 
 test("staff payslips use RegisterShell", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/finance/payslips/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/finance/payslips/page.tsx"));
   assert.match(source, /RegisterShell/);
   assert.match(source, /Latest payslip/);
   assert.doesNotMatch(source, /max-w-4xl space-y-6/);
 });
 
 test("HR and admin payslip pages share the distribution desk", () => {
-  const hr = readFileSync(join(webRoot, "app/(app)/hr/payslips/page.tsx"), "utf8");
-  const admin = readFileSync(join(webRoot, "app/(app)/admin/payslips/page.tsx"), "utf8");
-  const desk = readFileSync(join(webRoot, "components/payslips/PayslipDistributionDesk.tsx"), "utf8");
+  const hr = readEnglishSource(join(webRoot, "app/(app)/hr/payslips/page.tsx"));
+  const admin = readEnglishSource(join(webRoot, "app/(app)/admin/payslips/page.tsx"));
+  const desk = readEnglishSource(join(webRoot, "components/payslips/PayslipDistributionDesk.tsx"));
   assert.match(hr, /PayslipDistributionDesk/);
   assert.match(admin, /PayslipDistributionDesk/);
   assert.match(desk, /Issue payslips/);

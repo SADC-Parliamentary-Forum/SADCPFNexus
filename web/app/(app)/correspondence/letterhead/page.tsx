@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { settingsApi, type SystemSettings } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const DEFAULTS: Partial<SystemSettings> = {
   org_name: "SADC Parliamentary Forum",
@@ -19,6 +20,7 @@ const DEFAULTS: Partial<SystemSettings> = {
 
 export default function LetterheadPage() {
   const { success, error, info } = useToast();
+  const { t } = useI18n();
   const [settings, setSettings] = useState<Partial<SystemSettings>>(DEFAULTS);
   const [form, setForm]         = useState<Partial<SystemSettings>>(DEFAULTS);
   const [loading, setLoading]   = useState(true);
@@ -58,9 +60,9 @@ export default function LetterheadPage() {
       setSettings(merged);
       setForm(merged);
       setDirty(false);
-      success("Letterhead settings saved.");
+      success(t("correspondence.letterhead.saved"));
     } catch {
-      error("Failed to save settings.");
+      error(t("correspondence.letterhead.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -81,17 +83,17 @@ export default function LetterheadPage() {
       {/* Breadcrumb + actions */}
       <div className="print:hidden flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2 text-sm text-neutral-500">
-          <Link href="/correspondence" className="hover:text-primary transition-colors">Correspondence</Link>
+          <Link href="/correspondence" className="hover:text-primary transition-colors">{t("workflows.simulate.module.correspondence")}</Link>
           <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span className="text-neutral-900 font-medium">Letterhead Branding</span>
+          <span className="text-neutral-900 font-medium">{t("correspondence.letterhead.title")}</span>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => window.print()} className="btn-secondary inline-flex items-center gap-1.5 text-sm">
             <span className="material-symbols-outlined text-[16px]">print</span>
-            Print Preview
+            {t("correspondence.letterhead.printPreview")}
           </button>
           {dirty && (
-            <button onClick={handleReset} className="btn-secondary text-sm">Discard</button>
+            <button onClick={handleReset} className="btn-secondary text-sm">{t("correspondence.letterhead.discard")}</button>
           )}
           <button
             onClick={handleSave}
@@ -99,15 +101,15 @@ export default function LetterheadPage() {
             className="btn-primary inline-flex items-center gap-1.5 text-sm disabled:opacity-60"
           >
             {saving && <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>}
-            Save Changes
+            {t("correspondence.letterhead.saveChanges")}
           </button>
         </div>
       </div>
 
       <ModulePageHeader
-        title="Letterhead Branding"
-        subtitle="Configure the organisation identity used on official correspondence and printed documents. Changes appear immediately in the live preview."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Letterhead Branding" }]} />}
+        title={t("correspondence.letterhead.title")}
+        subtitle={t("correspondence.letterhead.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("correspondence.letterhead.title") }]} />}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 items-start">
@@ -115,7 +117,7 @@ export default function LetterheadPage() {
         <div className="print:hidden card p-5 space-y-5 sticky top-6">
           <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-primary">edit</span>
-            Organisation Identity
+            {t("correspondence.letterhead.identity")}
           </h2>
 
           {loading ? (
@@ -125,42 +127,42 @@ export default function LetterheadPage() {
           ) : (
             <div className="space-y-4">
               <div>
-                <label htmlFor="correspondence-letterhead-organisation-name" className="block text-xs font-semibold text-neutral-700 mb-1">Organisation Name</label>
-                <input id="correspondence-letterhead-organisation-name" className="form-input" value={form.org_name ?? ""} onChange={(e) => set("org_name", e.target.value)} placeholder="e.g. SADC Parliamentary Forum" />
+                <label htmlFor="correspondence-letterhead-organisation-name" className="block text-xs font-semibold text-neutral-700 mb-1">{t("correspondence.letterhead.orgName")}</label>
+                <input id="correspondence-letterhead-organisation-name" className="form-input" value={form.org_name ?? ""} onChange={(e) => set("org_name", e.target.value)} placeholder={t("correspondence.letterhead.orgNamePlaceholder")} />
               </div>
               <div>
-                <label htmlFor="correspondence-letterhead-abbreviation-short-name" className="block text-xs font-semibold text-neutral-700 mb-1">Abbreviation / Short Name</label>
-                <input id="correspondence-letterhead-abbreviation-short-name" className="form-input" value={form.org_abbreviation ?? ""} onChange={(e) => set("org_abbreviation", e.target.value)} placeholder="e.g. SADC-PF" />
+                <label htmlFor="correspondence-letterhead-abbreviation-short-name" className="block text-xs font-semibold text-neutral-700 mb-1">{t("correspondence.letterhead.abbreviation")}</label>
+                <input id="correspondence-letterhead-abbreviation-short-name" className="form-input" value={form.org_abbreviation ?? ""} onChange={(e) => set("org_abbreviation", e.target.value)} placeholder={t("correspondence.letterhead.abbreviationPlaceholder")} />
               </div>
               <div>
-                <label htmlFor="correspondence-letterhead-tagline" className="block text-xs font-semibold text-neutral-700 mb-1">Tagline</label>
-                <input id="correspondence-letterhead-tagline" className="form-input" value={form.letterhead_tagline ?? ""} onChange={(e) => set("letterhead_tagline", e.target.value)} placeholder="e.g. Enhancing Parliamentary Democracy…" />
+                <label htmlFor="correspondence-letterhead-tagline" className="block text-xs font-semibold text-neutral-700 mb-1">{t("correspondence.letterhead.tagline")}</label>
+                <input id="correspondence-letterhead-tagline" className="form-input" value={form.letterhead_tagline ?? ""} onChange={(e) => set("letterhead_tagline", e.target.value)} placeholder={t("correspondence.letterhead.taglinePlaceholder")} />
               </div>
               <div>
-                <label htmlFor="correspondence-letterhead-physical-address" className="block text-xs font-semibold text-neutral-700 mb-1">Physical Address</label>
+                <label htmlFor="correspondence-letterhead-physical-address" className="block text-xs font-semibold text-neutral-700 mb-1">{t("correspondence.letterhead.address")}</label>
                 <textarea id="correspondence-letterhead-physical-address" className="form-input resize-none" rows={2} value={form.org_address ?? ""} onChange={(e) => set("org_address", e.target.value)} placeholder="129 Robert Mugabe Avenue, Windhoek" />
               </div>
 
               <hr className="border-neutral-100" />
-              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Contact Details</p>
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">{t("correspondence.letterhead.contact")}</p>
 
               <div>
-                <label htmlFor="correspondence-letterhead-telephone" className="block text-xs font-semibold text-neutral-700 mb-1">Telephone</label>
+                <label htmlFor="correspondence-letterhead-telephone" className="block text-xs font-semibold text-neutral-700 mb-1">{t("correspondence.letterhead.telephone")}</label>
                 <input id="correspondence-letterhead-telephone" className="form-input" value={form.letterhead_phone ?? ""} onChange={(e) => set("letterhead_phone", e.target.value)} placeholder="+264 61 287 2158" />
               </div>
               <div>
-                <label htmlFor="correspondence-letterhead-fax" className="block text-xs font-semibold text-neutral-700 mb-1">Fax</label>
+                <label htmlFor="correspondence-letterhead-fax" className="block text-xs font-semibold text-neutral-700 mb-1">{t("correspondence.letterhead.fax")}</label>
                 <input id="correspondence-letterhead-fax" className="form-input" value={form.letterhead_fax ?? ""} onChange={(e) => set("letterhead_fax", e.target.value)} placeholder="+264 61 254 642" />
               </div>
               <div>
-                <label htmlFor="correspondence-letterhead-website" className="block text-xs font-semibold text-neutral-700 mb-1">Website</label>
+                <label htmlFor="correspondence-letterhead-website" className="block text-xs font-semibold text-neutral-700 mb-1">{t("correspondence.letterhead.website")}</label>
                 <input id="correspondence-letterhead-website" className="form-input" value={form.letterhead_website ?? ""} onChange={(e) => set("letterhead_website", e.target.value)} placeholder="www.sadcpf.org" />
               </div>
 
               {dirty && (
                 <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-xs text-amber-700 flex items-center gap-2">
                   <span className="material-symbols-outlined text-[14px]">edit</span>
-                  Unsaved changes — click Save Changes to apply.
+                  {t("correspondence.letterhead.unsaved")}
                 </div>
               )}
             </div>
@@ -171,7 +173,7 @@ export default function LetterheadPage() {
         <div>
           <p className="print:hidden text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[14px]">preview</span>
-            Live Preview
+            {t("correspondence.letterhead.livePreview")}
           </p>
 
           {loading ? (
@@ -203,21 +205,21 @@ export default function LetterheadPage() {
 
               {/* Blue banner */}
               <div style={{ background: "#1d85ed", padding: "10px 40px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,.85)" }}>Date: ___________________________</span>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,.85)" }}>Ref: ___________________________</span>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,.85)" }}>{t("correspondence.letterhead.dateLine")}</span>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,.85)" }}>{t("correspondence.letterhead.refLine")}</span>
               </div>
 
               {/* Address fields */}
               <div style={{ padding: "28px 40px 0" }}>
                 <div style={{ marginBottom: 20 }}>
-                  <p style={{ fontSize: 13, color: "#374151", marginBottom: 8 }}>To:</p>
+                  <p style={{ fontSize: 13, color: "#374151", marginBottom: 8 }}>{t("correspondence.letterhead.to")}</p>
                   <div style={{ borderBottom: "1px solid #d1d5db", marginBottom: 10, height: 24 }} />
                   <div style={{ borderBottom: "1px solid #d1d5db", marginBottom: 10, height: 24 }} />
                   <div style={{ borderBottom: "1px solid #d1d5db", height: 24 }} />
                 </div>
                 <div style={{ marginBottom: 20 }}>
                   <p style={{ fontSize: 14, fontWeight: 700, color: "#0f1f3d", borderBottom: "2px solid #e5e7eb", paddingBottom: 8 }}>
-                    Subject: _______________________________________________________________
+                    {t("correspondence.letterhead.subjectLine")}
                   </p>
                 </div>
               </div>
@@ -233,16 +235,16 @@ export default function LetterheadPage() {
               <div style={{ padding: "24px 40px 0", display: "flex", justifyContent: "flex-end" }}>
                 <div style={{ textAlign: "center", width: 200 }}>
                   <div style={{ borderBottom: "1px solid #374151", height: 40 }} />
-                  <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Signature &amp; Date</p>
+                  <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{t("correspondence.letterhead.signatureDate")}</p>
                 </div>
               </div>
 
               {/* Footer */}
               <div style={{ borderTop: "1px solid #e5e7eb", margin: "24px 40px 0", padding: "14px 0 24px" }}>
                 <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 6 }}>
-                  {preview.letterhead_phone && <span style={{ fontSize: 11, color: "#9ca3af" }}>Tel: {preview.letterhead_phone}</span>}
-                  {preview.letterhead_fax   && <span style={{ fontSize: 11, color: "#9ca3af" }}>Fax: {preview.letterhead_fax}</span>}
-                  {preview.letterhead_website && <span style={{ fontSize: 11, color: "#9ca3af" }}>Web: {preview.letterhead_website}</span>}
+                  {preview.letterhead_phone && <span style={{ fontSize: 11, color: "#9ca3af" }}>{t("correspondence.letterhead.tel", { value: preview.letterhead_phone })}</span>}
+                  {preview.letterhead_fax   && <span style={{ fontSize: 11, color: "#9ca3af" }}>{t("correspondence.letterhead.faxValue", { value: preview.letterhead_fax })}</span>}
+                  {preview.letterhead_website && <span style={{ fontSize: 11, color: "#9ca3af" }}>{t("correspondence.letterhead.web", { value: preview.letterhead_website })}</span>}
                 </div>
                 {preview.org_address && <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>{preview.org_address}</p>}
               </div>

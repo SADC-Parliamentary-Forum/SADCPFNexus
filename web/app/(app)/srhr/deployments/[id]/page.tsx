@@ -9,24 +9,26 @@ import { formatDate } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  active:    { label: "Active",    cls: "badge-success" },
-  completed: { label: "Completed", cls: "badge-muted"   },
-  recalled:  { label: "Recalled",  cls: "badge-danger"  },
-  suspended: { label: "Suspended", cls: "badge-warning" },
+  active:    { label: "srhr.deploymentStatus.active", cls: "badge-success" },
+  completed: { label: "srhr.deploymentStatus.completed", cls: "badge-muted"   },
+  recalled:  { label: "srhr.deploymentStatus.recalled", cls: "badge-danger"  },
+  suspended: { label: "srhr.deploymentStatus.suspended", cls: "badge-warning" },
 };
 
 const reportStatusConfig: Record<string, { label: string; cls: string }> = {
-  draft:              { label: "Draft",             cls: "badge-muted"   },
-  submitted:          { label: "Submitted",         cls: "badge-primary" },
-  acknowledged:       { label: "Acknowledged",      cls: "badge-success" },
-  revision_requested: { label: "Revision Requested",cls: "badge-warning" },
-  archived:           { label: "Archived",          cls: "badge-muted"   },
+  draft:              { label: "srhr.reportStatus.draft", cls: "badge-muted"   },
+  submitted:          { label: "srhr.reportStatus.submitted", cls: "badge-primary" },
+  acknowledged:       { label: "srhr.reportStatus.acknowledged", cls: "badge-success" },
+  revision_requested: { label: "srhr.reportStatus.revision_requested", cls: "badge-warning" },
+  archived:           { label: "srhr.reportStatus.archived", cls: "badge-muted"   },
 };
 
 export default function DeploymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id }      = use(params);
+  const { t }       = useI18n();
   const router      = useRouter();
   const { confirm } = useConfirm();
   const [dep, setDep] = useState<StaffDeployment | null>(null);
@@ -46,7 +48,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
         setDep(dRes.data.data);
         setReports(rRes.data.data ?? []);
       })
-      .catch(() => setError("Deployment not found."))
+      .catch(() => setError(t("srhr.deployment.notFound")))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -57,18 +59,18 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
       await deploymentsApi.recall(Number(id), recallReason);
       router.push("/srhr/deployments");
     } catch {
-      setError("Failed to recall deployment.");
+      setError(t("srhr.deployment.recallFailed"));
       setRecalling(false);
     }
   };
 
   const handleComplete = async () => {
-    if (!(await confirm({ title: "Complete deployment", message: "Mark this deployment as completed?", variant: "primary" }))) return;
+    if (!(await confirm({ title: t("srhr.deployment.completeTitle"), message: t("srhr.deployment.completeMessage"), variant: "primary" }))) return;
     try {
       await deploymentsApi.complete(Number(id));
       router.push("/srhr/deployments");
     } catch {
-      setError("Failed to complete deployment.");
+      setError(t("srhr.deployment.completeFailed"));
     }
   };
 
@@ -86,7 +88,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
   }
 
   if (error || !dep) {
-    return <div className="card p-8 text-center text-sm text-red-600">{error ?? "Not found."}</div>;
+    return <div className="card p-8 text-center text-sm text-red-600">{error ?? t("srhr.notFound")}</div>;
   }
 
   return (
@@ -97,15 +99,15 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "SRHR", href: "/srhr" },
-              { label: "Deployments", href: "/srhr/deployments" },
+              { label: "srhr.crumb", href: "/srhr" },
+              { label: "srhr.deployment.crumb", href: "/srhr/deployments" },
               { label: dep.reference_number },
             ]}
           />
         }
         meta={
           <span className={`badge ${statusConfig[dep.status]?.cls ?? "badge-muted"}`}>
-            {statusConfig[dep.status]?.label}
+            {statusConfig[dep.status] ? t(statusConfig[dep.status].label) : dep.status}
           </span>
         }
       />
@@ -118,21 +120,21 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
             className="btn-primary inline-flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[18px]">add_notes</span>
-            Submit Report
+            {t("srhr.submitReport")}
           </Link>
           <button
             className="btn-secondary inline-flex items-center gap-2"
             onClick={handleComplete}
           >
             <span className="material-symbols-outlined text-[18px]">task_alt</span>
-            Mark Completed
+            {t("srhr.deployment.markCompleted")}
           </button>
           <button
             className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
             onClick={() => setShowRecallModal(true)}
           >
             <span className="material-symbols-outlined text-[18px]">undo</span>
-            Recall
+            {t("srhr.deployment.recall")}
           </button>
         </div>
       )}
@@ -141,17 +143,17 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
       <div className="card p-6">
         <h3 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] text-neutral-400">info</span>
-          Deployment Details
+          {t("srhr.deployment.details")}
         </h3>
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           {[
-            { label: "Researcher",   value: dep.employee?.name },
-            { label: "Parliament",   value: dep.parliament?.name },
-            { label: "Type",          value: dep.deployment_type === "field_researcher" ? "Field Researcher" : dep.deployment_type },
-          { label: "Research Area", value: dep.research_area ?? "—" },
-            { label: "Start Date",   value: formatDate(dep.start_date) },
-            { label: "End Date",     value: dep.end_date ? formatDate(dep.end_date) : "Open-ended" },
-            { label: "Payroll",      value: dep.payroll_active ? "Active" : "Paused" },
+            { label: t("srhr.col.researcher"), value: dep.employee?.name },
+            { label: t("srhr.col.parliament"), value: dep.parliament?.name },
+            { label: t("srhr.col.type"), value: dep.deployment_type === "field_researcher" ? t("srhr.deploymentType.field_researcher") : dep.deployment_type },
+          { label: t("srhr.deployment.researchArea"), value: dep.research_area ?? "—" },
+            { label: t("common.startDate"), value: formatDate(dep.start_date) },
+            { label: t("common.endDate"), value: dep.end_date ? formatDate(dep.end_date) : t("srhr.deployment.openEnded") },
+            { label: t("srhr.deployment.payroll"), value: dep.payroll_active ? t("hr.timesheets.templates.active") : t("srhr.deployment.paused") },
           ].map((f) => (
             <div key={f.label}>
               <dt className="text-xs text-neutral-500 mb-0.5">{f.label}</dt>
@@ -161,13 +163,13 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
         </dl>
         {dep.research_focus && (
           <div className="mt-4 pt-4 border-t border-neutral-100">
-            <p className="text-xs text-neutral-500 mb-1">Research Focus</p>
+            <p className="text-xs text-neutral-500 mb-1">{t("srhr.deployment.researchFocus")}</p>
             <p className="text-sm text-neutral-700 whitespace-pre-line">{dep.research_focus}</p>
           </div>
         )}
         {dep.terms_of_reference && (
           <div className="mt-4 pt-4 border-t border-neutral-100">
-            <p className="text-xs text-neutral-500 mb-1">Terms of Reference</p>
+            <p className="text-xs text-neutral-500 mb-1">{t("srhr.deployment.tor")}</p>
             <p className="text-sm text-neutral-700 whitespace-pre-line">{dep.terms_of_reference}</p>
           </div>
         )}
@@ -178,13 +180,13 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
         <div className="card p-6">
           <h3 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">person</span>
-            Supervisor at Parliament
+            {t("srhr.deployment.supervisorAtParliament")}
           </h3>
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
-            {dep.supervisor_name  && <div><dt className="text-xs text-neutral-500">Name</dt><dd className="font-medium">{dep.supervisor_name}</dd></div>}
-            {dep.supervisor_title && <div><dt className="text-xs text-neutral-500">Title</dt><dd className="font-medium">{dep.supervisor_title}</dd></div>}
-            {dep.supervisor_email && <div><dt className="text-xs text-neutral-500">Email</dt><dd><a href={`mailto:${dep.supervisor_email}`} className="text-primary hover:underline">{dep.supervisor_email}</a></dd></div>}
-            {dep.supervisor_phone && <div><dt className="text-xs text-neutral-500">Phone</dt><dd className="font-medium">{dep.supervisor_phone}</dd></div>}
+            {dep.supervisor_name  && <div><dt className="text-xs text-neutral-500">{t("hr.timesheets.templates.name")}</dt><dd className="font-medium">{dep.supervisor_name}</dd></div>}
+            {dep.supervisor_title && <div><dt className="text-xs text-neutral-500">{t("srhr.deployment.supervisorTitle")}</dt><dd className="font-medium">{dep.supervisor_title}</dd></div>}
+            {dep.supervisor_email && <div><dt className="text-xs text-neutral-500">{t("srhr.deployment.email")}</dt><dd><a href={`mailto:${dep.supervisor_email}`} className="text-primary hover:underline">{dep.supervisor_email}</a></dd></div>}
+            {dep.supervisor_phone && <div><dt className="text-xs text-neutral-500">{t("srhr.deployment.phone")}</dt><dd className="font-medium">{dep.supervisor_phone}</dd></div>}
           </dl>
         </div>
       )}
@@ -194,14 +196,14 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
         <div className="card-header flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">summarize</span>
-            <h3 className="text-sm font-semibold text-neutral-900">Activity Reports</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("srhr.deployment.activityReports")}</h3>
           </div>
           {dep.status === "active" && (
-            <Link href={`/srhr/reports/new?deployment_id=${dep.id}`} className="btn-secondary text-xs">+ New report</Link>
+            <Link href={`/srhr/reports/new?deployment_id=${dep.id}`} className="btn-secondary text-xs">{t("srhr.deployment.newReport")}</Link>
           )}
         </div>
         {reports.length === 0 ? (
-          <EmptyState icon="summarize" title="No reports submitted yet." className="py-8 min-h-0" />
+          <EmptyState icon="summarize" title={t("srhr.deployment.noReports")} className="py-8 min-h-0" />
         ) : (
           <div className="divide-y divide-neutral-100">
             {reports.map((r) => (
@@ -215,7 +217,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
                   <p className="text-xs text-neutral-500">{r.reference_number} · {formatDate(r.period_start)} – {formatDate(r.period_end)}</p>
                 </div>
                 <span className={`badge ${reportStatusConfig[r.status]?.cls ?? "badge-muted"} text-[10px] flex-shrink-0`}>
-                  {reportStatusConfig[r.status]?.label}
+                  {reportStatusConfig[r.status] ? t(reportStatusConfig[r.status].label) : r.status}
                 </span>
               </Link>
             ))}
@@ -227,23 +229,23 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
       {showRecallModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="text-base font-semibold text-neutral-900">Recall Deployment</h3>
-            <p className="text-sm text-neutral-600">Please provide a reason for recalling this deployment. This will clear the researcher&apos;s external HR flag.</p>
+            <h3 className="text-base font-semibold text-neutral-900">{t("srhr.deployment.recallTitle")}</h3>
+            <p className="text-sm text-neutral-600">{t("srhr.deployment.recallPrompt")}</p>
             <textarea
               className="form-input"
               rows={3}
-              placeholder="Reason for recall…"
+              placeholder={t("srhr.deployment.recallPlaceholder")}
               value={recallReason}
               onChange={(e) => setRecallReason(e.target.value)}
             />
             <div className="flex justify-end gap-3">
-              <button className="btn-secondary" onClick={() => setShowRecallModal(false)}>Cancel</button>
+              <button className="btn-secondary" onClick={() => setShowRecallModal(false)}>{t("common.cancel")}</button>
               <button
                 className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                 disabled={!recallReason.trim() || recalling}
                 onClick={handleRecall}
               >
-                {recalling ? "Recalling…" : "Confirm Recall"}
+                {recalling ? t("srhr.deployment.recalling") : t("srhr.deployment.confirmRecall")}
               </button>
             </div>
           </div>

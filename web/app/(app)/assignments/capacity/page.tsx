@@ -5,8 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function AssignmentsCapacityPage() {
+  const { t } = useI18n();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["assignments-capacity"],
     queryFn: () => assignmentsApi.capacity().then((r) => r.data.data),
@@ -26,38 +28,38 @@ export default function AssignmentsCapacityPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Team capacity"
-        subtitle="Open workload by assignee (priority-weighted). Not a performance score."
+        title={t("assignments.capacity.title")}
+        subtitle={t("assignments.capacity.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.assignments", href: "/assignments" },
-              { label: "Capacity" },
+              { label: t("assignments.calendar.capacity") },
             ]}
           />
         }
         actions={
           <>
-            <Link href="/assignments/calendar" className="btn-secondary text-sm">Calendar &amp; ICS</Link>
-            <Link href="/assignments/workload" className="btn-secondary text-sm">Workload forecast</Link>
+            <Link href="/assignments/calendar" className="btn-secondary text-sm">{t("assignments.capacity.calendarIcs")}</Link>
+            <Link href="/assignments/workload" className="btn-secondary text-sm">{t("assignments.capacity.workloadForecast")}</Link>
           </>
         }
       />
 
-      {isLoading && <p className="text-sm text-neutral-500">Loading capacity…</p>}
-      {isError && <p className="text-sm text-red-700">Failed to load capacity view.</p>}
+      {isLoading && <p className="text-sm text-neutral-500">{t("assignments.capacity.loading")}</p>}
+      {isError && <p className="text-sm text-red-700">{t("assignments.capacity.loadFailed")}</p>}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
-          <p className="text-xs uppercase tracking-wide text-neutral-500">Assignees</p>
+          <p className="text-xs uppercase tracking-wide text-neutral-500">{t("assignments.capacity.assignees")}</p>
           <p className="mt-1 text-2xl font-semibold">{summary.assignee_count ?? 0}</p>
         </div>
         <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
-          <p className="text-xs uppercase tracking-wide text-neutral-500">Open</p>
+          <p className="text-xs uppercase tracking-wide text-neutral-500">{t("assignments.capacity.open")}</p>
           <p className="mt-1 text-2xl font-semibold">{summary.open_total ?? 0}</p>
         </div>
         <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
-          <p className="text-xs uppercase tracking-wide text-neutral-500">Overdue</p>
+          <p className="text-xs uppercase tracking-wide text-neutral-500">{t("assignments.overdueBadge")}</p>
           <p className="mt-1 text-2xl font-semibold">{summary.overdue_total ?? 0}</p>
         </div>
       </div>
@@ -66,11 +68,11 @@ export default function AssignmentsCapacityPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
             <tr>
-              <th className="px-4 py-3">Assignee</th>
-              <th className="px-4 py-3">Open</th>
-              <th className="px-4 py-3">Overdue</th>
-              <th className="px-4 py-3">Load</th>
-              <th className="px-4 py-3">Band</th>
+              <th className="px-4 py-3">{t("assignments.capacity.assignee")}</th>
+              <th className="px-4 py-3">{t("assignments.capacity.open")}</th>
+              <th className="px-4 py-3">{t("assignments.overdueBadge")}</th>
+              <th className="px-4 py-3">{t("assignments.capacity.load")}</th>
+              <th className="px-4 py-3">{t("assignments.capacity.band")}</th>
             </tr>
           </thead>
           <tbody>
@@ -89,7 +91,7 @@ export default function AssignmentsCapacityPage() {
             {!isLoading && assignees.length === 0 && (
               <tr>
                 <td colSpan={5}>
-                  <EmptyState icon="groups" title="No open assignments in scope." />
+                  <EmptyState icon="groups" title={t("assignments.capacity.empty")} />
                 </td>
               </tr>
             )}

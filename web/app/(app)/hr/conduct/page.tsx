@@ -9,15 +9,16 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const RECORD_TYPE_LABELS: Record<string, string> = {
-  commendation: "Commendation",
-  verbal_counseling: "Verbal counseling",
-  written_warning: "Written warning",
-  final_warning: "Final warning",
-  suspension: "Suspension",
-  dismissal: "Dismissal",
-  performance_improvement: "Performance improvement",
+  commendation: "hr.conduct.type.commendation",
+  verbal_counseling: "hr.conduct.typeLc.verbalCounseling",
+  written_warning: "hr.conduct.typeLc.writtenWarning",
+  final_warning: "hr.conduct.typeLc.finalWarning",
+  suspension: "hr.conduct.type.suspension",
+  dismissal: "hr.conduct.type.dismissal",
+  performance_improvement: "hr.conduct.typeLc.performanceImprovement",
 };
 
 const RECORD_TYPE_CLS: Record<string, string> = {
@@ -31,11 +32,11 @@ const RECORD_TYPE_CLS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  open: "Open",
-  acknowledged: "Acknowledged",
-  under_appeal: "Under appeal",
-  resolved: "Resolved",
-  closed: "Closed",
+  open: "hr.conduct.status.open",
+  acknowledged: "hr.conduct.status.acknowledged",
+  under_appeal: "hr.conduct.status.underAppeal",
+  resolved: "hr.conduct.status.resolved",
+  closed: "hr.conduct.status.closed",
 };
 
 function formatDate(d: string | null | undefined) {
@@ -56,6 +57,7 @@ function UserAutocomplete({
   onSelect: (u: TenantUserOption | null) => void;
   required?: boolean;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState(value?.name ?? "");
   const [options, setOptions] = useState<TenantUserOption[]>([]);
   const [open, setOpen] = useState(false);
@@ -64,7 +66,7 @@ function UserAutocomplete({
 
   useEffect(() => {
     if (!query.trim() || (value && query === value.name)) { setOptions([]); return; }
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setLoading(true);
       try {
         const r = await tenantUsersApi.list({ search: query });
@@ -72,7 +74,7 @@ function UserAutocomplete({
       } catch { setOptions([]); }
       finally { setLoading(false); }
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [query, value]);
 
   useEffect(() => {
@@ -89,7 +91,7 @@ function UserAutocomplete({
         id={inputId}
         type="text"
         className="form-input w-full"
-        placeholder="Type name to search…"
+        placeholder={t("hr.conduct.typeToSearch")}
         value={query}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); onSelect(null); }}
         onFocus={() => setOpen(true)}
@@ -98,9 +100,9 @@ function UserAutocomplete({
       {open && query.trim().length > 0 && (
         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
           {loading ? (
-            <div className="px-3 py-2 text-xs text-neutral-400">Searching…</div>
+            <div className="px-3 py-2 text-xs text-neutral-400">{t("hr.conduct.searching")}</div>
           ) : options.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-neutral-400">No users found</div>
+            <div className="px-3 py-2 text-xs text-neutral-400">{t("hr.conduct.noUsers")}</div>
           ) : options.map((u) => (
             <button
               key={u.id}
@@ -119,6 +121,7 @@ function UserAutocomplete({
 }
 
 export default function ConductPage() {
+  const { t } = useI18n();
   const toast = useToast();
   const [list, setList] = useState<ConductRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,12 +161,12 @@ export default function ConductPage() {
       setLastPage(payload.last_page ?? 1);
       setTotal(payload.total ?? 0);
     } catch {
-      setError("Failed to load conduct records.");
+      setError(t("hr.conduct.loadFailed"));
       setList([]);
     } finally {
       setLoading(false);
     }
-  }, [page, recordTypeFilter, statusFilter]);
+  }, [page, recordTypeFilter, statusFilter, t]);
 
   useEffect(() => {
     loadList();
@@ -171,7 +174,7 @@ export default function ConductPage() {
 
   const handleCreateConduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEmployee) { setCreateError("Please select an employee."); return; }
+    if (!newEmployee) { setCreateError(t("hr.conduct.selectEmployee")); return; }
     setCreating(true);
     setCreateError(null);
     try {
@@ -186,11 +189,11 @@ export default function ConductPage() {
       });
       setShowNew(false);
       setNewEmployee(null); setNewRecordType("commendation"); setNewTitle(""); setNewDescription(""); setNewIncidentDate(""); setNewIsConfidential(false);
-      toast.success("Conduct record created");
+      toast.success(t("hr.conduct.new.created"));
       loadList();
     } catch (err: unknown) {
-      setCreateError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Failed to create record.");
-      toast.error("Conduct record not created", apiErrorMessage(err, "Failed to create record."));
+      setCreateError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : t("hr.conduct.new.createFailed"));
+      toast.error(t("hr.conduct.new.notCreated"), apiErrorMessage(err, t("hr.conduct.new.createFailed")));
     } finally { setCreating(false); }
   };
 
@@ -213,11 +216,11 @@ export default function ConductPage() {
         issue_date: r.issue_date ?? "",
       })),
       [
-        { key: "employee", header: "Employee" },
-        { key: "type", header: "Type" },
-        { key: "title", header: "Title" },
-        { key: "status", header: "Status" },
-        { key: "issue_date", header: "Issue date" },
+        { key: "employee", header: t("hr.conduct.employee") },
+        { key: "type", header: t("hr.conduct.type") },
+        { key: "title", header: t("hr.conduct.titleLabel") },
+        { key: "status", header: t("hr.conduct.statusLabel") },
+        { key: "issue_date", header: t("hr.conduct.issueDateLc") },
       ],
     );
   };
@@ -225,9 +228,9 @@ export default function ConductPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Conduct, Discipline & Recognition"
-        subtitle="Commendations, warnings, and corrective actions. These records support performance review and HR decisions."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Conduct" }]} />}
+        title={t("hr.conduct.title")}
+        subtitle={t("hr.conduct.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: t("hr.conduct.crumb") }]} />}
         actions={
           <>
           <button
@@ -237,11 +240,11 @@ export default function ConductPage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("hr.conduct.exportCsv")}
           </button>
           <Link href="/hr/conduct/new" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-            Full Form
+            {t("hr.conduct.fullForm")}
           </Link>
           <button
             type="button"
@@ -249,7 +252,7 @@ export default function ConductPage() {
             className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Quick Add
+            {t("hr.conduct.quickAdd")}
           </button>
           </>
         }
@@ -270,12 +273,12 @@ export default function ConductPage() {
           <input
             type="search"
             className="form-input pl-10"
-            placeholder="Search employee or title…"
+            placeholder={t("hr.conduct.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Type</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{t("hr.conduct.type")}</span>
         <select
           className="form-input max-w-[220px] py-2 text-sm"
           value={recordTypeFilter}
@@ -284,14 +287,14 @@ export default function ConductPage() {
             setPage(1);
           }}
         >
-          <option value="">All types</option>
+          <option value="">{t("hr.conduct.allTypes")}</option>
           {Object.entries(RECORD_TYPE_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
-              {label}
+              {t(label)}
             </option>
           ))}
         </select>
-        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Status</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{t("hr.conduct.statusLabel")}</span>
         <select
           className="form-input max-w-[180px] py-2 text-sm"
           value={statusFilter}
@@ -300,10 +303,10 @@ export default function ConductPage() {
             setPage(1);
           }}
         >
-          <option value="">All</option>
+          <option value="">{t("hr.conduct.all")}</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
-              {label}
+              {t(label)}
             </option>
           ))}
         </select>
@@ -311,19 +314,19 @@ export default function ConductPage() {
 
       <div className="card overflow-hidden">
         <div className="card-header flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-neutral-900">Records</h3>
+          <h3 className="text-sm font-semibold text-neutral-900">{t("hr.conduct.records")}</h3>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16 text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[28px]">progress_activity</span>
-            <span className="ml-2">Loading…</span>
+            <span className="ml-2">{t("common.loading")}</span>
           </div>
         ) : visible.length === 0 ? (
           <EmptyState
             icon="gavel"
-            title="No conduct records found."
-            description={recordTypeFilter || statusFilter || search ? "Try changing the filters." : "Commendations and disciplinary records will appear here."}
+            title={t("hr.conduct.empty")}
+            description={recordTypeFilter || statusFilter || search ? t("hr.conduct.emptyFiltered") : t("hr.conduct.emptyHint")}
           />
         ) : (
           <>
@@ -331,12 +334,12 @@ export default function ConductPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Employee</th>
-                    <th>Type</th>
-                    <th>Title</th>
-                    <th>Issue date</th>
-                    <th>Status</th>
-                    <th className="text-right">Action</th>
+                    <th>{t("hr.conduct.employee")}</th>
+                    <th>{t("hr.conduct.type")}</th>
+                    <th>{t("hr.conduct.titleLabel")}</th>
+                    <th>{t("hr.conduct.issueDateLc")}</th>
+                    <th>{t("hr.conduct.statusLabel")}</th>
+                    <th className="text-right">{t("hr.conduct.action")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -347,7 +350,7 @@ export default function ConductPage() {
                       </td>
                       <td>
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${RECORD_TYPE_CLS[r.record_type] ?? "bg-neutral-100"}`}>
-                          {RECORD_TYPE_LABELS[r.record_type] ?? r.record_type}
+                          {RECORD_TYPE_LABELS[r.record_type] ? t(RECORD_TYPE_LABELS[r.record_type]) : r.record_type}
                         </span>
                       </td>
                       <td className="text-neutral-700 text-sm max-w-[200px] truncate" title={r.title}>
@@ -358,7 +361,7 @@ export default function ConductPage() {
                       </td>
                       <td>
                         <span className="text-xs font-medium text-neutral-600">
-                          {STATUS_LABELS[r.status] ?? r.status}
+                          {STATUS_LABELS[r.status] ? t(STATUS_LABELS[r.status]) : r.status}
                         </span>
                       </td>
                       <td className="text-right">
@@ -366,7 +369,7 @@ export default function ConductPage() {
                           href={`/hr/conduct/${r.id}`}
                           className="btn-secondary text-xs"
                         >
-                          View
+                          {t("hr.conduct.view")}
                         </Link>
                       </td>
                     </tr>
@@ -390,8 +393,8 @@ export default function ConductPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-              <h2 className="text-base font-semibold text-neutral-900">New Conduct Record</h2>
-              <button type="button" onClick={() => setShowNew(false)} aria-label="Close conduct record form" className="text-neutral-400 hover:text-neutral-600">
+              <h2 className="text-base font-semibold text-neutral-900">{t("hr.conduct.new.title")}</h2>
+              <button type="button" onClick={() => setShowNew(false)} aria-label={t("hr.conduct.closeForm")} className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>
@@ -399,39 +402,39 @@ export default function ConductPage() {
               {createError && (
                 <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{createError}</div>
               )}
-              <UserAutocomplete label="Employee" value={newEmployee} onSelect={setNewEmployee} required />
+              <UserAutocomplete label={t("hr.conduct.employee")} value={newEmployee} onSelect={setNewEmployee} required />
               <div>
-                <label htmlFor="conduct-record-type" className="block text-xs font-semibold text-neutral-700 mb-1">Record type <span className="text-red-500">*</span></label>
+                <label htmlFor="conduct-record-type" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.conduct.recordTypeLc")} <span className="text-red-500">*</span></label>
                 <select id="conduct-record-type" className="form-input w-full" value={newRecordType} onChange={(e) => setNewRecordType(e.target.value)} required>
-                  {Object.entries(RECORD_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  {Object.entries(RECORD_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{t(l)}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="conduct-title" className="block text-xs font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
-                <input id="conduct-title" type="text" className="form-input w-full" placeholder="Brief title for this record" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
+                <label htmlFor="conduct-title" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.conduct.titleLabel")} <span className="text-red-500">*</span></label>
+                <input id="conduct-title" type="text" className="form-input w-full" placeholder={t("hr.conduct.quickTitlePlaceholder")} value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
               </div>
               <div>
-                <label htmlFor="conduct-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description <span className="text-red-500">*</span></label>
-                <textarea id="conduct-description" rows={3} className="form-input resize-none" placeholder="Full description of the incident or commendation…" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} required />
+                <label htmlFor="conduct-description" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.conduct.description")} <span className="text-red-500">*</span></label>
+                <textarea id="conduct-description" rows={3} className="form-input resize-none" placeholder={t("hr.conduct.quickDescriptionPlaceholder")} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="conduct-issue-date" className="block text-xs font-semibold text-neutral-700 mb-1">Issue date <span className="text-red-500">*</span></label>
+                  <label htmlFor="conduct-issue-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.conduct.issueDateLc")} <span className="text-red-500">*</span></label>
                   <input id="conduct-issue-date" type="date" className="form-input w-full" value={newIssueDate} onChange={(e) => setNewIssueDate(e.target.value)} required />
                 </div>
                 <div>
-                  <label htmlFor="conduct-incident-date" className="block text-xs font-semibold text-neutral-700 mb-1">Incident date</label>
+                  <label htmlFor="conduct-incident-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.conduct.incidentDateLc")}</label>
                   <input id="conduct-incident-date" type="date" className="form-input w-full" value={newIncidentDate} onChange={(e) => setNewIncidentDate(e.target.value)} />
                 </div>
               </div>
               <label htmlFor="hr-conduct-setnewisconfidential-e-target-checked-classname-" className="flex items-center gap-2 cursor-pointer text-sm text-neutral-700">
                 <input id="hr-conduct-setnewisconfidential-e-target-checked-classname-" type="checkbox" checked={newIsConfidential} onChange={(e) => setNewIsConfidential(e.target.checked)} className="rounded border-neutral-300 text-primary" />
-                Mark as confidential
+                {t("hr.conduct.markConfidential")}
               </label>
               <div className="flex justify-end gap-3 pt-1">
-                <button type="button" onClick={() => setShowNew(false)} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={() => setShowNew(false)} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
                 <button type="submit" disabled={creating || !newEmployee || !newTitle || !newDescription} className="btn-primary px-5 py-2 text-sm disabled:opacity-50">
-                  {creating ? "Creating…" : "Create record"}
+                  {creating ? t("hr.conduct.creating") : t("hr.conduct.createRecord")}
                 </button>
               </div>
             </form>

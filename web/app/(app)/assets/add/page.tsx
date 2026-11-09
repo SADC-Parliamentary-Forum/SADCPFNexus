@@ -11,15 +11,18 @@ import { assigneeDepartmentName, formatAssigneeLabel } from "@/lib/asset-assigne
 import { createFilePreviewUrl } from "@/lib/filePreview";
 import { AssetIdentifierFields, EMPTY_IDENTIFIERS, isSerialConflict, type AssetIdentifiers } from "@/components/assets/AssetIdentifierFields";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
 
 const STATUSES = ["active", "service_due", "loan_out", "retired"] as const;
 const DEPRECIATION_METHODS = [
-  { value: "straight_line", label: "Straight Line" },
-  { value: "declining_balance", label: "Declining Balance" },
+  { value: "straight_line", label: "assets.form.method.straightLine" },
+  { value: "declining_balance", label: "assets.form.method.decliningBalance" },
 ] as const;
-const STEP_LABELS = ["Basic info", "Invoice & amount", "Financial", "Review"] as const;
+const STEP_LABELS = ["assets.form.step.basic", "assets.form.step.invoice", "assets.form.step.financial", "assets.form.step.review"] as const;
 
-function getAgeDisplay(purchaseDate: string, issuedAt: string): string {
+function getAgeDisplay(purchaseDate: string, issuedAt: string, t: T): string {
   const ref = purchaseDate || issuedAt;
   if (!ref) return "—";
   const refDate = new Date(ref);
@@ -31,10 +34,10 @@ function getAgeDisplay(purchaseDate: string, issuedAt: string): string {
     months += 12;
   }
   if (years === 0) {
-    return months === 0 ? "Less than 1 month" : `${months} month(s)`;
+    return months === 0 ? t("assets.form.age.lessThanMonth") : t("assets.form.age.months", { months });
   }
-  if (months === 0) return `${years} year(s)`;
-  return `${years} year(s) ${months} month(s)`;
+  if (months === 0) return t("assets.form.age.years", { years });
+  return t("assets.form.age.yearsMonths", { years, months });
 }
 
 function computeDepreciatedValue(
@@ -59,6 +62,7 @@ function computeDepreciatedValue(
 export default function AddAssetPage() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
   const [assignedUser, setAssignedUser] = useState<TenantUserOption | null>(null);
   const [categories, setCategories] = useState<AssetCategory[]>([]);
@@ -119,8 +123,8 @@ export default function AddAssetPage() {
   }, [invoiceFile]);
 
   const previewAge = useMemo(
-    () => getAgeDisplay(purchaseDate, issuedAt),
-    [purchaseDate, issuedAt]
+    () => getAgeDisplay(purchaseDate, issuedAt, t),
+    [purchaseDate, issuedAt, t]
   );
 
   const pv = purchaseValue === "" ? null : Number(purchaseValue);
@@ -141,7 +145,7 @@ export default function AddAssetPage() {
     const type = file.type.toLowerCase();
     const ok = type === "application/pdf" || type.startsWith("image/");
     if (!ok) {
-      setError("Please choose a PDF or image file (JPEG, PNG, WebP).");
+      setError(t("assets.form.invalidFile"));
       setInvoiceFile(null);
       return;
     }
@@ -155,11 +159,11 @@ export default function AddAssetPage() {
     const code = assetCode.trim();
     const assetName = name.trim();
     if (!code || !assetName) {
-      setError("Asset code and name are required.");
+      setError(t("assets.form.codeNameRequired"));
       return;
     }
     if (categories.length === 0 || !category) {
-      setError("No asset categories defined. Open Categories to add one, then return here.");
+      setError(t("assets.add.noCategoriesError"));
       return;
     }
     setSubmitting(true);
@@ -187,7 +191,7 @@ export default function AddAssetPage() {
       if (invoiceFile) {
         await assetsApi.uploadInvoice(asset.id, invoiceFile);
       }
-      toast.success("Asset created", `${assetName} (${code}) has been added.`);
+      toast.success(t("assets.add.toast.created"), t("assets.add.toast.createdDetail", { name: assetName, code }));
       router.push("/assets");
       router.refresh();
     } catch (err: unknown) {
@@ -201,9 +205,9 @@ export default function AddAssetPage() {
       const msg =
         data?.message ??
         (data?.errors ? Object.values(data.errors).flat().join(" ") : null) ??
-        "Failed to create asset. Please try again.";
+        t("assets.add.createFailed");
       setError(msg);
-      toast.error("Asset not created", msg);
+      toast.error(t("assets.add.toast.notCreated"), msg);
     } finally {
       setSubmitting(false);
     }
@@ -220,15 +224,15 @@ export default function AddAssetPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Add Asset"
-        subtitle="Complete each step. You can attach an invoice (PDF or image) and see a preview before submitting."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "Add Asset" }]} />}
+        title={t("assets.add.title")}
+        subtitle={t("assets.add.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "assets.add.title" }]} />}
       />
 
       {/* Stepper - "Step X of 4" + horizontal circles + labels like other modules */}
       <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-5">
         <p className="text-sm font-medium text-neutral-600 mb-3">
-          Step {currentStep} of {STEP_LABELS.length}
+          {t("assets.add.stepOf", { current: currentStep, total: STEP_LABELS.length })}
         </p>
         <div className="flex items-center gap-2">
           {STEP_LABELS.map((label, i) => (
@@ -242,7 +246,7 @@ export default function AddAssetPage() {
                   {i + 1 < currentStep ? <span className="material-symbols-outlined text-[14px]">check</span> : i + 1}
                 </div>
                 <span className={`text-xs font-medium hidden sm:block ${i + 1 === currentStep ? "text-primary" : i + 1 < currentStep ? "text-neutral-700" : "text-neutral-400"}`}>
-                  {label}
+                  {t(label)}
                 </span>
               </div>
               {i < STEP_LABELS.length - 1 && (
@@ -266,32 +270,32 @@ export default function AddAssetPage() {
           <div className={cardCls}>
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">1</span>
-              Basic asset information
+              {t("assets.form.basicTitle")}
             </h3>
-            <p className="text-xs text-neutral-500">Fields marked with <span className="text-red-500">*</span> are required.</p>
+            <p className="text-xs text-neutral-500">{t("assets.add.requiredPrefix")} <span className="text-red-500">*</span> {t("assets.add.requiredSuffix")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="asset_code" className={labelCls}>Asset code <span className="text-red-500">*</span></label>
+                <label htmlFor="asset_code" className={labelCls}>{t("assets.form.assetCode")} <span className="text-red-500">*</span></label>
                 <input
                   id="asset_code"
                   type="text"
                   maxLength={64}
                   value={assetCode}
                   onChange={(e) => setAssetCode(e.target.value)}
-                  placeholder="e.g. IT-LAP-001"
+                  placeholder={t("assets.add.codePlaceholder")}
                   className={inputCls}
                   disabled={submitting}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="name" className={labelCls}>Name <span className="text-red-500">*</span></label>
+                <label htmlFor="name" className={labelCls}>{t("assets.form.name")} <span className="text-red-500">*</span></label>
                 <input
                   id="name"
                   type="text"
                   maxLength={255}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Dell Laptop 5520"
+                  placeholder={t("assets.add.namePlaceholder")}
                   className={inputCls}
                   disabled={submitting}
                 />
@@ -299,7 +303,7 @@ export default function AddAssetPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="category" className={labelCls}>Category <span className="text-red-500">*</span></label>
+                <label htmlFor="category" className={labelCls}>{t("assets.form.category")} <span className="text-red-500">*</span></label>
                 <select
                   id="category"
                   value={category}
@@ -313,7 +317,7 @@ export default function AddAssetPage() {
                   disabled={submitting}
                 >
                   {categories.length === 0 ? (
-                    <option value="">— No categories —</option>
+                    <option value="">{t("assets.form.noCategories")}</option>
                   ) : (
                     categories.map((c) => (
                       <option key={c.id} value={c.code}>{c.name}</option>
@@ -323,14 +327,14 @@ export default function AddAssetPage() {
                 {categories.length === 0 && (
                   <p className="text-xs text-neutral-500">
                     <Link href="/assets/categories" className="btn-secondary text-xs py-1 px-2">
-                      Add a category
+                      {t("assets.form.addCategory")}
                     </Link>{" "}
-                    before registering an asset.
+                    {t("assets.add.beforeRegistering")}
                   </p>
                 )}
               </div>
               <div className="space-y-2">
-                <label htmlFor="status" className={labelCls}>Status</label>
+                <label htmlFor="status" className={labelCls}>{t("assets.form.status")}</label>
                 <select
                   id="status"
                   value={status}
@@ -339,7 +343,7 @@ export default function AddAssetPage() {
                   disabled={submitting}
                 >
                   {STATUSES.map((s) => (
-                    <option key={s} value={s}>{s.replace("_", " ")}</option>
+                    <option key={s} value={s}>{t(`assets.form.status.${s}`)}</option>
                   ))}
                 </select>
               </div>
@@ -361,14 +365,14 @@ export default function AddAssetPage() {
             />
             <AssetAssigneePicker
               id="assigned_to"
-              label="Assigned to"
+              label={t("assets.form.assignedTo")}
               value={assignedUser}
               onSelect={setAssignedUser}
               disabled={submitting}
-              hint="Optional. Search by full name, email or department."
+              hint={t("assets.form.assigneeHint")}
             />
             <div className="space-y-2">
-              <label htmlFor="issued_at" className={labelCls}>Issued date</label>
+              <label htmlFor="issued_at" className={labelCls}>{t("assets.form.issuedDate")}</label>
               <input
                 id="issued_at"
                 type="date"
@@ -379,14 +383,14 @@ export default function AddAssetPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="notes" className={labelCls}>Notes</label>
+              <label htmlFor="notes" className={labelCls}>{t("assets.form.notes")}</label>
               <textarea
                 id="notes"
                 rows={3}
                 maxLength={2000}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Optional notes"
+                placeholder={t("assets.add.notesPlaceholder")}
                 className={inputCls}
                 disabled={submitting}
               />
@@ -399,23 +403,23 @@ export default function AddAssetPage() {
           <div className={cardCls}>
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">2</span>
-              Invoice & amount
+              {t("assets.form.invoiceTitle")}
             </h3>
             <div className="space-y-2">
-              <label htmlFor="invoice_number" className={labelCls}>Invoice number</label>
+              <label htmlFor="invoice_number" className={labelCls}>{t("assets.form.invoiceNumber")}</label>
               <input
                 id="invoice_number"
                 type="text"
                 maxLength={64}
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
-                placeholder="e.g. INV-2023-001"
+                placeholder={t("assets.add.invoicePlaceholder")}
                 className={`${inputCls} max-w-sm`}
                 disabled={submitting}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="purchase_value_step2" className={labelCls}>Amount / Purchase value ($)</label>
+              <label htmlFor="purchase_value_step2" className={labelCls}>{t("assets.form.amountValue")}</label>
               <input
                 id="purchase_value_step2"
                 type="number"
@@ -429,7 +433,7 @@ export default function AddAssetPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="invoice_file" className={labelCls}>Attach invoice (PDF or image)</label>
+              <label htmlFor="invoice_file" className={labelCls}>{t("assets.add.attachInvoice")}</label>
               <input
                 id="invoice_file"
                 type="file"
@@ -438,27 +442,27 @@ export default function AddAssetPage() {
                 className="block w-full text-sm text-neutral-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20"
                 disabled={submitting}
               />
-              <p className="text-xs text-neutral-500 mt-1">PDF, JPEG, PNG or WebP. Max 10 MB.</p>
+              <p className="text-xs text-neutral-500 mt-1">{t("assets.add.invoiceHint")}</p>
             </div>
             {invoicePreviewUrl && invoiceFile && (
               <div className="mt-4">
-                <p className="text-xs font-medium text-neutral-700 mb-2">Invoice contents (preview)</p>
+                <p className="text-xs font-medium text-neutral-700 mb-2">{t("assets.add.invoiceContentsPreview")}</p>
                 <div className="border border-neutral-200 rounded-lg overflow-hidden bg-neutral-50 max-h-[400px] overflow-auto">
                   {invoiceFile.type.startsWith("image/") ? (
                     <img
                       src={invoicePreviewUrl}
-                      alt="Invoice contents"
+                      alt={t("assets.add.invoiceContents")}
                       className="max-w-full h-auto object-contain"
                     />
                   ) : (
                     <>
                       <iframe
                         src={invoicePreviewUrl}
-                        title="Invoice contents"
+                        title={t("assets.add.invoiceContents")}
                         className="w-full min-h-[400px] border-0"
                       />
                       <p className="text-xs text-neutral-500 px-3 py-2 border-t border-neutral-100">
-                        PDF selected: {invoiceFile.name}. It will be attached when you submit.
+                        {t("assets.add.pdfSelected", { name: invoiceFile.name })}
                       </p>
                     </>
                   )}
@@ -473,11 +477,11 @@ export default function AddAssetPage() {
           <div className={cardCls}>
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">3</span>
-              Financial & depreciation
+              {t("assets.form.financialTitle")}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="purchase_date" className={labelCls}>Purchase date</label>
+                <label htmlFor="purchase_date" className={labelCls}>{t("assets.form.purchaseDate")}</label>
                 <input
                   id="purchase_date"
                   type="date"
@@ -486,10 +490,10 @@ export default function AddAssetPage() {
                   className={inputCls}
                   disabled={submitting}
                 />
-                <p className="text-xs text-neutral-500 mt-0.5">Used for age and depreciation start.</p>
+                <p className="text-xs text-neutral-500 mt-0.5">{t("assets.add.purchaseDateHint")}</p>
               </div>
               <div className="space-y-2">
-                <label htmlFor="purchase_value" className={labelCls}>Purchase value ($)</label>
+                <label htmlFor="purchase_value" className={labelCls}>{t("assets.form.purchaseValueUsd")}</label>
                 <input
                   id="purchase_value"
                   type="number"
@@ -505,7 +509,7 @@ export default function AddAssetPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="useful_life_years" className={labelCls}>Useful life (years)</label>
+                <label htmlFor="useful_life_years" className={labelCls}>{t("assets.form.usefulLife")}</label>
                 <input
                   id="useful_life_years"
                   type="number"
@@ -513,13 +517,13 @@ export default function AddAssetPage() {
                   max={100}
                   value={usefulLifeYears}
                   onChange={(e) => setUsefulLifeYears(e.target.value)}
-                  placeholder="e.g. 5"
+                  placeholder={t("assets.add.usefulLifePlaceholder")}
                   className={inputCls}
                   disabled={submitting}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="salvage_value" className={labelCls}>Salvage value ($)</label>
+                <label htmlFor="salvage_value" className={labelCls}>{t("assets.form.salvageValueUsd")}</label>
                 <input
                   id="salvage_value"
                   type="number"
@@ -534,7 +538,7 @@ export default function AddAssetPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <label htmlFor="depreciation_method" className={labelCls}>Depreciation method</label>
+              <label htmlFor="depreciation_method" className={labelCls}>{t("assets.form.depreciationMethod")}</label>
               <select
                 id="depreciation_method"
                 value={depreciationMethod}
@@ -543,7 +547,7 @@ export default function AddAssetPage() {
                 disabled={submitting}
               >
                 {DEPRECIATION_METHODS.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
+                  <option key={m.value} value={m.value}>{t(m.label)}</option>
                 ))}
               </select>
             </div>
@@ -555,23 +559,23 @@ export default function AddAssetPage() {
           <div className={`${cardCls} bg-neutral-50 border-neutral-100`}>
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">4</span>
-              Review and submit
+              {t("assets.add.reviewTitle")}
             </h3>
             <div className="space-y-2">
               {[
-                { label: "Asset code", value: assetCode || "—" },
-                { label: "Name", value: name || "—" },
+                { label: t("assets.form.assetCode"), value: assetCode || "—" },
+                { label: t("assets.form.name"), value: name || "—" },
                 {
-                  label: "Category",
+                  label: t("assets.form.category"),
                   value: categories.find((c) => c.code === category)?.name ?? category,
                 },
-                { label: "Status", value: status.replace("_", " ") },
-                { label: "Serial number", value: identifiers.serial_number.trim() || "—" },
-                { label: "Make / model", value: [identifiers.manufacturer.trim(), identifiers.model.trim()].filter(Boolean).join(" ") || "—" },
-                { label: "Assigned to", value: assignedUser ? formatAssigneeLabel(assignedUser) : "—" },
-                { label: "Invoice number", value: invoiceNumber || "—" },
-                { label: "Purchase value", value: pv != null ? `$${pv.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—" },
-                { label: "Invoice attached", value: invoiceFile ? invoiceFile.name : "No" },
+                { label: t("assets.form.status"), value: t(`assets.form.status.${status}`) },
+                { label: t("assets.form.serialNumber"), value: identifiers.serial_number.trim() || "—" },
+                { label: t("assets.form.makeModel"), value: [identifiers.manufacturer.trim(), identifiers.model.trim()].filter(Boolean).join(" ") || "—" },
+                { label: t("assets.form.assignedTo"), value: assignedUser ? formatAssigneeLabel(assignedUser) : "—" },
+                { label: t("assets.form.invoiceNumber"), value: invoiceNumber || "—" },
+                { label: t("assets.form.purchaseValue"), value: pv != null ? `$${pv.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—" },
+                { label: t("assets.add.invoiceAttached"), value: invoiceFile ? invoiceFile.name : t("assets.add.no") },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-start py-2 border-b border-neutral-50">
                   <span className="text-xs text-neutral-500 flex-shrink-0 w-40">{label}</span>
@@ -581,11 +585,11 @@ export default function AddAssetPage() {
             </div>
             <div className="pt-4 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <span className="text-xs text-neutral-500 block mb-1">Age</span>
+                <span className="text-xs text-neutral-500 block mb-1">{t("assets.form.age")}</span>
                 <p className="text-sm font-semibold text-neutral-900">{previewAge}</p>
               </div>
               <div>
-                <span className="text-xs text-neutral-500 block mb-1">Current (depreciated) value</span>
+                <span className="text-xs text-neutral-500 block mb-1">{t("assets.form.currentValue")}</span>
                 <p className="text-sm font-semibold text-neutral-900">
                   {previewCurrentValue != null
                     ? `$${previewCurrentValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -595,7 +599,7 @@ export default function AddAssetPage() {
             </div>
             <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 flex items-start gap-2">
               <span className="material-symbols-outlined text-amber-500 text-[16px] mt-0.5">info</span>
-              <p className="text-xs text-amber-700">Ensure all details are correct. Once submitted, the asset will be added to the inventory and any invoice file will be attached.</p>
+              <p className="text-xs text-amber-700">{t("assets.add.reviewNote")}</p>
             </div>
           </div>
         )}
@@ -611,7 +615,7 @@ export default function AddAssetPage() {
                 disabled={submitting}
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                Back
+                {t("common.back")}
               </button>
             )}
           </div>
@@ -620,7 +624,7 @@ export default function AddAssetPage() {
               href="/assets"
               className="btn-secondary"
             >
-              Cancel
+              {t("common.cancel")}
             </Link>
             {currentStep < 4 ? (
               <button
@@ -629,7 +633,7 @@ export default function AddAssetPage() {
                 disabled={submitting}
                 className="btn-primary inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Next Step
+                {t("assets.form.nextStep")}
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>
             ) : (
@@ -638,7 +642,7 @@ export default function AddAssetPage() {
                 disabled={submitting}
                 className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
               >
-                {submitting ? "Creating…" : "Add Asset"}
+                {submitting ? t("assets.add.creating") : t("assets.add.title")}
                 <span className={`material-symbols-outlined text-[18px] ${submitting ? "animate-spin" : ""}`}>{submitting ? "progress_activity" : "add"}</span>
               </button>
             )}

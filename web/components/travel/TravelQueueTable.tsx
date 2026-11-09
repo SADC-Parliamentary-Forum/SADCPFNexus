@@ -14,6 +14,36 @@ import {
   getListData,
   slicePage,
 } from "@/lib/listPagination";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+/** Display keys for stage and status labels; the English labels stay the filter values sent to the API. */
+const LABEL_KEYS: Record<string, string> = {
+  "All stages": "travel.queueTable.label.allStages",
+  Draft: "travel.queueTable.label.draft",
+  Submitted: "travel.queueTable.label.submitted",
+  Resubmitted: "travel.queueTable.label.resubmitted",
+  "Direct Supervisor": "travel.queueTable.label.directSupervisor",
+  "Administration Officer": "travel.queueTable.label.adminOfficer",
+  "Finance Controller": "travel.queueTable.label.financeController",
+  Director: "travel.queueTable.label.director",
+  "Secretary General": "travel.queueTable.label.secretaryGeneral",
+  "Returned for correction": "travel.queueTable.label.returnedForCorrection",
+  Approved: "travel.queueTable.label.approved",
+  Rejected: "travel.queueTable.label.rejected",
+  Cancelled: "travel.queueTable.label.cancelled",
+  Withdrawn: "travel.queueTable.label.withdrawn",
+  Returned: "travel.queueTable.label.returned",
+  Amendment: "travel.queueTable.label.amendment",
+  "Director Finance": "travel.queueTable.label.directorFinance",
+  Unknown: "travel.queueTable.label.unknown",
+};
+
+function labelText(label: string, t: T): string {
+  const key = LABEL_KEYS[label];
+  return key ? t(key) : label;
+}
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   approved: { label: "Approved", badge: "badge-success" },
@@ -64,12 +94,12 @@ function normalizeStagePref(raw: string): string {
 }
 
 const SORT_OPTIONS = [
-  { value: "created_at:desc", label: "Newest first" },
-  { value: "created_at:asc", label: "Oldest first" },
-  { value: "departure_date:asc", label: "Departure ↑" },
-  { value: "departure_date:desc", label: "Departure ↓" },
-  { value: "requester:asc", label: "Requester A–Z" },
-  { value: "status:asc", label: "Status" },
+  { value: "created_at:desc", label: "travel.queueTable.sort.newest" },
+  { value: "created_at:asc", label: "travel.queueTable.sort.oldest" },
+  { value: "departure_date:asc", label: "travel.queueTable.sort.departureAsc" },
+  { value: "departure_date:desc", label: "travel.queueTable.sort.departureDesc" },
+  { value: "requester:asc", label: "travel.queueTable.sort.requester" },
+  { value: "status:asc", label: "travel.queueTable.sort.status" },
 ];
 
 export type TravelQueueVariant = "approval" | "finance" | "admin" | "director-finance" | "retirement";
@@ -90,14 +120,14 @@ function stageOf(row: TravelRequest): string {
   return row.workflow_stage || STATUS_CONFIG[row.status]?.label || row.status || "—";
 }
 
-function holdingOf(row: TravelRequest): string {
+function holdingOf(row: TravelRequest, t: T): string {
   if (row.pending_with_label) return row.pending_with_label;
   if (Array.isArray(row.pending_with) && row.pending_with.length) return row.pending_with.join(", ");
   if (row.status === "approved" && !row.director_finance_confirmed_at && row.finance_status) {
-    return "Director Finance";
+    return t("travel.queueTable.label.directorFinance");
   }
   if (row.retirement_status && row.retirement_status !== "completed") {
-    return row.requester?.name ? `${row.requester.name} (retirement)` : "Traveller (retirement)";
+    return row.requester?.name ? t("travel.queueTable.holding.retirement", { name: row.requester.name }) : t("travel.queueTable.holding.traveller");
   }
   return "—";
 }
@@ -149,6 +179,11 @@ export function TravelQueueTable({
   variant: TravelQueueVariant;
   emptyHint?: string;
 }) {
+  const { t } = useI18n();
+  const tv = (key: string, fallback: string) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
   const initial = useMemo(() => loadPrefs(queue), [queue]);
   const [rows, setRows] = useState<TravelRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,12 +245,12 @@ export function TravelQueueTable({
       const res = await travelApi.list(params);
       setRows(getListData<TravelRequest>(res.data));
     } catch {
-      setError("Failed to load this queue.");
+      setError(t("travel.queueTable.loadFailed"));
       setRows([]);
     } finally {
       setLoading(false);
     }
-  }, [queue, search, stage, requesterId, dateFrom, dateTo, sort]);
+  }, [queue, search, stage, requesterId, dateFrom, dateTo, sort, t]);
 
   useEffect(() => {
     void load();
@@ -272,7 +307,7 @@ export function TravelQueueTable({
         requester: r.requester?.name ?? "",
         status: r.status,
         workflow_stage: stageOf(r),
-        pending_with: holdingOf(r),
+        pending_with: holdingOf(r, t),
         finance_status: r.finance_status ?? "",
         estimated_dsa: r.estimated_dsa ?? "",
         finance_dsa_total: r.finance_dsa_total ?? r.actual_dsa ?? "",
@@ -282,20 +317,20 @@ export function TravelQueueTable({
         return_date: r.return_date ?? "",
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "purpose", header: "Purpose" },
-        { key: "destination", header: "Destination" },
-        { key: "requester", header: "Requester" },
-        { key: "status", header: "Status" },
-        { key: "workflow_stage", header: "Workflow stage" },
-        { key: "pending_with", header: "Holding up" },
-        { key: "finance_status", header: "Finance status" },
-        { key: "estimated_dsa", header: "Est. DSA" },
-        { key: "finance_dsa_total", header: "Finance DSA" },
-        { key: "retirement_status", header: "Retirement status" },
-        { key: "retirement_due_at", header: "Retirement due" },
-        { key: "departure_date", header: "Departure" },
-        { key: "return_date", header: "Return" },
+        { key: "reference", header: t("travel.queueTable.col.reference") },
+        { key: "purpose", header: t("travel.queueTable.col.purpose") },
+        { key: "destination", header: t("travel.queueTable.col.destination") },
+        { key: "requester", header: t("travel.queueTable.col.requester") },
+        { key: "status", header: t("travel.queueTable.col.status") },
+        { key: "workflow_stage", header: t("travel.queueTable.col.workflowStage") },
+        { key: "pending_with", header: t("travel.queueTable.col.holdingUp") },
+        { key: "finance_status", header: t("travel.queueTable.col.financeStatus") },
+        { key: "estimated_dsa", header: t("travel.queueTable.col.estDsa") },
+        { key: "finance_dsa_total", header: t("travel.queueTable.col.financeDsa") },
+        { key: "retirement_status", header: t("travel.queueTable.col.retirementStatus") },
+        { key: "retirement_due_at", header: t("travel.queueTable.col.retirementDue") },
+        { key: "departure_date", header: t("travel.queueTable.col.departure") },
+        { key: "return_date", header: t("travel.queueTable.col.return") },
       ],
     );
   };
@@ -317,11 +352,11 @@ export function TravelQueueTable({
               onClick={handleExport}
             >
               <span className="material-symbols-outlined text-[18px]">download</span>
-              Export CSV
+              {t("travel.queueTable.exportCsv")}
             </button>
             <Link href="/travel/register" className="btn-secondary text-sm">
               <span className="material-symbols-outlined text-[18px]">menu_book</span>
-              Register
+              {t("travel.queueTable.register")}
             </Link>
           </>
         }
@@ -334,16 +369,16 @@ export function TravelQueueTable({
       {!loading && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {[
-            { label: "In queue", value: rows.length, icon: "inbox", color: "text-primary", bg: "bg-primary/10" },
+            { label: t("travel.queueTable.stat.inQueue"), value: rows.length, icon: "inbox", color: "text-primary", bg: "bg-primary/10" },
             {
-              label: "Holding attention",
+              label: t("travel.queueTable.stat.holding"),
               value: holdingCount,
               icon: "hourglass_top",
               color: "text-amber-600",
               bg: "bg-amber-50",
             },
             {
-              label: "DSA total (shown)",
+              label: t("travel.queueTable.stat.dsaTotal"),
               value: formatCurrency(rows.reduce((sum, r) => sum + dsaOf(r), 0)),
               icon: "payments",
               color: "text-green-600",
@@ -374,7 +409,7 @@ export function TravelQueueTable({
             <input
               type="search"
               className="form-input pl-10"
-              placeholder="Search reference, purpose…"
+              placeholder={t("travel.queueTable.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               data-testid="travel-queue-search"
@@ -385,12 +420,12 @@ export function TravelQueueTable({
               className="form-input"
               value={stage}
               onChange={(e) => setStage(e.target.value)}
-              aria-label="Filter by stage"
+              aria-label={t("travel.queueTable.filterStage")}
               data-testid="travel-queue-stage-filter"
             >
               {stageOptions.map((o) => (
                 <option key={o.value || "all"} value={o.value}>
-                  {o.label}
+                  {labelText(o.label, t)}
                 </option>
               ))}
             </select>
@@ -400,13 +435,13 @@ export function TravelQueueTable({
               className="form-input"
               value={requesterId}
               onChange={(e) => setRequesterId(e.target.value)}
-              aria-label="Filter by requester"
+              aria-label={t("travel.queueTable.filterRequester")}
               data-testid="travel-queue-requester-filter"
             >
-              <option value="">All requesters</option>
-              {travellers.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
+              <option value="">{t("travel.queueTable.allRequesters")}</option>
+              {travellers.map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.name}
                 </option>
               ))}
             </select>
@@ -417,8 +452,8 @@ export function TravelQueueTable({
               className="form-input"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              aria-label="Departure from"
-              title="Departure from"
+              aria-label={t("travel.queueTable.departureFrom")}
+              title={t("travel.queueTable.departureFrom")}
               data-testid="travel-queue-date-from"
             />
           </div>
@@ -428,8 +463,8 @@ export function TravelQueueTable({
               className="form-input"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              aria-label="Departure to"
-              title="Departure to"
+              aria-label={t("travel.queueTable.departureTo")}
+              title={t("travel.queueTable.departureTo")}
               data-testid="travel-queue-date-to"
             />
           </div>
@@ -439,20 +474,20 @@ export function TravelQueueTable({
             className="form-input max-w-xs"
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            aria-label="Sort queue"
+            aria-label={t("travel.queueTable.sortQueue")}
           >
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.label}
+                {t(o.label)}
               </option>
             ))}
           </select>
           {hasFilters && (
             <button type="button" className="btn-secondary text-xs" onClick={clearFilters}>
-              Clear filters
+              {t("travel.queueTable.clearFilters")}
             </button>
           )}
-          <span className="text-[11px] text-neutral-400">Sort & filters persist for this queue</span>
+          <span className="text-[11px] text-neutral-400">{t("travel.queueTable.persist")}</span>
         </div>
       </div>
 
@@ -466,16 +501,16 @@ export function TravelQueueTable({
         ) : rows.length === 0 ? (
           <EmptyState
             icon={hasFilters ? "filter_alt_off" : "inbox"}
-            title={hasFilters ? "No matches for these filters" : "No items in this queue"}
+            title={hasFilters ? t("travel.queueTable.noMatches") : t("travel.queueTable.empty")}
             description={
               hasFilters
-                ? "Try clearing stage, requester, or date range."
-                : emptyHint ?? "Nothing awaiting action right now."
+                ? t("travel.queueTable.noMatchesHint")
+                : emptyHint ?? t("travel.queueTable.emptyHint")
             }
             action={
               hasFilters ? (
                 <button type="button" className="btn-secondary text-sm" onClick={clearFilters}>
-                  Clear filters
+                  {t("travel.queueTable.clearFilters")}
                 </button>
               ) : null
             }
@@ -486,36 +521,36 @@ export function TravelQueueTable({
               <table className="data-table w-full">
                 <thead>
                   <tr>
-                    <th>Reference</th>
-                    <th>Purpose</th>
-                    <th>Destination</th>
-                    <th>Requester</th>
-                    <th>Stage</th>
-                    <th>Holding up</th>
-                    {variant === "finance" && <th>Est. DSA</th>}
-                    {variant === "finance" && <th>Finance</th>}
-                    {variant === "director-finance" && <th>DSA total</th>}
-                    {variant === "retirement" && <th>Retirement</th>}
-                    {variant === "retirement" && <th>Due</th>}
-                    <th>Status</th>
+                    <th>{t("travel.queueTable.col.reference")}</th>
+                    <th>{t("travel.queueTable.col.purpose")}</th>
+                    <th>{t("travel.queueTable.col.destination")}</th>
+                    <th>{t("travel.queueTable.col.requester")}</th>
+                    <th>{t("travel.queueTable.col.stage")}</th>
+                    <th>{t("travel.queueTable.col.holdingUp")}</th>
+                    {variant === "finance" && <th>{t("travel.queueTable.col.estDsa")}</th>}
+                    {variant === "finance" && <th>{t("travel.queueTable.col.finance")}</th>}
+                    {variant === "director-finance" && <th>{t("travel.queueTable.col.dsaTotal")}</th>}
+                    {variant === "retirement" && <th>{t("travel.queueTable.col.retirement")}</th>}
+                    {variant === "retirement" && <th>{t("travel.queueTable.col.due")}</th>}
+                    <th>{t("travel.queueTable.col.status")}</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paged.map((t) => {
-                    const sc = STATUS_CONFIG[t.status] ?? { label: t.status || "Unknown", badge: "badge-muted" };
-                    const holding = holdingOf(t);
-                    const urgent = holdingUrgent(t);
+                  {paged.map((row) => {
+                    const sc = STATUS_CONFIG[row.status] ?? { label: row.status || "Unknown", badge: "badge-muted" }; // i18n-ignore
+                    const holding = holdingOf(row, t);
+                    const urgent = holdingUrgent(row);
                     return (
-                      <tr key={t.id} className={urgent ? "bg-amber-50/40" : undefined}>
+                      <tr key={row.id} className={urgent ? "bg-amber-50/40" : undefined}>
                         <td className="font-mono text-xs text-neutral-600 whitespace-nowrap">
-                          {t.reference_number ?? "—"}
+                          {row.reference_number ?? "—"}
                         </td>
-                        <td className="max-w-[200px] truncate font-medium text-neutral-900">{t.purpose ?? "—"}</td>
-                        <td className="text-sm text-neutral-600 whitespace-nowrap">{destinationOf(t)}</td>
-                        <td className="text-sm text-neutral-700 whitespace-nowrap">{t.requester?.name ?? "—"}</td>
+                        <td className="max-w-[200px] truncate font-medium text-neutral-900">{row.purpose ?? "—"}</td>
+                        <td className="text-sm text-neutral-600 whitespace-nowrap">{destinationOf(row)}</td>
+                        <td className="text-sm text-neutral-700 whitespace-nowrap">{row.requester?.name ?? "—"}</td>
                         <td>
-                          <span className="badge badge-muted text-xs">{stageOf(t)}</span>
+                          <span className="badge badge-muted text-xs">{labelText(stageOf(row), t)}</span>
                         </td>
                         <td className="text-sm text-neutral-700 max-w-[180px]">
                           <span
@@ -532,42 +567,42 @@ export function TravelQueueTable({
                         </td>
                         {variant === "finance" && (
                           <td className="whitespace-nowrap text-sm">
-                            {formatCurrency(Number(t.estimated_dsa ?? 0))} {t.currency ?? ""}
+                            {formatCurrency(Number(row.estimated_dsa ?? 0))} {row.currency ?? ""}
                           </td>
                         )}
                         {variant === "finance" && (
                           <td>
                             <span className="badge badge-warning text-xs capitalize">
-                              {(t.finance_status ?? "awaiting").replace(/_/g, " ")}
+                              {row.finance_status ? tv(`travel.queueTable.status.${row.finance_status}`, row.finance_status.replace(/_/g, " ")) : t("travel.queueTable.status.awaiting")}
                             </span>
                           </td>
                         )}
                         {variant === "director-finance" && (
                           <td className="whitespace-nowrap font-semibold text-sm">
-                            {formatCurrency(dsaOf(t))}
+                            {formatCurrency(dsaOf(row))}
                           </td>
                         )}
                         {variant === "retirement" && (
                           <td>
                             <span className="badge badge-warning text-xs capitalize">
-                              {(t.retirement_status ?? "pending").replace(/_/g, " ")}
+                              {row.retirement_status ? tv(`travel.queueTable.status.${row.retirement_status}`, row.retirement_status.replace(/_/g, " ")) : t("travel.queueTable.status.pending")}
                             </span>
                           </td>
                         )}
                         {variant === "retirement" && (
                           <td className="text-xs text-neutral-500 whitespace-nowrap">
-                            {t.retirement_due_at ? formatDateShort(t.retirement_due_at) : "—"}
+                            {row.retirement_due_at ? formatDateShort(row.retirement_due_at) : "—"}
                           </td>
                         )}
                         <td>
-                          <span className={`badge text-xs ${sc.badge}`}>{sc.label}</span>
+                          <span className={`badge text-xs ${sc.badge}`}>{labelText(sc.label, t)}</span>
                         </td>
                         <td>
                           <Link
-                            href={`/travel/${t.id}`}
+                            href={`/travel/${row.id}`}
                             className="btn-secondary py-1 px-2 text-xs"
                           >
-                            Open
+                            {t("travel.queueTable.open")}
                           </Link>
                         </td>
                       </tr>

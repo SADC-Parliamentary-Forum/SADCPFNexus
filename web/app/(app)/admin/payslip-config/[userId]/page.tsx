@@ -10,12 +10,13 @@ import { TableEmpty } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const COMPONENT_TYPES = [
-  { value: "earning",              label: "Earning" },
-  { value: "deduction",           label: "Deduction" },
-  { value: "company_contribution",label: "Company Contribution" },
-  { value: "info",                 label: "Info (non-monetary)" },
+  { value: "earning",              label: "admin.payslipConfig.type.earning" },
+  { value: "deduction",            label: "admin.payslipConfig.type.deduction" },
+  { value: "company_contribution", label: "admin.payslipConfig.type.contribution" },
+  { value: "info",                 label: "admin.payslipConfig.type.infoLong" },
 ];
 
 const KNOWN_SYSTEM_KEYS = [
@@ -24,6 +25,7 @@ const KNOWN_SYSTEM_KEYS = [
 ];
 
 function TypeBadge({ type }: { type: string }) {
+  const { t } = useI18n();
   const config: Record<string, string> = {
     earning: "badge-success",
     deduction: "badge-danger",
@@ -31,15 +33,16 @@ function TypeBadge({ type }: { type: string }) {
     info: "badge-muted",
   };
   const labels: Record<string, string> = {
-    earning: "Earning",
-    deduction: "Deduction",
-    company_contribution: "Co. Contribution",
-    info: "Info",
+    earning: "admin.payslipConfig.type.earning",
+    deduction: "admin.payslipConfig.type.deduction",
+    company_contribution: "admin.payslipConfig.type.coContribution",
+    info: "admin.payslipConfig.type.info",
   };
-  return <span className={`text-xs ${config[type] ?? "badge-muted"}`}>{labels[type] ?? type}</span>;
+  return <span className={`text-xs ${config[type] ?? "badge-muted"}`}>{labels[type] ? t(labels[type]) : type}</span>;
 }
 
 export default function PayslipConfigPage() {
+  const { t } = useI18n();
   const { userId } = useParams<{ userId: string }>();
   const uid = Number(userId);
   const { confirm } = useConfirm();
@@ -76,7 +79,7 @@ export default function PayslipConfigPage() {
       const res = await payslipConfigApi.list(uid);
       setConfigs(res.data.data ?? []);
     } catch {
-      setError("Failed to load payslip line configs.");
+      setError(t("admin.payslipConfig.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -97,11 +100,11 @@ export default function PayslipConfigPage() {
     try {
       const res = await payslipConfigApi.generateDefaults(uid);
       setGenMessage(res.data.message);
-      toast.success("Default payslip lines generated", res.data.message);
+      toast.success(t("admin.payslipConfig.generated"), res.data.message);
       load();
     } catch (err) {
-      setGenMessage("Failed to generate defaults.");
-      toast.error("Could not generate defaults", apiErrorMessage(err, "Failed to generate defaults."));
+      setGenMessage(t("admin.payslipConfig.generateFailed"));
+      toast.error(t("admin.payslipConfig.generateFailedTitle"), apiErrorMessage(err, t("admin.payslipConfig.generateFailed")));
     } finally {
       setGenLoading(false);
     }
@@ -122,13 +125,13 @@ export default function PayslipConfigPage() {
         is_visible: form.is_visible,
         sort_order: Number(form.sort_order),
       });
-      toast.success("Payslip line added");
+      toast.success(t("admin.payslipConfig.added"));
       setShowAddModal(false);
       load();
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Save failed.";
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("admin.salary.saveFailed");
       setFormError(msg);
-      toast.error("Payslip line not added", apiErrorMessage(e, "Save failed."));
+      toast.error(t("admin.payslipConfig.notAdded"), apiErrorMessage(e, t("admin.salary.saveFailed")));
     } finally {
       setSubmitting(false);
     }
@@ -141,11 +144,11 @@ export default function PayslipConfigPage() {
     try {
       await payslipConfigApi.update(id, changes);
       setEditInline((e) => { const n = { ...e }; delete n[id]; return n; });
-      toast.success("Payslip line saved");
+      toast.success(t("admin.payslipConfig.saved"));
       load();
     } catch (err) {
       // keep editing
-      toast.error("Payslip line not saved", apiErrorMessage(err, "Save failed."));
+      toast.error(t("admin.payslipConfig.notSaved"), apiErrorMessage(err, t("admin.salary.saveFailed")));
     } finally {
       setSaving((s) => ({ ...s, [id]: false }));
     }
@@ -154,27 +157,27 @@ export default function PayslipConfigPage() {
   const handleRemove = async (id: number) => {
     if (
       !(await confirm({
-        title: "Remove payslip line",
-        message: "Remove this line from the payslip config?",
+        title: t("admin.payslipConfig.removeTitle"),
+        message: t("admin.payslipConfig.removeMessage"),
         variant: "danger",
       }))
     ) return;
     try {
       await payslipConfigApi.remove(id);
-      toast.success("Payslip line removed");
+      toast.success(t("admin.payslipConfig.removed"));
       load();
     } catch (err) {
-      toast.error("Could not remove payslip line", apiErrorMessage(err, "Failed to remove payslip line."));
+      toast.error(t("admin.payslipConfig.removeFailedTitle"), apiErrorMessage(err, t("admin.payslipConfig.removeFailed")));
     }
   };
 
   const toggleVisible = async (config: PayslipLineConfig) => {
     try {
       await payslipConfigApi.update(config.id, { is_visible: !config.is_visible });
-      toast.success(config.is_visible ? "Payslip line hidden" : "Payslip line shown");
+      toast.success(config.is_visible ? t("admin.payslipConfig.hidden") : t("admin.payslipConfig.shown"));
       load();
     } catch (err) {
-      toast.error("Could not change visibility", apiErrorMessage(err, "Failed to update payslip line."));
+      toast.error(t("admin.payslipConfig.visibilityFailed"), apiErrorMessage(err, t("admin.payslipConfig.updateFailed")));
     }
   };
 
@@ -182,18 +185,18 @@ export default function PayslipConfigPage() {
     <div className="w-full min-w-0 p-6 space-y-5">
       {/* Breadcrumb */}
       <nav className="text-sm text-neutral-500 flex items-center gap-1 flex-wrap">
-        <Link href="/admin" className="hover:text-primary">Admin</Link>
+        <Link href="/admin" className="hover:text-primary">{t("admin.homeLabel")}</Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <Link href="/admin/salary-assignments" className="hover:text-primary">Salary Assignments</Link>
+        <Link href="/admin/salary-assignments" className="hover:text-primary">{t("admin.salary.crumb")}</Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span className="text-neutral-800 font-medium">Payslip Config</span>
+        <span className="text-neutral-800 font-medium">{t("admin.payslipConfig.crumb")}</span>
       </nav>
 
       <div className="flex items-start justify-between gap-4">
         <ModulePageHeader
-          title="Payslip Line Config"
-          subtitle="Configure which lines appear on this employee's payslip."
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "Payslip Line Config" }]} />}
+          title={t("admin.payslipConfig.title")}
+          subtitle={t("admin.payslipConfig.subtitle")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.payslipConfig.title") }]} />}
         />
         <div className="flex items-center gap-2">
           <button
@@ -202,11 +205,11 @@ export default function PayslipConfigPage() {
             className="btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-50"
           >
             {genLoading ? <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> : <span className="material-symbols-outlined text-[16px]">auto_fix_high</span>}
-            Generate Defaults
+            {t("admin.payslipConfig.generate")}
           </button>
           <button onClick={() => { setForm({ component_key: "", label: "", component_type: "earning", source: "manual", fixed_amount: "", is_visible: true, sort_order: "0" }); setFormError(null); setShowAddModal(true); }} className="btn-primary text-sm flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[16px]">add</span>
-            Add Line
+            {t("admin.payslipConfig.addLine")}
           </button>
         </div>
       </div>
@@ -220,19 +223,19 @@ export default function PayslipConfigPage() {
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
           <p className="text-xs text-neutral-500">
-            <strong>{configs.length}</strong> line config{configs.length !== 1 ? "s" : ""} ·
-            System-sourced values are auto-computed. Manual values are entered by HR.
+            {t(configs.length !== 1 ? "admin.payslipConfig.countMany" : "admin.payslipConfig.countOne", { count: configs.length })} ·{" "}
+            {t("admin.payslipConfig.sourceHint")}
           </p>
         </div>
         <table className="data-table w-full">
           <thead>
             <tr>
-              <th>Sort</th>
-              <th>Key / Label</th>
-              <th>Type</th>
-              <th>Source</th>
-              <th>Fixed Amount</th>
-              <th>Visible</th>
+              <th>{t("admin.payslipConfig.colSort")}</th>
+              <th>{t("admin.payslipConfig.colKeyLabel")}</th>
+              <th>{t("admin.common.type")}</th>
+              <th>{t("admin.payslipConfig.colSource")}</th>
+              <th>{t("admin.payslipConfig.colFixed")}</th>
+              <th>{t("admin.payslipConfig.colVisible")}</th>
               <th />
             </tr>
           </thead>
@@ -246,10 +249,10 @@ export default function PayslipConfigPage() {
             ) : configs.length === 0 ? (
               <TableEmpty
                 colSpan={7}
-                title="No lines configured yet."
+                title={t("admin.payslipConfig.empty")}
                 action={
                   <button type="button" onClick={handleGenerateDefaults} className="btn-secondary text-sm py-1 px-2">
-                    Generate defaults from grade band
+                    {t("admin.payslipConfig.generateFromBand")}
                   </button>
                 }
               />
@@ -282,9 +285,9 @@ export default function PayslipConfigPage() {
                       {cfg.source === "system" ? (
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-[12px]">auto_awesome</span>
-                          System
+                          {t("admin.payslipConfig.system")}
                         </span>
-                      ) : "Manual"}
+                      ) : t("admin.payslipConfig.manual")}
                     </span>
                   </td>
                   <td>
@@ -296,11 +299,11 @@ export default function PayslipConfigPage() {
                         <span className="text-sm">{cfg.fixed_amount != null ? `NAD ${Number(cfg.fixed_amount).toLocaleString()}` : "—"}</span>
                       )
                     ) : (
-                      <span className="text-xs text-neutral-300 italic">auto</span>
+                      <span className="text-xs text-neutral-300 italic">{t("admin.payslipConfig.auto")}</span>
                     )}
                   </td>
                   <td>
-                    <button type="button" onClick={() => toggleVisible(cfg)} title={cfg.is_visible ? "Visible (click to hide)" : "Hidden (click to show)"}
+                    <button type="button" onClick={() => toggleVisible(cfg)} title={cfg.is_visible ? t("admin.payslipConfig.visibleHint") : t("admin.payslipConfig.hiddenHint")}
                       className={`text-${cfg.is_visible ? "green" : "neutral"}-400 hover:text-primary`}>
                       <span className="material-symbols-outlined text-[18px]">{cfg.is_visible ? "visibility" : "visibility_off"}</span>
                     </button>
@@ -310,16 +313,16 @@ export default function PayslipConfigPage() {
                       {isEditing ? (
                         <>
                           <button onClick={() => saveInline(cfg.id)} disabled={saving[cfg.id]} className="btn-secondary text-xs py-1 px-2 text-green-700 disabled:opacity-50">
-                            {saving[cfg.id] ? "…" : "Save"}
+                            {saving[cfg.id] ? "…" : t("common.save")}
                           </button>
                           <button onClick={() => setEditInline((p) => { const n = { ...p }; delete n[cfg.id]; return n; })} className="btn-secondary text-xs py-1 px-2">
-                            Cancel
+                            {t("common.cancel")}
                           </button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => setEditInline((p) => ({ ...p, [cfg.id]: {} }))} className="btn-secondary text-xs py-1 px-2">Edit</button>
-                          <button onClick={() => handleRemove(cfg.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Remove</button>
+                          <button onClick={() => setEditInline((p) => ({ ...p, [cfg.id]: {} }))} className="btn-secondary text-xs py-1 px-2">{t("common.edit")}</button>
+                          <button onClick={() => handleRemove(cfg.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">{t("admin.salary.remove")}</button>
                         </>
                       )}
                     </div>
@@ -333,45 +336,45 @@ export default function PayslipConfigPage() {
 
       {/* Add line modal */}
       {showAddModal && (
-        <Modal open title="Add Payslip Line" onClose={() => setShowAddModal(false)} size="md">
+        <Modal open title={t("admin.payslipConfig.addTitle")} onClose={() => setShowAddModal(false)} size="md">
           <form onSubmit={handleAddSubmit} className="space-y-4">
               <div>
-                <label htmlFor="admin-payslip-config-user-component-key" className="block text-sm font-medium text-neutral-700 mb-1">Component Key <span className="text-red-500">*</span></label>
-                <input id="admin-payslip-config-user-component-key" className="form-input w-full font-mono text-sm" placeholder="e.g. housing_allowance or custom_bonus"
+                <label htmlFor="admin-payslip-config-user-component-key" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.payslipConfig.componentKey")} <span className="text-red-500">*</span></label>
+                <input id="admin-payslip-config-user-component-key" className="form-input w-full font-mono text-sm" placeholder={t("admin.payslipConfig.componentKeyPlaceholder")}
                   value={form.component_key} onChange={(e) => setForm((f) => ({ ...f, component_key: e.target.value }))} required maxLength={60} />
               </div>
               <div>
-                <label htmlFor="admin-payslip-config-user-label" className="block text-sm font-medium text-neutral-700 mb-1">Label <span className="text-red-500">*</span></label>
-                <input id="admin-payslip-config-user-label" className="form-input w-full" placeholder="Displayed name on payslip"
+                <label htmlFor="admin-payslip-config-user-label" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.timesheetProjects.label")} <span className="text-red-500">*</span></label>
+                <input id="admin-payslip-config-user-label" className="form-input w-full" placeholder={t("admin.payslipConfig.labelPlaceholder")}
                   value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} required maxLength={100} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="admin-payslip-config-user-type" className="block text-sm font-medium text-neutral-700 mb-1">Type <span className="text-red-500">*</span></label>
+                  <label htmlFor="admin-payslip-config-user-type" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.common.type")} <span className="text-red-500">*</span></label>
                   <select id="admin-payslip-config-user-type" className="form-input w-full" value={form.component_type} onChange={(e) => setForm((f) => ({ ...f, component_type: e.target.value }))}>
-                    {COMPONENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    {COMPONENT_TYPES.map((ct) => <option key={ct.value} value={ct.value}>{t(ct.label)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="admin-payslip-config-user-source" className="block text-sm font-medium text-neutral-700 mb-1">Source <span className="text-red-500">*</span></label>
+                  <label htmlFor="admin-payslip-config-user-source" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.payslipConfig.colSource")} <span className="text-red-500">*</span></label>
                   <select id="admin-payslip-config-user-source" className="form-input w-full" value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))}>
-                    <option value="manual">Manual (HR enters)</option>
-                    <option value="system">System (auto-computed)</option>
+                    <option value="manual">{t("admin.payslipConfig.manualLong")}</option>
+                    <option value="system">{t("admin.payslipConfig.systemLong")}</option>
                   </select>
                 </div>
               </div>
               {form.source === "manual" && (
                 <div>
-                  <label htmlFor="admin-payslip-config-user-fixed-amount-nad" className="block text-sm font-medium text-neutral-700 mb-1">Fixed Amount (NAD)</label>
+                  <label htmlFor="admin-payslip-config-user-fixed-amount-nad" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.payslipConfig.fixedNad")}</label>
                   <input id="admin-payslip-config-user-fixed-amount-nad" type="number" min={0} step={0.01} className="form-input w-full" placeholder="0.00"
                     value={form.fixed_amount} onChange={(e) => setForm((f) => ({ ...f, fixed_amount: e.target.value }))} />
                 </div>
               )}
               {formError && <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-sm">{formError}</div>}
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary text-sm">Cancel</button>
+                <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary text-sm">{t("common.cancel")}</button>
                 <button type="submit" disabled={submitting} className="btn-primary text-sm disabled:opacity-50">
-                  {submitting ? "Saving…" : "Add Line"}
+                  {submitting ? t("admin.common.saving") : t("admin.payslipConfig.addLine")}
                 </button>
               </div>
           </form>

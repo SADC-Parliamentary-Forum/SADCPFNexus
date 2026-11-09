@@ -9,8 +9,10 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { LIFECYCLE_HUB_CARDS } from "@/lib/hubs/lifecycle";
 import { formatDateShort } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function LifecycleDashboardPage() {
+  const { t } = useI18n();
   const dashboardQuery = useQuery({
     queryKey: ["lifecycle", "dashboard"],
     queryFn: async () => (await lifecycleApi.dashboard()).data.data,
@@ -26,20 +28,20 @@ export default function LifecycleDashboardPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Employee Lifecycle"
-        subtitle="Onboarding, separation, and internal journeys with departmental tasks, clearance, and audit trail."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Employee Lifecycle" }]} />}
+        title={t("lifecycle.common.breadcrumb")}
+        subtitle={t("lifecycle.hub.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("lifecycle.common.breadcrumb") }]} />}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {[
-          { label: "Open onboarding", value: stats?.onboarding_open ?? 0, href: "/lifecycle/onboarding" },
-          { label: "Open internal journeys", value: stats?.internal_open ?? 0, href: "/lifecycle/journeys" },
-          { label: "Open separation", value: stats?.separation_open ?? 0, href: "/lifecycle/separation" },
-          { label: "Awaiting clearance", value: stats?.awaiting_clearance ?? 0, href: "/lifecycle/separation" },
-          { label: "Ready onboarding", value: stats?.ready_onboarding ?? 0, href: "/lifecycle/onboarding" },
+          { key: "onboarding", label: t("lifecycle.hub.kpi.openOnboarding"), value: stats?.onboarding_open ?? 0, href: "/lifecycle/onboarding" },
+          { key: "internal", label: t("lifecycle.hub.kpi.openInternal"), value: stats?.internal_open ?? 0, href: "/lifecycle/journeys" },
+          { key: "separation", label: t("lifecycle.hub.kpi.openSeparation"), value: stats?.separation_open ?? 0, href: "/lifecycle/separation" },
+          { key: "clearance", label: t("lifecycle.hub.kpi.awaitingClearance"), value: stats?.awaiting_clearance ?? 0, href: "/lifecycle/separation" },
+          { key: "ready", label: t("lifecycle.hub.kpi.readyOnboarding"), value: stats?.ready_onboarding ?? 0, href: "/lifecycle/onboarding" },
         ].map((kpi) => (
-          <Link key={kpi.label} href={kpi.href} className="card p-5 hover:shadow-elevated transition-all">
+          <Link key={kpi.key} href={kpi.href} className="card p-5 hover:shadow-elevated transition-all">
             <p className="text-2xl font-bold text-neutral-900">{kpi.value}</p>
             <p className="text-xs text-neutral-500 mt-1">{kpi.label}</p>
           </Link>
@@ -47,27 +49,27 @@ export default function LifecycleDashboardPage() {
       </div>
 
       <details className="card p-4">
-        <summary className="cursor-pointer text-sm font-semibold text-neutral-800">More lifecycle tools</summary>
+        <summary className="cursor-pointer text-sm font-semibold text-neutral-800">{t("lifecycle.hub.moreTools")}</summary>
         <div className="mt-4">
           <ModuleHubCards cards={LIFECYCLE_HUB_CARDS} />
         </div>
       </details>
 
-      <FormSection title="Recent cases" description="Latest onboarding, separation, and internal journey cases.">
-        {casesQuery.isLoading ? <p className="text-sm text-neutral-500">Loading cases…</p> : null}
-        {casesQuery.isError ? <p className="text-sm text-red-600">Failed to load cases.</p> : null}
+      <FormSection title={t("lifecycle.hub.recent")} description={t("lifecycle.hub.recentHint")}>
+        {casesQuery.isLoading ? <p className="text-sm text-neutral-500">{t("lifecycle.hub.loading")}</p> : null}
+        {casesQuery.isError ? <p className="text-sm text-red-600">{t("lifecycle.hub.loadFailed")}</p> : null}
         {!casesQuery.isLoading && cases.length === 0 ? (
-          <EmptyState title="No lifecycle cases yet" description="Start onboarding, an internal journey, or separation from the tools above." />
+          <EmptyState title={t("lifecycle.hub.empty")} description={t("lifecycle.hub.emptyHint")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-neutral-500 border-b">
-                  <th className="py-2 pr-4">Reference</th>
-                  <th className="py-2 pr-4">Type</th>
-                  <th className="py-2 pr-4">Employee</th>
-                  <th className="py-2 pr-4">Start</th>
-                  <th className="py-2">Status</th>
+                  <th className="py-2 pr-4">{t("lifecycle.common.reference")}</th>
+                  <th className="py-2 pr-4">{t("lifecycle.common.type")}</th>
+                  <th className="py-2 pr-4">{t("lifecycle.common.employee")}</th>
+                  <th className="py-2 pr-4">{t("lifecycle.common.start")}</th>
+                  <th className="py-2">{t("lifecycle.common.status")}</th>
                 </tr>
               </thead>
               <tbody>

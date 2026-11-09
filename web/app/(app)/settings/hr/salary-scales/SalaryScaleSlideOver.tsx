@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { HrGradeBand, HrSalaryScale, HrSalaryScaleNotch, HrSettingsStatus } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface Props {
   open: boolean;
@@ -18,6 +19,14 @@ interface Props {
   saving?: boolean;
 }
 
+const STATUS_VALUE_KEYS: Record<string, string> = {
+  draft: "settings.hr.lifecycleValue.draft",
+  review: "settings.hr.lifecycleValue.review",
+  approved: "settings.hr.lifecycleValue.approved",
+  published: "settings.hr.lifecycleValue.published",
+  archived: "settings.hr.lifecycleValue.archived",
+};
+
 const STATUS_BADGE: Record<HrSettingsStatus, string> = {
   draft:     "badge-muted",
   review:    "badge-warning",
@@ -26,8 +35,8 @@ const STATUS_BADGE: Record<HrSettingsStatus, string> = {
   archived:  "badge-muted",
 };
 
-function formatAmount(val: number): string {
-  return new Intl.NumberFormat("en-NA", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val);
+function formatAmount(val: number, localeTag = "en-NA"): string {
+  return new Intl.NumberFormat(localeTag, { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val);
 }
 
 export function SalaryScaleSlideOver({
@@ -44,10 +53,12 @@ export function SalaryScaleSlideOver({
   saving,
 }: Props) {
   const isEdit = !!scale?.id;
+  const { t, localeTag } = useI18n();
   const status = (scale?.status ?? "draft") as HrSettingsStatus;
   const isDraft = !isEdit || status === "draft";
   const isReview = status === "review";
   const isApproved = status === "approved";
+  const statusLabel = STATUS_VALUE_KEYS[status] ? t(STATUS_VALUE_KEYS[status]) : status;
 
   const defaultNotches: HrSalaryScaleNotch[] = Array.from({ length: 12 }, (_, i) => ({
     notch: i + 1,
@@ -109,16 +120,16 @@ export function SalaryScaleSlideOver({
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
           <div>
             <h2 className="font-semibold text-neutral-900">
-              {isEdit ? "Edit Salary Scale" : "New Salary Scale"}
+              {isEdit ? t("settings.hr.salaryScale.edit") : t("settings.hr.salaryScale.new")}
             </h2>
             {isEdit && (
               <div className="flex items-center gap-2 mt-0.5">
-                <span className={cn("badge text-[11px]", STATUS_BADGE[status])}>{status}</span>
+                <span className={cn("badge text-[11px]", STATUS_BADGE[status])}>{statusLabel}</span>
                 <span className="text-xs text-neutral-400">v{scale?.version_number ?? 1}</span>
               </div>
             )}
           </div>
-          <button onClick={onClose} aria-label="Close salary scale editor" className="text-neutral-400 hover:text-neutral-700 ml-4">
+          <button onClick={onClose} aria-label={t("settings.hr.salaryScale.closeEditor")} className="text-neutral-400 hover:text-neutral-700 ml-4">
             <span className="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>
@@ -128,14 +139,14 @@ export function SalaryScaleSlideOver({
           {/* Grade + currency + dates */}
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-grade-band" className="block text-xs font-medium text-neutral-700 mb-1">Grade Band *</label>
+              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-grade-band" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.salaryScale.gradeBandRequired")}</label>
               <select id="hr-salary-scales-SalaryScaleSlideOver-grade-band"
                 className="form-input text-sm"
                 value={gradeBandId}
                 onChange={(e) => setGradeBandId(e.target.value ? Number(e.target.value) : "")}
                 disabled={isEdit}
               >
-                <option value="">— Select grade band —</option>
+                <option value="">{t("settings.hr.salaryScale.selectBand")}</option>
                 {gradeBands.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.code} — {g.label} ({g.status})
@@ -144,21 +155,21 @@ export function SalaryScaleSlideOver({
               </select>
               {selectedBand && (
                 <p className="text-xs text-neutral-500 mt-1">
-                  Notch range: {selectedBand.min_notch}–{selectedBand.max_notch} · {selectedBand.employment_category}
+                  {t("settings.hr.salaryScale.notchRange", { min: selectedBand.min_notch, max: selectedBand.max_notch, category: selectedBand.employment_category })}
                 </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-currency" className="block text-xs font-medium text-neutral-700 mb-1">Currency</label>
+              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-currency" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.allowance.currency")}</label>
               <input id="hr-salary-scales-SalaryScaleSlideOver-currency" className="form-input text-sm uppercase" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} maxLength={3} />
             </div>
             <div>
-              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-effective-from" className="block text-xs font-medium text-neutral-700 mb-1">Effective From *</label>
+              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-effective-from" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.effectiveFromRequired")}</label>
               <input id="hr-salary-scales-SalaryScaleSlideOver-effective-from" type="date" className="form-input text-sm" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
             </div>
             <div className="col-span-2">
-              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-effective-to" className="block text-xs font-medium text-neutral-700 mb-1">Effective To</label>
+              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-effective-to" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.effectiveTo")}</label>
               <input id="hr-salary-scales-SalaryScaleSlideOver-effective-to" type="date" className="form-input text-sm" value={effectiveTo} onChange={(e) => setEffectiveTo(e.target.value)} />
             </div>
           </div>
@@ -166,11 +177,11 @@ export function SalaryScaleSlideOver({
           {/* Notch table */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-neutral-700">Notch Structure ({notches.length}/12)</p>
+              <p className="text-xs font-medium text-neutral-700">{t("settings.hr.salaryScale.structure", { count: notches.length })}</p>
               {isDraft && notches.length < 12 && (
                 <button onClick={addNotch} className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">add</span>
-                  Add notch
+                  {t("settings.hr.salaryScale.addNotch")}
                 </button>
               )}
             </div>
@@ -179,9 +190,9 @@ export function SalaryScaleSlideOver({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-neutral-50 text-xs text-neutral-500">
-                    <th className="px-3 py-2 text-left font-medium w-14">Notch</th>
-                    <th className="px-3 py-2 text-right font-medium">Annual ({currency})</th>
-                    <th className="px-3 py-2 text-right font-medium">Monthly ({currency})</th>
+                    <th className="px-3 py-2 text-left font-medium w-14">{t("settings.hr.salaryScale.notch")}</th>
+                    <th className="px-3 py-2 text-right font-medium">{t("settings.hr.salaryScale.annual", { currency })}</th>
+                    <th className="px-3 py-2 text-right font-medium">{t("settings.hr.salaryScale.monthly", { currency })}</th>
                     {isDraft && <th className="w-8" />}
                   </tr>
                 </thead>
@@ -201,7 +212,7 @@ export function SalaryScaleSlideOver({
                             placeholder="0"
                           />
                         ) : (
-                          <span className="block text-right font-medium">{formatAmount(n.annual)}</span>
+                          <span className="block text-right font-medium">{formatAmount(n.annual, localeTag)}</span>
                         )}
                       </td>
                       <td className="px-3 py-1.5">
@@ -214,12 +225,12 @@ export function SalaryScaleSlideOver({
                             placeholder="0"
                           />
                         ) : (
-                          <span className="block text-right">{formatAmount(n.monthly)}</span>
+                          <span className="block text-right">{formatAmount(n.monthly, localeTag)}</span>
                         )}
                       </td>
                       {isDraft && (
                         <td className="px-2 py-1.5">
-                          <button onClick={() => removeNotch(idx)} className="text-neutral-300 hover:text-red-500 transition-colors">
+                          <button onClick={() => removeNotch(idx)} className="text-neutral-300 hover:text-red-500 transition-colors" aria-label={t("settings.hr.salaryScale.removeNotch")}>
                             <span className="material-symbols-outlined text-[16px]">remove_circle</span>
                           </button>
                         </td>
@@ -233,28 +244,28 @@ export function SalaryScaleSlideOver({
 
           {/* Notes */}
           <div>
-            <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-notes-reference" className="block text-xs font-medium text-neutral-700 mb-1">Notes / Reference</label>
+            <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-notes-reference" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.salaryScale.notesReference")}</label>
             <textarea id="hr-salary-scales-SalaryScaleSlideOver-notes-reference"
               className="form-input text-sm resize-none"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Reference ExCo resolution or circular…"
+              placeholder={t("settings.hr.salaryScale.notesPlaceholder")}
             />
           </div>
 
           {/* Governance */}
           {isEdit && (
             <div>
-              <p className="block text-xs font-medium text-neutral-700 mb-2">Governance</p>
+              <p className="block text-xs font-medium text-neutral-700 mb-2">{t("settings.hr.matrix.governance")}</p>
               <div className="rounded-xl bg-neutral-50 border border-neutral-200 divide-y divide-neutral-100">
                 {[
-                  { label: "Status",       value: <span className={cn("badge text-[11px]", STATUS_BADGE[status])}>{status}</span> },
-                  { label: "Approved by",  value: (scale as any)?.approver?.name ?? (scale?.approved_by ? `User #${scale.approved_by}` : "—") },
-                  { label: "Published by", value: (scale as any)?.publisher?.name ?? (scale?.published_by ? `User #${scale.published_by}` : "—") },
+                  { label: "settings.hr.common.status",       value: <span className={cn("badge text-[11px]", STATUS_BADGE[status])}>{statusLabel}</span> },
+                  { label: "settings.hr.gradeBand.approvedBy",  value: (scale as any)?.approver?.name ?? (scale?.approved_by ? t("saam.delegations.userNumber", { id: scale.approved_by }) : "—") },
+                  { label: "settings.hr.gradeBand.publishedBy", value: (scale as any)?.publisher?.name ?? (scale?.published_by ? t("saam.delegations.userNumber", { id: scale.published_by }) : "—") },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex items-center justify-between px-4 py-2.5">
-                    <span className="text-xs text-neutral-500">{label}</span>
+                    <span className="text-xs text-neutral-500">{t(label)}</span>
                     <span className="text-xs font-medium text-neutral-800">{value}</span>
                   </div>
                 ))}
@@ -265,25 +276,25 @@ export function SalaryScaleSlideOver({
 
         {/* Footer */}
         <div className="border-t border-neutral-100 px-6 py-4 flex items-center gap-2">
-          <button onClick={onClose} className="btn-secondary text-sm px-4">Cancel</button>
+          <button onClick={onClose} className="btn-secondary text-sm px-4">{t("common.cancel")}</button>
           <div className="flex-1" />
 
           {isEdit && status === "draft" && onSubmit && (
             <button onClick={onSubmit} disabled={saving} className="btn-secondary text-sm px-4 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[16px]">send</span>
-              Submit for Review
+              {t("settings.hr.gradeBand.submitForReview")}
             </button>
           )}
           {isEdit && isReview && canApprove && onApprove && (
             <button onClick={onApprove} disabled={saving} className="btn-secondary text-sm px-4 flex items-center gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
               <span className="material-symbols-outlined text-[16px]">check_circle</span>
-              Approve
+              {t("common.approve")}
             </button>
           )}
           {isEdit && isApproved && canPublish && onPublish && (
             <button onClick={onPublish} disabled={saving} className="btn-primary text-sm px-4 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[16px]">publish</span>
-              Publish
+              {t("settings.hr.gradeBands.publish")}
             </button>
           )}
 
@@ -294,7 +305,7 @@ export function SalaryScaleSlideOver({
               className="btn-primary text-sm px-4 flex items-center gap-1.5 disabled:opacity-50"
             >
               {saving && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
-              {isEdit ? "Save Draft" : "Create Draft"}
+              {isEdit ? t("settings.hr.gradeBand.saveDraft") : t("settings.hr.gradeBand.createDraft")}
             </button>
           )}
         </div>

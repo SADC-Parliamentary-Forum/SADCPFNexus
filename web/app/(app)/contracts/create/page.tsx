@@ -12,6 +12,7 @@ import {
   contractsApi, vendorsApi, procurementApi,
   type ContractType, type Vendor,
 } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Origin = "procurement" | "pif" | "framework" | "standalone" | "legacy";
 type Party = "individual" | "organisation";
@@ -20,12 +21,12 @@ interface Deliverable { name: string; due_date?: string; responsible_party?: str
 interface Obligation { obligation: string; responsible_party: string }
 
 const STEPS = [
-  { label: "Origin" },
-  { label: "Counterparty" },
-  { label: "Details & Dates" },
-  { label: "Financials" },
-  { label: "Scope" },
-  { label: "Review" },
+  { label: "contracts.create.step.origin" },
+  { label: "contracts.field.counterparty" },
+  { label: "contracts.create.step.details" },
+  { label: "contracts.create.step.financials" },
+  { label: "contracts.create.step.scope" },
+  { label: "contracts.create.step.review" },
 ];
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
@@ -33,6 +34,7 @@ const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 export default function ContractCreatePage() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
 
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -122,8 +124,8 @@ export default function ContractCreatePage() {
 
   // Selectable active template versions.
   const templateOptions = useMemo(
-    () => templates.flatMap((t) => (t.versions ?? []).filter((v) => v.status === "ACTIVE").map((v) => ({
-      id: v.id, label: `${t.name} · ${v.version}`,
+    () => templates.flatMap((tpl) => (tpl.versions ?? []).filter((v) => v.status === "ACTIVE").map((v) => ({
+      id: v.id, label: `${tpl.name} · ${v.version}`,
     }))),
     [templates],
   );
@@ -144,9 +146,9 @@ export default function ContractCreatePage() {
       if (d.value) setFlatValue(String(d.value));
       if (d.currency) setCurrency(String(d.currency));
       if (d.vendor_id) { setPartyType("organisation"); setVendorId(Number(d.vendor_id)); }
-      toast.success("Prefilled from procurement award");
+      toast.success(t("contracts.create.prefilled"));
     } catch {
-      toast.error("Could not prefill from that award");
+      toast.error(t("contracts.create.prefillFailed"));
     }
   };
 
@@ -202,13 +204,13 @@ export default function ContractCreatePage() {
 
       if (templateVersionId) {
         try { await contractsApi.generate(id, Number(templateVersionId)); }
-        catch { toast.error("Contract created, but document generation needs attention"); }
+        catch { toast.error(t("contracts.create.generationAttention")); }
       }
 
-      toast.success("Contract created");
+      toast.success(t("contracts.create.created"));
       router.push(`/contracts/${id}`);
     } catch (e: unknown) {
-      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to create contract.");
+      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("contracts.register.createFailed"));
       setSubmitting(false);
     }
   };
@@ -216,13 +218,13 @@ export default function ContractCreatePage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <ModulePageHeader
-        title="New Contract"
-        subtitle="Prepare a contract from approved institutional data"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Contracts", href: "/contracts" }, { label: "New" }]} />}
+        title="contracts.newContract"
+        subtitle="contracts.create.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.contracts", href: "/contracts" }, { label: "contracts.create.crumb" }]} />}
       />
 
       <div className="card p-5">
-        <Stepper steps={STEPS} currentStep={step} onStepSelect={(i) => setStep(i + 1)} />
+        <Stepper steps={STEPS.map((s) => ({ ...s, label: t(s.label) }))} currentStep={step} onStepSelect={(i) => setStep(i + 1)} />
       </div>
 
       {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
@@ -230,63 +232,63 @@ export default function ContractCreatePage() {
       <div className="card p-6 space-y-5">
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-neutral-800">Contract origin</h2>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("contracts.create.originTitle")}</h2>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {(["procurement", "pif", "framework", "standalone", "legacy"] as Origin[]).map((o) => (
                 <button key={o} type="button" onClick={() => setOrigin(o)}
-                  className={`filter-tab capitalize ${origin === o ? "active" : ""}`}>{o}</button>
+                  className={`filter-tab capitalize ${origin === o ? "active" : ""}`}>{t(`contracts.create.origin.${o}`)}</button>
               ))}
             </div>
             {origin === "procurement" && (
               <div className="space-y-2">
-                <label htmlFor="contracts-create-procurement-request" className="text-xs font-semibold text-neutral-600">Awarded procurement request</label>
+                <label htmlFor="contracts-create-procurement-request" className="text-xs font-semibold text-neutral-600">{t("contracts.create.awardedRequest")}</label>
                 <div className="flex gap-2">
                   <select id="contracts-create-procurement-request" className="form-input" value={procurementRequestId} onChange={(e) => setProcurementRequestId(e.target.value ? Number(e.target.value) : "")}>
-                    <option value="">Select award…</option>
+                    <option value="">{t("contracts.create.selectAward")}</option>
                     {awarded.map((a) => (<option key={a.id} value={a.id}>{a.reference_number} — {a.title}</option>))}
                   </select>
-                  <button type="button" className="btn-secondary whitespace-nowrap" disabled={!procurementRequestId} onClick={prefillFromAward}>Prefill</button>
+                  <button type="button" className="btn-secondary whitespace-nowrap" disabled={!procurementRequestId} onClick={prefillFromAward}>{t("contracts.create.prefill")}</button>
                 </div>
               </div>
             )}
             {origin === "standalone" && (
               <div className="space-y-1">
-                <label htmlFor="contracts-create-origin-reason" className="text-xs font-semibold text-neutral-600">Reason no procurement/PIF reference exists <span className="text-red-500">*</span></label>
-                <textarea id="contracts-create-origin-reason" className="form-input h-20 resize-none" value={originReference} onChange={(e) => setOriginReference(e.target.value)} placeholder="Explain why this contract is standalone…" />
+                <label htmlFor="contracts-create-origin-reason" className="text-xs font-semibold text-neutral-600">{t("contracts.create.standaloneReason")} <span className="text-red-500">*</span></label>
+                <textarea id="contracts-create-origin-reason" className="form-input h-20 resize-none" value={originReference} onChange={(e) => setOriginReference(e.target.value)} placeholder={t("contracts.create.standalonePlaceholder")} />
               </div>
             )}
             {origin === "legacy" && (
-              <p className="text-sm text-amber-600">For historical contracts, use <Link href="/contracts/register" className="font-semibold hover:opacity-80">Import legacy contract</Link> instead.</p>
+              <p className="text-sm text-amber-600">{t("contracts.create.legacyBefore")} <Link href="/contracts/register" className="font-semibold hover:opacity-80">{t("contracts.create.legacyLink")}</Link> {t("contracts.create.legacyAfter")}</p>
             )}
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-neutral-800">Counterparty</h2>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("contracts.field.counterparty")}</h2>
             <div className="flex gap-2">
               {(["individual", "organisation"] as Party[]).map((p) => (
-                <button key={p} type="button" onClick={() => setPartyType(p)} className={`filter-tab capitalize ${partyType === p ? "active" : ""}`}>{p}</button>
+                <button key={p} type="button" onClick={() => setPartyType(p)} className={`filter-tab capitalize ${partyType === p ? "active" : ""}`}>{t(`contracts.create.party.${p}`)}</button>
               ))}
             </div>
             {partyType === "organisation" ? (
               <div className="space-y-1">
                 <VendorPicker
                   id="contracts-create-supplier"
-                  label="Supplier"
+                  label={t("contracts.create.supplier")}
                   required
                   value={vendors.find((v) => v.id === vendorId) ?? null}
                   onSelect={(v) => setVendorId(v ? v.id : "")}
                 />
-                <p className="text-xs text-neutral-400">Bank details are managed via the supplier record and require a separate verification workflow.</p>
+                <p className="text-xs text-neutral-400">{t("contracts.create.bankHint")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><label htmlFor="contracts-create-first-name" className="text-xs font-semibold text-neutral-600">First name <span className="text-red-500">*</span></label><input id="contracts-create-first-name" className="form-input" value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
-                <div className="space-y-1"><label htmlFor="contracts-create-surname" className="text-xs font-semibold text-neutral-600">Surname <span className="text-red-500">*</span></label><input id="contracts-create-surname" className="form-input" value={surname} onChange={(e) => setSurname(e.target.value)} /></div>
-                <div className="space-y-1"><label htmlFor="contracts-create-email" className="text-xs font-semibold text-neutral-600">Email</label><input id="contracts-create-email" className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-                <div className="space-y-1"><label htmlFor="contracts-create-phone" className="text-xs font-semibold text-neutral-600">Phone</label><input id="contracts-create-phone" className="form-input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-                <div className="space-y-1 col-span-2"><label htmlFor="contracts-create-profession" className="text-xs font-semibold text-neutral-600">Profession</label><input id="contracts-create-profession" className="form-input" value={profession} onChange={(e) => setProfession(e.target.value)} /></div>
+                <div className="space-y-1"><label htmlFor="contracts-create-first-name" className="text-xs font-semibold text-neutral-600">{t("contracts.create.firstName")} <span className="text-red-500">*</span></label><input id="contracts-create-first-name" className="form-input" value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
+                <div className="space-y-1"><label htmlFor="contracts-create-surname" className="text-xs font-semibold text-neutral-600">{t("contracts.create.surname")} <span className="text-red-500">*</span></label><input id="contracts-create-surname" className="form-input" value={surname} onChange={(e) => setSurname(e.target.value)} /></div>
+                <div className="space-y-1"><label htmlFor="contracts-create-email" className="text-xs font-semibold text-neutral-600">{t("contracts.create.email")}</label><input id="contracts-create-email" className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+                <div className="space-y-1"><label htmlFor="contracts-create-phone" className="text-xs font-semibold text-neutral-600">{t("contracts.create.phone")}</label><input id="contracts-create-phone" className="form-input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                <div className="space-y-1 col-span-2"><label htmlFor="contracts-create-profession" className="text-xs font-semibold text-neutral-600">{t("contracts.create.profession")}</label><input id="contracts-create-profession" className="form-input" value={profession} onChange={(e) => setProfession(e.target.value)} /></div>
               </div>
             )}
           </div>
@@ -294,35 +296,35 @@ export default function ContractCreatePage() {
 
         {step === 3 && (
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-neutral-800">Details & dates</h2>
-            <div className="space-y-1"><label htmlFor="contracts-create-title" className="text-xs font-semibold text-neutral-600">Title <span className="text-red-500">*</span></label><input id="contracts-create-title" className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("contracts.create.detailsTitle")}</h2>
+            <div className="space-y-1"><label htmlFor="contracts-create-title" className="text-xs font-semibold text-neutral-600">{t("contracts.field.title")} <span className="text-red-500">*</span></label><input id="contracts-create-title" className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} /></div>
             <div className="space-y-1">
-              <label htmlFor="contracts-create-type" className="text-xs font-semibold text-neutral-600">Contract type <span className="text-red-500">*</span></label>
+              <label htmlFor="contracts-create-type" className="text-xs font-semibold text-neutral-600">{t("contracts.field.contractType")} <span className="text-red-500">*</span></label>
               <select id="contracts-create-type" className="form-input" value={typeId} onChange={(e) => setTypeId(e.target.value ? Number(e.target.value) : "")}>
-                <option value="">Select type…</option>
-                {types.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                <option value="">{t("contracts.create.selectType")}</option>
+                {types.map((ty) => (<option key={ty.id} value={ty.id}>{ty.name}</option>))}
               </select>
             </div>
-            <div className="space-y-1"><label htmlFor="contracts-create-description" className="text-xs font-semibold text-neutral-600">Short description</label><textarea id="contracts-create-description" className="form-input h-20 resize-none" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+            <div className="space-y-1"><label htmlFor="contracts-create-description" className="text-xs font-semibold text-neutral-600">{t("contracts.create.shortDescription")}</label><textarea id="contracts-create-description" className="form-input h-20 resize-none" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1"><label htmlFor="contracts-create-start-date" className="text-xs font-semibold text-neutral-600">Start date <span className="text-red-500">*</span></label><input id="contracts-create-start-date" type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
-              <div className="space-y-1"><label htmlFor="contracts-create-end-date" className="text-xs font-semibold text-neutral-600">End date <span className="text-red-500">*</span></label><input id="contracts-create-end-date" type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
-              <div className="space-y-1"><label htmlFor="contracts-create-signature-deadline" className="text-xs font-semibold text-neutral-600">Signature deadline</label><input id="contracts-create-signature-deadline" type="date" className="form-input" value={signatureDeadline} onChange={(e) => setSignatureDeadline(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-start-date" className="text-xs font-semibold text-neutral-600">{t("common.startDate")} <span className="text-red-500">*</span></label><input id="contracts-create-start-date" type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-end-date" className="text-xs font-semibold text-neutral-600">{t("common.endDate")} <span className="text-red-500">*</span></label><input id="contracts-create-end-date" type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-signature-deadline" className="text-xs font-semibold text-neutral-600">{t("contracts.create.signatureDeadline")}</label><input id="contracts-create-signature-deadline" type="date" className="form-input" value={signatureDeadline} onChange={(e) => setSignatureDeadline(e.target.value)} /></div>
             </div>
           </div>
         )}
 
         {step === 4 && (
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-neutral-800">Financial structure</h2>
-            <p className="text-xs text-neutral-500">Enter a rate and units and Nexus calculates the total, or enter a flat value.</p>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("contracts.create.financialTitle")}</h2>
+            <p className="text-xs text-neutral-500">{t("contracts.create.financialHint")}</p>
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1"><label htmlFor="contracts-create-rate" className="text-xs font-semibold text-neutral-600">Rate</label><input id="contracts-create-rate" type="number" min="0" step="0.01" className="form-input" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
-              <div className="space-y-1"><label htmlFor="contracts-create-units" className="text-xs font-semibold text-neutral-600">Units</label><input id="contracts-create-units" type="number" min="0" step="0.5" className="form-input" value={units} onChange={(e) => setUnits(e.target.value)} /></div>
-              <div className="space-y-1"><label htmlFor="contracts-create-flat-value" className="text-xs font-semibold text-neutral-600">or Flat value</label><input id="contracts-create-flat-value" type="number" min="0" step="0.01" className="form-input" value={flatValue} disabled={!!(rate && units)} onChange={(e) => setFlatValue(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-rate" className="text-xs font-semibold text-neutral-600">{t("contracts.create.rate")}</label><input id="contracts-create-rate" type="number" min="0" step="0.01" className="form-input" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-units" className="text-xs font-semibold text-neutral-600">{t("contracts.create.units")}</label><input id="contracts-create-units" type="number" min="0" step="0.5" className="form-input" value={units} onChange={(e) => setUnits(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-flat-value" className="text-xs font-semibold text-neutral-600">{t("contracts.create.flatValue")}</label><input id="contracts-create-flat-value" type="number" min="0" step="0.01" className="form-input" value={flatValue} disabled={!!(rate && units)} onChange={(e) => setFlatValue(e.target.value)} /></div>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1"><label htmlFor="contracts-create-currency" className="text-xs font-semibold text-neutral-600">Currency</label>
+              <div className="space-y-1"><label htmlFor="contracts-create-currency" className="text-xs font-semibold text-neutral-600">{t("contracts.field.currency")}</label>
                 {currencies.length > 0 ? (
                   <select id="contracts-create-currency" className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                     {currencies.map((c) => <option key={c.id} value={c.code}>{c.code} — {c.name}</option>)}
@@ -331,24 +333,24 @@ export default function ContractCreatePage() {
                   <input id="contracts-create-currency" className="form-input" value={currency} maxLength={3} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />
                 )}
               </div>
-              <div className="space-y-1"><label htmlFor="contracts-create-budget-currency" className="text-xs font-semibold text-neutral-600">Budget currency</label><input id="contracts-create-budget-currency" className="form-input" value={budgetCurrency} maxLength={3} onChange={(e) => setBudgetCurrency(e.target.value.toUpperCase())} placeholder="Optional" /></div>
-              <div className="space-y-1"><label htmlFor="contracts-create-conversion-reference" className="text-xs font-semibold text-neutral-600">Conversion reference</label><input id="contracts-create-conversion-reference" className="form-input" value={conversionReference} onChange={(e) => setConversionReference(e.target.value)} placeholder="e.g. rate/source used" /></div>
-              <div className="space-y-1"><label htmlFor="contracts-create-converted-value" className="text-xs font-semibold text-neutral-600">Converted commitment</label><input id="contracts-create-converted-value" className="form-input" type="number" value={convertedValue} onChange={(e) => setConvertedValue(e.target.value)} placeholder="In budget currency" /></div>
-              <div className="space-y-1"><label htmlFor="contracts-create-ceiling" className="text-xs font-semibold text-neutral-600">Ceiling</label><input id="contracts-create-ceiling" type="number" min="0" step="0.01" className="form-input" value={ceiling} onChange={(e) => setCeiling(e.target.value)} placeholder="Optional" /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-budget-currency" className="text-xs font-semibold text-neutral-600">{t("contracts.create.budgetCurrency")}</label><input id="contracts-create-budget-currency" className="form-input" value={budgetCurrency} maxLength={3} onChange={(e) => setBudgetCurrency(e.target.value.toUpperCase())} placeholder={t("contracts.create.optional")} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-conversion-reference" className="text-xs font-semibold text-neutral-600">{t("contracts.create.conversionReference")}</label><input id="contracts-create-conversion-reference" className="form-input" value={conversionReference} onChange={(e) => setConversionReference(e.target.value)} placeholder={t("contracts.create.conversionPlaceholder")} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-converted-value" className="text-xs font-semibold text-neutral-600">{t("contracts.create.convertedCommitment")}</label><input id="contracts-create-converted-value" className="form-input" type="number" value={convertedValue} onChange={(e) => setConvertedValue(e.target.value)} placeholder={t("contracts.create.inBudgetCurrency")} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-ceiling" className="text-xs font-semibold text-neutral-600">{t("contracts.settings.ceiling")}</label><input id="contracts-create-ceiling" type="number" min="0" step="0.01" className="form-input" value={ceiling} onChange={(e) => setCeiling(e.target.value)} placeholder={t("contracts.create.optional")} /></div>
             </div>
             <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 text-sm">
-              <span className="text-neutral-600">Calculated total value: </span>
+              <span className="text-neutral-600">{t("contracts.create.calculatedTotal")} </span>
               <span className="font-bold text-neutral-900">{currency} {computedValue.toLocaleString()}</span>
             </div>
             <div className="space-y-2 border-t border-neutral-100 pt-3">
               <label htmlFor="contracts-create-is-framework" className="flex items-center gap-2 text-sm text-neutral-700">
                 <input id="contracts-create-is-framework" type="checkbox" checked={isFramework} onChange={(e) => setIsFramework(e.target.checked)} />
-                This is a framework agreement (call-offs will draw down against a ceiling)
+                {t("contracts.create.frameworkCheckbox")}
               </label>
               {isFramework && (
                 <div className="space-y-1">
-                  <label htmlFor="contracts-create-framework-ceiling" className="text-xs font-semibold text-neutral-600">Framework ceiling</label>
-                  <input id="contracts-create-framework-ceiling" type="number" min="0" step="0.01" className="form-input" value={frameworkCeiling} onChange={(e) => setFrameworkCeiling(e.target.value)} placeholder="Maximum draw-down value" />
+                  <label htmlFor="contracts-create-framework-ceiling" className="text-xs font-semibold text-neutral-600">{t("contracts.create.frameworkCeiling")}</label>
+                  <input id="contracts-create-framework-ceiling" type="number" min="0" step="0.01" className="form-input" value={frameworkCeiling} onChange={(e) => setFrameworkCeiling(e.target.value)} placeholder={t("contracts.create.maxDrawdown")} />
                 </div>
               )}
             </div>
@@ -359,29 +361,29 @@ export default function ContractCreatePage() {
           <div className="space-y-5">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-neutral-800">Deliverables</h2>
-                <button type="button" className="btn-secondary text-xs" onClick={addDeliverable}>Add deliverable</button>
+                <h2 className="text-sm font-semibold text-neutral-800">{t("contracts.create.deliverables")}</h2>
+                <button type="button" className="btn-secondary text-xs" onClick={addDeliverable}>{t("contracts.create.addDeliverable")}</button>
               </div>
-              {deliverables.length === 0 && <p className="text-xs text-neutral-400">No deliverables yet.</p>}
+              {deliverables.length === 0 && <p className="text-xs text-neutral-400">{t("contracts.create.noDeliverables")}</p>}
               {deliverables.map((d, i) => (
                 <div key={i} className="grid grid-cols-3 gap-2">
-                  <input className="form-input col-span-2" placeholder="Deliverable name" value={d.name} onChange={(e) => setDeliverables((arr) => arr.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+                  <input className="form-input col-span-2" placeholder={t("contracts.create.deliverableName")} value={d.name} onChange={(e) => setDeliverables((arr) => arr.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
                   <input type="date" className="form-input" value={d.due_date ?? ""} onChange={(e) => setDeliverables((arr) => arr.map((x, j) => j === i ? { ...x, due_date: e.target.value } : x))} />
                 </div>
               ))}
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-neutral-800">Obligations</h2>
-                <button type="button" className="btn-secondary text-xs" onClick={addObligation}>Add obligation</button>
+                <h2 className="text-sm font-semibold text-neutral-800">{t("contracts.create.obligations")}</h2>
+                <button type="button" className="btn-secondary text-xs" onClick={addObligation}>{t("contracts.create.addObligation")}</button>
               </div>
-              {obligations.length === 0 && <p className="text-xs text-neutral-400">No obligations yet.</p>}
+              {obligations.length === 0 && <p className="text-xs text-neutral-400">{t("contracts.create.noObligations")}</p>}
               {obligations.map((o, i) => (
                 <div key={i} className="grid grid-cols-3 gap-2">
-                  <input className="form-input col-span-2" placeholder="Obligation" value={o.obligation} onChange={(e) => setObligations((arr) => arr.map((x, j) => j === i ? { ...x, obligation: e.target.value } : x))} />
+                  <input className="form-input col-span-2" placeholder={t("contracts.create.obligation")} value={o.obligation} onChange={(e) => setObligations((arr) => arr.map((x, j) => j === i ? { ...x, obligation: e.target.value } : x))} />
                   <select className="form-input" value={o.responsible_party} onChange={(e) => setObligations((arr) => arr.map((x, j) => j === i ? { ...x, responsible_party: e.target.value } : x))}>
-                    <option value="counterparty">Counterparty</option>
-                    <option value="sadcpf">SADC PF</option>
+                    <option value="counterparty">{t("contracts.field.counterparty")}</option>
+                    <option value="sadcpf">SADC PF</option>{/* i18n-ignore */}
                   </select>
                 </div>
               ))}
@@ -391,33 +393,33 @@ export default function ContractCreatePage() {
 
         {step === 6 && (
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-neutral-800">Template & review</h2>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("contracts.create.templateReview")}</h2>
             <div className="space-y-1">
-              <label htmlFor="contracts-create-template-version" className="text-xs font-semibold text-neutral-600">Generate from template (optional)</label>
+              <label htmlFor="contracts-create-template-version" className="text-xs font-semibold text-neutral-600">{t("contracts.create.generateFromTemplate")}</label>
               <select id="contracts-create-template-version" className="form-input" value={templateVersionId} onChange={(e) => setTemplateVersionId(e.target.value ? Number(e.target.value) : "")}>
-                <option value="">Do not generate yet</option>
-                {templateOptions.map((t) => (<option key={t.id} value={t.id}>{t.label}</option>))}
+                <option value="">{t("contracts.create.doNotGenerate")}</option>
+                {templateOptions.map((opt) => (<option key={opt.id} value={opt.id}>{opt.label}</option>))}
               </select>
             </div>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <dt className="text-neutral-500">Title</dt><dd className="text-neutral-900 font-medium">{title || "—"}</dd>
-              <dt className="text-neutral-500">Origin</dt><dd className="text-neutral-900 capitalize">{origin}</dd>
-              <dt className="text-neutral-500">Counterparty</dt><dd className="text-neutral-900">{partyType === "organisation" ? (vendors.find((v) => v.id === vendorId)?.name ?? "—") : `${firstName} ${surname}`.trim() || "—"}</dd>
-              <dt className="text-neutral-500">Value</dt><dd className="text-neutral-900 font-semibold">{currency} {computedValue.toLocaleString()}</dd>
-              <dt className="text-neutral-500">Dates</dt><dd className="text-neutral-900">{startDate || "—"} → {endDate || "—"}</dd>
-              <dt className="text-neutral-500">Deliverables</dt><dd className="text-neutral-900">{deliverables.filter((d) => d.name.trim()).length}</dd>
+              <dt className="text-neutral-500">{t("contracts.field.title")}</dt><dd className="text-neutral-900 font-medium">{title || "—"}</dd>
+              <dt className="text-neutral-500">{t("contracts.create.step.origin")}</dt><dd className="text-neutral-900 capitalize">{t(`contracts.create.origin.${origin}`)}</dd>
+              <dt className="text-neutral-500">{t("contracts.field.counterparty")}</dt><dd className="text-neutral-900">{partyType === "organisation" ? (vendors.find((v) => v.id === vendorId)?.name ?? "—") : `${firstName} ${surname}`.trim() || "—"}</dd>
+              <dt className="text-neutral-500">{t("contracts.field.value")}</dt><dd className="text-neutral-900 font-semibold">{currency} {computedValue.toLocaleString()}</dd>
+              <dt className="text-neutral-500">{t("contracts.create.dates")}</dt><dd className="text-neutral-900">{startDate || "—"} → {endDate || "—"}</dd>
+              <dt className="text-neutral-500">{t("contracts.create.deliverables")}</dt><dd className="text-neutral-900">{deliverables.filter((d) => d.name.trim()).length}</dd>
             </dl>
           </div>
         )}
       </div>
 
       <div className="flex items-center justify-between">
-        <button type="button" className="btn-secondary" disabled={step === 1} onClick={() => setStep((s) => Math.max(1, s - 1))}>Back</button>
+        <button type="button" className="btn-secondary" disabled={step === 1} onClick={() => setStep((s) => Math.max(1, s - 1))}>{t("common.back")}</button>
         {step < STEPS.length ? (
-          <button type="button" className="btn-primary disabled:opacity-60" disabled={!canNext()} onClick={() => setStep((s) => s + 1)}>Continue</button>
+          <button type="button" className="btn-primary disabled:opacity-60" disabled={!canNext()} onClick={() => setStep((s) => s + 1)}>{t("contracts.create.continue")}</button>
         ) : (
           <button type="button" className="btn-primary disabled:opacity-60" disabled={submitting} onClick={submit}>
-            {submitting ? "Creating…" : "Create contract"}
+            {submitting ? t("contracts.register.creating") : t("contracts.create.createContract")}
           </button>
         )}
       </div>

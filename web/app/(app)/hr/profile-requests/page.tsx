@@ -6,22 +6,24 @@ import { useToast } from "@/components/ui/Toast";
 import { formatDateRelative } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const FIELD_LABELS: Record<string, string> = {
-  phone: "Phone", bio: "Bio", nationality: "Nationality",
-  gender: "Gender", marital_status: "Marital Status",
-  emergency_contact_name: "Emergency Contact Name",
-  emergency_contact_relationship: "Emergency Contact Relationship",
-  emergency_contact_phone: "Emergency Contact Phone",
-  address_line1: "Address Line 1", address_line2: "Address Line 2",
-  city: "City", country: "Country",
+  phone: "hr.profileRequests.field.phone", bio: "hr.profileRequests.field.bio",
+  nationality: "hr.profileRequests.field.nationality", gender: "hr.profileRequests.field.gender",
+  marital_status: "hr.profileRequests.field.maritalStatus",
+  emergency_contact_name: "hr.profileRequests.field.emergencyContactName",
+  emergency_contact_relationship: "hr.profileRequests.field.emergencyContactRelationship",
+  emergency_contact_phone: "hr.profileRequests.field.emergencyContactPhone",
+  address_line1: "hr.profileRequests.field.addressLine1", address_line2: "hr.profileRequests.field.addressLine2",
+  city: "hr.profileRequests.field.city", country: "hr.profileRequests.field.country",
 };
 
 const STATUS_CONFIG = {
-  pending:   { label: "Pending",   cls: "badge-warning" },
-  approved:  { label: "Approved",  cls: "badge-success" },
-  rejected:  { label: "Rejected",  cls: "badge-danger"  },
-  cancelled: { label: "Cancelled", cls: "badge-muted"   },
+  pending:   { label: "status.pending",   cls: "badge-warning" },
+  approved:  { label: "status.approved",  cls: "badge-success" },
+  rejected:  { label: "status.rejected",  cls: "badge-danger"  },
+  cancelled: { label: "status.cancelled", cls: "badge-muted"   },
 };
 
 type StatusFilter = "pending" | "approved" | "rejected" | "all";
@@ -37,6 +39,7 @@ function ReviewModal({
   onClose: () => void;
   onDone: (updated: ProfileChangeRequest) => void;
 }) {
+  const { t } = useI18n();
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const { success, error: toastError } = useToast();
@@ -49,11 +52,11 @@ function ReviewModal({
       const res = action === "approve"
         ? await hrProfileRequestApi.approve(request.id, notes || undefined)
         : await hrProfileRequestApi.reject(request.id, notes);
-      success(action === "approve" ? "Approved" : "Rejected", res.data.message);
+      success(action === "approve" ? t("status.approved") : t("status.rejected"), res.data.message);
       onDone(res.data.data);
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      toastError("Error", ax.response?.data?.message ?? "Action failed.");
+      toastError(t("hr.profileRequests.error"), ax.response?.data?.message ?? t("hr.profileRequests.actionFailed"));
     } finally {
       setSaving(false);
     }
@@ -67,31 +70,31 @@ function ReviewModal({
             {action === "approve" ? "check_circle" : "cancel"}
           </span>
           <h3 className="text-base font-bold text-neutral-900">
-            {action === "approve" ? "Approve Profile Changes" : "Reject Profile Changes"}
+            {action === "approve" ? t("hr.profileRequests.approveTitle") : t("hr.profileRequests.rejectTitle")}
           </h3>
-          <button type="button" onClick={onClose} aria-label="Close profile request review" className="ml-auto text-neutral-400 hover:text-neutral-600">
+          <button type="button" onClick={onClose} aria-label={t("hr.profileRequests.closeReview")} className="ml-auto text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
         {/* Diff summary */}
         <div className="px-6 pt-4 pb-2">
-          <p className="text-xs font-semibold text-neutral-500 mb-2 uppercase tracking-wider">Requested Changes</p>
+          <p className="text-xs font-semibold text-neutral-500 mb-2 uppercase tracking-wider">{t("hr.profileRequests.requestedChanges")}</p>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {Object.entries(request.requested_changes).map(([field, diff]) => (
               <div key={field} className="rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2">
-                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide mb-1">{FIELD_LABELS[field] ?? field}</p>
+                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide mb-1">{FIELD_LABELS[field] ? t(FIELD_LABELS[field]) : field}</p>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-red-400 line-through">{diff.old ?? <em className="not-italic text-neutral-300">empty</em>}</span>
+                  <span className="text-red-400 line-through">{diff.old ?? <em className="not-italic text-neutral-300">{t("hr.profileRequests.empty")}</em>}</span>
                   <span className="material-symbols-outlined text-[14px] text-neutral-400">arrow_forward</span>
-                  <span className="text-green-700 font-semibold">{diff.new ?? <em className="not-italic text-neutral-300">empty</em>}</span>
+                  <span className="text-green-700 font-semibold">{diff.new ?? <em className="not-italic text-neutral-300">{t("hr.profileRequests.empty")}</em>}</span>
                 </div>
               </div>
             ))}
           </div>
           {request.notes && (
             <div className="mt-3 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
-              <span className="font-semibold">Staff note: </span>{request.notes}
+              <span className="font-semibold">{t("hr.profileRequests.staffNote")} </span>{request.notes}
             </div>
           )}
         </div>
@@ -99,21 +102,21 @@ function ReviewModal({
         <form onSubmit={handleSubmit} className="px-6 pt-2 pb-6 space-y-4">
           <div>
             <label htmlFor="hr-profile-requests-field" className="block text-xs font-semibold text-neutral-700 mb-1">
-              {action === "approve" ? "Notes (optional)" : "Reason for rejection *"}
+              {action === "approve" ? t("hr.profileRequests.notesOptional") : t("hr.profileRequests.rejectReason")}
             </label>
             <textarea id="hr-profile-requests-field"
               rows={3}
               required={action === "reject"}
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder={action === "approve" ? "Add any notes for the staff member…" : "Explain why this request is being rejected…"}
+              placeholder={action === "approve" ? t("hr.profileRequests.notesPlaceholder") : t("hr.profileRequests.rejectPlaceholder")}
               className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
             />
           </div>
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={onClose} className="btn-secondary text-sm px-4 py-2">Cancel</button>
+            <button type="button" onClick={onClose} className="btn-secondary text-sm px-4 py-2">{t("common.cancel")}</button>
             <button type="submit" disabled={saving} className={`text-sm px-5 py-2 rounded-xl font-semibold text-white transition-colors disabled:opacity-60 ${action === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}>
-              {saving ? "Processing…" : action === "approve" ? "Approve & Apply" : "Reject Request"}
+              {saving ? t("hr.profileRequests.processing") : action === "approve" ? t("hr.profileRequests.approveApply") : t("hr.profileRequests.rejectRequest")}
             </button>
           </div>
         </form>
@@ -123,6 +126,7 @@ function ReviewModal({
 }
 
 export default function HrProfileRequestsPage() {
+  const { t } = useI18n();
   const [requests, setRequests] = useState<ProfileChangeRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
@@ -135,11 +139,11 @@ export default function HrProfileRequestsPage() {
       const res = await hrProfileRequestApi.list(status);
       setRequests((res.data as any).data ?? []);
     } catch {
-      toastError("Error", "Failed to load profile change requests.");
+      toastError(t("hr.profileRequests.error"), t("hr.profileRequests.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [toastError]);
+  }, [toastError, t]);
 
   useEffect(() => { load(statusFilter); }, [statusFilter, load]);
 
@@ -152,10 +156,10 @@ export default function HrProfileRequestsPage() {
   };
 
   const tabs: { key: StatusFilter; label: string; icon: string }[] = [
-    { key: "pending",  label: "Pending",  icon: "pending_actions" },
-    { key: "approved", label: "Approved", icon: "check_circle"    },
-    { key: "rejected", label: "Rejected", icon: "cancel"          },
-    { key: "all",      label: "All",      icon: "list"            },
+    { key: "pending",  label: t("status.pending"),  icon: "pending_actions" },
+    { key: "approved", label: t("status.approved"), icon: "check_circle"    },
+    { key: "rejected", label: t("status.rejected"), icon: "cancel"          },
+    { key: "all",      label: t("hr.profileRequests.all"), icon: "list"     },
   ];
 
   return (
@@ -170,19 +174,19 @@ export default function HrProfileRequestsPage() {
       )}
 
       <ModulePageHeader
-        title="Profile Change Requests"
-        subtitle="Review and approve staff profile update requests."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Profile requests" }]} />}
+        title={t("hr.profileRequests.title")}
+        subtitle={t("hr.profileRequests.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: t("hr.profileRequests.crumb") }]} />}
       />
 
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-700">
-        {tabs.map(t => (
-          <button key={t.key} type="button"
-            onClick={() => setStatusFilter(t.key)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${statusFilter === t.key ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-800"}`}>
-            <span className="material-symbols-outlined text-[16px]">{t.icon}</span>
-            {t.label}
+        {tabs.map(tab => (
+          <button key={tab.key} type="button"
+            onClick={() => setStatusFilter(tab.key)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${statusFilter === tab.key ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-800"}`}>
+            <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
+            {tab.label}
           </button>
         ))}
       </div>
@@ -205,8 +209,8 @@ export default function HrProfileRequestsPage() {
       ) : requests.length === 0 ? (
         <EmptyState
           icon="task_alt"
-          title={statusFilter === "all" ? "No requests" : `No ${statusFilter} requests`}
-          description={statusFilter === "pending" ? "All profile change requests have been reviewed." : "Nothing to show."}
+          title={statusFilter === "all" ? t("hr.profileRequests.noRequests") : t(`hr.profileRequests.no.${statusFilter}`)}
+          description={statusFilter === "pending" ? t("hr.profileRequests.allReviewed") : t("hr.profileRequests.nothingToShow")}
         />
       ) : (
         <div className="space-y-3">
@@ -223,8 +227,8 @@ export default function HrProfileRequestsPage() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{req.user?.name ?? "Unknown"}</p>
-                      <span className={`badge ${cfg.cls} text-[10px]`}>{cfg.label}</span>
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{req.user?.name ?? t("hr.profileRequests.unknown")}</p>
+                      <span className={`badge ${cfg.cls} text-[10px]`}>{t(cfg.label)}</span>
                       {req.user?.department && (
                         <span className="text-xs text-neutral-400">{(req.user.department as any).name}</span>
                       )}
@@ -235,7 +239,7 @@ export default function HrProfileRequestsPage() {
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {Object.keys(req.requested_changes).map(f => (
                         <span key={f} className="inline-flex items-center gap-1 rounded-full bg-primary/8 border border-primary/20 px-2.5 py-0.5 text-[10px] font-semibold text-primary">
-                          {FIELD_LABELS[f] ?? f}
+                          {FIELD_LABELS[f] ? t(FIELD_LABELS[f]) : f}
                         </span>
                       ))}
                     </div>
@@ -246,7 +250,7 @@ export default function HrProfileRequestsPage() {
 
                     {req.review_notes && req.status !== "pending" && (
                       <div className={`mt-2 text-xs rounded-lg px-3 py-1.5 ${req.status === "approved" ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-600 border border-red-100"}`}>
-                        <span className="font-semibold">HR note: </span>{req.review_notes}
+                        <span className="font-semibold">{t("hr.profileRequests.hrNote")} </span>{req.review_notes}
                       </div>
                     )}
                   </div>
@@ -259,17 +263,17 @@ export default function HrProfileRequestsPage() {
                         <button type="button"
                           onClick={() => setModal({ request: req, action: "reject" })}
                           className="text-xs font-semibold text-red-500 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors">
-                          Reject
+                          {t("common.reject")}
                         </button>
                         <button type="button"
                           onClick={() => setModal({ request: req, action: "approve" })}
                           className="text-xs font-semibold text-white bg-green-600 rounded-lg px-3 py-1.5 hover:bg-green-700 transition-colors">
-                          Approve
+                          {t("common.approve")}
                         </button>
                       </div>
                     )}
                     {req.status !== "pending" && req.reviewer && (
-                      <p className="text-[10px] text-neutral-400">By {req.reviewer.name}</p>
+                      <p className="text-[10px] text-neutral-400">{t("hr.profileRequests.by", { name: req.reviewer.name })}</p>
                     )}
                   </div>
                 </div>

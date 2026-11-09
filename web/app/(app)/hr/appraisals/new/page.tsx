@@ -8,6 +8,7 @@ import { getStoredUser } from "@/lib/auth";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface DepartmentInfo {
   id: number;
@@ -26,6 +27,7 @@ function UserAutocomplete({
   onSelect: (u: TenantUserOption | null) => void;
   hint?: string;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState(value?.name ?? "");
   const [options, setOptions] = useState<TenantUserOption[]>([]);
   const [open, setOpen] = useState(false);
@@ -38,7 +40,7 @@ function UserAutocomplete({
 
   useEffect(() => {
     if (!query.trim() || (value && query === value.name)) { setOptions([]); return; }
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setFetching(true);
       try {
         const r = await tenantUsersApi.list({ search: query });
@@ -47,7 +49,7 @@ function UserAutocomplete({
       } catch { setOptions([]); }
       finally { setFetching(false); }
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [query, value]);
 
   useEffect(() => {
@@ -67,10 +69,10 @@ function UserAutocomplete({
           <span className="text-xs text-neutral-400">{value.email}</span>
           <span className="ml-auto text-xs text-green-600 font-medium flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">check_circle</span>
-            Selected
+            {t("hr.appraisals.new.selected")}
           </span>
           <button type="button" className="btn-secondary text-xs" onClick={() => { onSelect(null); setQuery(""); }}>
-            Clear
+            {t("hr.appraisals.new.clear")}
           </button>
         </div>
       ) : (
@@ -80,7 +82,7 @@ function UserAutocomplete({
             <input
               type="text"
               className="form-input w-full pl-9"
-              placeholder={`Search ${label.toLowerCase()}…`}
+              placeholder={t("hr.appraisals.new.searchLabel", { label: label.toLowerCase() })}
               value={query}
               onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
               onFocus={() => setOpen(true)}
@@ -95,10 +97,10 @@ function UserAutocomplete({
           {fetching ? (
             <div className="px-3 py-3 text-xs text-neutral-400 flex items-center gap-2">
               <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-              Searching…
+              {t("hr.appraisals.new.searching")}
             </div>
           ) : options.length === 0 ? (
-            <div className="px-3 py-3 text-xs text-neutral-400">No users found for &ldquo;{query}&rdquo;</div>
+            <div className="px-3 py-3 text-xs text-neutral-400">{t("hr.appraisals.new.noUsers", { query })}</div>
           ) : options.map((u) => (
             <button
               key={u.id}
@@ -124,6 +126,7 @@ function UserAutocomplete({
 export default function NewAppraisalPage() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const [me, setMe] = useState<AuthUser | null>(null);
   const [cycles, setCycles] = useState<AppraisalCycle[]>([]);
   const [myFile, setMyFile] = useState<HrPersonalFile | null>(null);
@@ -205,11 +208,11 @@ export default function NewAppraisalPage() {
     e.preventDefault();
     setError(null);
     if (!cycleId) {
-      setError("Please select an appraisal cycle.");
+      setError(t("hr.appraisals.new.selectCycleError"));
       return;
     }
     if (!me?.id) {
-      setError("Unable to determine your identity. Please log out and log in again.");
+      setError(t("hr.appraisals.new.identityError"));
       return;
     }
     setLoading(true);
@@ -230,14 +233,14 @@ export default function NewAppraisalPage() {
         status: "draft",
         kras: kras.length ? kras : undefined,
       });
-      toast.success("Appraisal created");
+      toast.success(t("hr.appraisals.new.created"));
       router.push(`/hr/appraisals/${(res.data as { id: number }).id}`);
     } catch (err: unknown) {
-      toast.error("Appraisal not created", apiErrorMessage(err, "Failed to create appraisal."));
+      toast.error(t("hr.appraisals.new.notCreated"), apiErrorMessage(err, t("hr.appraisals.new.createFailed")));
       setError(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
-          : "Failed to create appraisal."
+          : t("hr.appraisals.new.createFailed")
       );
     } finally {
       setLoading(false);
@@ -247,14 +250,14 @@ export default function NewAppraisalPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Start my appraisal"
-        subtitle="Initiate your own performance appraisal for the selected cycle. Your supervisor and HOD will be automatically identified from your HR file."
+        title="hr.appraisals.new.title"
+        subtitle="hr.appraisals.new.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Appraisals", href: "/hr/appraisals" },
-              { label: "Start my appraisal" },
+              { label: "hr.appraisals.list.crumb", href: "/hr/appraisals" },
+              { label: "hr.appraisals.new.title" },
             ]}
           />
         }
@@ -271,26 +274,26 @@ export default function NewAppraisalPage() {
 
         {/* Employee — locked to current user */}
         <div>
-          <p className="block text-sm font-semibold text-neutral-700 mb-1">Employee</p>
+          <p className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.list.employee")}</p>
           <div className="form-input bg-neutral-50 text-neutral-700 flex items-center gap-2 cursor-not-allowed">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">person</span>
-            <span className="font-medium">{me?.name ?? "Loading…"}</span>
+            <span className="font-medium">{me?.name ?? t("common.loading")}</span>
             <span className="text-neutral-400 text-xs ml-1">{me?.email}</span>
-            <span className="ml-auto text-xs text-neutral-400">You</span>
+            <span className="ml-auto text-xs text-neutral-400">{t("hr.appraisals.new.you")}</span>
           </div>
           <p className="text-xs text-neutral-400 mt-1">
-            Appraisals can only be initiated for yourself.
+            {t("hr.appraisals.new.selfOnly")}
           </p>
         </div>
 
         {/* Department — auto-detected */}
         {(department || loadingContext) && (
           <div>
-            <p className="block text-sm font-semibold text-neutral-700 mb-1">Department</p>
+            <p className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.positions.form.department")}</p>
             <div className="form-input bg-neutral-50 text-neutral-700 flex items-center gap-2 cursor-not-allowed">
               <span className="material-symbols-outlined text-[18px] text-neutral-400">apartment</span>
               {loadingContext ? (
-                <span className="text-neutral-400 text-sm">Detecting…</span>
+                <span className="text-neutral-400 text-sm">{t("hr.appraisals.new.detecting")}</span>
               ) : (
                 <span>{department?.name ?? "—"}</span>
               )}
@@ -300,14 +303,14 @@ export default function NewAppraisalPage() {
 
         {/* Cycle */}
         <div>
-          <label htmlFor="hr-appraisals-new-appraisal-cycle" className="block text-sm font-semibold text-neutral-700 mb-1">Appraisal cycle *</label>
+          <label htmlFor="hr-appraisals-new-appraisal-cycle" className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.new.cycleLabel")}</label>
           <select id="hr-appraisals-new-appraisal-cycle"
             className="form-input w-full"
             value={cycleId}
             onChange={(e) => setCycleId(e.target.value)}
             required
           >
-            <option value="">Select cycle</option>
+            <option value="">{t("hr.appraisals.new.selectCycle")}</option>
             {cycles.map((c) => (
               <option key={c.id} value={String(c.id)}>
                 {c.title}
@@ -321,30 +324,30 @@ export default function NewAppraisalPage() {
 
         {/* Supervisor — auto-detected or searchable */}
         <div>
-          <p className="block text-sm font-semibold text-neutral-700 mb-1">Supervisor</p>
+          <p className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.new.supervisor")}</p>
           {loadingContext ? (
-            <div className="form-input bg-neutral-50 text-neutral-400 text-sm">Detecting from HR file…</div>
+            <div className="form-input bg-neutral-50 text-neutral-400 text-sm">{t("hr.appraisals.new.detectingFromFile")}</div>
           ) : (
             <UserAutocomplete
-              label="Supervisor"
+              label={t("hr.appraisals.new.supervisor")}
               value={supervisor}
               onSelect={setSupervisor}
-              hint="Auto-detected from your HR file. Search to change or leave blank if not required."
+              hint={t("hr.appraisals.new.supervisorHint")}
             />
           )}
         </div>
 
         {/* HOD — auto-detected or searchable */}
         <div>
-          <p className="block text-sm font-semibold text-neutral-700 mb-1">Head of Department (HOD)</p>
+          <p className="block text-sm font-semibold text-neutral-700 mb-1">{t("hr.appraisals.new.hodTitle")}</p>
           {loadingContext ? (
-            <div className="form-input bg-neutral-50 text-neutral-400 text-sm">Detecting from HR file…</div>
+            <div className="form-input bg-neutral-50 text-neutral-400 text-sm">{t("hr.appraisals.new.detectingFromFile")}</div>
           ) : (
             <UserAutocomplete
-              label="HOD"
+              label={t("hr.appraisals.new.hod")}
               value={hod}
               onSelect={setHod}
-              hint="Auto-detected from your department record. Search to change or leave blank if not required."
+              hint={t("hr.appraisals.new.hodHint")}
             />
           )}
         </div>
@@ -353,12 +356,12 @@ export default function NewAppraisalPage() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <div>
-              <p className="block text-sm font-semibold text-neutral-700">Key result areas</p>
-              <p className="text-xs text-neutral-400">Optional — you can add or edit KRAs on the next screen.</p>
+              <p className="block text-sm font-semibold text-neutral-700">{t("hr.appraisals.new.kras")}</p>
+              <p className="text-xs text-neutral-400">{t("hr.appraisals.new.krasHint")}</p>
             </div>
             <button type="button" onClick={addKra} className="btn-secondary text-xs flex items-center gap-1">
               <span className="material-symbols-outlined text-[15px]">add</span>
-              Add KRA
+              {t("hr.appraisals.new.addKra")}
             </button>
           </div>
           {kraRows.map((row, i) => (
@@ -366,14 +369,14 @@ export default function NewAppraisalPage() {
               <input
                 type="text"
                 className="form-input flex-1 min-w-[140px]"
-                placeholder="Title *"
+                placeholder={t("hr.appraisals.new.kraTitle")}
                 value={row.title}
                 onChange={(e) => updateKra(i, "title", e.target.value)}
               />
               <input
                 type="text"
                 className="form-input flex-1 min-w-[140px]"
-                placeholder="Description"
+                placeholder={t("hr.positions.form.description")}
                 value={row.description}
                 onChange={(e) => updateKra(i, "description", e.target.value)}
               />
@@ -382,11 +385,11 @@ export default function NewAppraisalPage() {
                 min={0}
                 max={100}
                 className="form-input w-20"
-                placeholder="Weight %"
+                placeholder={t("hr.appraisals.new.weight")}
                 value={row.weight}
                 onChange={(e) => updateKra(i, "weight", e.target.value)}
               />
-              <button type="button" onClick={() => removeKra(i)} aria-label={`Remove key result area ${i + 1}`} className="text-neutral-400 hover:text-red-600 p-1 mt-1">
+              <button type="button" onClick={() => removeKra(i)} aria-label={t("hr.appraisals.new.removeKra", { n: i + 1 })} className="text-neutral-400 hover:text-red-600 p-1 mt-1">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
@@ -397,9 +400,9 @@ export default function NewAppraisalPage() {
         <div className="rounded-xl bg-primary/5 border border-primary/15 px-4 py-3 text-sm text-primary flex items-start gap-2">
           <span className="material-symbols-outlined text-[18px] mt-0.5 shrink-0">info</span>
           <div>
-            <p className="font-semibold mb-0.5">About this appraisal</p>
+            <p className="font-semibold mb-0.5">{t("hr.appraisals.new.aboutTitle")}</p>
             <p className="text-xs text-primary/80">
-              This creates a draft appraisal for <strong>{me?.name ?? "you"}</strong>. You will complete your self-assessment on the next screen. Your supervisor will receive it for review once you submit.
+              {t("hr.appraisals.new.aboutBody", { name: me?.name ?? t("hr.appraisals.new.youLower") })}
             </p>
           </div>
         </div>
@@ -407,9 +410,9 @@ export default function NewAppraisalPage() {
         <div className="flex gap-3 pt-1">
           <button type="submit" disabled={loading || !cycleId} className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">{loading ? "progress_activity" : "rate_review"}</span>
-            {loading ? "Creating…" : "Create appraisal"}
+            {loading ? t("hr.positions.form.creating") : t("hr.appraisals.new.create")}
           </button>
-          <Link href="/hr/appraisals" className="btn-secondary px-4 py-2 text-sm">Cancel</Link>
+          <Link href="/hr/appraisals" className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</Link>
         </div>
       </form>
     </div>

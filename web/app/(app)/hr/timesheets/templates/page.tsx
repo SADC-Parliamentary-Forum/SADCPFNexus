@@ -11,6 +11,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const WORK_BUCKETS = [
   "delivery",
@@ -95,6 +96,7 @@ function fromTemplate(t: TimesheetTemplate): FormState {
 }
 
 export default function TimesheetTemplatesAdminPage() {
+  const { t } = useI18n();
   const { success, error: showErrorToast, info } = useToast();
   const { confirm } = useConfirm();
   const [list, setList] = useState<TimesheetTemplate[]>([]);
@@ -132,7 +134,7 @@ export default function TimesheetTemplatesAdminPage() {
         setList(tmplRes.data?.data ?? []);
         setProjects(projRes.data?.data ?? []);
       })
-      .catch(() => setError("Failed to load timesheet templates."))
+      .catch(() => setError(t("hr.timesheets.templates.loadFailed")))
       .finally(() => setLoading(false));
   }, []);
 
@@ -146,15 +148,15 @@ export default function TimesheetTemplatesAdminPage() {
     setShowForm(true);
   };
 
-  const openEdit = (t: TimesheetTemplate) => {
-    setEditId(t.id);
-    setForm(fromTemplate(t));
+  const openEdit = (tpl: TimesheetTemplate) => {
+    setEditId(tpl.id);
+    setForm(fromTemplate(tpl));
     setShowForm(true);
   };
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.code.trim()) {
-      showErrorToast("Name and code are required.");
+      showErrorToast(t("hr.timesheets.templates.nameCodeRequired"));
       return;
     }
     setSaving(true);
@@ -162,46 +164,46 @@ export default function TimesheetTemplatesAdminPage() {
       const payload = toPayload(form);
       if (editId == null) {
         await hrApi.createTimesheetTemplate(payload);
-        success("Template created.");
+        success(t("hr.timesheets.templates.created"));
       } else {
         await hrApi.updateTimesheetTemplate(editId, payload);
-        success("Template updated.");
+        success(t("hr.timesheets.templates.updated"));
       }
       setShowForm(false);
       setEditId(null);
       fetchList();
     } catch {
-      showErrorToast("Failed to save template.");
+      showErrorToast(t("hr.timesheets.templates.saveFailed"));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeactivate = async (t: TimesheetTemplate) => {
-    if (!t.is_active) return;
+  const handleDeactivate = async (tpl: TimesheetTemplate) => {
+    if (!tpl.is_active) return;
     const ok = await confirm({
-      title: "Deactivate template?",
-      message: `“${t.name}” will no longer be available for staff timesheets.`,
-      confirmText: "Deactivate",
+      title: t("hr.timesheets.templates.deactivateTitle"),
+      message: t("hr.timesheets.templates.deactivateMessage", { name: tpl.name }),
+      confirmText: t("hr.timesheets.templates.deactivate"),
       variant: "danger",
     });
     if (!ok) return;
     try {
-      await hrApi.deactivateTimesheetTemplate(t.id);
-      success("Template deactivated.");
+      await hrApi.deactivateTimesheetTemplate(tpl.id);
+      success(t("hr.timesheets.templates.deactivated"));
       fetchList();
     } catch {
-      showErrorToast("Failed to deactivate template.");
+      showErrorToast(t("hr.timesheets.templates.deactivateFailed"));
     }
   };
 
-  const handleReactivate = async (t: TimesheetTemplate) => {
+  const handleReactivate = async (tpl: TimesheetTemplate) => {
     try {
-      await hrApi.updateTimesheetTemplate(t.id, { is_active: true });
-      success("Template reactivated.");
+      await hrApi.updateTimesheetTemplate(tpl.id, { is_active: true });
+      success(t("hr.timesheets.templates.reactivated"));
       fetchList();
     } catch {
-      showErrorToast("Failed to reactivate template.");
+      showErrorToast(t("hr.timesheets.templates.reactivateFailed"));
     }
   };
 
@@ -211,15 +213,15 @@ export default function TimesheetTemplatesAdminPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Timesheet templates"
+        title="hr.timesheets.templates.title"
         titleTestId="timesheet-templates-title"
-        subtitle="Donor / project defaults for draft weeks. Does not invent overtime rates — only ordinary hours."
+        subtitle="hr.timesheets.templates.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Timesheets", href: "/hr/timesheets" },
-              { label: "Templates" },
+              { label: "nav.timesheets", href: "/hr/timesheets" },
+              { label: "hr.timesheets.templates.crumb" },
             ]}
           />
         }
@@ -232,7 +234,7 @@ export default function TimesheetTemplatesAdminPage() {
               data-testid="timesheet-templates-new"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              New template
+              {t("hr.timesheets.templates.new")}
             </button>
           ) : undefined
         }
@@ -240,7 +242,7 @@ export default function TimesheetTemplatesAdminPage() {
 
       {!allowed && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          You can view templates, but only HR administrators can create or edit them.
+          {t("hr.timesheets.templates.readOnlyNotice")}
         </div>
       )}
 
@@ -254,21 +256,21 @@ export default function TimesheetTemplatesAdminPage() {
       {showForm && allowed && (
         <div className="card space-y-4 p-5" data-testid="timesheet-templates-form">
           <h2 className="text-sm font-semibold text-neutral-900">
-            {editId == null ? "Create template" : "Edit template"}
+            {editId == null ? t("hr.timesheets.templates.createTitle") : t("hr.timesheets.templates.editTitle")}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label htmlFor="hr-timesheets-templates-name" className="mb-1 block text-xs font-medium text-neutral-600">Name</label>
+              <label htmlFor="hr-timesheets-templates-name" className="mb-1 block text-xs font-medium text-neutral-600">{t("hr.timesheets.templates.name")}</label>
               <input id="hr-timesheets-templates-name"
                 className="form-input"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. Sida weekly"
+                placeholder={t("hr.timesheets.templates.namePlaceholder")}
                 data-testid="timesheet-template-name"
               />
             </div>
             <div>
-              <label htmlFor="hr-timesheets-templates-code" className="mb-1 block text-xs font-medium text-neutral-600">Code</label>
+              <label htmlFor="hr-timesheets-templates-code" className="mb-1 block text-xs font-medium text-neutral-600">{t("hr.timesheets.templates.code")}</label>
               <input id="hr-timesheets-templates-code"
                 className="form-input font-mono"
                 value={form.code}
@@ -278,16 +280,16 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label htmlFor="hr-timesheets-templates-donor" className="mb-1 block text-xs font-medium text-neutral-600">Donor</label>
+              <label htmlFor="hr-timesheets-templates-donor" className="mb-1 block text-xs font-medium text-neutral-600">{t("hr.timesheets.templates.donor")}</label>
               <input id="hr-timesheets-templates-donor"
                 className="form-input"
                 value={form.donor_name}
                 onChange={(e) => setForm((f) => ({ ...f, donor_name: e.target.value }))}
-                placeholder="Sida / EU / …"
+                placeholder={t("hr.timesheets.templates.donorPlaceholder")}
               />
             </div>
             <div>
-              <label htmlFor="hr-timesheets-templates-sort-order" className="mb-1 block text-xs font-medium text-neutral-600">Sort order</label>
+              <label htmlFor="hr-timesheets-templates-sort-order" className="mb-1 block text-xs font-medium text-neutral-600">{t("hr.timesheets.templates.sortOrder")}</label>
               <input id="hr-timesheets-templates-sort-order"
                 type="number"
                 min={0}
@@ -297,7 +299,7 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label htmlFor="hr-timesheets-templates-description" className="mb-1 block text-xs font-medium text-neutral-600">Description</label>
+              <label htmlFor="hr-timesheets-templates-description" className="mb-1 block text-xs font-medium text-neutral-600">{t("hr.timesheets.templates.description")}</label>
               <input id="hr-timesheets-templates-description"
                 className="form-input"
                 value={form.description}
@@ -305,13 +307,13 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label htmlFor="hr-timesheets-templates-default-project" className="mb-1 block text-xs font-medium text-neutral-600">Default project</label>
+              <label htmlFor="hr-timesheets-templates-default-project" className="mb-1 block text-xs font-medium text-neutral-600">{t("hr.timesheets.templates.defaultProject")}</label>
               <select id="hr-timesheets-templates-default-project"
                 className="form-input"
                 value={form.project_id}
                 onChange={(e) => setForm((f) => ({ ...f, project_id: e.target.value }))}
               >
-                <option value="">None</option>
+                <option value="">{t("hr.timesheets.templates.none")}</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.label}
@@ -320,7 +322,7 @@ export default function TimesheetTemplatesAdminPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="hr-timesheets-templates-work-bucket" className="mb-1 block text-xs font-medium text-neutral-600">Work bucket</label>
+              <label htmlFor="hr-timesheets-templates-work-bucket" className="mb-1 block text-xs font-medium text-neutral-600">{t("hr.timesheets.templates.workBucket")}</label>
               <select id="hr-timesheets-templates-work-bucket"
                 className="form-input"
                 value={form.work_bucket}
@@ -328,13 +330,13 @@ export default function TimesheetTemplatesAdminPage() {
               >
                 {WORK_BUCKETS.map((b) => (
                   <option key={b} value={b}>
-                    {b}
+                    {t(`hr.timesheets.bucket.${b}`)}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label htmlFor="hr-timesheets-templates-activity-type" className="mb-1 block text-xs font-medium text-neutral-600">Activity type</label>
+              <label htmlFor="hr-timesheets-templates-activity-type" className="mb-1 block text-xs font-medium text-neutral-600">{t("hr.timesheets.templates.activityType")}</label>
               <input id="hr-timesheets-templates-activity-type"
                 className="form-input"
                 value={form.activity_type}
@@ -342,17 +344,17 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label htmlFor="hr-timesheets-templates-entry-category" className="mb-1 block text-xs font-medium text-neutral-600">Entry category</label>
+              <label htmlFor="hr-timesheets-templates-entry-category" className="mb-1 block text-xs font-medium text-neutral-600">{t("hr.timesheets.templates.entryCategory")}</label>
               <input id="hr-timesheets-templates-entry-category"
                 className="form-input"
                 value={form.entry_category}
                 onChange={(e) => setForm((f) => ({ ...f, entry_category: e.target.value }))}
-                placeholder="donor / core / …"
+                placeholder={t("hr.timesheets.templates.entryCategoryPlaceholder")}
               />
             </div>
             <div>
               <label htmlFor="hr-timesheets-templates-default-hours-day-no-ot-rates" className="mb-1 block text-xs font-medium text-neutral-600">
-                Default hours / day (no OT rates)
+                {t("hr.timesheets.templates.defaultHours")}
               </label>
               <input id="hr-timesheets-templates-default-hours-day-no-ot-rates"
                 type="number"
@@ -371,7 +373,7 @@ export default function TimesheetTemplatesAdminPage() {
                   checked={form.is_active}
                   onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
                 />
-                Active
+                {t("hr.timesheets.templates.active")}
               </label>
             </div>
           </div>
@@ -383,7 +385,7 @@ export default function TimesheetTemplatesAdminPage() {
               onClick={() => void handleSave()}
               data-testid="timesheet-template-save"
             >
-              {saving ? "Saving…" : editId == null ? "Create" : "Save changes"}
+              {saving ? t("hr.timesheets.saving") : editId == null ? t("common.create") : t("hr.timesheets.templates.saveChanges")}
             </button>
             <button
               type="button"
@@ -393,7 +395,7 @@ export default function TimesheetTemplatesAdminPage() {
                 setEditId(null);
               }}
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </div>
@@ -403,14 +405,14 @@ export default function TimesheetTemplatesAdminPage() {
         {loading ? (
           <div className="flex items-center justify-center gap-2 p-8 text-sm text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-            Loading…
+            {t("common.loading")}
           </div>
         ) : list.length === 0 ? (
           <div data-testid="timesheet-templates-empty">
             <EmptyState
               icon="description"
-              title="No templates yet"
-              description="Create a donor or project template so staff can prefill draft weeks."
+              title={t("hr.timesheets.templates.empty")}
+              description={t("hr.timesheets.templates.emptyHint")}
             />
           </div>
         ) : (
@@ -418,32 +420,32 @@ export default function TimesheetTemplatesAdminPage() {
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Code</th>
-                  <th>Donor</th>
-                  <th>Project</th>
-                  <th>Bucket</th>
-                  <th>Hours</th>
-                  <th>Status</th>
-                  {allowed && <th className="text-right">Actions</th>}
+                  <th>{t("hr.timesheets.templates.name")}</th>
+                  <th>{t("hr.timesheets.templates.code")}</th>
+                  <th>{t("hr.timesheets.templates.donor")}</th>
+                  <th>{t("hr.timesheets.col.project")}</th>
+                  <th>{t("hr.timesheets.col.bucket")}</th>
+                  <th>{t("hr.timesheets.col.hours")}</th>
+                  <th>{t("hr.timesheets.monthly.status")}</th>
+                  {allowed && <th className="text-right">{t("hr.timesheets.overtime.actions")}</th>}
                 </tr>
               </thead>
               <tbody>
-                {list.map((t) => (
-                  <tr key={t.id} className={!t.is_active ? "opacity-60" : undefined}>
-                    <td className="font-medium text-neutral-900">{t.name}</td>
-                    <td className="font-mono text-xs text-neutral-600">{t.code}</td>
-                    <td className="text-sm text-neutral-700">{t.donor_name || "—"}</td>
+                {list.map((tpl) => (
+                  <tr key={tpl.id} className={!tpl.is_active ? "opacity-60" : undefined}>
+                    <td className="font-medium text-neutral-900">{tpl.name}</td>
+                    <td className="font-mono text-xs text-neutral-600">{tpl.code}</td>
+                    <td className="text-sm text-neutral-700">{tpl.donor_name || "—"}</td>
                     <td className="max-w-[180px] truncate text-sm text-neutral-600">
-                      {projectLabel(t.defaults?.project_id)}
+                      {projectLabel(tpl.defaults?.project_id)}
                     </td>
                     <td className="text-xs capitalize text-neutral-600">
-                      {t.defaults?.work_bucket || "—"}
+                      {tpl.defaults?.work_bucket ? t(`hr.timesheets.bucket.${tpl.defaults.work_bucket}`) : "—"}
                     </td>
-                    <td className="text-sm tabular-nums">{t.defaults?.hours ?? "—"}</td>
+                    <td className="text-sm tabular-nums">{tpl.defaults?.hours ?? "—"}</td>
                     <td>
-                      <span className={`badge text-xs ${t.is_active ? "badge-success" : "badge-muted"}`}>
-                        {t.is_active ? "Active" : "Inactive"}
+                      <span className={`badge text-xs ${tpl.is_active ? "badge-success" : "badge-muted"}`}>
+                        {tpl.is_active ? t("hr.timesheets.templates.active") : t("hr.timesheets.templates.inactive")}
                       </span>
                     </td>
                     {allowed && (
@@ -452,25 +454,25 @@ export default function TimesheetTemplatesAdminPage() {
                           type="button"
                           className="mr-2 btn-secondary text-xs"
                           data-testid="timesheet-template-edit"
-                          onClick={() => openEdit(t)}
+                          onClick={() => openEdit(tpl)}
                         >
-                          Edit
+                          {t("common.edit")}
                         </button>
-                        {t.is_active ? (
+                        {tpl.is_active ? (
                           <button
                             type="button"
                             className="btn-secondary text-xs text-red-600"
-                            onClick={() => void handleDeactivate(t)}
+                            onClick={() => void handleDeactivate(tpl)}
                           >
-                            Deactivate
+                            {t("hr.timesheets.templates.deactivate")}
                           </button>
                         ) : (
                           <button
                             type="button"
                             className="btn-secondary text-xs text-green-700"
-                            onClick={() => void handleReactivate(t)}
+                            onClick={() => void handleReactivate(tpl)}
                           >
-                            Reactivate
+                            {t("hr.timesheets.templates.reactivate")}
                           </button>
                         )}
                       </td>

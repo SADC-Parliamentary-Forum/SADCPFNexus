@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 import {
   extractRolePermissions,
@@ -43,7 +44,7 @@ test("suggestedCopyName keeps a typed name and otherwise appends copy", () => {
 });
 
 test("role catalogue page copies a starting role into the draft builder and scrolls the app pane", () => {
-  const page = readFileSync(join(webRoot, "app/(app)/admin/access/roles/page.tsx"), "utf8");
+  const page = readEnglishSource(join(webRoot, "app/(app)/admin/access/roles/page.tsx"));
 
   assert.match(page, /extractRolePermissions/);
   assert.match(page, /suggestedCopyName/);

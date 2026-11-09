@@ -11,36 +11,38 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SigningModal } from "@/components/saam/SigningModal";
 import { DEFAULT_MODULE, MODULE_CONFIG } from "@/lib/recordLinks";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type InboxStatus = "awaiting" | "due" | "overdue" | "delegated" | "acting" | "completed";
 
 const TABS: { id: InboxStatus; label: string }[] = [
-  { id: "awaiting", label: "Awaiting" },
-  { id: "due", label: "Due soon" },
-  { id: "overdue", label: "Overdue" },
-  { id: "delegated", label: "Delegated" },
-  { id: "acting", label: "Acting" },
-  { id: "completed", label: "Completed" },
+  { id: "awaiting", label: "approvals.tab.awaiting" },
+  { id: "due", label: "approvals.tab.due" },
+  { id: "overdue", label: "approvals.tab.overdue" },
+  { id: "delegated", label: "approvals.tab.delegated" },
+  { id: "acting", label: "approvals.tab.acting" },
+  { id: "completed", label: "approvals.tab.completed" },
 ];
 
 
 /** Human labels for engine stage_type — never a generic "Approve" for a differentiated action (PRD §8). */
 const STAGE_ACTION_LABELS: Record<string, string> = {
-  recommend: "Recommend",
-  certify: "Certify",
-  verify: "Verify",
-  authorise: "Authorise",
-  approve: "Approve",
-  sign: "Sign",
-  acknowledge: "Acknowledge",
-  accept: "Accept",
-  review: "Review",
-  prepare: "Prepare",
+  recommend: "approvals.action.recommend",
+  certify: "approvals.action.certify",
+  verify: "approvals.action.verify",
+  authorise: "approvals.action.authorise",
+  approve: "common.approve",
+  sign: "approvals.action.sign",
+  acknowledge: "approvals.action.acknowledge",
+  accept: "approvals.action.accept",
+  review: "approvals.action.review",
+  prepare: "approvals.action.prepare",
 };
 
+/** Returns the i18n key of the stage action label. */
 function stageActionLabel(req: ApprovalRequest): string {
   const stageType = req.workflow?.steps?.find((s) => s.step_order === req.current_step_index)?.stage_type;
-  return STAGE_ACTION_LABELS[stageType ?? ""] ?? "Approve";
+  return STAGE_ACTION_LABELS[stageType ?? ""] ?? "common.approve";
 }
 
 function currentApprovalStep(req?: ApprovalRequest | null): ApprovalStep | undefined {
@@ -83,6 +85,7 @@ export default function ApprovalsPage() {
   const queryClient = useQueryClient();
   const currentUser = getStoredUser();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [tab, setTab] = useState<InboxStatus>("awaiting");
   const [moduleFilter, setModuleFilter] = useState("all");
   const [rejectTarget, setRejectTarget] = useState<{
@@ -144,12 +147,12 @@ export default function ApprovalsPage() {
         stage_type: p.workflow?.module_type,
         status: "awaiting",
         due_at: null,
-        assignment_reason: "Pending approval",
+        assignment_reason: t("approvals.pendingApproval"),
         approval_request: p,
       }));
     }
     return tasks as any[];
-  }, [tab, tasks, pending]);
+  }, [tab, tasks, pending, t]);
 
   const removeFromCache = (id: number) => {
     queryClient.setQueryData<ApprovalRequest[]>(["approvals", "pending"], (prev) =>
@@ -174,8 +177,8 @@ export default function ApprovalsPage() {
       queryClient.invalidateQueries({ queryKey: ["approvals"] });
       toast(
         "success",
-        confirmPassword ? "Signed & approved" : "Approved",
-        `Request ${req.approvable?.reference_number ?? `#${req.approvable_id}`} has been approved.`,
+        confirmPassword ? t("approvals.toast.signedApproved") : t("approvals.toast.approved"),
+        t("approvals.toast.requestApproved", { ref: req.approvable?.reference_number ?? `#${req.approvable_id}` }),
       );
     } catch (err) {
       if (!confirmPassword && isSignatureChallenge(err)) {
@@ -187,7 +190,7 @@ export default function ApprovalsPage() {
         });
         return;
       }
-      toast("error", "Action Failed", apiErrorMessage(err, "Could not approve the request."));
+      toast("error", t("approvals.toast.actionFailed"), apiErrorMessage(err, t("approvals.toast.approveFailed")));
     } finally {
       setActionLoading(null);
     }
@@ -221,7 +224,11 @@ export default function ApprovalsPage() {
         });
       }
       queryClient.invalidateQueries({ queryKey: ["approvals"] });
-      toast("success", decision === "approve" ? "Approved" : "Rejected", "Decision recorded.");
+      toast(
+        "success",
+        decision === "approve" ? t("approvals.toast.approved") : t("approvals.toast.rejected"),
+        t("approvals.toast.decisionRecorded"),
+      );
     } catch (err) {
       if (decision === "approve" && !confirmPassword && isSignatureChallenge(err)) {
         setSignTarget({
@@ -233,7 +240,7 @@ export default function ApprovalsPage() {
         });
         return;
       }
-      toast("error", "Action failed", apiErrorMessage(err, "Could not record decision."));
+      toast("error", t("approvals.toast.actionFailed"), apiErrorMessage(err, t("approvals.toast.decisionFailed")));
     } finally {
       setActionLoading(null);
     }
@@ -262,11 +269,11 @@ export default function ApprovalsPage() {
         }
       }
       queryClient.invalidateQueries({ queryKey: ["approvals"] });
-      toast("success", "Rejected", `Request ${rejectTarget.label} has been rejected.`);
+      toast("success", t("approvals.toast.rejected"), t("approvals.toast.requestRejected", { ref: rejectTarget.label }));
       setRejectTarget(null);
       setRejectReason("");
     } catch {
-      toast("error", "Action Failed", "Could not reject the request.");
+      toast("error", t("approvals.toast.actionFailed"), t("approvals.toast.rejectFailed"));
     } finally {
       setActionLoading(null);
     }
@@ -281,8 +288,8 @@ export default function ApprovalsPage() {
       queryClient.invalidateQueries({ queryKey: ["approvals"] });
       toast(
         "success",
-        "Self-authorised",
-        `Request ${selfApproveTarget.label} has been approved in your institutional capacity.`,
+        t("approvals.toast.selfAuthorised"),
+        t("approvals.toast.selfAuthorisedBody", { ref: selfApproveTarget.label }),
       );
       setSelfApproveTarget(null);
       setSelfApproveComment("");
@@ -301,8 +308,8 @@ export default function ApprovalsPage() {
       }
       const message =
         err?.response?.data?.message ??
-        "This workflow does not permit self-authorisation. It must be actioned by another approver.";
-      toast("error", "Action Failed", message);
+        t("approvals.toast.selfAuthNotPermitted");
+      toast("error", t("approvals.toast.actionFailed"), message);
     } finally {
       setActionLoading(null);
     }
@@ -317,14 +324,14 @@ export default function ApprovalsPage() {
       queryClient.invalidateQueries({ queryKey: ["approvals"] });
       toast(
         "success",
-        "Recused",
-        `You have declared a conflict of interest and been removed as an approver for ${recuseTarget.label}.`,
+        t("approvals.toast.recused"),
+        t("approvals.toast.recusedBody", { ref: recuseTarget.label }),
       );
       setRecuseTarget(null);
       setRecuseReason("");
     } catch (err: any) {
-      const message = err?.response?.data?.message ?? "Could not record the recusal.";
-      toast("error", "Action Failed", message);
+      const message = err?.response?.data?.message ?? t("approvals.toast.recuseFailed");
+      toast("error", t("approvals.toast.actionFailed"), message);
     } finally {
       setActionLoading(null);
     }
@@ -335,36 +342,39 @@ export default function ApprovalsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Approvals"
-        subtitle="Review awaiting, due, overdue, delegated, acting and completed approval tasks."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Approvals" }]} />}
+        title={t("nav.approvals")}
+        subtitle={t("approvals.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("nav.approvals") }]} />}
       />
 
       <div className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
+        {TABS.map((tb) => (
           <button
-            key={t.id}
+            key={tb.id}
             type="button"
-            onClick={() => setTab(t.id)}
-            className={`filter-tab ${tab === t.id ? "active" : ""}`}
+            onClick={() => setTab(tb.id)}
+            className={`filter-tab ${tab === tb.id ? "active" : ""}`}
           >
-            {t.label}
+            {t(tb.label)}
           </button>
         ))}
       </div>
 
       {tab === "awaiting" && !pendingLoading && pending.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {moduleTypes.map((t) => (
+          {moduleTypes.map((mt) => (
             <button
-              key={t}
+              key={mt}
               type="button"
-              onClick={() => setModuleFilter(t)}
-              className={`filter-tab capitalize${moduleFilter === t ? " active" : ""}`}
+              onClick={() => setModuleFilter(mt)}
+              className={`filter-tab capitalize${moduleFilter === mt ? " active" : ""}`}
             >
-              {t === "all"
-                ? `All (${pending.length})`
-                : `${MODULE_CONFIG[t]?.label ?? t} (${pending.filter((r) => (r.workflow?.module_type ?? "request") === t).length})`}
+              {mt === "all"
+                ? t("approvals.filterAll", { count: pending.length })
+                : t("approvals.filterModule", {
+                    module: MODULE_CONFIG[mt]?.label ?? mt,
+                    count: pending.filter((r) => (r.workflow?.module_type ?? "request") === mt).length,
+                  })}
             </button>
           ))}
         </div>
@@ -372,7 +382,7 @@ export default function ApprovalsPage() {
 
       {pendingError && tab === "awaiting" && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          Failed to load pending approvals.
+          {t("approvals.loadFailed")}
         </div>
       )}
 
@@ -413,18 +423,18 @@ export default function ApprovalsPage() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                          {approvable?.reference_number ?? `Request #${req.approvable_id}`}
+                          {approvable?.reference_number ?? t("approvals.requestNumber", { id: req.approvable_id })}
                         </h3>
                         <span className="rounded-full border border-neutral-200 bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase text-neutral-500 dark:border-neutral-700 dark:bg-neutral-700/40 dark:text-neutral-400">
                           {mc.label}
                         </span>
                       </div>
                       <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
-                        {approvable?.requester?.name ?? "Staff member"}
+                        {approvable?.requester?.name ?? t("approvals.staffMember")}
                       </p>
                       <p className="mt-0.5 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500">
                         <span className="material-symbols-outlined text-[13px]">schedule</span>
-                        Submitted {formatDateShort(req.created_at)}
+                        {t("approvals.submittedOn", { date: formatDateShort(req.created_at) })}
                       </p>
                     </div>
                   </div>
@@ -434,7 +444,7 @@ export default function ApprovalsPage() {
                       className="btn-secondary flex items-center gap-1 px-3 py-2 text-xs font-semibold"
                     >
                       <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                      View
+                      {t("approvals.view")}
                     </Link>
                     {isOwnRequest ? (
                       <button
@@ -444,21 +454,21 @@ export default function ApprovalsPage() {
                           setSelfApproveTarget({
                             id: req.id,
                             label: approvable?.reference_number ?? `#${req.approvable_id}`,
-                            actionLabel: stageActionLabel(req),
+                            actionLabel: t(stageActionLabel(req)),
                           });
                           setSelfApproveComment("");
                         }}
                         className="flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400"
                       >
                         <span className="material-symbols-outlined text-[14px]">person</span>
-                        Self-Authorisation
+                        {t("approvals.selfAuth")}
                       </button>
                     ) : (
                       <>
                         <button
                           type="button"
                           disabled={isActing}
-                          title="Declare a conflict of interest and remove yourself as an approver on this step"
+                          title={t("approvals.recuseTitle")}
                           onClick={() => {
                             setRecuseTarget({
                               id: req.id,
@@ -469,7 +479,7 @@ export default function ApprovalsPage() {
                           className="flex items-center gap-1 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-600 transition-colors hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800"
                         >
                           <span className="material-symbols-outlined text-[14px]">block</span>
-                          Recuse
+                          {t("approvals.recuse")}
                         </button>
                         <button
                           type="button"
@@ -485,7 +495,7 @@ export default function ApprovalsPage() {
                           className="flex items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-900/20"
                         >
                           <span className="material-symbols-outlined text-[14px]">cancel</span>
-                          Reject
+                          {t("common.reject")}
                         </button>
                         <button
                           type="button"
@@ -500,7 +510,7 @@ export default function ApprovalsPage() {
                           ) : (
                             <span className="material-symbols-outlined text-[14px]">check_circle</span>
                           )}
-                          {stageActionLabel(req)}
+                          {t(stageActionLabel(req))}
                         </button>
                       </>
                     )}
@@ -515,27 +525,29 @@ export default function ApprovalsPage() {
           <div className="card">
             <EmptyState
               icon={tab === "awaiting" ? "check_circle" : "inbox"}
-              title={tab === "awaiting" ? "You're all caught up!" : "No items in this view"}
+              title={tab === "awaiting" ? t("approvals.empty.caughtUp") : t("approvals.empty.noItems")}
               description={
                 tab === "awaiting"
                   ? moduleFilter === "all"
-                    ? "No requests currently awaiting your approval."
-                    : `No ${moduleFilter} requests pending.`
-                  : "Switch tabs or check back when new approval tasks arrive."
+                    ? t("approvals.empty.noneAwaiting")
+                    : t("approvals.empty.noneForModule", { module: moduleFilter })
+                  : t("approvals.empty.switchTabs")
               }
             />
           </div>
         ) : tab !== "awaiting" ? (
           <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
             <table className="data-table min-w-full text-sm">
-              <caption className="sr-only">Approval tasks — {tab}</caption>
+              <caption className="sr-only">
+                {t("approvals.table.caption", { tab: t(TABS.find((tb) => tb.id === tab)?.label ?? tab) })}
+              </caption>
               <thead className="bg-neutral-50 text-left dark:bg-neutral-900/50">
                 <tr>
-                  <th className="px-3 py-2 font-medium">Stage</th>
-                  <th className="px-3 py-2 font-medium">Module</th>
-                  <th className="px-3 py-2 font-medium">Due</th>
-                  <th className="px-3 py-2 font-medium">Why me</th>
-                  <th className="px-3 py-2 font-medium">Actions</th>
+                  <th className="px-3 py-2 font-medium">{t("approvals.table.stage")}</th>
+                  <th className="px-3 py-2 font-medium">{t("approvals.table.module")}</th>
+                  <th className="px-3 py-2 font-medium">{t("approvals.table.due")}</th>
+                  <th className="px-3 py-2 font-medium">{t("approvals.table.whyMe")}</th>
+                  <th className="px-3 py-2 font-medium">{t("approvals.table.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -567,7 +579,7 @@ export default function ApprovalsPage() {
                             onClick={() => decideTask(task, "approve")}
                             className="btn-secondary text-xs py-1 px-2 disabled:opacity-50"
                           >
-                            Approve
+                            {t("common.approve")}
                           </button>
                           <button
                             type="button"
@@ -586,7 +598,7 @@ export default function ApprovalsPage() {
                             }}
                             className="btn-secondary text-xs py-1 px-2 text-rose-600 disabled:opacity-50"
                           >
-                            Reject
+                            {t("common.reject")}
                           </button>
                         </>
                       )}
@@ -614,17 +626,17 @@ export default function ApprovalsPage() {
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                    Reject request
+                    {t("approvals.reject.title")}
                   </h3>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">{rejectTarget.label}</p>
                 </div>
               </div>
               <label htmlFor="approvals-reason-for-rejection" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Reason for rejection <span className="text-red-500">*</span>
+                {t("approvals.reject.reasonLabel")} <span className="text-red-500">*</span>
               </label>
               <textarea id="approvals-reason-for-rejection"
                 className="form-input h-28 w-full resize-none"
-                placeholder="Please provide a clear reason…"
+                placeholder={t("approvals.reject.placeholder")}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
               />
@@ -635,7 +647,7 @@ export default function ApprovalsPage() {
                 onClick={() => setRejectTarget(null)}
                 className="btn-secondary px-4 py-2 text-sm"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -643,7 +655,7 @@ export default function ApprovalsPage() {
                 onClick={handleRejectConfirm}
                 className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
               >
-                Confirm rejection
+                {t("approvals.reject.confirm")}
               </button>
             </div>
           </div>
@@ -665,24 +677,21 @@ export default function ApprovalsPage() {
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                    Self-Authorisation
+                    {t("approvals.selfAuth")}
                   </h3>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">{selfApproveTarget.label}</p>
                 </div>
               </div>
               <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300">
-                You are the applicant on this request and are also acting in your institutional capacity to{" "}
-                {selfApproveTarget.actionLabel.toLowerCase()} it. This action is recorded as a self-authorisation
-                and flagged in the audit trail. If this workflow does not permit self-authorisation, the action
-                will be blocked and it must instead be actioned by another approver.
+                {t("approvals.selfAuthNotice", { action: selfApproveTarget.actionLabel.toLowerCase() })}
               </div>
               <label htmlFor="approvals-comment-required-for-self-authorisation" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Comment <span className="text-red-500">*</span>
-                <span className="ml-1 font-normal text-neutral-400">(required for self-authorisation)</span>
+                {t("approvals.selfAuthComment")} <span className="text-red-500">*</span>
+                <span className="ml-1 font-normal text-neutral-400">{t("approvals.selfAuthCommentHint")}</span>
               </label>
               <textarea id="approvals-comment-required-for-self-authorisation"
                 className="form-input h-28 w-full resize-none"
-                placeholder="Explain why you are authorising your own request…"
+                placeholder={t("approvals.selfAuthPlaceholder")}
                 value={selfApproveComment}
                 onChange={(e) => setSelfApproveComment(e.target.value)}
               />
@@ -693,7 +702,7 @@ export default function ApprovalsPage() {
                 onClick={() => setSelfApproveTarget(null)}
                 className="btn-secondary px-4 py-2 text-sm"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -701,7 +710,7 @@ export default function ApprovalsPage() {
                 onClick={handleSelfApproveConfirm}
                 className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
               >
-                Confirm self-authorisation
+                {t("approvals.selfAuthConfirm")}
               </button>
             </div>
           </div>
@@ -723,21 +732,20 @@ export default function ApprovalsPage() {
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                    Declare conflict of interest
+                    {t("approvals.recuseModal.title")}
                   </h3>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">{recuseTarget.label}</p>
                 </div>
               </div>
               <p className="mb-4 text-xs text-neutral-500 dark:text-neutral-400">
-                You will be removed as an approver for this step and an alternate approver will be notified. This
-                does not approve or reject the request — it only removes you from the decision.
+                {t("approvals.recuseModal.body")}
               </p>
               <label htmlFor="approvals-reason" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Reason <span className="text-red-500">*</span>
+                {t("common.reason")} <span className="text-red-500">*</span>
               </label>
               <textarea id="approvals-reason"
                 className="form-input h-28 w-full resize-none"
-                placeholder="Describe the conflict of interest…"
+                placeholder={t("approvals.recuseModal.placeholder")}
                 value={recuseReason}
                 onChange={(e) => setRecuseReason(e.target.value)}
               />
@@ -748,7 +756,7 @@ export default function ApprovalsPage() {
                 onClick={() => setRecuseTarget(null)}
                 className="btn-secondary px-4 py-2 text-sm"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -756,7 +764,7 @@ export default function ApprovalsPage() {
                 onClick={handleRecuseConfirm}
                 className="flex items-center gap-2 rounded-lg bg-neutral-700 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
               >
-                Confirm recusal
+                {t("approvals.recuseModal.confirm")}
               </button>
             </div>
           </div>
@@ -769,7 +777,7 @@ export default function ApprovalsPage() {
           signableType={signTarget.signableType}
           signableId={signTarget.signableId}
           action="approve"
-          title="Sign & approve"
+          title={t("approvals.signTitle")}
           onWorkflowApprove={async ({ password, comment }) => {
             const combined = comment || signTarget.comment;
             if (signTarget.taskId) {
@@ -785,7 +793,11 @@ export default function ApprovalsPage() {
                 await workflowApi.approve(signTarget.approvalId, combined, undefined, password);
                 removeFromCache(signTarget.approvalId);
                 queryClient.invalidateQueries({ queryKey: ["approvals"] });
-                toast("success", "Signed & approved", `Request ${signTarget.label} has been approved.`);
+                toast(
+                  "success",
+                  t("approvals.toast.signedApproved"),
+                  t("approvals.toast.requestApproved", { ref: signTarget.label }),
+                );
               }
             }
             setSignTarget(null);

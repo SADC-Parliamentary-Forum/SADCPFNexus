@@ -6,11 +6,12 @@ import { ADMIN_HUB_CARDS } from "@/lib/hubs/admin";
 import { adminConsoleApi, type AdminConsoleDashboard } from "@/lib/api";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const adminLinks = [
   {
-    title: "Operational Control",
-    description: "Platform health, modules, configuration, feature flags, jobs, queues, and break-glass controls.",
+    title: "admin.home.operationalControl",
+    description: "admin.home.operationalControlDesc",
     href: "/admin/operations",
     icon: "monitoring",
     color: "text-slate-700",
@@ -18,8 +19,8 @@ const adminLinks = [
     border: "border-slate-200",
   },
   {
-    title: "User Management",
-    description: "Manage system access, roles, and security for all personnel.",
+    title: "admin.home.userManagement",
+    description: "admin.home.userManagementDesc",
     href: "/admin/users",
     icon: "people",
     color: "text-primary",
@@ -27,8 +28,8 @@ const adminLinks = [
     border: "border-primary/20",
   },
   {
-    title: "Roles & Permissions",
-    description: "Configure roles and assign permissions across the platform.",
+    title: "admin.home.rolesPermissions",
+    description: "admin.home.rolesPermissionsDesc",
     href: "/admin/access/roles",
     icon: "admin_panel_settings",
     color: "text-primary",
@@ -36,8 +37,8 @@ const adminLinks = [
     border: "border-primary/20",
   },
   {
-    title: "Departments",
-    description: "Manage organisational structure and department hierarchy.",
+    title: "admin.home.departments",
+    description: "admin.home.departmentsDesc",
     href: "/admin/departments",
     icon: "corporate_fare",
     color: "text-teal-600",
@@ -45,8 +46,8 @@ const adminLinks = [
     border: "border-teal-100",
   },
   {
-    title: "Positions",
-    description: "Manage establishment positions, grades, and headcount allocations.",
+    title: "admin.home.positions",
+    description: "admin.home.positionsDesc",
     href: "/admin/positions",
     icon: "work",
     color: "text-violet-600",
@@ -54,8 +55,8 @@ const adminLinks = [
     border: "border-violet-100",
   },
   {
-    title: "Payslip Management",
-    description: "Bulk upload and manage employee payslips by period.",
+    title: "admin.home.payslipManagement",
+    description: "admin.home.payslipManagementDesc",
     href: "/admin/payslips",
     icon: "receipt_long",
     color: "text-green-600",
@@ -63,8 +64,8 @@ const adminLinks = [
     border: "border-green-100",
   },
   {
-    title: "System Settings",
-    description: "Configure organisation details, fiscal year, and platform settings.",
+    title: "admin.home.systemSettings",
+    description: "admin.home.systemSettingsDesc",
     href: "/admin/settings",
     icon: "settings",
     color: "text-amber-600",
@@ -72,8 +73,8 @@ const adminLinks = [
     border: "border-amber-100",
   },
   {
-    title: "Email",
-    description: "Outgoing SMTP plus designated correspondence and procurement mailboxes.",
+    title: "admin.home.email",
+    description: "admin.home.emailDesc",
     href: "/admin/email",
     icon: "forward_to_inbox",
     color: "text-sky-700",
@@ -81,8 +82,8 @@ const adminLinks = [
     border: "border-sky-100",
   },
   {
-    title: "Approval Workflows",
-    description: "Define approval chains and thresholds for each module.",
+    title: "admin.home.approvalWorkflows",
+    description: "admin.home.approvalWorkflowsDesc",
     href: "/admin/workflows",
     icon: "account_tree",
     color: "text-indigo-600",
@@ -90,8 +91,8 @@ const adminLinks = [
     border: "border-indigo-100",
   },
   {
-    title: "Notification Templates",
-    description: "Manage email and system notification templates with variables.",
+    title: "admin.home.notificationTemplates",
+    description: "admin.home.notificationTemplatesDesc",
     href: "/admin/notifications",
     icon: "notifications",
     color: "text-teal-600",
@@ -99,8 +100,8 @@ const adminLinks = [
     border: "border-teal-100",
   },
   {
-    title: "Audit Logs",
-    description: "Full activity audit trail with user, module, and IP tracking.",
+    title: "admin.home.auditLogs",
+    description: "admin.home.auditLogsDesc",
     href: "/admin/audit-trail",
     icon: "manage_search",
     color: "text-neutral-600",
@@ -108,8 +109,8 @@ const adminLinks = [
     border: "border-neutral-200",
   },
   {
-    title: "Ledger Verification",
-    description: "Cryptographic integrity checks, manifest hashes, and compliance audit status.",
+    title: "admin.home.ledgerVerification",
+    description: "admin.home.ledgerVerificationDesc",
     href: "/admin/ledger",
     icon: "verified_user",
     color: "text-green-700",
@@ -117,8 +118,8 @@ const adminLinks = [
     border: "border-green-100",
   },
   {
-    title: "Governance Configuration",
-    description: "Manage data policies, thresholds, and institution-wide governance settings.",
+    title: "admin.home.governanceConfiguration",
+    description: "admin.home.governanceConfigurationDesc",
     href: "/admin/governance",
     icon: "account_balance",
     color: "text-blue-600",
@@ -126,8 +127,8 @@ const adminLinks = [
     border: "border-blue-100",
   },
   {
-    title: "Calendar Upload",
-    description: "Upload SADC public holidays, UN days, and calendar entries.",
+    title: "admin.home.calendarUpload",
+    description: "admin.home.calendarUploadDesc",
     href: "/admin/calendar",
     icon: "event",
     color: "text-emerald-600",
@@ -135,8 +136,8 @@ const adminLinks = [
     border: "border-emerald-100",
   },
   {
-    title: "Timesheet Projects",
-    description: "Manage project options shown on the HR timesheets page.",
+    title: "admin.home.timesheetProjects",
+    description: "admin.home.timesheetProjectsDesc",
     href: "/admin/timesheet-projects",
     icon: "list_alt",
     color: "text-sky-600",
@@ -144,8 +145,8 @@ const adminLinks = [
     border: "border-sky-100",
   },
   {
-    title: "HR Administration",
-    description: "Configure grade bands, salary scales, job families, contract types, leave profiles, and HR governance settings.",
+    title: "admin.home.hrAdministration",
+    description: "admin.home.hrAdministrationDesc",
     href: "/settings/hr",
     icon: "tune",
     color: "text-green-700",
@@ -153,8 +154,8 @@ const adminLinks = [
     border: "border-green-100",
   },
   {
-    title: "Correspondence Settings",
-    description: "Configure file codes, signatory roles, and reference number rules for the registry.",
+    title: "admin.home.correspondenceSettings",
+    description: "admin.home.correspondenceSettingsDesc",
     href: "/admin/correspondence",
     icon: "mark_email_read",
     color: "text-sky-600",
@@ -164,6 +165,7 @@ const adminLinks = [
 ];
 
 export default function AdminPage() {
+  const { t } = useI18n();
   const [dashboard, setDashboard] = useState<AdminConsoleDashboard | null>(null);
 
   useEffect(() => {
@@ -173,9 +175,9 @@ export default function AdminPage() {
   return (
     <div className="space-y-6">
       <ModulePageHeader
-        title="Admin"
-        subtitle="System configuration, user management, and organisational settings."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Admin" }]} />}
+        title={t("admin.homeLabel")}
+        subtitle={t("admin.home.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.homeLabel") }]} />}
       />
 
       <ModuleHubCards cards={ADMIN_HUB_CARDS} />
@@ -183,11 +185,11 @@ export default function AdminPage() {
       {dashboard ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {[
-            ["Platform", dashboard.status],
-            ["Active modules", dashboard.cards.modules_active],
-            ["Pending config", dashboard.cards.configuration_pending],
-            ["Open dead letters", dashboard.cards.dead_letters_open],
-            ["Data-quality issues", dashboard.cards.data_quality_open],
+            [t("admin.home.statPlatform"), dashboard.status],
+            [t("admin.home.statModules"), dashboard.cards.modules_active],
+            [t("admin.home.statPendingConfig"), dashboard.cards.configuration_pending],
+            [t("admin.auditTrail.stat.openDeadLetters"), dashboard.cards.dead_letters_open],
+            [t("admin.home.statDataQuality"), dashboard.cards.data_quality_open],
           ].map(([label, value]) => (
             <div key={String(label)} className="card p-4">
               <p className="text-[11px] uppercase tracking-wide text-neutral-500">{label}</p>
@@ -220,8 +222,8 @@ export default function AdminPage() {
               </span>
             </div>
             <div>
-              <h2 className="text-base font-semibold text-neutral-900">{item.title}</h2>
-              <p className="text-sm text-neutral-500 mt-0.5">{item.description}</p>
+              <h2 className="text-base font-semibold text-neutral-900">{t(item.title)}</h2>
+              <p className="text-sm text-neutral-500 mt-0.5">{t(item.description)}</p>
             </div>
           </Link>
         ))}

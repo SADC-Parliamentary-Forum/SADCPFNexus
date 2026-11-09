@@ -7,19 +7,21 @@ import { useParams, useRouter } from "next/navigation";
 import { bcreApi, type BalanceRegister } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function fmt2(n: number | string) {
   return Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 const TYPE_OPTIONS = [
-  { value: "recovery",     label: "Recovery — reduces the balance (repayment received)" },
-  { value: "disbursement", label: "Disbursement — increases the balance (funds paid out)" },
-  { value: "adjustment",   label: "Adjustment — manual balance correction" },
-  { value: "write_off",    label: "Write-off — reduces balance (debt forgiven)" },
+  { value: "recovery",     label: "finance.bcre.txnOption.recovery" },
+  { value: "disbursement", label: "finance.bcre.txnOption.disbursement" },
+  { value: "adjustment",   label: "finance.bcre.txnOption.adjustment" },
+  { value: "write_off",    label: "finance.bcre.txnOption.write_off" },
 ];
 
 export default function UpdateBalancePage() {
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const router  = useRouter();
   const toast = useToast();
@@ -39,9 +41,9 @@ export default function UpdateBalancePage() {
   useEffect(() => {
     bcreApi.get(Number(id))
       .then(res => setRegister((res.data as any).data ?? res.data))
-      .catch(() => setRegError("Failed to load register."))
+      .catch(() => setRegError(t("finance.bcre.loadFailed")))
       .finally(() => setLoadingReg(false));
-  }, [id]);
+  }, [id, t]);
 
   const amountNum   = parseFloat(amount) || 0;
   const reducingTypes = ["recovery", "write_off"];
@@ -63,12 +65,12 @@ export default function UpdateBalancePage() {
         reference_doc: referenceDoc.trim() || undefined,
         notes:         notes.trim() || undefined,
       });
-      toast.success("Balance updated");
+      toast.success(t("finance.bcre.update.success"));
       router.push(`/finance/balance-register/${register.id}`);
     } catch (e: unknown) {
-      const message = apiErrorMessage(e, "finance.bcre.updateFailed");
+      const message = apiErrorMessage(e, t("finance.bcre.updateFailed"));
       setSubmitError(message);
-      toast.error("Balance not updated", message);
+      toast.error(t("finance.bcre.update.failed"), message);
     } finally {
       setSubmitting(false);
     }
@@ -86,7 +88,7 @@ export default function UpdateBalancePage() {
   if (regError || !register) {
     return (
     <div className="space-y-5">
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{regError ?? "Register not found."}</div>
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{regError ?? t("finance.bcre.registerNotFound")}</div>
       </div>
     );
   }
@@ -95,17 +97,17 @@ export default function UpdateBalancePage() {
     return (
     <div className="space-y-4">
         <nav className="text-sm text-neutral-500 flex items-center gap-1">
-          <Link href="/finance/balance-register" className="hover:text-primary">Balance Register</Link>
+          <Link href="/finance/balance-register" className="hover:text-primary">{t("finance.bcre.balanceRegister")}</Link>
           <span className="material-symbols-outlined text-xs">chevron_right</span>
           <Link href={`/finance/balance-register/${register.id}`} className="hover:text-primary">{register.reference_number}</Link>
           <span className="material-symbols-outlined text-xs">chevron_right</span>
-          <span className="text-neutral-800 font-medium">Add Transaction</span>
+          <span className="text-neutral-800 font-medium">{t("finance.bcre.update.crumb")}</span>
         </nav>
         <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-700 px-4 py-4 flex items-center gap-3">
           <span className="material-symbols-outlined">lock</span>
           <div>
-            <p className="font-medium">Register is locked</p>
-            <p className="text-sm mt-0.5">No transactions can be added while the register period is locked. Contact the Finance Controller to unlock.</p>
+            <p className="font-medium">{t("finance.bcre.update.locked")}</p>
+            <p className="text-sm mt-0.5">{t("finance.bcre.update.lockedHint")}</p>
           </div>
         </div>
       </div>
@@ -116,29 +118,29 @@ export default function UpdateBalancePage() {
     <div className="w-full min-w-0 p-6 space-y-5">
       {/* Breadcrumb */}
       <nav className="text-sm text-neutral-500 flex items-center gap-1 flex-wrap">
-        <Link href="/finance/balance-register" className="hover:text-primary">Balance Register</Link>
+        <Link href="/finance/balance-register" className="hover:text-primary">{t("finance.bcre.balanceRegister")}</Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
         <Link href={`/finance/balance-register/${register.id}`} className="hover:text-primary">{register.reference_number}</Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span className="text-neutral-800 font-medium">Add Transaction</span>
+        <span className="text-neutral-800 font-medium">{t("finance.bcre.update.crumb")}</span>
       </nav>
 
       <ModulePageHeader
-        title="Add Balance Transaction"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Add Balance Transaction" }]} />}
+        title="finance.bcre.update.title"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "finance.bcre.update.title" }]} />}
       />
 
       {/* Current balance card */}
       <div className="card p-5 bg-blue-50 border-blue-200">
-        <p className="text-xs text-blue-500 uppercase tracking-wide mb-1">Current Balance</p>
-        <p className="text-2xl font-bold text-blue-800">NAD {fmt2(register.balance)}</p>
-        <p className="text-xs text-blue-400 mt-1">Approved: NAD {fmt2(register.approved_amount)} · Processed: NAD {fmt2(register.total_processed)}</p>
+        <p className="text-xs text-blue-500 uppercase tracking-wide mb-1">{t("finance.bcre.currentBalance")}</p>
+        <p className="text-2xl font-bold text-blue-800">{"NAD"} {fmt2(register.balance)}</p>
+        <p className="text-xs text-blue-400 mt-1">{t("finance.bcre.update.approvedProcessed", { approved: fmt2(register.approved_amount), processed: fmt2(register.total_processed) })}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="card p-6 space-y-5">
         {/* Transaction type */}
         <div>
-          <label htmlFor="bcre-txn-type" className="block text-sm font-medium text-neutral-700 mb-2">Transaction Type <span className="text-red-500">*</span></label>
+          <label htmlFor="bcre-txn-type" className="block text-sm font-medium text-neutral-700 mb-2">{t("finance.bcre.update.type")} <span className="text-red-500">*</span></label>
           <select
             id="bcre-txn-type"
             className="form-input w-full"
@@ -147,14 +149,14 @@ export default function UpdateBalancePage() {
             required
           >
             {TYPE_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>{t(opt.label)}</option>
             ))}
           </select>
         </div>
 
         {/* Amount */}
         <div>
-          <label htmlFor="bcre-amount" className="block text-sm font-medium text-neutral-700 mb-2">Amount (NAD) <span className="text-red-500">*</span></label>
+          <label htmlFor="bcre-amount" className="block text-sm font-medium text-neutral-700 mb-2">{t("finance.bcre.update.amount")} <span className="text-red-500">*</span></label>
           <input
             id="bcre-amount"
             type="number"
@@ -168,7 +170,7 @@ export default function UpdateBalancePage() {
           />
           {register.installment_amount && txnType === "recovery" && (
             <p className="text-xs text-neutral-400 mt-1">
-              Monthly installment: NAD {fmt2(register.installment_amount)}
+              {t("finance.bcre.update.installment", { amount: fmt2(register.installment_amount) })}
             </p>
           )}
         </div>
@@ -182,20 +184,20 @@ export default function UpdateBalancePage() {
           }`}>
             <span className="material-symbols-outlined text-base">calculate</span>
             <span>
-              New balance will be: <strong>NAD {fmt2(previewBalance)}</strong>
-              {previewBalance < 0 && " — amount exceeds current balance"}
+              {t("finance.bcre.update.newBalance")} <strong>{"NAD"} {fmt2(previewBalance)}</strong>
+              {previewBalance < 0 && t("finance.bcre.update.exceeds")}
             </span>
           </div>
         )}
 
         {/* Reference document */}
         <div>
-          <label htmlFor="bcre-reference" className="block text-sm font-medium text-neutral-700 mb-2">Reference Document</label>
+          <label htmlFor="bcre-reference" className="block text-sm font-medium text-neutral-700 mb-2">{t("finance.bcre.update.referenceDoc")}</label>
           <input
             id="bcre-reference"
             type="text"
             className="form-input w-full"
-            placeholder="e.g. Payslip PSL-2026-04 or Receipt #1234"
+            placeholder={t("finance.bcre.update.referencePlaceholder")}
             value={referenceDoc}
             onChange={e => setRefDoc(e.target.value)}
             maxLength={200}
@@ -204,11 +206,11 @@ export default function UpdateBalancePage() {
 
         {/* Notes */}
         <div>
-          <label htmlFor="bcre-notes" className="block text-sm font-medium text-neutral-700 mb-2">Notes</label>
+          <label htmlFor="bcre-notes" className="block text-sm font-medium text-neutral-700 mb-2">{t("finance.bcre.update.notes")}</label>
           <textarea
             id="bcre-notes"
             className="form-input w-full h-24 resize-none text-sm"
-            placeholder="Optional notes about this transaction..."
+            placeholder={t("finance.bcre.update.notesPlaceholder")}
             value={notes}
             onChange={e => setNotes(e.target.value)}
           />
@@ -219,25 +221,25 @@ export default function UpdateBalancePage() {
         )}
 
         <div className="flex gap-3 justify-end pt-2">
-          <Link href={`/finance/balance-register/${register.id}`} className="btn-secondary text-sm">Cancel</Link>
+          <Link href={`/finance/balance-register/${register.id}`} className="btn-secondary text-sm">{t("common.cancel")}</Link>
           <button type="submit" disabled={submitting || amountNum <= 0}
             className="btn-primary text-sm disabled:opacity-50 flex items-center gap-2">
             {submitting ? (
               <>
                 <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                Recording…
+                {t("finance.bcre.update.recording")}
               </>
             ) : (
               <>
                 <span className="material-symbols-outlined text-base">add</span>
-                Record Transaction
+                {t("finance.bcre.update.record")}
               </>
             )}
           </button>
         </div>
 
         <p className="text-xs text-neutral-400 text-center">
-          This transaction will be queued for checker verification before it is confirmed.
+          {t("finance.bcre.update.queuedHint")}
         </p>
       </form>
     </div>

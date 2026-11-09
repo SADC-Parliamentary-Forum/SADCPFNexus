@@ -7,14 +7,16 @@ import { formatDateShort } from "@/lib/utils";
 import { StockMovementModal } from "@/components/stock/StockMovementModal";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const typeConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  in: { label: "Stock In", cls: "badge-success", icon: "south_west" },
-  out: { label: "Stock Out", cls: "badge-danger", icon: "north_east" },
-  adjustment: { label: "Adjustment", cls: "badge-info", icon: "tune" },
+  in: { label: "stock.movements.typeIn", cls: "badge-success", icon: "south_west" },
+  out: { label: "stock.movements.typeOut", cls: "badge-danger", icon: "north_east" },
+  adjustment: { label: "stock.movements.typeAdjustment", cls: "badge-info", icon: "tune" },
 };
 
 export default function StockMovementsPage() {
+  const { t } = useI18n();
   const [transactions, setTransactions] = useState<StockTransaction[]>([]);
   const [items, setItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,9 +32,9 @@ export default function StockMovementsPage() {
     stockTransactionsApi
       .list(params)
       .then((res) => setTransactions(res.data.data ?? []))
-      .catch(() => setError("Failed to load stock movements."))
+      .catch(() => setError(t("stock.movements.loadFailed")))
       .finally(() => setLoading(false));
-  }, [filterType]);
+  }, [filterType, t]);
 
   useEffect(() => {
     setCanIssue(canIssueStock(getStoredUser()));
@@ -41,20 +43,25 @@ export default function StockMovementsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const typeLabel = (type: string): string => {
+    const key = typeConfig[type]?.label;
+    return key ? t(key) : type;
+  };
+
   const recipient = (t: StockTransaction): string =>
     t.issued_to_user?.name || t.issued_to_department?.name || t.issued_to_other || "—";
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Stock Movements"
-        subtitle="Stock-in receipts, stock-out issues and adjustments."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Movements" }]} />}
+        title={t("stock.movements.title")}
+        subtitle={t("stock.movements.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("stock.common.stock"), href: "/stock" }, { label: t("stock.movements.crumb") }]} />}
         actions={
           canIssue ? (
             <button type="button" onClick={() => setShowMovement(true)} className="btn-primary">
               <span className="material-symbols-outlined text-[18px]">add_task</span>
-              Record Movement
+              {t("stock.movements.record")}
             </button>
           ) : undefined
         }
@@ -67,14 +74,14 @@ export default function StockMovementsPage() {
       )}
 
       <div className="card p-3 flex gap-2">
-        {["all", "in", "out", "adjustment"].map((t) => (
+        {["all", "in", "out", "adjustment"].map((ft) => (
           <button
-            key={t}
+            key={ft}
             type="button"
-            onClick={() => setFilterType(t)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize ${filterType === t ? "bg-primary text-white" : "text-neutral-600 hover:bg-neutral-100"}`}
+            onClick={() => setFilterType(ft)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize ${filterType === ft ? "bg-primary text-white" : "text-neutral-600 hover:bg-neutral-100"}`}
           >
-            {t === "all" ? "All" : typeConfig[t]?.label ?? t}
+            {ft === "all" ? t("stock.movements.all") : typeLabel(ft)}
           </button>
         ))}
       </div>
@@ -83,7 +90,7 @@ export default function StockMovementsPage() {
         <div className="card p-12 text-center">
           <div className="flex items-center justify-center gap-2 text-neutral-400">
             <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-            <span className="text-sm">Loading…</span>
+            <span className="text-sm">{t("common.loading")}</span>
           </div>
         </div>
       ) : transactions.length > 0 ? (
@@ -92,14 +99,14 @@ export default function StockMovementsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-100 text-left text-xs font-semibold text-neutral-500">
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Item</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3 text-right">Qty</th>
-                  <th className="px-4 py-3 text-right">Balance</th>
-                  <th className="px-4 py-3">Issued To</th>
-                  <th className="px-4 py-3">Reference</th>
-                  <th className="px-4 py-3">By</th>
+                  <th className="px-4 py-3">{t("stock.common.date")}</th>
+                  <th className="px-4 py-3">{t("stock.common.item")}</th>
+                  <th className="px-4 py-3">{t("stock.common.type")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.qty")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.balance")}</th>
+                  <th className="px-4 py-3">{t("stock.common.issuedToTitle")}</th>
+                  <th className="px-4 py-3">{t("stock.common.reference")}</th>
+                  <th className="px-4 py-3">{t("stock.common.by")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50">
@@ -112,7 +119,7 @@ export default function StockMovementsPage() {
                         <p className="font-medium text-neutral-900">{t.item?.name ?? `#${t.stock_item_id}`}</p>
                         <p className="text-xs font-mono text-neutral-400">{t.item?.item_code}</p>
                       </td>
-                      <td className="px-4 py-3"><span className={`badge ${cfg.cls}`}>{cfg.label}</span></td>
+                      <td className="px-4 py-3"><span className={`badge ${cfg.cls}`}>{typeLabel(t.type)}</span></td>
                       <td className={`px-4 py-3 text-right font-semibold ${t.quantity < 0 ? "text-red-600" : "text-green-600"}`}>
                         {t.quantity > 0 ? `+${t.quantity}` : t.quantity}
                       </td>
@@ -131,8 +138,8 @@ export default function StockMovementsPage() {
         <div className="card">
           <EmptyState
             icon="swap_vert"
-            title="No movements recorded"
-            description="Stock-in and stock-out movements will appear here."
+            title={t("stock.movements.emptyTitle")}
+            description={t("stock.movements.emptyHint")}
           />
         </div>
       )}

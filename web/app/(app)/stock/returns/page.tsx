@@ -5,8 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import { stockItemsApi, stockReturnsApi, type StockItem } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function StockReturnsPage() {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
   const [items, setItems] = useState<StockItem[]>([]);
@@ -18,8 +20,8 @@ export default function StockReturnsPage() {
   const load = useCallback(() => {
     stockReturnsApi.list({ per_page: 50 })
       .then((res) => setRows((res.data as { data?: Array<Record<string, unknown>> }).data ?? []))
-      .catch(() => toast("error", "Failed to load returns"));
-  }, [toast]);
+      .catch(() => toast("error", t("stock.returns.loadFailed")));
+  }, [toast, t]);
 
   useEffect(() => {
     setCanIssue(canIssueStock(getStoredUser()));
@@ -35,42 +37,42 @@ export default function StockReturnsPage() {
         condition,
         return_date: new Date().toISOString().slice(0, 10),
       });
-      toast("success", "Return recorded");
+      toast("success", t("stock.returns.recorded"));
       load();
     } catch {
-      toast("error", "Return failed");
+      toast("error", t("stock.returns.failed"));
     }
   };
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Stock Returns"
-        subtitle="Returned stock is ledgered in; damaged/expired returns go to quarantine."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock Returns" }]} />}
+        title={t("stock.returns.title")}
+        subtitle={t("stock.returns.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("stock.returns.title") }]} />}
       />
       {canIssue && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
           <select className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value)}>
-            <option value="">Item…</option>
+            <option value="">{t("stock.batches.itemPlaceholder")}</option>
             {items.map((i) => <option key={i.id} value={i.id}>{i.item_code} — {i.name}</option>)}
           </select>
           <input type="number" min={1} className="form-input w-24" value={qty} onChange={(e) => setQty(e.target.value)} />
           <select className="form-input" value={condition} onChange={(e) => setCondition(e.target.value)}>
-            <option value="good">Good</option>
-            <option value="damaged">Damaged</option>
-            <option value="expired">Expired</option>
+            <option value="good">{t("stock.returns.conditionGood")}</option>
+            <option value="damaged">{t("stock.returns.conditionDamaged")}</option>
+            <option value="expired">{t("stock.returns.conditionExpired")}</option>
           </select>
-          <button type="button" className="btn-primary" onClick={create}>Record return</button>
+          <button type="button" className="btn-primary" onClick={create}>{t("stock.returns.record")}</button>
         </div>
       )}
       <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
           <tr>
-            <th className="px-4 py-2">Reference</th>
-            <th className="px-4 py-2">Item</th>
-            <th className="px-4 py-2">Qty</th>
-            <th className="px-4 py-2">Condition</th>
+            <th className="px-4 py-2">{t("stock.common.reference")}</th>
+            <th className="px-4 py-2">{t("stock.common.item")}</th>
+            <th className="px-4 py-2">{t("stock.common.qty")}</th>
+            <th className="px-4 py-2">{t("stock.common.condition")}</th>
           </tr>
         </thead>
         <tbody>

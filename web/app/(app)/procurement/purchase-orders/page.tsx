@@ -13,18 +13,28 @@ import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageH
 import { EmptyState } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  draft:              { label: "Draft",             cls: "badge-muted",    icon: "edit_note"      },
-  issued:             { label: "Issued",            cls: "badge-primary",  icon: "send"           },
-  partially_received: { label: "Part. Received",    cls: "badge-warning",  icon: "inventory"      },
-  received:           { label: "Received",          cls: "badge-success",  icon: "inventory_2"    },
-  invoiced:           { label: "Invoiced",          cls: "badge-primary",  icon: "request_quote"  },
-  closed:             { label: "Closed",            cls: "badge-muted",    icon: "check_circle"   },
-  cancelled:          { label: "Cancelled",         cls: "badge-danger",   icon: "cancel"         },
+  draft:              { label: "status.draft", cls: "badge-muted",    icon: "edit_note"      },
+  issued:             { label: "procurement.poStatus.issued", cls: "badge-primary",  icon: "send"           },
+  partially_received: { label: "procurement.poStatus.partReceived", cls: "badge-warning",  icon: "inventory"      },
+  received:           { label: "procurement.poStatus.received", cls: "badge-success",  icon: "inventory_2"    },
+  invoiced:           { label: "procurement.poStatus.invoiced", cls: "badge-primary",  icon: "request_quote"  },
+  closed:             { label: "procurement.poStatus.closed", cls: "badge-muted",    icon: "check_circle"   },
+  cancelled:          { label: "status.cancelled", cls: "badge-danger",   icon: "cancel"         },
 };
 
 const FILTERS = ["all", "draft", "issued", "partially_received", "received", "closed", "cancelled"];
+const FILTER_LABEL_KEYS: Record<string, string> = {
+  all: "procurement.filter.all",
+  draft: "status.draft",
+  issued: "procurement.poStatus.issued",
+  partially_received: "procurement.poFilter.partiallyReceived",
+  received: "procurement.poStatus.received",
+  closed: "procurement.poStatus.closed",
+  cancelled: "status.cancelled",
+};
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -39,6 +49,7 @@ function PurchaseOrdersPageInner() {
   const queryClient  = useQueryClient();
   const router       = useRouter();
   const toast        = useToast();
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const requestParam = searchParams.get("request");
 
@@ -154,13 +165,13 @@ function PurchaseOrdersPageInner() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
       setShowModal(false);
-      toast.success("Purchase order created");
+      toast.success(t("procurement.po.created"));
       router.push(`/procurement/purchase-orders/${res.data.data.id}`);
     },
     onError: (e: unknown) => {
-      const message = apiErrorMessage(e, "Failed to create purchase order.");
+      const message = apiErrorMessage(e, t("procurement.po.createFailed"));
       setSubmitError(message);
-      toast.error("Purchase order not created", message);
+      toast.error(t("procurement.po.notCreated"), message);
     },
   });
 
@@ -199,13 +210,13 @@ function PurchaseOrdersPageInner() {
         issued_at: p.issued_at ?? "",
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "title", header: "Title" },
-        { key: "vendor", header: "Vendor" },
-        { key: "status", header: "Status" },
-        { key: "amount", header: "Amount" },
-        { key: "currency", header: "Currency" },
-        { key: "issued_at", header: "Issued" },
+        { key: "reference", header: t("procurement.col.reference") },
+        { key: "title", header: t("procurement.col.title") },
+        { key: "vendor", header: t("procurement.col.vendor") },
+        { key: "status", header: t("procurement.col.status") },
+        { key: "amount", header: t("procurement.col.amount") },
+        { key: "currency", header: t("procurement.col.currency") },
+        { key: "issued_at", header: t("procurement.poStatus.issued") },
       ],
     );
   };
@@ -213,11 +224,11 @@ function PurchaseOrdersPageInner() {
   return (
     <div className="space-y-6">
       <ProcurementPageHeader
-        title="Purchase Orders"
-        subtitle="Track awarded RFQs, issued POs, deliveries, and supplier invoice handoff."
+        title={t("procurement.purchaseOrders.title")}
+        subtitle={t("procurement.po.subtitle")}
         crumbs={[
           { label: "nav.procurement", href: "/procurement" },
-          { label: "Purchase Orders" },
+          { label: t("procurement.purchaseOrders.title") },
         ]}
         actions={
           <button
@@ -227,7 +238,7 @@ function PurchaseOrdersPageInner() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[16px]">download</span>
-            Export CSV
+            {t("procurement.exportCsv")}
           </button>
         }
       />
@@ -235,10 +246,10 @@ function PurchaseOrdersPageInner() {
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total POs",   value: total,    icon: "receipt_long",  color: "text-primary",    bg: "bg-primary/10"   },
-          { label: "Issued",      value: issued,   icon: "send",          color: "text-blue-600",   bg: "bg-blue-50"      },
-          { label: "Received",    value: received, icon: "inventory_2",   color: "text-green-600",  bg: "bg-green-50"     },
-          { label: "Pending",     value: pending,  icon: "pending",       color: "text-amber-600",  bg: "bg-amber-50"     },
+          { label: t("procurement.po.kpi.total"), value: total,    icon: "receipt_long",  color: "text-primary",    bg: "bg-primary/10"   },
+          { label: t("procurement.poStatus.issued"), value: issued,   icon: "send",          color: "text-blue-600",   bg: "bg-blue-50"      },
+          { label: t("procurement.poStatus.received"), value: received, icon: "inventory_2",   color: "text-green-600",  bg: "bg-green-50"     },
+          { label: t("status.pending"), value: pending,  icon: "pending",       color: "text-amber-600",  bg: "bg-amber-50"     },
         ].map((k) => (
           <div key={k.label} className="card p-4 flex items-center gap-3">
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${k.bg} flex-shrink-0`}>
@@ -262,7 +273,7 @@ function PurchaseOrdersPageInner() {
             <input
               type="search"
               className="form-input pl-10"
-              placeholder="Search PO, title, vendor…"
+              placeholder={t("procurement.po.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -281,7 +292,7 @@ function PurchaseOrdersPageInner() {
                 }}
                 className={`filter-tab capitalize ${statusFilter === f ? "active" : ""}`}
               >
-                {f === "all" ? "All" : f.replace(/_/g, " ")}
+                {FILTER_LABEL_KEYS[f] ? t(FILTER_LABEL_KEYS[f]) : f.replace(/_/g, " ")}
               </button>
             ))}
           </div>
@@ -303,24 +314,24 @@ function PurchaseOrdersPageInner() {
           ))}
         </div>
       ) : isError ? (
-        <div className="card p-6 text-center text-sm text-red-600">Failed to load purchase orders.</div>
+        <div className="card p-6 text-center text-sm text-red-600">{t("procurement.po.loadError")}</div>
       ) : filtered.length === 0 ? (
         <EmptyState
           icon="receipt_long"
-          title="No purchase orders found."
-          description={search.trim() ? "No purchase orders match your search." : "Purchase orders are created automatically after an RFQ is awarded to a registered supplier."}
+          title={t("procurement.po.empty")}
+          description={search.trim() ? t("procurement.po.emptySearch") : t("procurement.po.emptyHint")}
         />
       ) : (
         <div className="card overflow-hidden">
           <table className="data-table">
             <thead>
               <tr>
-                <th>PO Reference</th>
-                <th>Vendor</th>
-                <th>Linked Request</th>
-                <th className="text-right">Total</th>
-                <th>Expected Delivery</th>
-                <th>Status</th>
+                <th>{t("procurement.po.col.reference")}</th>
+                <th>{t("procurement.col.vendor")}</th>
+                <th>{t("procurement.po.col.linkedRequest")}</th>
+                <th className="text-right">{t("procurement.invoices.kpi.total")}</th>
+                <th>{t("procurement.po.col.expectedDelivery")}</th>
+                <th>{t("procurement.col.status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -350,7 +361,7 @@ function PurchaseOrdersPageInner() {
                     <td>
                       <span className={`badge ${s.cls} inline-flex items-center gap-1`}>
                         <span className="material-symbols-outlined text-[11px]">{s.icon}</span>
-                        {s.label}
+                        {t(s.label)}
                       </span>
                     </td>
                   </tr>
@@ -381,7 +392,7 @@ function PurchaseOrdersPageInner() {
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
                 <span className="material-symbols-outlined text-[20px] text-primary">receipt_long</span>
               </div>
-              <h2 className="text-base font-bold text-neutral-900">New Purchase Order</h2>
+              <h2 className="text-base font-bold text-neutral-900">{t("procurement.po.modalTitle")}</h2>
             </div>
 
             {submitError && (
@@ -392,7 +403,7 @@ function PurchaseOrdersPageInner() {
               {/* Procurement Request (required) */}
               <div className="space-y-1">
                 <label htmlFor="procurement-purchase-orders-procurement-request" className="text-xs font-semibold text-neutral-600">
-                  Procurement Request <span className="text-red-500">*</span>
+                  {t("travel.proc.select")} <span className="text-red-500">*</span>
                 </label>
                 <select id="procurement-purchase-orders-procurement-request"
                   className="form-input"
@@ -403,43 +414,43 @@ function PurchaseOrdersPageInner() {
                     setPoItems([{ description: "", quantity: "1", unit: "unit", unit_price: "" }]);
                   }}
                 >
-                  <option value="">Select awarded request…</option>
+                  <option value="">{t("procurement.po.selectRequest")}</option>
                   {awardedRequests.map((r) => (
                     <option key={r.id} value={r.id}>{r.reference_number} — {r.title}</option>
                   ))}
                 </select>
                 {awardedRequests.length === 0 && (
-                  <p className="text-xs text-amber-600">No awarded requests found. Award a procurement request first.</p>
+                  <p className="text-xs text-amber-600">{t("procurement.po.noAwarded")}</p>
                 )}
               </div>
 
               {/* Vendor (required) */}
               <div className="space-y-1">
                 <label htmlFor="procurement-purchase-orders-vendor" className="text-xs font-semibold text-neutral-600">
-                  Vendor <span className="text-red-500">*</span>
+                  {t("procurement.col.vendor")} <span className="text-red-500">*</span>
                 </label>
                 <select id="procurement-purchase-orders-vendor"
                   className="form-input"
                   value={selectedVendorId}
                   onChange={(e) => setSelectedVendorId(e.target.value ? Number(e.target.value) : "")}
                 >
-                  <option value="">Select vendor…</option>
+                  <option value="">{t("procurement.po.selectVendor")}</option>
                   {availableVendors.map((v) => (
                     <option key={v.id} value={v.id}>{v.name}</option>
                   ))}
                 </select>
                 {availableVendors.length === 0 && (
-                  <p className="text-xs text-amber-600">No approved vendors. <Link href="/procurement/vendors" className="btn-secondary text-xs py-0.5 px-2 inline-flex">Register a vendor</Link> first.</p>
+                  <p className="text-xs text-amber-600">{t("procurement.po.noVendorsBefore")} <Link href="/procurement/vendors" className="btn-secondary text-xs py-0.5 px-2 inline-flex">{t("procurement.po.registerVendor")}</Link> {t("procurement.po.noVendorsAfter")}</p>
                 )}
               </div>
 
               {/* Title */}
               <div className="space-y-1">
-                <label htmlFor="procurement-purchase-orders-po-title" className="text-xs font-semibold text-neutral-600">PO Title <span className="text-red-500">*</span></label>
+                <label htmlFor="procurement-purchase-orders-po-title" className="text-xs font-semibold text-neutral-600">{t("procurement.po.titleLabel")} <span className="text-red-500">*</span></label>
                 <input id="procurement-purchase-orders-po-title"
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Office Supplies Q2 2026"
+                  placeholder={t("procurement.po.titlePlaceholder")}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
@@ -447,7 +458,7 @@ function PurchaseOrdersPageInner() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label htmlFor="procurement-purchase-orders-currency" className="text-xs font-semibold text-neutral-600">Currency</label>
+                  <label htmlFor="procurement-purchase-orders-currency" className="text-xs font-semibold text-neutral-600">{t("procurement.col.currency")}</label>
                   <input id="procurement-purchase-orders-currency"
                     type="text"
                     className="form-input"
@@ -457,26 +468,26 @@ function PurchaseOrdersPageInner() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="procurement-purchase-orders-payment-terms" className="text-xs font-semibold text-neutral-600">Payment Terms</label>
+                  <label htmlFor="procurement-purchase-orders-payment-terms" className="text-xs font-semibold text-neutral-600">{t("procurement.po.paymentTerms")}</label>
                   <select id="procurement-purchase-orders-payment-terms" className="form-input" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)}>
-                    <option value="net_30">Net 30 days</option>
-                    <option value="net_60">Net 60 days</option>
-                    <option value="on_delivery">On Delivery</option>
+                    <option value="net_30">{t("procurement.po.terms.net30")}</option>
+                    <option value="net_60">{t("procurement.po.terms.net60")}</option>
+                    <option value="on_delivery">{t("procurement.po.terms.onDelivery")}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label htmlFor="procurement-purchase-orders-expected-delivery-date" className="text-xs font-semibold text-neutral-600">Expected Delivery Date</label>
+                  <label htmlFor="procurement-purchase-orders-expected-delivery-date" className="text-xs font-semibold text-neutral-600">{t("procurement.po.expectedDeliveryDate")}</label>
                   <input id="procurement-purchase-orders-expected-delivery-date" type="date" className="form-input" value={expectedDelivery} onChange={(e) => setExpectedDelivery(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="procurement-purchase-orders-delivery-address" className="text-xs font-semibold text-neutral-600">Delivery Address</label>
+                  <label htmlFor="procurement-purchase-orders-delivery-address" className="text-xs font-semibold text-neutral-600">{t("procurement.po.deliveryAddress")}</label>
                   <input id="procurement-purchase-orders-delivery-address"
                     type="text"
                     className="form-input"
-                    placeholder="Delivery location…"
+                    placeholder={t("procurement.po.deliveryPlaceholder")}
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
                   />
@@ -486,31 +497,31 @@ function PurchaseOrdersPageInner() {
               {/* Line Items */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Line Items</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("procurement.po.lineItems")}</p>
                   <button
                     type="button"
                     onClick={addItem}
                     className="btn-secondary text-xs inline-flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[14px]">add</span>
-                    Add Item
+                    {t("procurement.po.addItem")}
                   </button>
                 </div>
                 <div className="space-y-2">
                   {poItems.map((row, idx) => (
                     <div key={idx} className="rounded-xl border border-neutral-100 bg-neutral-50 p-3 grid grid-cols-12 gap-2 items-start">
                       <div className="col-span-4 space-y-1">
-                        <label htmlFor="procurement-purchase-orders-description" className="text-[10px] font-semibold uppercase text-neutral-400">Description</label>
+                        <label htmlFor="procurement-purchase-orders-description" className="text-[10px] font-semibold uppercase text-neutral-400">{t("procurement.create.description")}</label>
                         <input id="procurement-purchase-orders-description"
                           type="text"
                           className="form-input text-sm"
-                          placeholder="Item description…"
+                          placeholder={t("procurement.po.itemPlaceholder")}
                           value={row.description}
                           onChange={(e) => updateItem(idx, "description", e.target.value)}
                         />
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label htmlFor="procurement-purchase-orders-qty" className="text-[10px] font-semibold uppercase text-neutral-400">Qty</label>
+                        <label htmlFor="procurement-purchase-orders-qty" className="text-[10px] font-semibold uppercase text-neutral-400">{t("procurement.po.qty")}</label>
                         <input id="procurement-purchase-orders-qty"
                           type="number"
                           min="1"
@@ -520,17 +531,17 @@ function PurchaseOrdersPageInner() {
                         />
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label htmlFor="procurement-purchase-orders-unit" className="text-[10px] font-semibold uppercase text-neutral-400">Unit</label>
+                        <label htmlFor="procurement-purchase-orders-unit" className="text-[10px] font-semibold uppercase text-neutral-400">{t("procurement.col.unit")}</label>
                         <input id="procurement-purchase-orders-unit"
                           type="text"
                           className="form-input text-sm"
-                          placeholder="unit"
+                          placeholder={t("procurement.po.unitPlaceholder")}
                           value={row.unit}
                           onChange={(e) => updateItem(idx, "unit", e.target.value)}
                         />
                       </div>
                       <div className="col-span-3 space-y-1">
-                        <label htmlFor="procurement-purchase-orders-unit-price" className="text-[10px] font-semibold uppercase text-neutral-400">Unit Price</label>
+                        <label htmlFor="procurement-purchase-orders-unit-price" className="text-[10px] font-semibold uppercase text-neutral-400">{t("procurement.po.unitPrice")}</label>
                         <input id="procurement-purchase-orders-unit-price"
                           type="number"
                           min="0"
@@ -547,6 +558,7 @@ function PurchaseOrdersPageInner() {
                             type="button"
                             onClick={() => removeItem(idx)}
                             className="flex items-center justify-center h-8 w-8 rounded-lg border border-red-100 text-red-400 hover:bg-red-50 transition-colors"
+                            aria-label={t("procurement.create.removeItem")}
                           >
                             <span className="material-symbols-outlined text-[16px]">delete</span>
                           </button>
@@ -557,14 +569,14 @@ function PurchaseOrdersPageInner() {
                 </div>
                 {totalAmount > 0 && (
                   <div className="mt-3 text-right text-sm font-bold text-neutral-800">
-                    Total: {currency} {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {t("procurement.po.total", { amount: `${currency} ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` })}
                   </div>
                 )}
               </div>
             </div>
 
             <div className="flex gap-3 pt-2">
-              <button className="btn-secondary flex-1" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="btn-secondary flex-1" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
               <button
                 className="btn-primary flex-1 disabled:opacity-60"
                 disabled={!canSubmit || createMutation.isPending}
@@ -575,7 +587,7 @@ function PurchaseOrdersPageInner() {
                 ) : (
                   <span className="material-symbols-outlined text-[18px]">receipt_long</span>
                 )}
-                {createMutation.isPending ? "Creating…" : "Create Purchase Order"}
+                {createMutation.isPending ? t("procurement.creating") : t("procurement.po.create")}
               </button>
             </div>
           </div>

@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -36,35 +37,36 @@ function personLabel(p: Record<string, unknown>): string {
 // Real module identifiers this app's authority checks are actually keyed against
 // (AuthorityCheckService matches on these strings from each module's own workflow code).
 const AUTHORITY_MODULES = [
-  { value: "travel", label: "Travel" },
-  { value: "leave", label: "Leave" },
-  { value: "imprest", label: "Imprest" },
-  { value: "procurement", label: "Procurement" },
-  { value: "budget", label: "Finance / Budget" },
-  { value: "correspondence", label: "Correspondence" },
-  { value: "risk", label: "Risk" },
-  { value: "contracts", label: "Contracts" },
-  { value: "assets", label: "Assets" },
-  { value: "hr", label: "HR" },
-  { value: "governance", label: "Governance" },
-  { value: "supplier", label: "Supplier" },
-  { value: "stock", label: "Stock" },
-  { value: "salary_advance", label: "Salary Advances" },
-  { value: "workplan", label: "Workplan" },
+  { value: "travel", label: "Travel", labelKey: "nav.travel" },
+  { value: "leave", label: "Leave", labelKey: "nav.leave" },
+  { value: "imprest", label: "Imprest", labelKey: "nav.imprest" },
+  { value: "procurement", label: "Procurement", labelKey: "nav.procurement" },
+  { value: "budget", label: "Finance / Budget", labelKey: "people.authority.modBudget" },
+  { value: "correspondence", label: "Correspondence", labelKey: "people.authority.modCorrespondence" },
+  { value: "risk", label: "Risk", labelKey: "people.authority.modRisk" },
+  { value: "contracts", label: "Contracts", labelKey: "nav.contracts" },
+  { value: "assets", label: "Assets", labelKey: "people.authority.modAssets" },
+  { value: "hr", label: "HR", labelKey: "nav.hr" },
+  { value: "governance", label: "Governance", labelKey: "people.authority.modGovernance" },
+  { value: "supplier", label: "Supplier", labelKey: "people.authority.modSupplier" },
+  { value: "stock", label: "Stock", labelKey: "people.authority.modStock" },
+  { value: "salary_advance", label: "Salary Advances", labelKey: "nav.salary_advances" },
+  { value: "workplan", label: "Workplan", labelKey: "nav.workplan" },
 ] as const;
 
 // Action vocabulary already used across this app's approval workflows (recommend/certify/
 // principal/authorise stages, plus signing flags on AuthorityDefinition).
 const AUTHORITY_ACTIONS = [
-  { value: "recommend", label: "Recommend", isSigning: false },
-  { value: "approve", label: "Approve", isSigning: false },
-  { value: "certify", label: "Certify", isSigning: false },
-  { value: "authorise", label: "Authorise", isSigning: false },
-  { value: "sign", label: "Sign", isSigning: true },
-  { value: "prepare", label: "Prepare", isSigning: false },
+  { value: "recommend", label: "Recommend", labelKey: "people.authority.actRecommend", isSigning: false },
+  { value: "approve", label: "Approve", labelKey: "people.authority.actApprove", isSigning: false },
+  { value: "certify", label: "Certify", labelKey: "people.authority.actCertify", isSigning: false },
+  { value: "authorise", label: "Authorise", labelKey: "people.authority.actAuthorise", isSigning: false },
+  { value: "sign", label: "Sign", labelKey: "people.authority.actSign", isSigning: true },
+  { value: "prepare", label: "Prepare", labelKey: "people.authority.actPrepare", isSigning: false },
 ] as const;
 
 export default function Page() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
   const [q, setQ] = useState("");
@@ -93,7 +95,7 @@ export default function Page() {
     mutationFn: () => {
       const mod = AUTHORITY_MODULES.find((m) => m.value === createForm.module);
       const act = AUTHORITY_ACTIONS.find((a) => a.value === createForm.action);
-      if (!mod || !act) throw new Error("Module and action are required.");
+      if (!mod || !act) throw new Error(t("people.authority.moduleActionRequired"));
       return peopleAuthorityApi.createAuthority({
         // Derived entirely from the two selections below — never free-typed.
         code: `${mod.value}_${act.value}`.toUpperCase(),
@@ -103,15 +105,15 @@ export default function Page() {
       });
     },
     onSuccess: () => {
-      toast.success("Authority created");
+      toast.success(t("people.authority.created"));
       setCreateForm({ module: "", action: "" });
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "authority-register"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not create the authority. Select a module and an action.");
+      const message = apiErrorMessage(e, t("people.authority.createFailed"));
       setErr(message);
-      toast.error("Authority not created", message);
+      toast.error(t("people.authority.notCreated"), message);
     },
   });
   const assign = useMutation({
@@ -123,14 +125,14 @@ export default function Page() {
         effective_from: assignForm.effective_from,
       }),
     onSuccess: () => {
-      toast.success("Authority assigned");
+      toast.success(t("people.authority.assigned"));
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "authority-register"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not assign authority. Definition, assignee, and start date are required.");
+      const message = apiErrorMessage(e, t("people.authority.assignFailed"));
       setErr(message);
-      toast.error("Authority not assigned", message);
+      toast.error(t("people.authority.notAssigned"), message);
     },
   });
   const { data, isLoading, isError, refetch } = useQuery({
@@ -164,19 +166,19 @@ return (await peopleAuthorityApi.listAuthorities()).data;
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Authority Register"
-        subtitle="People & Authority register"
+        title={t("people.authority.title")}
+        subtitle={t("people.common.registerSubtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "Authority Register" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.authority.title") },
             ]}
           />
         }
         actions={
           <Link href="/people" className="btn-secondary text-sm">
-            Hub
+            {t("people.common.hub")}
           </Link>
         }
       />
@@ -189,7 +191,7 @@ return (await peopleAuthorityApi.listAuthorities()).data;
         }}
       >
         <label htmlFor="people-authority-module-select" className="block text-xs font-medium text-neutral-600">
-          Module
+          {t("people.authority.module")}
           <select
             id="people-authority-module-select"
             className="form-input mt-1"
@@ -197,14 +199,14 @@ return (await peopleAuthorityApi.listAuthorities()).data;
             onChange={(e) => setCreateForm((f) => ({ ...f, module: e.target.value }))}
             required
           >
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {AUTHORITY_MODULES.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
+              <option key={m.value} value={m.value}>{t(m.labelKey)}</option>
             ))}
           </select>
         </label>
         <label htmlFor="people-authority-action-select" className="block text-xs font-medium text-neutral-600">
-          Action
+          {t("people.authority.action")}
           <select
             id="people-authority-action-select"
             className="form-input mt-1"
@@ -212,23 +214,26 @@ return (await peopleAuthorityApi.listAuthorities()).data;
             onChange={(e) => setCreateForm((f) => ({ ...f, action: e.target.value }))}
             required
           >
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {AUTHORITY_ACTIONS.map((a) => (
-              <option key={a.value} value={a.value}>{a.label}</option>
+              <option key={a.value} value={a.value}>{t(a.labelKey)}</option>
             ))}
           </select>
         </label>
         <div className="block text-xs font-medium text-neutral-600">
-          Will create
+          {t("people.authority.willCreate")}
           <p className="form-input mt-1 flex items-center bg-neutral-50 text-neutral-700">
             {createForm.module && createForm.action
-              ? `${AUTHORITY_ACTIONS.find((a) => a.value === createForm.action)?.label} ${AUTHORITY_MODULES.find((m) => m.value === createForm.module)?.label}`
-              : "Select a module and action"}
+              ? t("people.authority.willCreateName", {
+                  action: t(AUTHORITY_ACTIONS.find((a) => a.value === createForm.action)?.labelKey ?? ""),
+                  module: t(AUTHORITY_MODULES.find((m) => m.value === createForm.module)?.labelKey ?? ""),
+                })
+              : t("people.authority.selectModuleAction")}
           </p>
         </div>
         <div className="sm:col-span-3 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending || !createForm.module || !createForm.action}>
-            {create.isPending ? "Saving…" : "Add authority"}
+            {create.isPending ? t("people.common.saving") : t("people.authority.add")}
           </button>
         </div>
       </form>
@@ -241,31 +246,31 @@ return (await peopleAuthorityApi.listAuthorities()).data;
         }}
       >
         <label htmlFor="people-authority-authority-setassignform-f-required-select" className="block text-xs font-medium text-neutral-600">
-          Authority
+          {t("people.authority.authority")}
           <select id="people-authority-authority-setassignform-f-required-select" className="form-input mt-1" value={assignForm.authority_definition_id} onChange={(e) => setAssignForm((f) => ({ ...f, authority_definition_id: e.target.value }))} required>
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {filtered.map((r) => (
               <option key={String(r.id)} value={String(r.id)}>{String(r.name ?? r.code ?? r.id)}</option>
             ))}
           </select>
         </label>
         <label htmlFor="people-authority-assignee-type-setassignform-f-person-position" className="block text-xs font-medium text-neutral-600">
-          Assignee type
+          {t("people.authority.assigneeType")}
           <select
             id="people-authority-assignee-type-setassignform-f-person-position"
             className="form-input mt-1"
             value={assignForm.assignee_type}
             onChange={(e) => setAssignForm((f) => ({ ...f, assignee_type: e.target.value, assignee_id: "" }))}
           >
-            <option value="Person">Person</option>
-            <option value="Position">Position</option>
+            <option value="Person">{t("people.common.person")}</option>
+            <option value="Position">{t("people.common.position")}</option>
           </select>
         </label>
         <div>
           <label htmlFor="people-authority-assignee-setassignform-f-required-select" className="block text-xs font-medium text-neutral-600">
-            Assignee
+            {t("people.authority.assignee")}
             <select id="people-authority-assignee-setassignform-f-required-select" className="form-input mt-1" value={assignForm.assignee_id} onChange={(e) => setAssignForm((f) => ({ ...f, assignee_id: e.target.value }))} required>
-              <option value="">{assigneeOptionsLoading ? "Loading…" : "Select…"}</option>
+              <option value="">{assigneeOptionsLoading ? t("common.loading") : t("people.common.select")}</option>
               {assigneeOptions.map((r) => (
                 <option key={String(r.id)} value={String(r.id)}>{assigneeLabel(r)}</option>
               ))}
@@ -274,20 +279,24 @@ return (await peopleAuthorityApi.listAuthorities()).data;
           {!assigneeOptionsLoading && assigneeOptions.length === 0 ? (
             <p className="mt-1 text-xs text-amber-700">
               {assignForm.assignee_type === "Position"
-                ? "No positions defined yet."
+                ? t("people.authority.noPositions")
                 : (
-                  <>No people available — populate the <Link href="/people/directory" className="font-semibold hover:opacity-80">Staff Directory</Link> first.</>
+                  <>
+                    {t("people.authority.noPeopleBefore")}{" "}
+                    <Link href="/people/directory" className="font-semibold hover:opacity-80">{t("people.authority.staffDirectory")}</Link>
+                    {t("people.authority.noPeopleAfter")}
+                  </>
                 )}
             </p>
           ) : null}
         </div>
         <label htmlFor="people-authority-effective-from-setassignform-f-required" className="block text-xs font-medium text-neutral-600">
-          Effective from
+          {t("people.authority.effectiveFrom")}
           <input id="people-authority-effective-from-setassignform-f-required" type="date" className="form-input mt-1" value={assignForm.effective_from} onChange={(e) => setAssignForm((f) => ({ ...f, effective_from: e.target.value }))} required />
         </label>
         <div className="sm:col-span-4 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={assign.isPending}>
-            {assign.isPending ? "Saving…" : "Assign authority"}
+            {assign.isPending ? t("people.common.saving") : t("people.authority.assign")}
           </button>
           {err && <p className="text-sm text-red-700">{err}</p>}
         </div>
@@ -295,12 +304,12 @@ return (await peopleAuthorityApi.listAuthorities()).data;
 
       <div className="card p-3">
         <label htmlFor="people-authority-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
+          {t("common.search")}
           <input id="people-authority-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
+            placeholder={t("people.common.filterRows")}
           />
         </label>
       </div>
@@ -315,24 +324,24 @@ return (await peopleAuthorityApi.listAuthorities()).data;
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
             action={
               <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
+                {t("common.retry")}
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">Authority Register</caption>
+              <caption className="sr-only">{t("people.authority.title")}</caption>
               <thead>
                 <tr>
                   {columns.map((c) => (

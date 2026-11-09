@@ -18,6 +18,7 @@ import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
 import { formatDateTable } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,24 +51,24 @@ interface Module {
 
 const MODULES: Module[] = [
   // Operational
-  { key: "travel",          label: "Travel",           icon: "flight_takeoff",   color: "text-primary",    group: "Operational",      statusOptions: ["draft","submitted","approved","rejected"],            columns: ["Reference","Employee","Destination","Departure","Return","DSA","Status"] },
-  { key: "leave",           label: "Leave",            icon: "event_available",  color: "text-green-600",  group: "Operational",      statusOptions: ["draft","submitted","approved","rejected"],            columns: ["Reference","Employee","Type","From","To","Days","Status"] },
-  { key: "dsa",             label: "DSA Allowances",   icon: "paid",             color: "text-teal-600",   group: "Operational",      statusOptions: ["draft","submitted","approved","rejected"],            columns: ["Reference","Employee","Country","Departure","Return","Days","DSA","Status"] },
-  { key: "imprest",         label: "Imprest",          icon: "account_balance_wallet", color: "text-orange-600", group: "Operational", statusOptions: ["draft","submitted","approved","rejected","liquidated"], columns: ["Reference","Employee","Purpose","Requested","Approved","Status","Liquidation Date"] },
+  { key: "travel",          label: "reports.module.travel",           icon: "flight_takeoff",   color: "text-primary",    group: "reports.group.operational",      statusOptions: ["draft","submitted","approved","rejected"],            columns: ["reports.col.reference","reports.col.employee","reports.col.destination","reports.col.departure","reports.col.return","reports.col.dsa","reports.col.status"] },
+  { key: "leave",           label: "reports.module.leave",            icon: "event_available",  color: "text-green-600",  group: "reports.group.operational",      statusOptions: ["draft","submitted","approved","rejected"],            columns: ["reports.col.reference","reports.col.employee","reports.col.type","reports.col.from","reports.col.to","reports.col.days","reports.col.status"] },
+  { key: "dsa",             label: "reports.module.dsa",   icon: "paid",             color: "text-teal-600",   group: "reports.group.operational",      statusOptions: ["draft","submitted","approved","rejected"],            columns: ["reports.col.reference","reports.col.employee","reports.col.country","reports.col.departure","reports.col.return","reports.col.days","reports.col.dsa","reports.col.status"] },
+  { key: "imprest",         label: "reports.module.imprest",          icon: "account_balance_wallet", color: "text-orange-600", group: "reports.group.operational", statusOptions: ["draft","submitted","approved","rejected","liquidated"], columns: ["reports.col.reference","reports.col.employee","reports.col.purpose","reports.col.requested","reports.col.approved","reports.col.status","reports.col.liquidationDate"] },
   // Financial
-  { key: "procurement",     label: "Procurement",      icon: "shopping_cart",    color: "text-blue-600",   group: "Financial",        statusOptions: ["draft","submitted","hod_approved","budget_reserved","approved","awarded","rejected"], columns: ["Reference","Employee","Title","Category","Method","Value","Status"] },
-  { key: "salary-advances", label: "Salary Advances",  icon: "savings",          color: "text-primary", group: "Financial",        statusOptions: ["draft","submitted","approved","rejected"],            columns: ["Reference","Employee","Type","Amount","Months","Status"] },
-  { key: "budget",          label: "Budget / Programmes", icon: "account_balance", color: "text-amber-600", group: "Financial",       statusOptions: [],                                                     columns: ["Programme","Title","Status","Funding","Budget","Currency","End Date"] },
+  { key: "procurement",     label: "reports.module.procurement",      icon: "shopping_cart",    color: "text-blue-600",   group: "reports.group.financial",        statusOptions: ["draft","submitted","hod_approved","budget_reserved","approved","awarded","rejected"], columns: ["reports.col.reference","reports.col.employee","reports.col.title","reports.col.category","reports.col.method","reports.col.value","reports.col.status"] },
+  { key: "salary-advances", label: "reports.module.salaryAdvances",  icon: "savings",          color: "text-primary", group: "reports.group.financial",        statusOptions: ["draft","submitted","approved","rejected"],            columns: ["reports.col.reference","reports.col.employee","reports.col.type","reports.col.amount","reports.col.months","reports.col.status"] },
+  { key: "budget",          label: "reports.module.budget", icon: "account_balance", color: "text-amber-600", group: "reports.group.financial",       statusOptions: [],                                                     columns: ["reports.col.programme","reports.col.title","reports.col.status","reports.col.funding","reports.col.budget","reports.col.currency","reports.col.endDate"] },
   // HR
-  { key: "hr-timesheets",   label: "HR Timesheets",    icon: "schedule",         color: "text-indigo-600", group: "HR",               statusOptions: ["draft","submitted","approved","rejected"],            columns: ["Employee","Week Start","Week End","Total Hrs","Overtime","Status"] },
+  { key: "hr-timesheets",   label: "reports.module.hrTimesheets",    icon: "schedule",         color: "text-indigo-600", group: "reports.group.hr",               statusOptions: ["draft","submitted","approved","rejected"],            columns: ["reports.col.employee","reports.col.weekStart","reports.col.weekEnd","reports.col.totalHrs","reports.col.overtime","reports.col.status"] },
   // Governance & Risk
-  { key: "governance",      label: "Governance",       icon: "gavel",            color: "text-rose-600",   group: "Governance & Risk", statusOptions: ["draft","open","adopted","archived"],                columns: ["Reference","Title","Type","Committee","Status","Adopted"] },
-  { key: "risk",            label: "Risk Register",    icon: "warning_amber",    color: "text-red-600",    group: "Governance & Risk", statusOptions: ["draft","submitted","reviewed","approved","monitoring","escalated","closed"], columns: ["Code","Title","Category","Department","Likelihood","Impact","Level","Owner","Status"] },
+  { key: "governance",      label: "reports.module.governance",       icon: "gavel",            color: "text-rose-600",   group: "reports.group.governanceRisk", statusOptions: ["draft","open","adopted","archived"],                columns: ["reports.col.reference","reports.col.title","reports.col.type","reports.col.committee","reports.col.status","reports.col.adopted"] },
+  { key: "risk",            label: "reports.module.risk",    icon: "warning_amber",    color: "text-red-600",    group: "reports.group.governanceRisk", statusOptions: ["draft","submitted","reviewed","approved","monitoring","escalated","closed"], columns: ["reports.col.code","reports.col.title","reports.col.category","reports.col.department","reports.col.likelihood","reports.col.impact","reports.col.level","reports.col.owner","reports.col.status"] },
   // Assets
-  { key: "assets",          label: "Assets",           icon: "inventory_2",      color: "text-teal-700",   group: "Assets",           statusOptions: ["active","under_maintenance","retired","disposed"],   columns: ["Code","Name","Category","Status","Age","Value"] },
+  { key: "assets",          label: "reports.module.assets",           icon: "inventory_2",      color: "text-teal-700",   group: "reports.group.assets",           statusOptions: ["active","under_maintenance","retired","disposed"],   columns: ["reports.col.code","reports.col.name","reports.col.category","reports.col.status","reports.col.age","reports.col.value"] },
 ];
 
-const GROUPS = ["Operational", "Financial", "HR", "Governance & Risk", "Assets"];
+const GROUPS = ["reports.group.operational", "reports.group.financial", "reports.group.hr", "reports.group.governanceRisk", "reports.group.assets"];
 
 // FY pills (SADC PF: April – March)
 const FY_OPTIONS = [
@@ -194,13 +195,14 @@ function ProcurementRow({ row }: { row: Record<string, unknown> }) {
 }
 
 function SalaryAdvRow({ row }: { row: Record<string, unknown> }) {
+  const { t } = useI18n();
   return (
     <tr>
       <td className="font-mono">{String(row.reference_number ?? "")}</td>
       <td>{String((row.requester as Record<string,string>)?.name ?? "—")}</td>
       <td className="capitalize">{String(row.advance_type ?? "").replace(/_/g, " ")}</td>
       <td className="tabular-nums">{String(row.currency ?? "NAD")} {Number(row.amount ?? 0).toLocaleString()}</td>
-      <td>{String(row.repayment_months ?? "—")} mo</td>
+      <td>{t("reports.monthsShort", { count: String(row.repayment_months ?? "—") })}</td>
       <td><span className="badge badge-muted capitalize">{String(row.status ?? "")}</span></td>
     </tr>
   );
@@ -268,6 +270,7 @@ function AssetRow({ row }: { row: Record<string, unknown> }) {
 export default function ReportsPage() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const [activeModule, setActiveModule] = useState<ModuleKey>("travel");
   const [filters, setFilters] = useState<Filters>({
     period_from: "",
@@ -326,17 +329,17 @@ export default function ReportsPage() {
         recipients: scheduleForm.recipients.split(",").map((email) => email.trim()).filter(Boolean),
         filters: buildApiParams(filters),
       });
-      setScheduleNotice("Scheduled report submitted for approval.");
-      toast.success("Scheduled report submitted", "It has been sent for approval.");
+      setScheduleNotice(t("reports.schedule.submittedNotice"));
+      toast.success(t("reports.schedule.submitted"), t("reports.schedule.submittedDetail"));
       setScheduleForm({ label: "", frequency: "monthly", format: "csv", recipients: "" });
       const response = await reportsApi.schedules();
       setSchedules(response.data.data ?? []);
       const exports = await reportsApi.exportEvents();
       setExportEvents(exports.data.data ?? []);
     } catch (err) {
-      const message = apiErrorMessage(err, "Unable to create the scheduled report.");
+      const message = apiErrorMessage(err, t("reports.schedule.createFailed"));
       setScheduleNotice(message);
-      toast.error("Scheduled report not created", message);
+      toast.error(t("reports.schedule.notCreated"), message);
     }
   };
 
@@ -344,11 +347,11 @@ export default function ReportsPage() {
     try {
       if (action === "approve") await reportsApi.approveSchedule(id);
       else await reportsApi.pauseSchedule(id);
-      toast.success(action === "approve" ? "Scheduled report approved" : "Scheduled report paused");
+      toast.success(action === "approve" ? t("reports.schedule.approved") : t("reports.schedule.paused"));
     } catch (err) {
       toast.error(
-        action === "approve" ? "Could not approve scheduled report" : "Could not pause scheduled report",
-        apiErrorMessage(err, "Please try again."),
+        action === "approve" ? t("reports.schedule.approveFailed") : t("reports.schedule.pauseFailed"),
+        apiErrorMessage(err, t("reports.tryAgain")),
       );
       return;
     }
@@ -408,11 +411,11 @@ export default function ReportsPage() {
       setRows(data as Record<string, unknown>[]);
       setTotal((res.data as { total?: number }).total ?? data.length);
     } catch {
-      setError("Failed to load report data. Check your filters and try again.");
+      setError(t("reports.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [activeModule, filters]);
+  }, [activeModule, filters, t]);
 
   const exportGenerated = useCallback(async (format: "csv" | "xlsx" | "pdf") => {
     if (!canExport) return;
@@ -437,11 +440,11 @@ export default function ReportsPage() {
       const date = new Date().toISOString().slice(0, 10);
       downloadBlob(res.data as Blob, `${activeModule}-report-${date}.${format}`);
     } catch {
-      setError("Export failed. You may not have permission to export reports.");
+      setError(t("reports.exportFailed"));
     } finally {
       setExporting(false);
     }
-  }, [activeModule, filters, canExport]);
+  }, [activeModule, filters, canExport, t]);
 
   const exportCsv = useCallback(() => exportGenerated("csv"), [exportGenerated]);
   const exportXlsx = useCallback(() => exportGenerated("xlsx"), [exportGenerated]);
@@ -450,7 +453,8 @@ export default function ReportsPage() {
   const exportPdf = useCallback(() => {
     if (!rows || rows.length === 0 || !module) return;
     const date = new Date().toLocaleDateString("en-GB");
-    const headers = module.columns;
+    const headers = module.columns.map((c) => t(c));
+    const moduleLabel = t(module.label);
     const buildCells = (row: Record<string, unknown>) => {
       // Re-use the same data the preview table shows
       switch (activeModule) {
@@ -467,24 +471,24 @@ export default function ReportsPage() {
         default: return [];
       }
     };
-    const bodyRows = rows.map((r) => buildCells(r as Record<string, unknown>).map((v) => String(v ?? "")).map((v) => `<td>${v}</td>`).join("")).map((r) => `<tr>${r}</tr>`).join("");
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${module.label} Report</title><style>body{font-family:Arial,sans-serif;font-size:10pt;margin:20px}h2{font-size:13pt;margin-bottom:4px}p{font-size:9pt;color:#666;margin-bottom:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;font-size:9pt}th{background:#f5f5f5;font-weight:600}tr:nth-child(even){background:#fafafa}@media print{body{margin:0}}</style></head><body><h2>SADC Parliamentary Forum — ${module.label} Report</h2><p>Generated: ${date} · ${total} records</p><table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${bodyRows}</tbody></table></body></html>`;
+    const bodyRows = rows.map((r) => buildCells(r as Record<string, unknown>).map((v) => String(v ?? "")).map((v) => `<td>${v}</td>`).join("")).map((r) => `<tr>${r}</tr>`).join(""); // i18n-ignore
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${t("reports.reportTitle", { module: moduleLabel })}</title><style>body{font-family:Arial,sans-serif;font-size:10pt;margin:20px}h2{font-size:13pt;margin-bottom:4px}p{font-size:9pt;color:#666;margin-bottom:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;font-size:9pt}th{background:#f5f5f5;font-weight:600}tr:nth-child(even){background:#fafafa}@media print{body{margin:0}}</style></head><body><h2>${t("reports.printHeading", { module: moduleLabel })}</h2><p>${t("reports.printGenerated", { date, total })}</p><table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${bodyRows}</tbody></table></body></html>`; // i18n-ignore
     openPrintPreview(html, "_blank", "width=900,height=700");
-  }, [rows, module, activeModule, total]);
+  }, [rows, module, activeModule, total, t]);
 
   const previewRows = rows?.slice(0, 10) ?? [];
 
   if (accessDenied) {
-    return <AccessDenied path="/reports" reason="Your account does not have permission to view shared reports." />;
+    return <AccessDenied path="/reports" reason={t("reports.accessDenied")} />;
   }
 
   return (
     <div className="space-y-5">
       {/* Page Header */}
       <ModulePageHeader
-        title="Reports"
-        subtitle="Generate, filter, and export reports across all modules. Use the fiscal year selector for annual audit periods."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Reports" }]} />}
+        title="nav.reports"
+        subtitle="reports.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.reports" }]} />}
       />
 
       {error && (
@@ -498,42 +502,42 @@ export default function ReportsPage() {
         <section className="card p-5" aria-labelledby="scheduled-reports-heading">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 id="scheduled-reports-heading" className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Scheduled management information</h2>
-              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">Save the current report and filter scope for controlled recurring delivery.</p>
+              <h2 id="scheduled-reports-heading" className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("reports.schedule.title")}</h2>
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{t("reports.schedule.hint")}</p>
             </div>
-            <span className="badge badge-muted">{schedules.length} schedules</span>
+            <span className="badge badge-muted">{t("reports.schedule.count", { count: schedules.length })}</span>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-4">
-            <label htmlFor="reports-name-setscheduleform-prev-placeholder-monthly-tr" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Name
-              <input id="reports-name-setscheduleform-prev-placeholder-monthly-tr" className="form-input mt-1 text-sm" value={scheduleForm.label} onChange={(event) => setScheduleForm((prev) => ({ ...prev, label: event.target.value }))} placeholder="Monthly travel report" />
+            <label htmlFor="reports-name-setscheduleform-prev-placeholder-monthly-tr" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{t("reports.schedule.name")}
+              <input id="reports-name-setscheduleform-prev-placeholder-monthly-tr" className="form-input mt-1 text-sm" value={scheduleForm.label} onChange={(event) => setScheduleForm((prev) => ({ ...prev, label: event.target.value }))} placeholder={t("reports.schedule.namePlaceholder")} />
             </label>
-            <label htmlFor="reports-frequency-setscheduleform-prev-daily-weekly-mont" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Frequency
+            <label htmlFor="reports-frequency-setscheduleform-prev-daily-weekly-mont" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{t("reports.schedule.frequency")}
               <select id="reports-frequency-setscheduleform-prev-daily-weekly-mont" className="form-input mt-1 text-sm" value={scheduleForm.frequency} onChange={(event) => setScheduleForm((prev) => ({ ...prev, frequency: event.target.value }))}>
-                <option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
+                <option value="daily">{t("reports.schedule.daily")}</option><option value="weekly">{t("reports.schedule.weekly")}</option><option value="monthly">{t("reports.schedule.monthly")}</option>
               </select>
             </label>
-            <label htmlFor="reports-format-setscheduleform-prev-csv-excel-pdf" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Format
+            <label htmlFor="reports-format-setscheduleform-prev-csv-excel-pdf" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{t("reports.schedule.format")}
               <select id="reports-format-setscheduleform-prev-csv-excel-pdf" className="form-input mt-1 text-sm" value={scheduleForm.format} onChange={(event) => setScheduleForm((prev) => ({ ...prev, format: event.target.value }))}>
-                <option value="csv">CSV</option><option value="xlsx">Excel</option><option value="pdf">PDF</option>
+                <option value="csv">CSV</option><option value="xlsx">Excel</option><option value="pdf">PDF</option>{/* i18n-ignore */}
               </select>
             </label>
-            <label htmlFor="reports-recipients-setscheduleform-prev-placeholder-name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Recipients
-              <input id="reports-recipients-setscheduleform-prev-placeholder-name" className="form-input mt-1 text-sm" value={scheduleForm.recipients} onChange={(event) => setScheduleForm((prev) => ({ ...prev, recipients: event.target.value }))} placeholder="name@example.org" />
+            <label htmlFor="reports-recipients-setscheduleform-prev-placeholder-name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{t("reports.schedule.recipients")}
+              <input id="reports-recipients-setscheduleform-prev-placeholder-name" className="form-input mt-1 text-sm" value={scheduleForm.recipients} onChange={(event) => setScheduleForm((prev) => ({ ...prev, recipients: event.target.value }))} placeholder="name@example.org" />{/* i18n-ignore */}
             </label>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button type="button" className="btn-primary text-xs" onClick={submitSchedule}>Submit schedule</button>
+            <button type="button" className="btn-primary text-xs" onClick={submitSchedule}>{t("reports.schedule.submit")}</button>
             {scheduleNotice ? <span className="text-xs text-neutral-500 dark:text-neutral-400" role="status">{scheduleNotice}</span> : null}
           </div>
           {schedules.length > 0 ? (
             <div className="mt-4 overflow-x-auto">
               <table className="data-table text-xs">
-                <thead><tr><th>Name</th><th>Report</th><th>Frequency</th><th>Status</th><th>Action</th></tr></thead>
+                <thead><tr><th>{t("reports.schedule.name")}</th><th>{t("reports.schedule.report")}</th><th>{t("reports.schedule.frequency")}</th><th>{t("reports.col.status")}</th><th>{t("reports.schedule.action")}</th></tr></thead>
                 <tbody>{schedules.slice(0, 8).map((schedule, index) => (
                   <tr key={String(schedule.id ?? index)}>
                     <td>{String(schedule.label ?? "-")}</td><td>{String(schedule.report_key ?? "-")}</td><td className="capitalize">{String(schedule.frequency ?? "-")}</td>
                     <td><span className="badge badge-muted capitalize">{String(schedule.status ?? "-")}</span></td>
-                    <td>{schedule.status === "requested" ? <button type="button" className="btn-secondary text-xs" onClick={() => { if (schedule.id) void changeScheduleStatus(Number(schedule.id), "approve"); }}>Approve</button> : schedule.status === "active" ? <button type="button" className="btn-secondary text-xs" onClick={() => { if (schedule.id) void changeScheduleStatus(Number(schedule.id), "pause"); }}>Pause</button> : null}</td>
+                    <td>{schedule.status === "requested" ? <button type="button" className="btn-secondary text-xs" onClick={() => { if (schedule.id) void changeScheduleStatus(Number(schedule.id), "approve"); }}>{t("common.approve")}</button> : schedule.status === "active" ? <button type="button" className="btn-secondary text-xs" onClick={() => { if (schedule.id) void changeScheduleStatus(Number(schedule.id), "pause"); }}>{t("reports.schedule.pause")}</button> : null}</td>
                   </tr>
                 ))}</tbody>
               </table>
@@ -541,14 +545,14 @@ export default function ReportsPage() {
           ) : null}
           {exportEvents.length > 0 ? (
             <div className="mt-4 overflow-x-auto">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Export history</h3>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("reports.schedule.exportHistory")}</h3>
               <table className="data-table text-xs">
-                <thead><tr><th>Reference</th><th>Report</th><th>Status</th><th>Rows</th><th>Action</th></tr></thead>
+                <thead><tr><th>{t("reports.col.reference")}</th><th>{t("reports.schedule.report")}</th><th>{t("reports.col.status")}</th><th>{t("reports.schedule.rows")}</th><th>{t("reports.schedule.action")}</th></tr></thead>
                 <tbody>{exportEvents.slice(0, 8).map((item, index) => (
                   <tr key={String(item.id ?? index)}>
                     <td className="font-mono">{String(item.reference ?? "-")}</td><td>{String(item.report_key ?? "-")}</td>
                     <td><span className="badge badge-muted capitalize">{String(item.status ?? "-")}</span></td><td>{String(item.rows_count ?? "-")}</td>
-                    <td>{item.status === "completed" && item.id ? <button type="button" className="btn-secondary text-xs" onClick={async () => { const response = await reportsApi.downloadExport(Number(item.id)); downloadBlob(response.data as Blob, `${String(item.reference ?? "report-export")}.csv`); }}>Download</button> : null}</td>
+                    <td>{item.status === "completed" && item.id ? <button type="button" className="btn-secondary text-xs" onClick={async () => { const response = await reportsApi.downloadExport(Number(item.id)); downloadBlob(response.data as Blob, `${String(item.reference ?? "report-export")}.csv`); }}>{t("common.download")}</button> : null}</td>
                   </tr>
                 ))}</tbody>
               </table>
@@ -565,7 +569,7 @@ export default function ReportsPage() {
               const mods = MODULES.filter((m) => m.group === group);
               return (
                 <div key={group}>
-                  <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{group}</p>
+                  <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{t(group)}</p>
                   {mods.map((m) => (
                     <button
                       key={m.key}
@@ -583,7 +587,7 @@ export default function ReportsPage() {
                       >
                         {m.icon}
                       </span>
-                      {m.label}
+                      {t(m.label)}
                     </button>
                   ))}
                 </div>
@@ -598,7 +602,7 @@ export default function ReportsPage() {
           <div className="card">
             <div className="px-5 py-4 space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-semibold text-neutral-600 mr-1">Fiscal Year:</span>
+                <span className="text-xs font-semibold text-neutral-600 mr-1">{t("reports.fiscalYear")}</span>
                 {FY_OPTIONS.map(({ label, fy }) => (
                   <button
                     key={fy}
@@ -614,14 +618,14 @@ export default function ReportsPage() {
                   onClick={clearFy}
                   className={`filter-tab text-xs py-1 px-3 ${activeFy === null && (filters.period_from || filters.period_to) ? "active" : ""}`}
                 >
-                  Custom
+                  {t("reports.custom")}
                 </button>
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {/* Period from */}
                 <div>
-                  <label htmlFor="reports-from" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">From</label>
+                  <label htmlFor="reports-from" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">{t("reports.col.from")}</label>
                   <input id="reports-from"
                     type="date"
                     className="form-input text-sm"
@@ -631,7 +635,7 @@ export default function ReportsPage() {
                 </div>
                 {/* Period to */}
                 <div>
-                  <label htmlFor="reports-to" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">To</label>
+                  <label htmlFor="reports-to" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">{t("reports.col.to")}</label>
                   <input id="reports-to"
                     type="date"
                     className="form-input text-sm"
@@ -642,13 +646,13 @@ export default function ReportsPage() {
                 {/* Staff member (managers only) */}
                 {isManager && (
                   <div>
-                    <label htmlFor="reports-staff-member" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Staff Member</label>
+                    <label htmlFor="reports-staff-member" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">{t("reports.staffMember")}</label>
                     <select id="reports-staff-member"
                       className="form-input text-sm"
                       value={filters.user_id}
                       onChange={(e) => setFilters((f) => ({ ...f, user_id: e.target.value }))}
                     >
-                      <option value="">All staff</option>
+                      <option value="">{t("reports.allStaff")}</option>
                       {reportUsers.map((u) => (
                         <option key={u.id} value={u.id}>{u.name}</option>
                       ))}
@@ -657,13 +661,13 @@ export default function ReportsPage() {
                 )}
                 {/* Department */}
                 <div>
-                  <label htmlFor="reports-department" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Department</label>
+                  <label htmlFor="reports-department" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">{t("reports.col.department")}</label>
                   <select id="reports-department"
                     className="form-input text-sm"
                     value={filters.department_id}
                     onChange={(e) => setFilters((f) => ({ ...f, department_id: e.target.value }))}
                   >
-                    <option value="">All departments</option>
+                    <option value="">{t("reports.allDepartments")}</option>
                     {departments.map((d) => (
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
@@ -672,13 +676,13 @@ export default function ReportsPage() {
                 {/* Status */}
                 {module.statusOptions.length > 0 && (
                   <div>
-                    <label htmlFor="reports-status" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Status</label>
+                    <label htmlFor="reports-status" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">{t("reports.col.status")}</label>
                     <select id="reports-status"
                       className="form-input text-sm"
                       value={filters.status}
                       onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
                     >
-                      <option value="">All statuses</option>
+                      <option value="">{t("reports.allStatuses")}</option>
                       {module.statusOptions.map((s) => (
                         <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
                       ))}
@@ -688,11 +692,11 @@ export default function ReportsPage() {
                 {/* Governance: committee */}
                 {activeModule === "governance" && (
                   <div>
-                    <label htmlFor="reports-committee" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Committee</label>
+                    <label htmlFor="reports-committee" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">{t("reports.col.committee")}</label>
                     <input id="reports-committee"
                       type="text"
                       className="form-input text-sm"
-                      placeholder="e.g. ExCo"
+                      placeholder={t("reports.committeePlaceholder")}
                       value={filters.committee}
                       onChange={(e) => setFilters((f) => ({ ...f, committee: e.target.value }))}
                     />
@@ -701,13 +705,13 @@ export default function ReportsPage() {
                 {/* Assets: category */}
                 {activeModule === "assets" && (
                   <div>
-                    <label htmlFor="reports-category" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Category</label>
+                    <label htmlFor="reports-category" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">{t("reports.col.category")}</label>
                     <select id="reports-category"
                       className="form-input text-sm"
                       value={filters.category}
                       onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))}
                     >
-                      <option value="">All categories</option>
+                      <option value="">{t("reports.allCategories")}</option>
                       {assetCategories.map((c) => (
                         <option key={c.id} value={c.code}>{c.name}</option>
                       ))}
@@ -729,7 +733,7 @@ export default function ReportsPage() {
                   ) : (
                     <span className="material-symbols-outlined text-[15px]">play_arrow</span>
                   )}
-                  {loading ? "Loading…" : "Generate Report"}
+                  {loading ? t("common.loading") : t("reports.generate")}
                 </button>
 
                 {canExport && rows !== null && activeModule !== "budget" && (
@@ -744,7 +748,7 @@ export default function ReportsPage() {
                     ) : (
                       <span className="material-symbols-outlined text-[15px]">table_view</span>
                     )}
-                    {exporting ? "Exporting…" : "Export CSV"}
+                    {exporting ? t("reports.exporting") : t("hr.appraisals.list.exportCsv")}
                   </button>
                 )}
 
@@ -756,7 +760,7 @@ export default function ReportsPage() {
                     className="btn-secondary py-2 px-3 text-xs flex items-center gap-1.5 disabled:opacity-60"
                   >
                     <span className="material-symbols-outlined text-[15px]">grid_on</span>
-                    Export Excel
+                    {t("reports.exportExcel")}
                   </button>
                 )}
 
@@ -768,7 +772,7 @@ export default function ReportsPage() {
                     className="btn-secondary py-2 px-3 text-xs flex items-center gap-1.5 disabled:opacity-60"
                   >
                     <span className="material-symbols-outlined text-[15px] text-red-500">picture_as_pdf</span>
-                    Export PDF
+                    {t("reports.exportPdf")}
                   </button>
                 )}
 
@@ -779,13 +783,13 @@ export default function ReportsPage() {
                     className="btn-secondary py-2 px-3 text-xs flex items-center gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[15px] text-red-500">picture_as_pdf</span>
-                    Print / PDF
+                    {t("reports.printPdf")}
                   </button>
                 )}
 
                 {rows !== null && (
                   <span className="ml-auto text-xs text-neutral-400">
-                    {rows.length === 0 ? "No records found" : `Showing ${Math.min(10, rows.length)} of ${total} records`}
+                    {rows.length === 0 ? t("reports.noRecords") : t("reports.showingOf", { shown: Math.min(10, rows.length), total })}
                   </span>
                 )}
               </div>
@@ -795,7 +799,7 @@ export default function ReportsPage() {
           {/* Preview table */}
           {rows !== null && rows.length === 0 && (
             <div className="card">
-              <EmptyState icon="search_off" title="No records found for the selected filters." />
+              <EmptyState icon="search_off" title="reports.noRecordsFiltered" />
             </div>
           )}
 
@@ -803,10 +807,10 @@ export default function ReportsPage() {
             <div className="card overflow-hidden">
               <div className="px-5 py-3 border-b border-neutral-100 dark:border-neutral-700/50 flex items-center gap-2">
                 <span className={`material-symbols-outlined text-[18px] ${module.color}`} style={{ fontVariationSettings: "'FILL' 0" }}>{module.icon}</span>
-                <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{module.label} Report</span>
+                <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{t("reports.reportTitle", { module: t(module.label) })}</span>
                 {(filters.period_from || filters.period_to) && (
                   <span className="ml-2 text-xs text-neutral-400">
-                    {filters.period_from && `From ${filters.period_from}`} {filters.period_to && `to ${filters.period_to}`}
+                    {filters.period_from && t("reports.fromDate", { date: filters.period_from })} {filters.period_to && t("reports.toDate", { date: filters.period_to })}
                   </span>
                 )}
               </div>
@@ -814,7 +818,7 @@ export default function ReportsPage() {
                 <table className="data-table text-xs">
                   <thead>
                     <tr>
-                      {module.columns.map((col) => <th key={col}>{col}</th>)}
+                      {module.columns.map((col) => <th key={col}>{t(col)}</th>)}
                     </tr>
                   </thead>
                   <tbody>
@@ -826,8 +830,8 @@ export default function ReportsPage() {
               </div>
               {rows.length > 10 && (
                 <p className="px-5 py-2.5 text-xs text-neutral-400 border-t border-neutral-100">
-                  Showing 10 of {total} records
-                  {canExport && " · Export CSV for full data"}
+                  {t("reports.showingOf", { shown: 10, total })}
+                  {canExport && ` · ${t("reports.exportForFull")}`}
                 </p>
               )}
             </div>

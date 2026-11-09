@@ -13,6 +13,7 @@ import {
 import { useToast } from "@/components/ui/Toast";
 import { ObjectSummary } from "@/components/ui/ObjectSummary";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Tab = "templates" | "deliveries" | "failures" | "analytics" | "broadcasts" | "maintenance" | "acks";
 
@@ -25,6 +26,7 @@ function unwrapData<T>(payload: unknown): T | null {
 
 export default function AdminNotificationsPage() {
   const { success, error } = useToast();
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("templates");
   const [templates, setTemplates] = useState<NotifTemplate[]>([]);
   const [deliveries, setDeliveries] = useState<any[]>([]);
@@ -61,12 +63,12 @@ export default function AdminNotificationsPage() {
     if (tab === "templates") {
       notificationTemplatesApi.list()
         .then((r) => setTemplates(r.data))
-        .catch(() => error("Could not load templates"))
+        .catch(() => error(t("admin.notifications.err.templates")))
         .finally(() => setLoading(false));
     } else if (tab === "deliveries") {
       notificationAdminApi.deliveries({ per_page: 50 })
         .then((r: any) => setDeliveries(r.data?.data ?? r.data ?? []))
-        .catch(() => error("Could not load deliveries"))
+        .catch(() => error(t("admin.notifications.err.deliveries")))
         .finally(() => setLoading(false));
     } else if (tab === "analytics") {
       Promise.all([
@@ -79,19 +81,19 @@ export default function AdminNotificationsPage() {
           setGuards(g.data?.data ?? g.data ?? null);
           setFatigue(f.data?.data ?? f.data ?? null);
         })
-        .catch(() => error("Could not load analytics"))
+        .catch(() => error(t("admin.notifications.err.analytics")))
         .finally(() => setLoading(false));
     } else if (tab === "broadcasts" || tab === "acks") {
       setLoading(false);
     } else if (tab === "maintenance") {
       notificationAdminApi.listMaintenance()
         .then((r: any) => setMaintenance(r.data?.data ?? r.data ?? []))
-        .catch(() => error("Could not load maintenance windows"))
+        .catch(() => error(t("admin.notifications.err.maintenance")))
         .finally(() => setLoading(false));
     } else {
       notificationAdminApi.failures()
         .then((r: any) => setFailures(r.data?.data ?? r.data ?? null))
-        .catch(() => error("Could not load failures"))
+        .catch(() => error(t("admin.notifications.err.failures")))
         .finally(() => setLoading(false));
     }
   }, [tab]);
@@ -99,19 +101,19 @@ export default function AdminNotificationsPage() {
   const retry = async (id: number) => {
     try {
       await notificationAdminApi.retry(id);
-      success("Retry queued");
+      success(t("admin.notifications.retryQueued"));
       setTab("failures");
     } catch {
-      error("Retry failed");
+      error(t("admin.notifications.retryFailed"));
     }
   };
 
   const suppress = async (id: number) => {
     try {
       await notificationAdminApi.suppress(id, "admin_suppressed");
-      success("Delivery suppressed");
+      success(t("admin.notifications.suppressed"));
     } catch {
-      error("Suppress failed");
+      error(t("admin.notifications.suppressFailed"));
     }
   };
 
@@ -130,9 +132,9 @@ export default function AdminNotificationsPage() {
       setDraftBroadcast(created);
       if (created?.id) setBroadcastId(String(created.id));
       setBroadcastForm({ title: "", body: "", impact: "normal", broadcast_type: "general", scheduled_at: "" });
-      success("Draft broadcast saved. It has not been sent.");
+      success(t("admin.notifications.broadcast.draftSaved"));
     } catch {
-      error("Could not create the draft broadcast.");
+      error(t("admin.notifications.broadcast.createFailed"));
     } finally {
       setBusy(null);
     }
@@ -148,17 +150,19 @@ export default function AdminNotificationsPage() {
       if (action === "cancel") await notificationsPhase23Api.cancelBroadcast(id, cancelReason || undefined);
       success(
         action === "submit"
-          ? "Broadcast submitted for approval."
+          ? t("admin.notifications.broadcast.submitted")
           : action === "approve"
-            ? "Broadcast approved. Unscheduled items may send immediately."
-            : "Broadcast cancelled.",
+            ? t("admin.notifications.broadcast.approved")
+            : t("admin.notifications.broadcast.cancelled"),
       );
       if (action === "cancel") setCancelReason("");
     } catch {
       error(
         action === "approve"
-          ? "Approval failed. High-impact broadcasts need a different approver than the sender."
-          : `Could not ${action} this broadcast.`,
+          ? t("admin.notifications.broadcast.approveFailed")
+          : action === "submit"
+            ? t("admin.notifications.broadcast.submitFailed")
+            : t("admin.notifications.broadcast.cancelFailed"),
       );
     } finally {
       setBusy(null);
@@ -175,12 +179,12 @@ export default function AdminNotificationsPage() {
         starts_at: maintenanceForm.starts_at,
         ends_at: maintenanceForm.ends_at || undefined,
       });
-      success("Maintenance window scheduled.");
+      success(t("admin.notifications.maint.scheduled"));
       setMaintenanceForm({ title: "", body: "", starts_at: "", ends_at: "" });
       const r: any = await notificationAdminApi.listMaintenance();
       setMaintenance(r.data?.data ?? r.data ?? []);
     } catch {
-      error("Could not schedule the maintenance window.");
+      error(t("admin.notifications.maint.scheduleFailed"));
     } finally {
       setBusy(null);
     }
@@ -204,9 +208,9 @@ export default function AdminNotificationsPage() {
       setDraftAck(created);
       if (created?.id) setAckId(String(created.id));
       setAckForm({ title: "", body: "", deadline_at: "", user_ids: "" });
-      success("Draft acknowledgement campaign saved. It has not notified anyone.");
+      success(t("admin.notifications.ack.draftSaved"));
     } catch {
-      error("Could not create the draft campaign.");
+      error(t("admin.notifications.ack.createFailed"));
     } finally {
       setBusy(null);
     }
@@ -218,9 +222,9 @@ export default function AdminNotificationsPage() {
     setBusy("ack-activate");
     try {
       await notificationsPhase23Api.activateAckCampaign(id);
-      success("Campaign activated. Recipients in the audience are notified now.");
+      success(t("admin.notifications.ack.activated"));
     } catch {
-      error("Could not activate this campaign.");
+      error(t("admin.notifications.ack.activateFailed"));
     } finally {
       setBusy(null);
     }
@@ -234,7 +238,7 @@ export default function AdminNotificationsPage() {
       const res = await notificationsPhase23Api.ackReport(id);
       setAckReport(unwrapData(res.data) ?? res.data);
     } catch {
-      error("Could not load the acknowledgement report.");
+      error(t("admin.notifications.ack.reportFailed"));
     } finally {
       setBusy(null);
     }
@@ -244,27 +248,27 @@ export default function AdminNotificationsPage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <ModulePageHeader
-        title="Notifications admin"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Notifications admin" }]} />}
+        title={t("admin.notifications.title")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.notifications.title") }]} />}
       />
         <div className="flex items-center gap-3 flex-wrap">
           <Link href="/notifications" className="btn-secondary text-sm">
-            Open user inbox
+            {t("admin.notifications.openInbox")}
           </Link>
           <Link href="/admin/notifications/governance" className="btn-secondary text-sm">
-            Governance checklist (§124)
+            {t("admin.notifications.governanceLink")}
           </Link>
         </div>
       </div>
 <div className="flex gap-2 border-b border-[var(--border)] pb-2 flex-wrap">
         {([
-          ["templates", "Templates"],
-          ["deliveries", "Deliveries"],
-          ["failures", "Failures / DLQ"],
-          ["analytics", "Analytics"],
-          ["broadcasts", "Broadcasts"],
-          ["acks", "Ack campaigns"],
-          ["maintenance", "Maintenance"],
+          ["templates", "admin.notifications.tab.templates"],
+          ["deliveries", "admin.notifications.tab.deliveries"],
+          ["failures", "admin.notifications.tab.failures"],
+          ["analytics", "admin.notifications.tab.analytics"],
+          ["broadcasts", "admin.notifications.tab.broadcasts"],
+          ["acks", "admin.notifications.tab.acks"],
+          ["maintenance", "admin.notifications.tab.maintenance"],
         ] as const).map(([key, label]) => (
           <button
             key={key}
@@ -272,23 +276,23 @@ export default function AdminNotificationsPage() {
             onClick={() => setTab(key)}
             className={`px-3 py-1.5 text-sm rounded-md ${tab === key ? "bg-primary text-white" : "bg-[var(--muted)]"}`}
           >
-            {label}
+            {t(label)}
           </button>
         ))}
       </div>
 
-      {loading && <p className="text-sm text-[var(--muted-foreground)]">Loading…</p>}
+      {loading && <p className="text-sm text-[var(--muted-foreground)]">{t("common.loading")}</p>}
 
       {!loading && tab === "templates" && (
         <div className="space-y-2">
           <p className="text-sm text-[var(--muted-foreground)]">
-            {templates.length} template(s), identified by trigger key. This is a read-only list — publish versioned EN/FR/PT templates via the API.
+            {t("admin.notifications.templatesIntro", { count: templates.length })}
           </p>
           <ul className="divide-y divide-[var(--border)] rounded-md border border-[var(--border)]">
-            {templates.slice(0, 40).map((t) => (
-              <li key={t.trigger_key} className="px-3 py-2 text-sm">
-                <div className="font-medium">{t.trigger_key}</div>
-                <div className="text-[var(--muted-foreground)] truncate">{t.subject}</div>
+            {templates.slice(0, 40).map((tpl) => (
+              <li key={tpl.trigger_key} className="px-3 py-2 text-sm">
+                <div className="font-medium">{tpl.trigger_key}</div>
+                <div className="text-[var(--muted-foreground)] truncate">{tpl.subject}</div>
               </li>
             ))}
           </ul>
@@ -300,12 +304,12 @@ export default function AdminNotificationsPage() {
           <table className="min-w-full text-sm">
             <thead className="bg-[var(--muted)] text-left">
               <tr>
-                <th className="px-3 py-2">ID</th>
-                <th className="px-3 py-2">Channel</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Priority</th>
-                <th className="px-3 py-2">Subject</th>
-                <th className="px-3 py-2">Actions</th>
+                <th className="px-3 py-2">{t("admin.notifications.col.id")}</th>
+                <th className="px-3 py-2">{t("admin.notifications.col.channel")}</th>
+                <th className="px-3 py-2">{t("admin.notifications.col.status")}</th>
+                <th className="px-3 py-2">{t("admin.notifications.col.priority")}</th>
+                <th className="px-3 py-2">{t("admin.notifications.col.subject")}</th>
+                <th className="px-3 py-2">{t("admin.notifications.col.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -317,8 +321,8 @@ export default function AdminNotificationsPage() {
                   <td className="px-3 py-2">{d.queue_priority}</td>
                   <td className="px-3 py-2 max-w-xs truncate">{d.rendered_subject}</td>
                   <td className="px-3 py-2 space-x-2">
-                    <button type="button" className="btn-secondary text-xs" onClick={() => retry(d.id)}>Retry</button>
-                    <button type="button" className="btn-secondary text-xs text-red-600" onClick={() => suppress(d.id)}>Suppress</button>
+                    <button type="button" className="btn-secondary text-xs" onClick={() => retry(d.id)}>{t("common.retry")}</button>
+                    <button type="button" className="btn-secondary text-xs text-red-600" onClick={() => suppress(d.id)}>{t("admin.notifications.suppress")}</button>
                   </td>
                 </tr>
               ))}
@@ -330,18 +334,18 @@ export default function AdminNotificationsPage() {
       {!loading && tab === "failures" && failures && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-md border border-[var(--border)] p-3">
-            <h2 className="font-medium mb-2">Failed / retrying</h2>
+            <h2 className="font-medium mb-2">{t("admin.notifications.failedRetrying")}</h2>
             <ul className="space-y-2 text-sm">
               {(failures.failed_deliveries ?? []).map((d) => (
                 <li key={d.id} className="flex justify-between gap-2">
                   <span>#{d.id} {d.channel} — {d.failure_code || d.status}</span>
-                  <button type="button" className="btn-secondary text-xs" onClick={() => retry(d.id)}>Retry</button>
+                  <button type="button" className="btn-secondary text-xs" onClick={() => retry(d.id)}>{t("common.retry")}</button>
                 </li>
               ))}
             </ul>
           </div>
           <div className="rounded-md border border-[var(--border)] p-3">
-            <h2 className="font-medium mb-2">Dead letters</h2>
+            <h2 className="font-medium mb-2">{t("admin.notifications.deadLetters")}</h2>
             <ul className="space-y-2 text-sm">
               {(failures.dead_letters ?? []).map((d) => (
                 <li key={d.id}>
@@ -357,13 +361,13 @@ export default function AdminNotificationsPage() {
         <div className="space-y-4">
           {guards && (
             <div className="rounded-md border border-[var(--border)] p-3 text-sm">
-              <div className="font-medium mb-1">Channel governance</div>
-              <div>SMS: {guards.sms_status} ({guards.sms_provider})</div>
-              <div>WhatsApp: {guards.whatsapp_status} ({guards.whatsapp_provider})</div>
+              <div className="font-medium mb-1">{t("admin.notifications.channelGovernance")}</div>
+              <div>{t("admin.notifications.smsLine", { status: guards.sms_status, provider: guards.sms_provider })}</div>
+              <div>{t("admin.notifications.whatsappLine", { status: guards.whatsapp_status, provider: guards.whatsapp_provider })}</div>
               <div className="flex items-center gap-2">
-                AI provider: {guards.provider} ·
+                {t("admin.notifications.aiProvider", { provider: guards.provider })}
                 <span className={`badge ${guards.ai_enabled ? "badge-success" : "badge-muted"}`}>
-                  {guards.ai_enabled ? "Enabled" : "Disabled"}
+                  {guards.ai_enabled ? t("admin.notifications.enabled") : t("admin.notifications.disabled")}
                 </span>
               </div>
             </div>
@@ -371,26 +375,26 @@ export default function AdminNotificationsPage() {
           {analytics && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-md border border-[var(--border)] p-3 text-sm">
-                <div className="font-medium mb-2">Totals</div>
+                <div className="font-medium mb-2">{t("admin.notifications.totals")}</div>
                 <ObjectSummary value={analytics.totals} />
               </div>
               <div className="rounded-md border border-[var(--border)] p-3 text-sm">
-                <div className="font-medium mb-2">By channel</div>
+                <div className="font-medium mb-2">{t("admin.notifications.byChannel")}</div>
                 <ObjectSummary value={analytics.by_channel} />
               </div>
               <div className="rounded-md border border-[var(--border)] p-3 text-sm">
-                <div className="font-medium mb-2">Dead letters</div>
+                <div className="font-medium mb-2">{t("admin.notifications.deadLetters")}</div>
                 <ObjectSummary value={analytics.dead_letters} />
               </div>
               <div className="rounded-md border border-[var(--border)] p-3 text-sm">
-                <div className="font-medium mb-2">By module</div>
+                <div className="font-medium mb-2">{t("admin.notifications.byModule")}</div>
                 <ObjectSummary value={analytics.by_module} />
               </div>
             </div>
           )}
           {fatigue != null && (
             <div className="rounded-md border border-[var(--border)] p-3 text-sm">
-              <div className="font-medium mb-2">Fatigue</div>
+              <div className="font-medium mb-2">{t("admin.notifications.fatigue")}</div>
               <LabelledRecord value={fatigue} />
             </div>
           )}
@@ -400,12 +404,12 @@ export default function AdminNotificationsPage() {
       {!loading && tab === "broadcasts" && (
         <div className="space-y-4">
           <FormSection
-            title="Create draft broadcast"
-            description="Saves a draft only. Submit and approve are separate human steps. High-impact sender cannot approve. Approval may send immediately if the broadcast is not scheduled."
+            title={t("admin.notifications.broadcast.createTitle")}
+            description={t("admin.notifications.broadcast.createDesc")}
             icon="campaign"
           >
             <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="Title" htmlFor="broadcast-title" required>
+              <FormField label={t("admin.notifications.field.title")} htmlFor="broadcast-title" required>
                 <input
                   id="broadcast-title"
                   className="form-input"
@@ -413,19 +417,19 @@ export default function AdminNotificationsPage() {
                   onChange={(e) => setBroadcastForm((f) => ({ ...f, title: e.target.value }))}
                 />
               </FormField>
-              <FormField label="Impact" htmlFor="broadcast-impact">
+              <FormField label={t("admin.notifications.field.impact")} htmlFor="broadcast-impact">
                 <select
                   id="broadcast-impact"
                   className="form-input"
                   value={broadcastForm.impact}
                   onChange={(e) => setBroadcastForm((f) => ({ ...f, impact: e.target.value }))}
                 >
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
+                  <option value="normal">{t("admin.notifications.impact.normal")}</option>
+                  <option value="high">{t("admin.notifications.impact.high")}</option>
+                  <option value="critical">{t("admin.notifications.impact.critical")}</option>
                 </select>
               </FormField>
-              <FormField label="Type" htmlFor="broadcast-type">
+              <FormField label={t("admin.notifications.field.type")} htmlFor="broadcast-type">
                 <input
                   id="broadcast-type"
                   className="form-input"
@@ -433,7 +437,7 @@ export default function AdminNotificationsPage() {
                   onChange={(e) => setBroadcastForm((f) => ({ ...f, broadcast_type: e.target.value }))}
                 />
               </FormField>
-              <FormField label="Schedule (optional)" htmlFor="broadcast-schedule" hint="Leave empty to send on approval.">
+              <FormField label={t("admin.notifications.field.schedule")} htmlFor="broadcast-schedule" hint={t("admin.notifications.field.scheduleHint")}>
                 <input
                   id="broadcast-schedule"
                   type="datetime-local"
@@ -442,7 +446,7 @@ export default function AdminNotificationsPage() {
                   onChange={(e) => setBroadcastForm((f) => ({ ...f, scheduled_at: e.target.value }))}
                 />
               </FormField>
-              <FormField label="Body" htmlFor="broadcast-body" required className="sm:col-span-2">
+              <FormField label={t("admin.notifications.field.body")} htmlFor="broadcast-body" required className="sm:col-span-2">
                 <textarea
                   id="broadcast-body"
                   className="form-input"
@@ -458,22 +462,22 @@ export default function AdminNotificationsPage() {
               disabled={busy !== null || !broadcastForm.title.trim() || !broadcastForm.body.trim()}
               onClick={() => void createDraftBroadcast()}
             >
-              {busy === "create" ? "Saving…" : "Save draft"}
+              {busy === "create" ? t("admin.notifications.saving") : t("admin.notifications.saveDraft")}
             </button>
             {draftBroadcast?.id ? (
               <p className="mt-2 text-sm text-neutral-600">
-                Draft #{draftBroadcast.id} saved as {draftBroadcast.status ?? "draft"}. It has not been sent.
+                {t("admin.notifications.broadcast.draftNote", { id: draftBroadcast.id, status: draftBroadcast.status ?? "draft" })}
               </p>
             ) : null}
           </FormSection>
 
           <FormSection
-            title="Submit, approve, or cancel"
-            description="Use a different approver for high-impact broadcasts. Approval is not silent send when a future schedule is set."
+            title={t("admin.notifications.broadcast.actTitle")}
+            description={t("admin.notifications.broadcast.actDesc")}
             icon="verified"
           >
             <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="Broadcast ID" htmlFor="broadcast-id" required>
+              <FormField label={t("admin.notifications.field.broadcastId")} htmlFor="broadcast-id" required>
                 <input
                   id="broadcast-id"
                   className="form-input"
@@ -481,7 +485,7 @@ export default function AdminNotificationsPage() {
                   onChange={(e) => setBroadcastId(e.target.value)}
                 />
               </FormField>
-              <FormField label="Cancel reason" htmlFor="broadcast-cancel-reason">
+              <FormField label={t("admin.notifications.field.cancelReason")} htmlFor="broadcast-cancel-reason">
                 <input
                   id="broadcast-cancel-reason"
                   className="form-input"
@@ -492,13 +496,13 @@ export default function AdminNotificationsPage() {
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <button type="button" className="btn-secondary text-sm disabled:opacity-60" disabled={busy !== null || !broadcastId.trim()} onClick={() => void actOnBroadcast("submit")}>
-                {busy === "submit" ? "Submitting…" : "Submit for approval"}
+                {busy === "submit" ? t("admin.notifications.submitting") : t("admin.notifications.submitForApproval")}
               </button>
               <button type="button" className="btn-secondary text-sm disabled:opacity-60" disabled={busy !== null || !broadcastId.trim()} onClick={() => void actOnBroadcast("approve")}>
-                {busy === "approve" ? "Approving…" : "Approve"}
+                {busy === "approve" ? t("admin.notifications.approving") : t("common.approve")}
               </button>
               <button type="button" className="btn-secondary text-sm text-red-600 disabled:opacity-60" disabled={busy !== null || !broadcastId.trim()} onClick={() => void actOnBroadcast("cancel")}>
-                {busy === "cancel" ? "Cancelling…" : "Cancel"}
+                {busy === "cancel" ? t("admin.notifications.cancelling") : t("common.cancel")}
               </button>
             </div>
           </FormSection>
@@ -508,12 +512,12 @@ export default function AdminNotificationsPage() {
       {!loading && tab === "maintenance" && (
         <div className="space-y-4">
           <FormSection
-            title="Schedule maintenance alert"
-            description="Creates a maintenance window. It does not send SMS or WhatsApp unless those channels are live."
+            title={t("admin.notifications.maint.title")}
+            description={t("admin.notifications.maint.desc")}
             icon="construction"
           >
             <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="Title" htmlFor="maint-title" required>
+              <FormField label={t("admin.notifications.field.title")} htmlFor="maint-title" required>
                 <input
                   id="maint-title"
                   className="form-input"
@@ -521,7 +525,7 @@ export default function AdminNotificationsPage() {
                   onChange={(e) => setMaintenanceForm((f) => ({ ...f, title: e.target.value }))}
                 />
               </FormField>
-              <FormField label="Starts at" htmlFor="maint-start" required>
+              <FormField label={t("admin.notifications.field.startsAt")} htmlFor="maint-start" required>
                 <input
                   id="maint-start"
                   type="datetime-local"
@@ -530,7 +534,7 @@ export default function AdminNotificationsPage() {
                   onChange={(e) => setMaintenanceForm((f) => ({ ...f, starts_at: e.target.value }))}
                 />
               </FormField>
-              <FormField label="Ends at" htmlFor="maint-end">
+              <FormField label={t("admin.notifications.field.endsAt")} htmlFor="maint-end">
                 <input
                   id="maint-end"
                   type="datetime-local"
@@ -539,7 +543,7 @@ export default function AdminNotificationsPage() {
                   onChange={(e) => setMaintenanceForm((f) => ({ ...f, ends_at: e.target.value }))}
                 />
               </FormField>
-              <FormField label="Body" htmlFor="maint-body" required className="sm:col-span-2">
+              <FormField label={t("admin.notifications.field.body")} htmlFor="maint-body" required className="sm:col-span-2">
                 <textarea
                   id="maint-body"
                   className="form-input"
@@ -555,13 +559,13 @@ export default function AdminNotificationsPage() {
               disabled={busy !== null || !maintenanceForm.title.trim() || !maintenanceForm.body.trim() || !maintenanceForm.starts_at}
               onClick={() => void scheduleWindow()}
             >
-              {busy === "maintenance" ? "Saving…" : "Schedule window"}
+              {busy === "maintenance" ? t("admin.notifications.saving") : t("admin.notifications.maint.schedule")}
             </button>
           </FormSection>
           <div className="rounded-md border border-[var(--border)] p-3 text-sm">
-            <h2 className="font-medium mb-2">Scheduled windows</h2>
+            <h2 className="font-medium mb-2">{t("admin.notifications.maint.listTitle")}</h2>
             {maintenance.length === 0 ? (
-              <p className="text-[var(--muted-foreground)]">No maintenance windows listed.</p>
+              <p className="text-[var(--muted-foreground)]">{t("admin.notifications.maint.empty")}</p>
             ) : (
               <ul className="space-y-3">
                 {maintenance.map((row, idx) => (
@@ -578,12 +582,12 @@ export default function AdminNotificationsPage() {
       {!loading && tab === "acks" && (
         <div className="space-y-4">
           <FormSection
-            title="Create draft acknowledgement campaign"
-            description="Saves a draft only. Activate is a separate human step and notifies the listed audience immediately."
+            title={t("admin.notifications.ack.createTitle")}
+            description={t("admin.notifications.ack.createDesc")}
             icon="fact_check"
           >
             <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="Title" htmlFor="ack-title" required>
+              <FormField label={t("admin.notifications.field.title")} htmlFor="ack-title" required>
                 <input
                   id="ack-title"
                   className="form-input"
@@ -591,7 +595,7 @@ export default function AdminNotificationsPage() {
                   onChange={(e) => setAckForm((f) => ({ ...f, title: e.target.value }))}
                 />
               </FormField>
-              <FormField label="Deadline" htmlFor="ack-deadline">
+              <FormField label={t("admin.notifications.field.deadline")} htmlFor="ack-deadline">
                 <input
                   id="ack-deadline"
                   type="datetime-local"
@@ -601,9 +605,9 @@ export default function AdminNotificationsPage() {
                 />
               </FormField>
               <FormField
-                label="Audience user IDs"
+                label={t("admin.notifications.field.audience")}
                 htmlFor="ack-users"
-                hint="Comma-separated user IDs. Leave empty to notify nobody on activate."
+                hint={t("admin.notifications.field.audienceHint")}
                 className="sm:col-span-2"
               >
                 <input
@@ -613,7 +617,7 @@ export default function AdminNotificationsPage() {
                   onChange={(e) => setAckForm((f) => ({ ...f, user_ids: e.target.value }))}
                 />
               </FormField>
-              <FormField label="Body" htmlFor="ack-body" required className="sm:col-span-2">
+              <FormField label={t("admin.notifications.field.body")} htmlFor="ack-body" required className="sm:col-span-2">
                 <textarea
                   id="ack-body"
                   className="form-input"
@@ -629,21 +633,21 @@ export default function AdminNotificationsPage() {
               disabled={busy !== null || !ackForm.title.trim() || !ackForm.body.trim()}
               onClick={() => void createDraftAck()}
             >
-              {busy === "ack-create" ? "Saving…" : "Save draft"}
+              {busy === "ack-create" ? t("admin.notifications.saving") : t("admin.notifications.saveDraft")}
             </button>
             {draftAck?.id ? (
               <p className="mt-2 text-sm text-neutral-600">
-                Draft #{draftAck.id} saved as {draftAck.status ?? "draft"}. It has not notified anyone.
+                {t("admin.notifications.ack.draftNote", { id: draftAck.id, status: draftAck.status ?? "draft" })}
               </p>
             ) : null}
           </FormSection>
 
           <FormSection
-            title="Activate or report"
-            description="Activation notifies the campaign audience immediately. It does not wait for a later approval step."
+            title={t("admin.notifications.ack.actTitle")}
+            description={t("admin.notifications.ack.actDesc")}
             icon="campaign"
           >
-            <FormField label="Campaign ID" htmlFor="ack-id" required>
+            <FormField label={t("admin.notifications.field.campaignId")} htmlFor="ack-id" required>
               <input
                 id="ack-id"
                 className="form-input"
@@ -653,10 +657,10 @@ export default function AdminNotificationsPage() {
             </FormField>
             <div className="mt-3 flex flex-wrap gap-2">
               <button type="button" className="btn-secondary text-sm disabled:opacity-60" disabled={busy !== null || !ackId.trim()} onClick={() => void activateAck()}>
-                {busy === "ack-activate" ? "Activating…" : "Activate"}
+                {busy === "ack-activate" ? t("admin.notifications.activating") : t("admin.notifications.activate")}
               </button>
               <button type="button" className="btn-secondary text-sm disabled:opacity-60" disabled={busy !== null || !ackId.trim()} onClick={() => void loadAckReport()}>
-                {busy === "ack-report" ? "Loading…" : "Load report"}
+                {busy === "ack-report" ? t("common.loading") : t("admin.notifications.loadReport")}
               </button>
             </div>
             {ackReport != null ? (

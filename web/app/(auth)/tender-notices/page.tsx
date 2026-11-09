@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
 import { formatDateShort } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Notice = {
   reference_number: string;
@@ -16,6 +17,7 @@ type Notice = {
 };
 
 export default function PublicTenderNoticesPage() {
+  const { t } = useI18n();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["public", "tender-notices"],
     queryFn: async () => {
@@ -29,20 +31,20 @@ export default function PublicTenderNoticesPage() {
     <div className="min-h-screen bg-neutral-50">
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
         <header className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">SADC Parliamentary Forum</p>
-          <h1 className="text-2xl font-semibold text-neutral-900">Public Tender Notices</h1>
+          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">{t("assets.public.title")}</p>
+          <h1 className="text-2xl font-semibold text-neutral-900">{t("public.tenderNotices.title")}</h1>
           <p className="text-sm text-neutral-600">
-            Open advertisements for published tenders and RFQs. Bid amounts and competitor submissions are not published on this board.
+            {t("public.tenderNotices.subtitle")}
           </p>
-          <Link href="/login" className="text-sm text-neutral-500 underline">Staff sign in</Link>
+          <Link href="/login" className="text-sm text-neutral-500 underline">{t("login.staffPortalLink")}</Link>
         </header>
 
         {isError && (
           <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-            Unable to load notices right now.
+            {t("public.tenderNotices.loadFailed")}
           </div>
         )}
-        {isLoading && <div className="rounded-xl border border-neutral-200 bg-white px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>}
+        {isLoading && <div className="rounded-xl border border-neutral-200 bg-white px-5 py-10 text-center text-sm text-neutral-400">{t("common.loading")}</div>}
 
         <div className="space-y-3">
           {(data ?? []).map((n) => (
@@ -56,14 +58,14 @@ export default function PublicTenderNoticesPage() {
               </div>
               {n.notice && <p className="text-sm text-neutral-700 whitespace-pre-wrap">{n.notice}</p>}
               <p className="text-xs text-neutral-500">
-                Submission deadline: {n.submission_deadline ? formatDateShort(n.submission_deadline) : "—"}
-                {n.sealed_mode ? " · Sealed bids" : ""}
+                {t("public.tenderNotices.deadline", { date: n.submission_deadline ? formatDateShort(n.submission_deadline) : "—" })}
+                {n.sealed_mode ? ` · ${t("public.tenderNotices.sealed")}` : ""}
               </p>
             </article>
           ))}
           {!isLoading && (data?.length ?? 0) === 0 && (
             <div className="rounded-xl border border-neutral-200 bg-white px-5 py-10 text-center text-sm text-neutral-400">
-              No published notices at this time.
+              {t("public.tenderNotices.empty")}
             </div>
           )}
         </div>

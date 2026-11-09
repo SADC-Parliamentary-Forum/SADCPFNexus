@@ -9,8 +9,10 @@ import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function BudgetChangeDetailPage() {
+  const { t, localeTag } = useI18n();
   const params = useParams();
   const id = Number(params.id);
   const qc = useQueryClient();
@@ -38,51 +40,51 @@ export default function BudgetChangeDetailPage() {
   const submitMut = useMutation({
     mutationFn: () => budgetApi.submitChange(id),
     onSuccess: () => {
-      setMessage("Submitted to Finance.");
-      toast.success("Budget change submitted", "Submitted to Finance.");
+      setMessage(t("budget.change.submittedToFinance"));
+      toast.success(t("budget.change.submitted"), t("budget.change.submittedToFinance"));
       invalidate();
     },
     onError: (err) => {
-      setError("Submit failed.");
-      toast.error("Budget change not submitted", apiErrorMessage(err, "Submit failed."));
+      setError(t("budget.change.submitFailed"));
+      toast.error(t("budget.change.notSubmitted"), apiErrorMessage(err, t("budget.change.submitFailed")));
     },
   });
   const financeMut = useMutation({
     mutationFn: (decision: "approve" | "return" | "reject") =>
       budgetApi.financeDecideChange(id, { decision }),
     onSuccess: () => {
-      setMessage("Finance decision recorded.");
-      toast.success("Finance decision recorded");
+      setMessage(t("budget.change.financeRecordedDot"));
+      toast.success(t("budget.change.financeRecorded"));
       invalidate();
     },
     onError: (err) => {
-      setError("Finance decision failed.");
-      toast.error("Finance decision not recorded", apiErrorMessage(err, "Finance decision failed."));
+      setError(t("budget.change.financeFailed"));
+      toast.error(t("budget.change.financeNotRecorded"), apiErrorMessage(err, t("budget.change.financeFailed")));
     },
   });
   const sgMut = useMutation({
     mutationFn: (decision: "approve" | "return" | "reject") => budgetApi.sgDecideChange(id, { decision }),
     onSuccess: () => {
-      setMessage("SG decision recorded.");
-      toast.success("SG decision recorded");
+      setMessage(t("budget.change.sgRecordedDot"));
+      toast.success(t("budget.change.sgRecorded"));
       invalidate();
     },
     onError: (err) => {
-      setError("SG decision failed.");
-      toast.error("SG decision not recorded", apiErrorMessage(err, "SG decision failed."));
+      setError(t("budget.change.sgFailed"));
+      toast.error(t("budget.change.sgNotRecorded"), apiErrorMessage(err, t("budget.change.sgFailed")));
     },
   });
   const applyMut = useMutation({
     mutationFn: () => budgetApi.applyChange(id),
     onSuccess: () => {
-      setMessage("Applied to budget lines.");
-      toast.success("Budget change applied", "Applied to budget lines.");
+      setMessage(t("budget.change.appliedToLines"));
+      toast.success(t("budget.change.applied"), t("budget.change.appliedToLines"));
       invalidate();
       qc.invalidateQueries({ queryKey: ["budget", "lines"] });
     },
     onError: (err) => {
-      setError("Apply failed (check availability).");
-      toast.error("Budget change not applied", apiErrorMessage(err, "Apply failed (check availability)."));
+      setError(t("budget.change.applyFailed"));
+      toast.error(t("budget.change.notApplied"), apiErrorMessage(err, t("budget.change.applyFailed")));
     },
   });
 
@@ -92,10 +94,10 @@ export default function BudgetChangeDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Budget change"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "Budget Changes", href: "/budget/changes" }, { label: "Change" }]} />}
+          title="budget.change.title"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "budget.changes.title", href: "/budget/changes" }, { label: "budget.change.crumb" }]} />}
         />
-        <p className="text-sm text-neutral-400">Loading…</p>
+        <p className="text-sm text-neutral-400">{t("common.loading")}</p>
       </div>
     );
   }
@@ -103,11 +105,11 @@ export default function BudgetChangeDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Budget change"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "Budget Changes", href: "/budget/changes" }, { label: "Change" }]} />}
+          title="budget.change.title"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "budget.changes.title", href: "/budget/changes" }, { label: "budget.change.crumb" }]} />}
         />
-        <p className="text-sm text-red-700">Not found.</p>
-        <Link href="/budget/changes" className="btn-secondary text-sm">Back to changes</Link>
+        <p className="text-sm text-red-700">{t("srhr.notFound")}</p>
+        <Link href="/budget/changes" className="btn-secondary text-sm">{t("budget.change.back")}</Link>
       </div>
     );
   }
@@ -116,12 +118,12 @@ export default function BudgetChangeDetailPage() {
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={row.title}
-        subtitle={`${row.type} · ${row.status.replaceAll("_", " ")}${row.requires_sg ? " · requires SG" : ""}`}
+        subtitle={`${row.type} · ${row.status.replaceAll("_", " ")}${row.requires_sg ? t("budget.change.requiresSg") : ""}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.finance", href: "/finance" },
-              { label: "Budget Changes", href: "/budget/changes" },
+              { label: "budget.changes.title", href: "/budget/changes" },
               { label: row.title },
             ]}
           />
@@ -130,27 +132,27 @@ export default function BudgetChangeDetailPage() {
           <div className="flex flex-wrap gap-2">
           {["draft", "returned"].includes(row.status) && (
             <button type="button" className="btn-primary text-sm" onClick={() => submitMut.mutate()} disabled={submitMut.isPending}>
-              Submit
+              {t("common.submit")}
             </button>
           )}
           {canFinance && row.status === "pending_finance" && (
             <>
               <button type="button" className="btn-primary text-sm" onClick={() => financeMut.mutate("approve")}>
-                Finance approve
+                {t("budget.change.financeApprove")}
               </button>
               <button type="button" className="btn-secondary text-sm" onClick={() => financeMut.mutate("return")}>
-                Return
+                {t("common.return")}
               </button>
             </>
           )}
           {(isSg || canFinance) && row.status === "pending_sg" && (
             <button type="button" className="btn-primary text-sm" onClick={() => sgMut.mutate("approve")}>
-              SG approve
+              {t("budget.change.sgApprove")}
             </button>
           )}
           {canApply && row.status === "approved" && (
             <button type="button" className="btn-primary text-sm" onClick={() => applyMut.mutate()} disabled={applyMut.isPending}>
-              Apply
+              {t("hr.timesheets.apply")}
             </button>
           )}
           </div>
@@ -162,19 +164,19 @@ export default function BudgetChangeDetailPage() {
 
       {row.justification && (
         <div className="rounded-xl border border-[var(--border)] bg-white p-4 text-sm">
-          <div className="mb-1 font-semibold">Justification</div>
+          <div className="mb-1 font-semibold">{t("budget.change.justification")}</div>
           {row.justification}
         </div>
       )}
 
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-white">
-        <div className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold">Items</div>
+        <div className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold">{t("budget.change.items")}</div>
         <table className="w-full text-left text-sm">
           <thead className="border-b border-[var(--border)] text-[var(--muted)]">
             <tr>
-              <th className="px-4 py-2 font-medium">From</th>
-              <th className="px-4 py-2 font-medium">To / new</th>
-              <th className="px-4 py-2 font-medium text-right">Amount</th>
+              <th className="px-4 py-2 font-medium">{t("budget.fx.from")}</th>
+              <th className="px-4 py-2 font-medium">{t("budget.change.toNew")}</th>
+              <th className="px-4 py-2 font-medium text-right">{t("budget.amount")}</th>
             </tr>
           </thead>
           <tbody>
@@ -187,10 +189,10 @@ export default function BudgetChangeDetailPage() {
                     item.new_line_name ||
                     item.new_line_code ||
                     "—"}
-                  {item.is_decrease ? " (decrease)" : ""}
+                  {item.is_decrease ? t("budget.change.decrease") : ""}
                 </td>
                 <td className="px-4 py-2 text-right">
-                  {Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {Number(item.amount).toLocaleString(localeTag, { minimumFractionDigits: 2 })}
                 </td>
               </tr>
             ))}

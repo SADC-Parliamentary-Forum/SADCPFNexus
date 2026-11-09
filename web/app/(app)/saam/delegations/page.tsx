@@ -8,10 +8,12 @@ import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { EmployeePicker } from "@/components/ui/EmployeePicker";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function DelegationsPage() {
   const { success, error: showErrorToast, info } = useToast();
   const { confirm } = useConfirm();
+  const { t } = useI18n();
   const [outgoing, setOutgoing] = useState<DelegatedAuthority[]>([]);
   const [incoming, setIncoming] = useState<DelegatedAuthority[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ export default function DelegationsPage() {
 
   async function createDelegation() {
     if (!form.delegate_user_id || !form.start_date || !form.end_date) {
-      setError("Delegate, start date, and end date are required.");
+      setError(t("saam.delegations.required"));
       return;
     }
     setSaving(true);
@@ -61,10 +63,10 @@ export default function DelegationsPage() {
       setShowForm(false);
       setForm({ delegate_user_id: "", start_date: "", end_date: "", role_scope: "", reason: "" });
       setDelegateUser(null);
-      success("Delegation created.");
+      success(t("saam.delegations.toast.created"));
       loadData();
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to create delegation.";
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("saam.delegations.createFailed");
       setError(msg);
     } finally {
       setSaving(false);
@@ -74,16 +76,16 @@ export default function DelegationsPage() {
   async function revoke(id: number) {
     if (
       !(await confirm({
-        title: "Revoke delegation",
-        message: "Revoke this delegation?",
+        title: t("saam.delegations.confirm.revokeTitle"),
+        message: t("saam.delegations.confirm.revokeMessage"),
         variant: "danger",
       }))
     ) return;
     try {
       await saamApi.revokeDelegation(id);
-      success("Delegation revoked.");
+      success(t("saam.delegations.toast.revoked"));
       loadData();
-    } catch { setError("Failed to revoke delegation."); }
+    } catch { setError(t("saam.delegations.revokeFailed")); }
   }
 
   function isActive(d: DelegatedAuthority) {
@@ -101,13 +103,13 @@ export default function DelegationsPage() {
     <div className="w-full min-w-0 space-y-6">
 <div className="flex items-start justify-between gap-4">
         <ModulePageHeader
-        title="Delegation of Authority"
-        subtitle="Grant temporary signing authority to another staff member on your behalf."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Delegation of Authority" }]} />}
+        title={t("saam.delegations.title")}
+        subtitle={t("saam.delegations.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("saam.delegations.title") }]} />}
       />
         <button onClick={() => setShowForm(true)} className="btn-primary inline-flex items-center gap-1.5 flex-shrink-0 text-sm">
           <span className="material-symbols-outlined text-[16px]">add</span>
-          New Delegation
+          {t("saam.delegations.new")}
         </button>
       </div>
 
@@ -119,31 +121,31 @@ export default function DelegationsPage() {
           <div className="card overflow-hidden">
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-[18px]">arrow_outward</span>
-              <h2 className="text-sm font-semibold text-neutral-900">My Delegations Out ({outgoing.length})</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{t("saam.delegations.outgoing", { count: outgoing.length })}</h2>
             </div>
             {outgoing.length === 0 ? (
-              <EmptyState icon="arrow_outward" title="No outgoing delegations." />
+              <EmptyState icon="arrow_outward" title={t("saam.delegations.noOutgoing")} />
             ) : (
               <div className="divide-y divide-neutral-100">
                 {outgoing.map((d) => (
                   <div key={d.id} className="px-5 py-3 flex items-center gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-neutral-900">{d.delegate?.name ?? `User #${d.delegate_user_id}`}</span>
+                        <span className="text-sm font-medium text-neutral-900">{d.delegate?.name ?? t("saam.delegations.userNumber", { id: d.delegate_user_id })}</span>
                         {isActive(d) ? (
-                          <span className="badge badge-success text-[10px]">Active</span>
+                          <span className="badge badge-success text-[10px]">{t("saam.delegations.active")}</span>
                         ) : (
-                          <span className="badge badge-muted text-[10px]">Expired</span>
+                          <span className="badge badge-muted text-[10px]">{t("saam.delegations.expired")}</span>
                         )}
                       </div>
                       <p className="text-xs text-neutral-400">
                         {formatDateShort(d.start_date)} → {formatDateShort(d.end_date)}
-                        {d.role_scope && <> · Scope: <span className="font-mono">{d.role_scope}</span></>}
+                        {d.role_scope && <> · {t("saam.delegations.scope")} <span className="font-mono">{d.role_scope}</span></>}
                       </p>
                       {d.reason && <p className="text-xs text-neutral-500 mt-0.5 italic">{d.reason}</p>}
                     </div>
                     {isActive(d) && (
-                      <button onClick={() => revoke(d.id)} className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600">Revoke</button>
+                      <button onClick={() => revoke(d.id)} className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600">{t("saam.delegations.revoke")}</button>
                     )}
                   </div>
                 ))}
@@ -155,25 +157,25 @@ export default function DelegationsPage() {
           <div className="card overflow-hidden">
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center gap-2">
               <span className="material-symbols-outlined text-amber-500 text-[18px]">south_west</span>
-              <h2 className="text-sm font-semibold text-neutral-900">Delegated to Me ({incoming.length})</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{t("saam.delegations.incoming", { count: incoming.length })}</h2>
             </div>
             {incoming.length === 0 ? (
-              <EmptyState icon="south_west" title="No active delegations from others." />
+              <EmptyState icon="south_west" title={t("saam.delegations.noIncoming")} />
             ) : (
               <div className="divide-y divide-neutral-100">
                 {incoming.map((d) => (
                   <div key={d.id} className="px-5 py-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-neutral-900">From: {d.principal?.name ?? `User #${d.principal_user_id}`}</span>
+                      <span className="text-sm font-medium text-neutral-900">{t("saam.delegations.from", { name: d.principal?.name ?? t("saam.delegations.userNumber", { id: d.principal_user_id }) })}</span>
                       {isActive(d) ? (
-                        <span className="badge badge-success text-[10px]">Active</span>
+                        <span className="badge badge-success text-[10px]">{t("saam.delegations.active")}</span>
                       ) : (
-                        <span className="badge badge-muted text-[10px]">Expired</span>
+                        <span className="badge badge-muted text-[10px]">{t("saam.delegations.expired")}</span>
                       )}
                     </div>
                     <p className="text-xs text-neutral-400">
                       {formatDateShort(d.start_date)} → {formatDateShort(d.end_date)}
-                      {d.role_scope && <> · Scope: <span className="font-mono">{d.role_scope}</span></>}
+                      {d.role_scope && <> · {t("saam.delegations.scope")} <span className="font-mono">{d.role_scope}</span></>}
                     </p>
                     {d.reason && <p className="text-xs text-neutral-500 mt-0.5 italic">{d.reason}</p>}
                   </div>
@@ -190,8 +192,8 @@ export default function DelegationsPage() {
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowForm(false)} />
           <div className="relative z-10 w-full max-w-md bg-white shadow-2xl flex flex-col h-full">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
-              <h2 className="text-base font-semibold text-neutral-900">New Delegation</h2>
-              <button onClick={() => setShowForm(false)} className="text-neutral-400 hover:text-neutral-600">
+              <h2 className="text-base font-semibold text-neutral-900">{t("saam.delegations.new")}</h2>
+              <button onClick={() => setShowForm(false)} className="text-neutral-400 hover:text-neutral-600" aria-label={t("common.close")}>
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
@@ -201,41 +203,41 @@ export default function DelegationsPage() {
               )}
               <EmployeePicker
                 id="saam-delegations-delegate-to"
-                label="Delegate To *"
+                label={t("saam.delegations.delegateTo")}
                 value={delegateUser}
                 onSelect={(u) => {
                   setDelegateUser(u);
                   setForm({ ...form, delegate_user_id: u ? String(u.id) : "" });
                 }}
-                placeholder="Search staff by name or email…"
+                placeholder={t("assignments.create.assignToPlaceholder")}
               />
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="saam-delegations-start-date" className="block text-xs font-semibold text-neutral-700 mb-1">Start Date *</label>
+                  <label htmlFor="saam-delegations-start-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("saam.delegations.startDate")}</label>
                   <input id="saam-delegations-start-date" type="date" className="form-input" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
                 </div>
                 <div>
-                  <label htmlFor="saam-delegations-end-date" className="block text-xs font-semibold text-neutral-700 mb-1">End Date *</label>
+                  <label htmlFor="saam-delegations-end-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("saam.delegations.endDate")}</label>
                   <input id="saam-delegations-end-date" type="date" className="form-input" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
                 </div>
               </div>
               <div>
-                <label htmlFor="saam-delegations-scope-permission" className="block text-xs font-semibold text-neutral-700 mb-1">Scope (Permission)</label>
+                <label htmlFor="saam-delegations-scope-permission" className="block text-xs font-semibold text-neutral-700 mb-1">{t("saam.delegations.scopeLabel")}</label>
                 <select id="saam-delegations-scope-permission" className="form-input" value={form.role_scope} onChange={(e) => setForm({ ...form, role_scope: e.target.value })}>
-                  <option value="">All permissions (no restriction)</option>
+                  <option value="">{t("saam.delegations.allPermissions")}</option>
                   {PERMISSION_SCOPES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="saam-delegations-reason" className="block text-xs font-semibold text-neutral-700 mb-1">Reason</label>
-                <textarea id="saam-delegations-reason" rows={3} className="form-input resize-none" placeholder="e.g. Annual leave, official mission…" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+                <label htmlFor="saam-delegations-reason" className="block text-xs font-semibold text-neutral-700 mb-1">{t("common.reason")}</label>
+                <textarea id="saam-delegations-reason" rows={3} className="form-input resize-none" placeholder={t("saam.delegations.reasonPlaceholder")} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-neutral-100 flex justify-end gap-3">
-              <button onClick={() => setShowForm(false)} className="btn-secondary text-sm">Cancel</button>
+              <button onClick={() => setShowForm(false)} className="btn-secondary text-sm">{t("common.cancel")}</button>
               <button onClick={createDelegation} disabled={saving} className="btn-primary text-sm flex items-center gap-1.5 disabled:opacity-60">
                 {saving ? <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> : <span className="material-symbols-outlined text-[16px]">add</span>}
-                {saving ? "Creating…" : "Create Delegation"}
+                {saving ? t("saam.delegations.creating") : t("saam.delegations.create")}
               </button>
             </div>
           </div>

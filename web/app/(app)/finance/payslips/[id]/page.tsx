@@ -7,6 +7,7 @@ import { financeApi, type Payslip, type PayslipDetails } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatPayPeriod } from "@/lib/payslipPeriod";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function getEntity<T>(payload: unknown): T | null {
   if (payload && typeof payload === "object" && "data" in payload) {
@@ -20,6 +21,7 @@ function periodLabel(p: Payslip): string {
 }
 
 export default function PayslipViewerPage() {
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const [payslip, setPayslip] = useState<Payslip | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -32,16 +34,16 @@ export default function PayslipViewerPage() {
   useEffect(() => {
     const numericId = Number(id);
     if (!Number.isInteger(numericId) || numericId <= 0) {
-      setError("Invalid payslip ID.");
+      setError(t("finance.payslips.detail.invalidId"));
       setLoading(false);
       return;
     }
     financeApi
       .getPayslip(numericId)
       .then((res) => setPayslip(getEntity<Payslip>(res.data)))
-      .catch(() => setError("Payslip not found."))
+      .catch(() => setError(t("finance.payslips.detail.notFoundDot")))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     if (!payslip) return;
@@ -88,10 +90,10 @@ export default function PayslipViewerPage() {
         <div className="card">
           <EmptyState
             icon="error"
-            title={error ?? "Payslip not found"}
+            title={error ?? t("finance.payslips.detail.notFound")}
             action={
               <Link href="/finance/payslips" className="btn-secondary">
-                Back to payslips
+                {t("finance.payslips.detail.back")}
               </Link>
             }
           />
@@ -103,13 +105,13 @@ export default function PayslipViewerPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title={`Payslip — ${periodLabel(payslip)}`}
-        subtitle="Official payslip record. Download or view inline."
+        title={t("finance.payslips.detail.title", { period: periodLabel(payslip) })}
+        subtitle="finance.payslips.detail.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Finance", href: "/finance" },
-              { label: "Payslips", href: "/finance/payslips" },
+              { label: "nav.finance", href: "/finance" },
+              { label: "finance.hub.payslips", href: "/finance/payslips" },
               { label: periodLabel(payslip) },
             ]}
           />
@@ -117,16 +119,16 @@ export default function PayslipViewerPage() {
         actions={
           <button type="button" onClick={handleDownload} disabled={!pdfUrl} className="btn-primary disabled:opacity-40">
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Download PDF
+            {t("finance.payslips.detail.downloadPdf")}
           </button>
         }
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {[
-          { label: "Gross", value: `${payslip.currency} ${Number(payslip.gross_amount || 0).toLocaleString()}`, icon: "trending_up" },
-          { label: "Net pay", value: `${payslip.currency} ${Number(payslip.net_amount || 0).toLocaleString()}`, icon: "payments" },
-          { label: "Period", value: periodLabel(payslip), icon: "calendar_month" },
+          { label: t("finance.payslips.col.gross"), value: `${payslip.currency} ${Number(payslip.gross_amount || 0).toLocaleString()}`, icon: "trending_up" },
+          { label: t("finance.payslips.col.netPay"), value: `${payslip.currency} ${Number(payslip.net_amount || 0).toLocaleString()}`, icon: "payments" },
+          { label: t("finance.payslips.col.period"), value: periodLabel(payslip), icon: "calendar_month" },
         ].map((card) => (
           <div key={card.label} className="card p-4">
             <p className="text-xs text-neutral-500">{card.label}</p>
@@ -137,25 +139,25 @@ export default function PayslipViewerPage() {
 
       <div className="card overflow-hidden">
         <div className="card-header">
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Payslip document</h3>
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("finance.payslips.detail.document")}</h3>
         </div>
         {pdfLoading ? (
           <div className="flex h-96 flex-col items-center justify-center gap-3 text-neutral-400">
             <span className="material-symbols-outlined animate-pulse text-3xl">picture_as_pdf</span>
-            <p className="text-sm">Loading document…</p>
+            <p className="text-sm">{t("finance.payslips.detail.loadingDocument")}</p>
           </div>
         ) : null}
         {!pdfLoading && pdfUnavailable ? (
           <EmptyState
             icon="description"
-            title="Document not yet available"
-            description="Contact HR if you expected a PDF for this period."
+            title="finance.payslips.detail.unavailable"
+            description="finance.payslips.detail.unavailableHint"
           />
         ) : null}
         {!pdfLoading && pdfUrl ? (
           <iframe
             src={`${pdfUrl}#toolbar=1&view=FitH`}
-            title={`Payslip ${periodLabel(payslip)}`}
+            title={t("finance.payslips.detail.frameTitle", { period: periodLabel(payslip) })}
             className="w-full border-0"
             style={{ height: "70vh", minHeight: "500px" }}
           />
@@ -168,15 +170,16 @@ export default function PayslipViewerPage() {
 }
 
 function PayslipBreakdown({ details, currency }: { details: PayslipDetails; currency: string }) {
+  const { t } = useI18n();
   const fmt = (n: number) => `${currency} ${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
   return (
     <div className="card p-5">
-      <h3 className="mb-4 text-sm font-semibold text-neutral-700 dark:text-neutral-200">Payslip breakdown</h3>
+      <h3 className="mb-4 text-sm font-semibold text-neutral-700 dark:text-neutral-200">{t("finance.payslips.detail.breakdown")}</h3>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {details.earnings.length > 0 ? (
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-green-700">Earnings</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-green-700">{t("finance.payslips.detail.earnings")}</p>
             <div className="space-y-1.5">
               {details.earnings.map((e) => (
                 <div key={e.key} className="flex items-center justify-between text-sm">
@@ -189,7 +192,7 @@ function PayslipBreakdown({ details, currency }: { details: PayslipDetails; curr
         ) : null}
         {details.deductions.length > 0 ? (
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-red-700">Deductions</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-red-700">{t("finance.payslips.detail.deductions")}</p>
             <div className="space-y-1.5">
               {details.deductions.map((d) => (
                 <div key={d.key} className="flex items-center justify-between text-sm">
@@ -202,7 +205,7 @@ function PayslipBreakdown({ details, currency }: { details: PayslipDetails; curr
         ) : null}
       </div>
       <div className="mt-5 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-5 py-4">
-        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Net pay</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">{t("finance.payslips.col.netPay")}</p>
         <p className="text-2xl font-bold text-primary">{fmt(details.net_amount)}</p>
       </div>
     </div>

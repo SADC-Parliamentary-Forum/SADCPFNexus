@@ -8,6 +8,10 @@ import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { FINANCE_HUB_CARDS } from "@/lib/hubs/finance";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { TranslateVars } from "@/lib/i18n/messages";
+
+type Translate = (key: string, vars?: TranslateVars) => string;
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -19,17 +23,17 @@ function getListData<T>(payload: unknown): T[] {
 }
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  paid:      { label: "Paid",      cls: "badge-success" },
-  pending:   { label: "Pending",   cls: "badge-warning" },
-  approved:  { label: "Approved",  cls: "badge-success" },
-  submitted: { label: "Submitted", cls: "badge-warning" },
-  rejected:  { label: "Rejected",  cls: "badge-danger"  },
-  draft:     { label: "Draft",     cls: "badge-muted"   },
+  paid:      { label: "finance.hub.status.paid",      cls: "badge-success" },
+  pending:   { label: "finance.hub.status.pending",   cls: "badge-warning" },
+  approved:  { label: "status.approved",  cls: "badge-success" },
+  submitted: { label: "status.submitted", cls: "badge-warning" },
+  rejected:  { label: "status.rejected",  cls: "badge-danger"  },
+  draft:     { label: "status.draft",     cls: "badge-muted"   },
 };
 
-function formatPeriod(p: Payslip): string {
-  const months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${months[p.period_month] ?? p.period_month} ${p.period_year}`;
+function formatPeriod(p: Payslip, t: Translate): string {
+  const month = p.period_month >= 1 && p.period_month <= 12 ? t(`finance.monthShort.${p.period_month}`) : p.period_month;
+  return `${month} ${p.period_year}`;
 }
 
 function safeIsoDay(value: string): string {
@@ -39,6 +43,7 @@ function safeIsoDay(value: string): string {
 }
 
 function BudgetBar({ budget }: { budget: Budget }) {
+  const { t } = useI18n();
   const total = Number(budget.total_amount) || 0;
   // Compute spent from lines if available, otherwise show 0
   const spent = budget.lines
@@ -57,7 +62,7 @@ function BudgetBar({ budget }: { budget: Budget }) {
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-2 min-w-0">
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium capitalize ${budget.type === "core" ? "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300" : "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300"}`}>
-              {budget.type}
+              {budget.type === "core" || budget.type === "project" ? t(`finance.budgetType.${budget.type}`) : budget.type}
             </span>
             <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{budget.name}</span>
             <span className="text-xs text-neutral-400 dark:text-neutral-500">{budget.year}</span>
@@ -78,6 +83,7 @@ function BudgetBar({ budget }: { budget: Budget }) {
       </div>
       <Link
         href={`/finance/budget/${budget.id}`}
+        aria-label={t("finance.hub.openBudget", { name: budget.name })}
         className="shrink-0 inline-flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 hover:text-primary transition-colors"
       >
         <span className="material-symbols-outlined text-[14px]">open_in_new</span>
@@ -88,6 +94,7 @@ function BudgetBar({ budget }: { budget: Budget }) {
 
 export default function FinancePage() {
   const { error: toastError } = useToast();
+  const { t } = useI18n();
   const [advances, setAdvances] = useState<SalaryAdvanceRequest[]>([]);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
@@ -107,7 +114,7 @@ export default function FinancePage() {
         setPayslips(getListData<Payslip>(payslipRes.data));
         setSummary(summaryRes.data);
       })
-      .catch(() => setError("Failed to load finance data."))
+      .catch(() => setError(t("finance.hub.loadFailed")))
       .finally(() => setLoading(false));
 
     financeApi.listBudgets({ per_page: 10 })
@@ -124,9 +131,9 @@ export default function FinancePage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Finance"
-        subtitle="Payslips, salary advances, imprest, and voted funds."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Finance" }]} />}
+        title="nav.finance"
+        subtitle="finance.hub.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance" }]} />}
       />
 
       <ModuleHubCards cards={FINANCE_HUB_CARDS} />
@@ -136,9 +143,9 @@ export default function FinancePage() {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Current Net Salary", value: netStr,          icon: "payments",         color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20"  },
-          { label: "Pending Advances",   value: String(pendingCount), icon: "account_balance",  color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20"  },
-          { label: "YTD Gross",          value: ytdStr,           icon: "bar_chart",        color: "text-primary",   bg: "bg-primary/10"},
+          { label: t("finance.hub.netSalary"), value: netStr,          icon: "payments",         color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20"  },
+          { label: t("finance.hub.pendingAdvances"),   value: String(pendingCount), icon: "account_balance",  color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20"  },
+          { label: t("finance.hub.ytdGross"),          value: ytdStr,           icon: "bar_chart",        color: "text-primary",   bg: "bg-primary/10"},
         ].map((s) => (
           <div key={s.label} className="card p-5">
             <div className="flex items-center justify-between">
@@ -161,10 +168,10 @@ export default function FinancePage() {
         <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 dark:text-neutral-500 text-[18px]">pie_chart</span>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Budget Utilization</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("finance.hub.budgetUtilization")}</h3>
           </div>
           <Link href="/finance/budget" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80">
-            Manage budgets
+            {t("finance.hub.manageBudgets")}
             <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
           </Link>
         </div>
@@ -189,20 +196,20 @@ export default function FinancePage() {
         ) : (
           <EmptyState
             icon="pie_chart"
-            title="No budgets configured yet."
+            title="finance.hub.noBudgets"
             action={
               <Link href="/finance/budget/upload" className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
                 <span className="material-symbols-outlined text-[14px]">upload_file</span>
-                Upload a budget
+                {t("finance.hub.uploadBudget")}
               </Link>
             }
           />
         )}
         {budgets.length > 0 && (
           <div className="px-5 py-3 border-t border-neutral-100 dark:border-neutral-700/50 flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-            <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-green-500 inline-block" /> Healthy (&lt;70%)</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-amber-500 inline-block" /> Near limit (70–90%)</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-red-500 inline-block" /> Critical (&gt;90%)</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-green-500 inline-block" /> {t("finance.hub.legend.healthy")}</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-amber-500 inline-block" /> {t("finance.hub.legend.near")}</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-red-500 inline-block" /> {t("finance.hub.legend.critical")}</span>
           </div>
         )}
       </div>
@@ -212,15 +219,15 @@ export default function FinancePage() {
         <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 dark:text-neutral-500 text-[18px]">description</span>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Payslips</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("finance.hub.payslips")}</h3>
           </div>
           <Link href="/finance/payslips" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80">
-            View all
+            {t("common.viewAll")}
             <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
           </Link>
         </div>
         {loading ? (
-          <div className="px-5 py-8 text-center text-sm text-neutral-400 dark:text-neutral-500">Loading…</div>
+          <div className="px-5 py-8 text-center text-sm text-neutral-400 dark:text-neutral-500">{t("common.loading")}</div>
         ) : payslips.length > 0 ? (
           <div className="divide-y divide-neutral-100 dark:divide-neutral-700/50">
             {payslips.map((p) => (
@@ -230,14 +237,14 @@ export default function FinancePage() {
                     <span className="material-symbols-outlined text-primary text-[20px]">description</span>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{formatPeriod(p)}</p>
-                    <p className="text-xs text-neutral-400 dark:text-neutral-500">Net: {p.currency} {Number(p.net_amount).toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{formatPeriod(p, t)}</p>
+                    <p className="text-xs text-neutral-400 dark:text-neutral-500">{t("finance.hub.net", { amount: `${p.currency} ${Number(p.net_amount).toLocaleString()}` })}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Link href={`/finance/payslips/${p.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">
                     <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                    View
+                    {t("finance.hub.view")}
                   </Link>
                   <button
                     type="button"
@@ -251,20 +258,20 @@ export default function FinancePage() {
                         a.click();
                         window.URL.revokeObjectURL(url);
                       } catch {
-                        toastError("Payslip document is not available yet.");
+                        toastError(t("finance.hub.payslipUnavailable"));
                       }
                     }}
                     className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[14px]">download</span>
-                    Download
+                    {t("common.download")}
                   </button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <EmptyState icon="description" title="No payslips available yet." />
+          <EmptyState icon="description" title="finance.hub.noPayslips" />
         )}
       </div>
 
@@ -273,18 +280,18 @@ export default function FinancePage() {
         <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 dark:text-neutral-500 text-[18px]">account_balance</span>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Salary Advances</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("nav.salary_advances")}</h3>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/salary-advances" className="text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">View all</Link>
+            <Link href="/salary-advances" className="text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">{t("common.viewAll")}</Link>
             <Link href="/salary-advances/create" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80">
               <span className="material-symbols-outlined text-[14px]">add</span>
-              Request Advance
+              {t("finance.hub.requestAdvance")}
             </Link>
           </div>
         </div>
         {loading ? (
-          <div className="px-5 py-8 text-center text-sm text-neutral-400 dark:text-neutral-500">Loading…</div>
+          <div className="px-5 py-8 text-center text-sm text-neutral-400 dark:text-neutral-500">{t("common.loading")}</div>
         ) : (
           <div className="divide-y divide-neutral-50 dark:divide-neutral-700/50">
             {advances.map((adv) => {
@@ -303,13 +310,13 @@ export default function FinancePage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">{adv.currency} {adv.amount.toLocaleString()}</p>
-                    <span className={`badge ${s.cls}`}>{s.label}</span>
+                    <span className={`badge ${s.cls}`}>{statusConfig[adv.status] ? t(s.label) : s.label}</span>
                   </div>
                 </div>
               );
             })}
             {advances.length === 0 && (
-              <EmptyState icon="account_balance" title="No salary advance requests." />
+              <EmptyState icon="account_balance" title="finance.hub.noAdvances" />
             )}
           </div>
         )}

@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Campaign = {
   id: number;
@@ -22,6 +23,7 @@ type Campaign = {
 };
 
 export default function AccessReviewsPage() {
+  const { t } = useI18n();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [name, setName] = useState("Q3 privileged access review");
   const [nameError, setNameError] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export default function AccessReviewsPage() {
 
   const create = async () => {
     if (!name.trim()) {
-      setNameError("Campaign name is required.");
+      setNameError(t("admin.access.reviews.nameRequired"));
       return;
     }
     setNameError(null);
@@ -58,23 +60,23 @@ export default function AccessReviewsPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Access review campaigns"
-        subtitle="Periodic attestation of privileged and feature-only access."
+        title={t("admin.access.links.reviews")}
+        subtitle={t("admin.access.reviews.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Access", href: "/admin/access" },
-              { label: "Reviews" },
+              { label: t("admin.homeLabel"), href: "/admin" },
+              { label: t("admin.crumb.access"), href: "/admin/access" },
+              { label: t("admin.access.reviews.crumb") },
             ]}
           />
         }
       />
 
-      <FormSection title="Create campaign" icon="fact_check" dense>
+      <FormSection title={t("admin.access.reviews.create")} icon="fact_check" dense>
         <div className="flex flex-wrap items-end gap-3">
           <FormField
-            label="Campaign name"
+            label={t("admin.access.reviews.name")}
             htmlFor="campaign-name"
             required
             error={nameError ?? undefined}
@@ -91,7 +93,7 @@ export default function AccessReviewsPage() {
             />
           </FormField>
           <button type="button" className="btn-primary text-sm" onClick={create}>
-            Create campaign
+            {t("admin.access.reviews.create")}
           </button>
         </div>
       </FormSection>
@@ -104,7 +106,7 @@ export default function AccessReviewsPage() {
         </div>
       ) : campaigns.length === 0 ? (
         <div className="card">
-          <EmptyState icon="fact_check" title="No review campaigns" description="Create a campaign to start periodic access attestation." />
+          <EmptyState icon="fact_check" title={t("admin.access.reviews.empty")} description={t("admin.access.reviews.emptyDesc")} />
         </div>
       ) : (
         <div className="space-y-4">
@@ -117,13 +119,13 @@ export default function AccessReviewsPage() {
               dense
             >
               {(c.items ?? []).length === 0 ? (
-                <p className="text-xs text-neutral-500">No review items yet.</p>
+                <p className="text-xs text-neutral-500">{t("admin.access.reviews.noItems")}</p>
               ) : (
                 <ul className="divide-y divide-neutral-100">
                   {(c.items ?? []).slice(0, 20).map((i) => (
                     <li key={i.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 text-sm">
                       <span className="text-neutral-700">
-                        User {i.user_id}: {i.subject_snapshot?.role ?? i.review_type}{" "}
+                        {t("admin.access.reviews.userItem", { id: i.user_id, role: i.subject_snapshot?.role ?? i.review_type ?? "" })}{" "}
                         <span className="badge badge-muted text-[10px] capitalize">
                           {i.status}
                           {i.decision ? `/${i.decision}` : ""}
@@ -132,10 +134,10 @@ export default function AccessReviewsPage() {
                       {i.status === "pending" ? (
                         <div className="flex gap-2">
                           <button type="button" className="btn-secondary text-xs py-1 px-2 text-emerald-700" onClick={() => decide(i.id, "confirm")}>
-                            Confirm
+                            {t("common.confirm")}
                           </button>
                           <button type="button" className="btn-secondary text-xs py-1 px-2 text-red-600" onClick={() => decide(i.id, "revoke")}>
-                            Revoke
+                            {t("admin.access.reviews.revoke")}
                           </button>
                         </div>
                       ) : null}

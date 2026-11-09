@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useFormatDate } from "@/lib/useFormatDate";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -20,12 +21,12 @@ const CURRENT_YEAR = new Date().getFullYear();
 const SESSION_YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
 
 const FILTER_TABS = [
-  { key: "", label: "All" },
-  { key: "Adopted", label: "Adopted" },
-  { key: "In Progress", label: "In Progress" },
-  { key: "Implemented", label: "Implemented" },
-  { key: "Actioned", label: "Actioned" },
-  { key: "Rejected", label: "Rejected" },
+  { key: "", label: "governance.status.all" },
+  { key: "Adopted", label: "governance.status.adopted" },
+  { key: "In Progress", label: "governance.status.inProgress" },
+  { key: "Implemented", label: "governance.status.implemented" },
+  { key: "Actioned", label: "governance.status.actioned" },
+  { key: "Rejected", label: "governance.status.rejected" },
 ] as const;
 
 type FilterKey = (typeof FILTER_TABS)[number]["key"];
@@ -48,6 +49,16 @@ const STATUS_DOT: Record<string, string> = {
   Implemented: "bg-teal-500",
   Rejected: "bg-red-500",
   Actioned: "bg-teal-500",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  Draft: "governance.status.draft",
+  Adopted: "governance.status.adopted",
+  "In Progress": "governance.status.inProgress",
+  "Pending Review": "governance.status.pendingReview",
+  Implemented: "governance.status.implemented",
+  Rejected: "governance.status.rejected",
+  Actioned: "governance.status.actioned",
 };
 
 function statusStyle(s: string) {
@@ -97,6 +108,7 @@ function DocButtons({
   downloading: Record<string, boolean>;
   onDownload: (res: GovernanceResolution, lang: "en" | "fr" | "pt", doc: GovernanceDocument) => void;
 }) {
+  const { t } = useI18n();
   const docsByLang = Object.fromEntries(
     (resolution.documents ?? []).map((d) => [d.language, d])
   ) as Partial<Record<"en" | "fr" | "pt", GovernanceDocument>>;
@@ -112,7 +124,7 @@ function DocButtons({
             type="button"
             disabled={downloading[`${resolution.id}-${code}`]}
             onClick={() => onDownload(resolution, code, doc)}
-            title={`Download ${label === "EN" ? "English" : label === "FR" ? "French" : "Portuguese"} version`}
+            title={t("governance.plenary.downloadVersion", { language: t(`governance.lang.${code}`) })}
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-semibold transition-colors bg-white border-neutral-200 text-neutral-700 hover:border-primary hover:text-primary disabled:opacity-50"
           >
             {downloading[`${resolution.id}-${code}`] ? (
@@ -125,7 +137,7 @@ function DocButtons({
         );
       })}
       {(resolution.documents ?? []).length === 0 && (
-        <span className="text-xs text-neutral-400 italic">No documents</span>
+        <span className="text-xs text-neutral-400 italic">{t("governance.plenary.noDocuments")}</span>
       )}
     </div>
   );
@@ -143,6 +155,7 @@ function ResolutionRow({
   onDownload: (res: GovernanceResolution, lang: "en" | "fr" | "pt", doc: GovernanceDocument) => void;
 }) {
   const { fmt: fmtDate } = useFormatDate();
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -180,7 +193,7 @@ function ResolutionRow({
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusStyle(resolution.status)}`}
           >
             <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusDot(resolution.status)}`} />
-            {resolution.status}
+            {STATUS_LABEL[resolution.status] ? t(STATUS_LABEL[resolution.status]) : resolution.status}
           </span>
         </td>
         <td className="px-5 py-3 text-sm text-neutral-600 whitespace-nowrap">
@@ -217,7 +230,7 @@ function ResolutionRow({
             href={`/governance?resolution=${resolution.id}`}
             className="btn-secondary text-xs"
           >
-            View full
+            {t("governance.plenary.viewFull")}
             <span className="material-symbols-outlined text-[13px]">open_in_new</span>
           </Link>
         </td>
@@ -227,10 +240,10 @@ function ResolutionRow({
           <td colSpan={8} className="px-5 py-3">
             <div className="pl-5 border-l-2 border-primary/30">
               <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">
-                Resolution Description
+                {t("governance.plenary.description")}
               </p>
               <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">
-                {resolution.description ?? "No description provided for this resolution."}
+                {resolution.description ?? t("governance.plenary.noDescription")}
               </p>
             </div>
           </td>
@@ -258,6 +271,7 @@ function SkeletonRow() {
 
 export default function PlenaryResolutionsPage() {
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const [resolutions, setResolutions] = useState<GovernanceResolution[]>([]);
   const [loading, setLoading] = useState(true);
@@ -297,12 +311,12 @@ export default function PlenaryResolutionsPage() {
       setLastPage(payload.last_page ?? 1);
       setTotal(yearFiltered.length);
     } catch {
-      setError("Failed to load plenary resolutions.");
+      setError(t("governance.plenary.loadFailed"));
       setResolutions([]);
     } finally {
       setLoading(false);
     }
-  }, [page, filter, sessionYear]);
+  }, [page, filter, sessionYear, t]);
 
   useEffect(() => {
     loadData();
@@ -332,7 +346,7 @@ export default function PlenaryResolutionsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast("error", "Download failed", "Could not download the document.");
+      toast("error", t("governance.plenary.downloadFailed"), t("governance.plenary.downloadFailedDetail"));
     } finally {
       setDownloading((p) => ({ ...p, [key]: false }));
     }
@@ -357,20 +371,20 @@ export default function PlenaryResolutionsPage() {
   return (
     <div className="space-y-6">
       <ModulePageHeader
-        title="Plenary Resolutions"
-        subtitle="Official resolutions adopted during plenary sessions of SADCPF. These are binding decisions from the full assembly."
+        title={t("governance.plenary.title")}
+        subtitle={t("governance.plenary.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Governance", href: "/governance" },
-              { label: "Plenary Resolutions" },
+              { label: "governance.plenary.crumb", href: "/governance" },
+              { label: "governance.plenary.title" },
             ]}
           />
         }
         actions={
           <div className="flex flex-col items-end gap-1.5">
             <label htmlFor="plenary-session-year" className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-              Session Year
+              {t("governance.plenary.sessionYear")}
             </label>
             <select
               id="plenary-session-year"
@@ -392,28 +406,28 @@ export default function PlenaryResolutionsPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard
           icon="check_circle"
-          label="Total adopted"
+          label={t("governance.plenary.stat.adopted")}
           value={stats.adopted}
           colorClass="text-emerald-700"
           bgClass="bg-emerald-50"
         />
         <StatCard
           icon="sync"
-          label="In progress"
+          label={t("governance.plenary.stat.inProgress")}
           value={stats.inProgress}
           colorClass="text-blue-700"
           bgClass="bg-blue-50"
         />
         <StatCard
           icon="task_alt"
-          label="Implemented / Actioned"
+          label={t("governance.plenary.stat.implemented")}
           value={stats.implemented}
           colorClass="text-teal-700"
           bgClass="bg-teal-50"
         />
         <StatCard
           icon="cancel"
-          label="Rejected"
+          label={t("governance.plenary.stat.rejected")}
           value={stats.rejected}
           colorClass="text-red-700"
           bgClass="bg-red-50"
@@ -430,7 +444,7 @@ export default function PlenaryResolutionsPage() {
             onClick={loadData}
             className="ml-auto btn-secondary text-xs"
           >
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       )}
@@ -446,7 +460,7 @@ export default function PlenaryResolutionsPage() {
                 onClick={() => setFilter(tab.key)}
                 className={`filter-tab${filter === tab.key ? " active" : ""}`}
               >
-                {tab.label}
+                {t(tab.label)}
                 {tab.key === "" && (
                   <span className="ml-1.5 rounded-full bg-current/20 px-1.5 py-0.5 text-[10px] font-bold leading-none">
                     {total}
@@ -457,7 +471,7 @@ export default function PlenaryResolutionsPage() {
           </div>
 
           <span className="text-xs text-neutral-400">
-            {displayed.length} resolution{displayed.length !== 1 ? "s" : ""} — {sessionYear} session
+            {t(displayed.length === 1 ? "governance.plenary.countOne" : "governance.plenary.countMany", { count: displayed.length, year: sessionYear })}
           </span>
         </div>
 
@@ -467,13 +481,13 @@ export default function PlenaryResolutionsPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Ref #</th>
-                  <th>Title</th>
-                  <th>Committee</th>
-                  <th>Status</th>
-                  <th>Date Adopted</th>
-                  <th>Responsible</th>
-                  <th>Documents</th>
+                  <th>{t("governance.plenary.col.ref")}</th>
+                  <th>{t("governance.plenary.col.title")}</th>
+                  <th>{t("governance.plenary.col.committee")}</th>
+                  <th>{t("governance.plenary.col.status")}</th>
+                  <th>{t("governance.plenary.col.dateAdopted")}</th>
+                  <th>{t("governance.plenary.col.responsible")}</th>
+                  <th>{t("governance.plenary.col.documents")}</th>
                   <th />
                 </tr>
               </thead>
@@ -487,16 +501,16 @@ export default function PlenaryResolutionsPage() {
         ) : displayed.length === 0 ? (
           <EmptyState
             icon="gavel"
-            title="No plenary resolutions for this session"
+            title={t("governance.plenary.empty")}
             description={
               filter
-                ? `No resolutions with status "${filter}" found for ${sessionYear}.`
-                : `There are no plenary resolutions recorded for the ${sessionYear} session.`
+                ? t("governance.plenary.emptyFiltered", { status: STATUS_LABEL[filter] ? t(STATUS_LABEL[filter]) : filter, year: sessionYear })
+                : t("governance.plenary.emptyHint", { year: sessionYear })
             }
             action={
               filter ? (
                 <button type="button" onClick={() => setFilter("")} className="btn-secondary text-xs">
-                  Clear filter
+                  {t("governance.plenary.clearFilter")}
                 </button>
               ) : undefined
             }
@@ -507,13 +521,13 @@ export default function PlenaryResolutionsPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Ref #</th>
-                    <th>Title</th>
-                    <th>Committee</th>
-                    <th>Status</th>
-                    <th>Date Adopted</th>
-                    <th>Responsible</th>
-                    <th>Documents</th>
+                    <th>{t("governance.plenary.col.ref")}</th>
+                    <th>{t("governance.plenary.col.title")}</th>
+                    <th>{t("governance.plenary.col.committee")}</th>
+                    <th>{t("governance.plenary.col.status")}</th>
+                    <th>{t("governance.plenary.col.dateAdopted")}</th>
+                    <th>{t("governance.plenary.col.responsible")}</th>
+                    <th>{t("governance.plenary.col.documents")}</th>
                     <th />
                   </tr>
                 </thead>
@@ -534,7 +548,7 @@ export default function PlenaryResolutionsPage() {
             {lastPage > 1 && (
               <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-100 text-sm text-neutral-600">
                 <span className="text-xs">
-                  Page {page} of {lastPage}
+                  {t("common.pageOf", { page, total: lastPage })}
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -544,7 +558,7 @@ export default function PlenaryResolutionsPage() {
                     className="btn-secondary py-1.5 px-3 text-xs disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[14px]">chevron_left</span>
-                    Previous
+                    {t("common.previous")}
                   </button>
                   <button
                     type="button"
@@ -552,7 +566,7 @@ export default function PlenaryResolutionsPage() {
                     onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
                     className="btn-secondary py-1.5 px-3 text-xs disabled:opacity-50"
                   >
-                    Next
+                    {t("common.next")}
                     <span className="material-symbols-outlined text-[14px]">chevron_right</span>
                   </button>
                 </div>
@@ -566,9 +580,9 @@ export default function PlenaryResolutionsPage() {
       <div className="flex items-center justify-between text-xs text-neutral-400">
         <Link href="/governance" className="btn-secondary text-xs">
           <span className="material-symbols-outlined text-[14px]">arrow_back</span>
-          Back to Governance
+          {t("governance.plenary.back")}
         </Link>
-        <span>SADCPF Governance Tracker · {sessionYear} Plenary Session</span>
+        <span>{t("governance.plenary.footer", { year: sessionYear })}</span>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { positionsApi, adminApi, type Department, type Position } from "@/lib/ap
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const GRADES = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"];
 
@@ -16,6 +17,7 @@ export default function EditPositionPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
 
   const [form, setForm] = useState({
     department_id: "",
@@ -68,11 +70,11 @@ export default function EditPositionPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-positions"] });
       qc.invalidateQueries({ queryKey: ["admin-position", id] });
-      toast.success("Position updated");
+      toast.success(t("hr.positions.form.updated"));
       router.push("/hr/positions");
     },
     onError: (err: any) => {
-      toast.error("Position not updated", apiErrorMessage(err, "Failed to update position."));
+      toast.error(t("hr.positions.form.notUpdated"), apiErrorMessage(err, t("hr.positions.form.updateFailed")));
       const data = err?.response?.data;
       if (data?.errors) {
         const mapped: Record<string, string> = {};
@@ -81,7 +83,7 @@ export default function EditPositionPage() {
         }
         setErrors(mapped);
       } else {
-        setErrors({ _global: data?.message ?? "Failed to update position." });
+        setErrors({ _global: data?.message ?? t("hr.positions.form.updateFailed") });
       }
     },
   });
@@ -94,9 +96,9 @@ export default function EditPositionPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    if (!form.department_id) errs.department_id = "Department is required.";
-    if (!form.title.trim()) errs.title = "Title is required.";
-    if (Number(form.headcount) < 1) errs.headcount = "Headcount must be at least 1.";
+    if (!form.department_id) errs.department_id = t("hr.positions.form.departmentRequired");
+    if (!form.title.trim()) errs.title = t("hr.positions.form.titleRequired");
+    if (Number(form.headcount) < 1) errs.headcount = t("hr.positions.form.headcountMin");
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     mutation.mutate();
   }
@@ -117,14 +119,14 @@ export default function EditPositionPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Edit Position"
-        subtitle={`${posRes?.title ?? "Loading…"} · ${posRes?.department?.name ?? ""}`}
+        title="hr.positions.form.editTitle"
+        subtitle={`${posRes?.title ?? t("common.loading")} · ${posRes?.department?.name ?? ""}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Positions", href: "/hr/positions" },
-              { label: "Edit Position" },
+              { label: "hr.positions.crumb", href: "/hr/positions" },
+              { label: "hr.positions.form.editTitle" },
             ]}
           />
         }
@@ -140,14 +142,14 @@ export default function EditPositionPage() {
         {/* Department */}
         <div>
           <label htmlFor="hr-positions-detail-edit-department" className="block text-sm font-medium text-neutral-700 mb-1.5">
-            Department <span className="text-red-500">*</span>
+            {t("hr.positions.form.department")} <span className="text-red-500">*</span>
           </label>
           <select id="hr-positions-detail-edit-department"
             value={form.department_id}
             onChange={(e) => set("department_id", e.target.value)}
             className={`form-input w-full ${errors.department_id ? "border-red-400" : ""}`}
           >
-            <option value="">Select department…</option>
+            <option value="">{t("hr.positions.form.selectDepartment")}</option>
             {departments.map((d) => (
               <option key={d.id} value={d.id}>{d.name}</option>
             ))}
@@ -158,13 +160,13 @@ export default function EditPositionPage() {
         {/* Title */}
         <div>
           <label htmlFor="hr-positions-detail-edit-position-title" className="block text-sm font-medium text-neutral-700 mb-1.5">
-            Position Title <span className="text-red-500">*</span>
+            {t("hr.positions.positionTitle")} <span className="text-red-500">*</span>
           </label>
           <input id="hr-positions-detail-edit-position-title"
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
-            placeholder="e.g. Senior Programme Officer"
+            placeholder={t("hr.positions.form.titlePlaceholder")}
             className={`form-input w-full ${errors.title ? "border-red-400" : ""}`}
           />
           {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
@@ -173,13 +175,13 @@ export default function EditPositionPage() {
         {/* Grade + Headcount */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="hr-positions-detail-edit-grade" className="block text-sm font-medium text-neutral-700 mb-1.5">Grade</label>
+            <label htmlFor="hr-positions-detail-edit-grade" className="block text-sm font-medium text-neutral-700 mb-1.5">{t("hr.positions.grade")}</label>
             <select id="hr-positions-detail-edit-grade"
               value={form.grade}
               onChange={(e) => set("grade", e.target.value)}
               className="form-input w-full"
             >
-              <option value="">No grade</option>
+              <option value="">{t("hr.positions.form.noGrade")}</option>
               {GRADES.map((g) => (
                 <option key={g} value={g}>{g}</option>
               ))}
@@ -187,7 +189,7 @@ export default function EditPositionPage() {
           </div>
           <div>
             <label htmlFor="hr-positions-detail-edit-headcount" className="block text-sm font-medium text-neutral-700 mb-1.5">
-              Headcount <span className="text-red-500">*</span>
+              {t("hr.positions.headcount")} <span className="text-red-500">*</span>
             </label>
             <input id="hr-positions-detail-edit-headcount"
               type="number"
@@ -203,12 +205,12 @@ export default function EditPositionPage() {
 
         {/* Description */}
         <div>
-          <label htmlFor="hr-positions-detail-edit-description" className="block text-sm font-medium text-neutral-700 mb-1.5">Description</label>
+          <label htmlFor="hr-positions-detail-edit-description" className="block text-sm font-medium text-neutral-700 mb-1.5">{t("hr.positions.form.description")}</label>
           <textarea id="hr-positions-detail-edit-description"
             rows={3}
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
-            placeholder="Brief description of the position's responsibilities…"
+            placeholder={t("hr.positions.form.descriptionPlaceholder")}
             className="form-input w-full resize-none"
           />
         </div>
@@ -216,7 +218,7 @@ export default function EditPositionPage() {
         {/* Assigned users (read-only info) */}
         {posRes?.users && posRes.users.length > 0 && (
           <div>
-            <p className="block text-sm font-medium text-neutral-700 mb-1.5">Assigned Users</p>
+            <p className="block text-sm font-medium text-neutral-700 mb-1.5">{t("hr.positions.form.assignedUsers")}</p>
             <div className="flex flex-wrap gap-2">
               {posRes.users.map((u) => (
                 <span key={u.id} className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-100 text-neutral-700 rounded-full text-xs font-medium">
@@ -241,18 +243,18 @@ export default function EditPositionPage() {
               className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.is_active ? "translate-x-4" : "translate-x-0.5"}`}
             />
           </button>
-          <span className="text-sm text-neutral-700">Active position</span>
+          <span className="text-sm text-neutral-700">{t("hr.positions.form.activePosition")}</span>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-3 pt-2 border-t border-neutral-100">
-          <Link href="/hr/positions" className="btn-secondary">Cancel</Link>
+          <Link href="/hr/positions" className="btn-secondary">{t("common.cancel")}</Link>
           <button
             type="submit"
             disabled={mutation.isPending}
             className="btn-primary"
           >
-            {mutation.isPending ? "Saving…" : "Save Changes"}
+            {mutation.isPending ? t("hr.positions.form.saving") : t("hr.positions.form.saveChanges")}
           </button>
         </div>
       </form>

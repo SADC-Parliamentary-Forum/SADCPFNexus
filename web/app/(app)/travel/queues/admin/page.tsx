@@ -1,15 +1,17 @@
 "use client";
 
 import { TravelQueueTable } from "@/components/travel/TravelQueueTable";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function TravelAdminQueuePage() {
+  const { t } = useI18n();
   return (
     <TravelQueueTable
       queue="admin"
       variant="admin"
-      title="Administration / Logistics Queue"
-      subtitle="Travel requests awaiting administration review and logistics preparation."
-      emptyHint="No travel requests are awaiting administration or logistics action."
+      title={t("travel.queues.admin.title")}
+      subtitle={t("travel.queues.admin.subtitle")}
+      emptyHint={t("travel.queues.admin.empty")}
     />
   );
 }

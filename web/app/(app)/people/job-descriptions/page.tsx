@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -30,6 +31,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 }
 
 export default function Page() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
   const [q, setQ] = useState("");
@@ -47,15 +49,15 @@ export default function Page() {
         content: form.content.trim() || undefined,
       }),
     onSuccess: () => {
-      toast.success("Job description created");
+      toast.success(t("people.jobDescriptions.created"));
       setForm({ position_id: "", title: "", content: "" });
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "job-descriptions"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not create the job description. Position and title are required.");
+      const message = apiErrorMessage(e, t("people.jobDescriptions.createFailed"));
       setErr(message);
-      toast.error("Job description not created", message);
+      toast.error(t("people.jobDescriptions.notCreated"), message);
     },
   });
   const { data, isLoading, isError, refetch } = useQuery({
@@ -89,19 +91,19 @@ return (await peopleAuthorityApi.listJobDescriptions()).data;
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Job Descriptions"
-        subtitle="People & Authority register"
+        title={t("people.jobDescriptions.title")}
+        subtitle={t("people.common.registerSubtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "Job Descriptions" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.jobDescriptions.title") },
             ]}
           />
         }
         actions={
           <Link href="/people" className="btn-secondary text-sm">
-            Hub
+            {t("people.common.hub")}
           </Link>
         }
       />
@@ -114,25 +116,25 @@ return (await peopleAuthorityApi.listJobDescriptions()).data;
         }}
       >
         <label htmlFor="people-job-descriptions-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
-          Position
+          {t("people.common.position")}
           <select id="people-job-descriptions-position-setform-f-required-select" className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
             ))}
           </select>
         </label>
         <label htmlFor="people-job-descriptions-title-setform-f-required" className="block text-xs font-medium text-neutral-600">
-          Title
+          {t("people.common.titleCol")}
           <input id="people-job-descriptions-title-setform-f-required" className="form-input mt-1" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required />
         </label>
         <label htmlFor="people-job-descriptions-content-setform-f-rows" className="block text-xs font-medium text-neutral-600 sm:col-span-2">
-          Content
+          {t("people.jobDescriptions.content")}
           <textarea id="people-job-descriptions-content-setform-f-rows" className="form-input mt-1" value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} rows={3} />
         </label>
         <div className="sm:col-span-2 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
-            {create.isPending ? "Saving…" : "Add job description"}
+            {create.isPending ? t("people.common.saving") : t("people.jobDescriptions.add")}
           </button>
           {err && <p className="text-sm text-red-700">{err}</p>}
         </div>
@@ -140,12 +142,12 @@ return (await peopleAuthorityApi.listJobDescriptions()).data;
 
       <div className="card p-3">
         <label htmlFor="people-job-descriptions-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
+          {t("common.search")}
           <input id="people-job-descriptions-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
+            placeholder={t("people.common.filterRows")}
           />
         </label>
       </div>
@@ -160,24 +162,24 @@ return (await peopleAuthorityApi.listJobDescriptions()).data;
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
             action={
               <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
+                {t("common.retry")}
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">Job Descriptions</caption>
+              <caption className="sr-only">{t("people.jobDescriptions.title")}</caption>
               <thead>
                 <tr>
                   {columns.map((c) => (

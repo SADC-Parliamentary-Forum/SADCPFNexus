@@ -9,6 +9,10 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { useToast } from "@/components/ui/Toast";
 import { formatDateShort } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { TranslateVars } from "@/lib/i18n/messages";
+
+type Translate = (key: string, vars?: TranslateVars) => string;
 
 type PeriodRow = {
   id: number;
@@ -32,20 +36,20 @@ type StaffRow = {
 type RollupCounts = { submitted: number; missing: number; late: number };
 
 const STATUS_LABELS: Record<string, string> = {
-  draft: "Draft",
-  in_progress: "In progress",
-  ready: "Ready",
-  not_started: "Not started",
-  submitted: "Submitted",
-  pending_review: "Pending review",
-  resubmitted: "Resubmitted",
-  returned: "Returned",
-  accepted: "Accepted",
-  published: "Published",
-  exempted: "Exempted",
-  reopened: "Reopened",
-  missing: "Missing",
-  late: "Late",
+  draft: "weeklySummaries.status.draft",
+  in_progress: "weeklySummaries.status.in_progress",
+  ready: "weeklySummaries.status.ready",
+  not_started: "weeklySummaries.status.not_started",
+  submitted: "weeklySummaries.status.submitted",
+  pending_review: "weeklySummaries.status.pending_review",
+  resubmitted: "weeklySummaries.status.resubmitted",
+  returned: "weeklySummaries.status.returned",
+  accepted: "weeklySummaries.status.accepted",
+  published: "weeklySummaries.status.published",
+  exempted: "weeklySummaries.status.exempted",
+  reopened: "weeklySummaries.status.reopened",
+  missing: "weeklySummaries.status.missing",
+  late: "weeklySummaries.status.late",
 };
 
 function unwrapRows<T>(payload: unknown): T[] {
@@ -66,8 +70,8 @@ function errorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function departmentLabel(dept: Pick<Department, "name" | "code">): string {
-  const name = dept.name?.trim() || "Unnamed department";
+function departmentLabel(dept: Pick<Department, "name" | "code">, t: Translate): string {
+  const name = dept.name?.trim() || t("weeklySummaries.department.unnamed");
   const code = dept.code?.trim();
   return code ? `${name} (${code})` : name;
 }
@@ -98,20 +102,20 @@ function periodRangeLabel(period: Pick<PeriodRow, "start_date" | "end_date">): s
   return single === "—" ? "" : single;
 }
 
-function periodLabel(period: PeriodRow): string {
+function periodLabel(period: PeriodRow, t: Translate): string {
   const reference = period.reference?.trim();
   const range = periodRangeLabel(period);
   if (range) return reference ? `${reference} · ${range}` : range;
-  return reference || "Current period";
+  return reference || t("weeklySummaries.currentPeriod");
 }
 
-function humanStatus(status?: string | null): string {
+function humanStatus(status: string | null | undefined, t: Translate): string {
   if (!status) return "—";
-  return STATUS_LABELS[status] ?? status.replace(/_/g, " ");
+  return STATUS_LABELS[status] ? t(STATUS_LABELS[status]) : status.replace(/_/g, " ");
 }
 
-function staffName(row: StaffRow): string {
-  return row.name?.trim() || "Unknown person";
+function staffName(row: StaffRow, t: Translate): string {
+  return row.name?.trim() || t("weeklySummaries.unknownPerson");
 }
 
 function staffReportId(row: StaffRow): number | null {
@@ -144,6 +148,7 @@ function DepartmentPicker({
   onSelect: (dept: Department) => void;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -162,19 +167,19 @@ function DepartmentPicker({
   }, [departments, query]);
 
   useEffect(() => {
-    if (!open && selected) setQuery(departmentLabel(selected));
-  }, [open, selected]);
+    if (!open && selected) setQuery(departmentLabel(selected, t));
+  }, [open, selected, t]);
 
   useEffect(() => {
     function handleClick(event: MouseEvent) {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
         setOpen(false);
-        if (selected) setQuery(departmentLabel(selected));
+        if (selected) setQuery(departmentLabel(selected, t));
       }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [selected]);
+  }, [selected, t]);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -182,7 +187,7 @@ function DepartmentPicker({
 
   const choose = (dept: Department) => {
     onSelect(dept);
-    setQuery(departmentLabel(dept));
+    setQuery(departmentLabel(dept, t));
     setOpen(false);
   };
 
@@ -196,7 +201,7 @@ function DepartmentPicker({
         aria-controls={listId}
         aria-activedescendant={open && filtered[activeIndex] ? `department-option-${filtered[activeIndex].id}` : undefined}
         className="form-input"
-        placeholder="Search department by name or code"
+        placeholder={t("weeklySummaries.department.searchPlaceholder")}
         value={query}
         disabled={disabled}
         onChange={(event) => {
@@ -205,7 +210,7 @@ function DepartmentPicker({
         }}
         onFocus={() => {
           setOpen(true);
-          if (selected && query === departmentLabel(selected)) setQuery("");
+          if (selected && query === departmentLabel(selected, t)) setQuery("");
         }}
         onKeyDown={(event) => {
           if (event.key === "ArrowDown") {
@@ -221,7 +226,7 @@ function DepartmentPicker({
           } else if (event.key === "Escape") {
             event.preventDefault();
             setOpen(false);
-            if (selected) setQuery(departmentLabel(selected));
+            if (selected) setQuery(departmentLabel(selected, t));
           }
         }}
       />
@@ -229,11 +234,11 @@ function DepartmentPicker({
         <ul
           id={listId}
           role="listbox"
-          aria-label="Departments"
+          aria-label={t("weeklySummaries.department.departments")}
           className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg"
         >
           {filtered.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-neutral-500">No departments match that name.</li>
+            <li className="px-3 py-2 text-sm text-neutral-500">{t("weeklySummaries.department.noMatch")}</li>
           ) : (
             filtered.map((dept, index) => (
               <li key={dept.id} role="presentation">
@@ -276,6 +281,7 @@ function StaffTable({
   dateHeader: string;
   dateValue: (row: StaffRow) => string | null | undefined;
 }) {
+  const { t } = useI18n();
   if (rows.length === 0) {
     return (
       <EmptyState icon="person_off" title={emptyTitle} description={emptyDescription} />
@@ -287,10 +293,10 @@ function StaffTable({
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-neutral-100 text-neutral-500">
-            <th className="py-2 pr-3 font-medium">Name</th>
-            <th className="py-2 pr-3 font-medium">{dateHeader}</th>
-            <th className="py-2 pr-3 font-medium">Status</th>
-            <th className="py-2 font-medium">Report</th>
+            <th className="py-2 pr-3 font-medium">{t("finance.budget.col.name")}</th>
+            <th className="py-2 pr-3 font-medium">{t(dateHeader)}</th>
+            <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.status")}</th>
+            <th className="py-2 font-medium">{t("weeklySummaries.detail.report")}</th>
           </tr>
         </thead>
         <tbody>
@@ -298,13 +304,13 @@ function StaffTable({
             const reportId = staffReportId(row);
             return (
               <tr key={row.id} className="border-b border-neutral-50">
-                <td className="py-2 pr-3">{staffName(row)}</td>
+                <td className="py-2 pr-3">{staffName(row, t)}</td>
                 <td className="py-2 pr-3">{formatDateShort(dateValue(row))}</td>
-                <td className="py-2 pr-3">{humanStatus(row.status)}</td>
+                <td className="py-2 pr-3">{humanStatus(row.status, t)}</td>
                 <td className="py-2">
                   {reportId ? (
                     <Link href={`/weekly-summaries/${reportId}`} className="font-medium text-primary">
-                      {row.reference?.trim() || "Open"}
+                      {row.reference?.trim() || t("common.open")}
                     </Link>
                   ) : (
                     "—"
@@ -321,6 +327,7 @@ function StaffTable({
 
 export default function WeeklyDepartmentPage() {
   const { toast } = useToast();
+  const { t } = useI18n();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [periods, setPeriods] = useState<PeriodRow[]>([]);
   const [selectedDept, setSelectedDept] = useState<Department | null>(null);
@@ -351,7 +358,7 @@ export default function WeeklyDepartmentPage() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(errorMessage(err, "Failed to load departments"));
+        setError(errorMessage(err, t("weeklySummaries.department.loadDepartmentsFailed")));
       })
       .finally(() => {
         if (!cancelled) setCatalogLoading(false);
@@ -388,11 +395,11 @@ export default function WeeklyDepartmentPage() {
       setMissingStaff([]);
       setLateStaff([]);
       setCounts({ submitted: 0, missing: 0, late: 0 });
-      setError(errorMessage(err, "Failed to load department summary"));
+      setError(errorMessage(err, t("weeklySummaries.department.loadFailed")));
     } finally {
       setRollupLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const handleSelectDepartment = (dept: Department) => {
     setSelectedDept(dept);
@@ -410,29 +417,29 @@ export default function WeeklyDepartmentPage() {
   const missingRows = missingStaff.filter((row) => matchesStaff(row, query));
   const lateRows = lateStaff.filter((row) => matchesStaff(row, query));
   const rollupDepartment = report?.department?.name
-    ? departmentLabel({ name: report.department.name, code: report.department.code ?? selectedDept?.code ?? "" })
+    ? departmentLabel({ name: report.department.name, code: report.department.code ?? selectedDept?.code ?? "" }, t)
     : selectedDept
-      ? departmentLabel(selectedDept)
+      ? departmentLabel(selectedDept, t)
       : "—";
-  const rollupPeriod = report?.period ? periodLabel(report.period) : selectedPeriod ? periodLabel(selectedPeriod) : "—";
+  const rollupPeriod = report?.period ? periodLabel(report.period, t) : selectedPeriod ? periodLabel(selectedPeriod, t) : "—";
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Department Summary"
-        subtitle="Consolidates selected employee items — does not rewrite original reports. AI draft never auto-submits."
+        title="weeklySummaries.department.title"
+        subtitle="weeklySummaries.department.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Weekly Summaries", href: "/weekly-summaries" },
-              { label: "Department" },
+              { label: "weeklySummaries.crumb", href: "/weekly-summaries" },
+              { label: "weeklySummaries.col.department" },
             ]}
           />
         }
         actions={
           report ? (
             <Link href={`/weekly-summaries/${report.id}`} className="btn-secondary text-sm">
-              Open detail
+              {t("weeklySummaries.institutional.openDetail")}
             </Link>
           ) : null
         }
@@ -440,25 +447,25 @@ export default function WeeklyDepartmentPage() {
 
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-          {error.startsWith("Failed to load") ? error : `Failed to load department summary: ${error}`}
+          {error === t("weeklySummaries.department.loadFailed") || error === t("weeklySummaries.department.loadDepartmentsFailed") ? error : t("weeklySummaries.department.loadFailedWith", { error })}
         </div>
       ) : null}
 
       <FormSection
-        title="Choose department"
-        description="Search by department name or code. Numeric IDs stay internal."
+        title="weeklySummaries.department.choose"
+        description="weeklySummaries.department.chooseHint"
         icon="apartment"
       >
         {catalogLoading ? (
           <div className="space-y-3" aria-live="polite">
-            <p className="text-sm text-neutral-500">Loading departments…</p>
+            <p className="text-sm text-neutral-500">{t("weeklySummaries.department.loadingDepartments")}</p>
             {[0, 1].map((i) => (
               <div key={i} className="h-10 animate-pulse rounded bg-neutral-100" />
             ))}
           </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            <FormField label="Department" htmlFor="department-picker" hint="Type a name to filter, then choose from the list.">
+            <FormField label="weeklySummaries.col.department" htmlFor="department-picker" hint="weeklySummaries.department.pickerHint">
               <DepartmentPicker
                 departments={departments}
                 selected={selectedDept}
@@ -466,7 +473,7 @@ export default function WeeklyDepartmentPage() {
                 disabled={rollupLoading}
               />
             </FormField>
-            <FormField label="Reporting period" htmlFor="department-period" hint="Shown as a short date range, not a numeric identifier.">
+            <FormField label="weeklySummaries.reportingPeriod" htmlFor="department-period" hint="weeklySummaries.department.periodHint">
               <select
                 id="department-period"
                 className="form-input"
@@ -474,10 +481,10 @@ export default function WeeklyDepartmentPage() {
                 disabled={rollupLoading || periods.length === 0}
                 onChange={(event) => handlePeriodChange(event.target.value ? Number(event.target.value) : "")}
               >
-                {periods.length === 0 ? <option value="">No periods available</option> : null}
+                {periods.length === 0 ? <option value="">{t("weeklySummaries.department.noPeriods")}</option> : null}
                 {periods.map((period) => (
                   <option key={period.id} value={period.id}>
-                    {periodLabel(period)}
+                    {periodLabel(period, t)}
                   </option>
                 ))}
               </select>
@@ -488,7 +495,7 @@ export default function WeeklyDepartmentPage() {
 
       {rollupLoading ? (
         <div className="card space-y-3 p-6" aria-live="polite">
-          <p className="text-sm text-neutral-500">Loading department summary…</p>
+          <p className="text-sm text-neutral-500">{t("weeklySummaries.department.loading")}</p>
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-10 animate-pulse rounded bg-neutral-100" />
           ))}
@@ -499,8 +506,8 @@ export default function WeeklyDepartmentPage() {
         <div className="card">
           <EmptyState
             icon="apartment"
-            title="No departments"
-            description="No organisational departments are available to summarise."
+            title="weeklySummaries.department.noDepartments"
+            description="weeklySummaries.department.noDepartmentsHint"
           />
         </div>
       ) : null}
@@ -509,8 +516,8 @@ export default function WeeklyDepartmentPage() {
         <div className="card">
           <EmptyState
             icon="edit_calendar"
-            title="Select a department"
-            description="Choose a department by name to load its weekly rollup, missing staff, and submitted reports."
+            title="weeklySummaries.department.select"
+            description="weeklySummaries.department.selectHint"
           />
         </div>
       ) : null}
@@ -519,8 +526,8 @@ export default function WeeklyDepartmentPage() {
         <div className="card">
           <EmptyState
             icon="event_busy"
-            title="No reporting period"
-            description="A labelled reporting period is required before the department rollup can load."
+            title="weeklySummaries.department.noPeriod"
+            description="weeklySummaries.department.noPeriodHint"
           />
         </div>
       ) : null}
@@ -529,8 +536,8 @@ export default function WeeklyDepartmentPage() {
         <div className="card">
           <EmptyState
             icon="edit_calendar"
-            title="No department summary"
-            description="A weekly rollup for this department will appear here when available."
+            title="weeklySummaries.department.empty"
+            description="weeklySummaries.department.emptyHint"
           />
         </div>
       ) : null}
@@ -538,7 +545,7 @@ export default function WeeklyDepartmentPage() {
       {report && !rollupLoading ? (
         <>
           <FormSection
-            title="Department rollup"
+            title="weeklySummaries.department.rollup"
             description={`${rollupDepartment} · ${rollupPeriod}`}
             icon="summarize"
             actions={
@@ -553,81 +560,81 @@ export default function WeeklyDepartmentPage() {
                     const { data } = await weeklyReportsApi.publish(report.id);
                     setReport({ ...report, ...data.data });
                   } catch (err: unknown) {
-                    toast("error", errorMessage(err, "Failed to publish report"));
+                    toast("error", errorMessage(err, t("weeklySummaries.department.publishFailed")));
                   } finally {
                     setPublishing(false);
                   }
                 }}
               >
-                {publishing ? "Publishing..." : report.status === "published" ? "Published" : "Publish"}
+                {publishing ? t("weeklySummaries.department.publishing") : report.status === "published" ? t("weeklySummaries.institutional.publishedLabel") : t("weeklySummaries.institutional.publish")}
               </button>
             }
           >
             <LabelledRecord
               value={{
-                department: rollupDepartment,
-                period: rollupPeriod,
-                status: humanStatus(report.status),
-                reference: report.reference,
-                version: `v${report.version}`,
-                items: report.items?.length ?? 0,
-                blockers: report.blockers?.length ?? 0,
+                [t("weeklySummaries.department.field.department")]: rollupDepartment,
+                [t("weeklySummaries.detail.field.period")]: rollupPeriod,
+                [t("weeklySummaries.detail.field.status")]: humanStatus(report.status, t),
+                [t("weeklySummaries.detail.field.reference")]: report.reference,
+                [t("weeklySummaries.detail.field.version")]: `v${report.version}`,
+                [t("weeklySummaries.department.field.items")]: report.items?.length ?? 0,
+                [t("weeklySummaries.department.field.blockers")]: report.blockers?.length ?? 0,
               }}
             />
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-wide text-neutral-500">Submitted</p>
+                <p className="text-xs uppercase tracking-wide text-neutral-500">{t("weeklySummaries.col.submitted")}</p>
                 <p className="mt-1 text-2xl font-semibold text-neutral-900">{counts.submitted}</p>
               </div>
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-wide text-neutral-500">Missing</p>
+                <p className="text-xs uppercase tracking-wide text-neutral-500">{t("weeklySummaries.status.missing")}</p>
                 <p className="mt-1 text-2xl font-semibold text-neutral-900">{counts.missing}</p>
               </div>
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-wide text-neutral-500">Late</p>
+                <p className="text-xs uppercase tracking-wide text-neutral-500">{t("weeklySummaries.status.late")}</p>
                 <p className="mt-1 text-2xl font-semibold text-neutral-900">{counts.late}</p>
               </div>
             </div>
           </FormSection>
 
-          <FormSection title="Find staff" description="Filter the submitted, missing, and late tables by staff name." icon="search">
-            <FormField label="Staff name" htmlFor="department-staff-search" hint="Filter is local to this rollup. It does not submit or publish anything.">
+          <FormSection title="weeklySummaries.department.findStaff" description="weeklySummaries.department.findStaffHint" icon="search">
+            <FormField label="weeklySummaries.staffName" htmlFor="department-staff-search" hint="weeklySummaries.department.staffFilterHint">
               <input
                 id="department-staff-search"
                 className="form-input max-w-xl"
-                placeholder="Search staff by name"
+                placeholder={t("weeklySummaries.department.searchStaff")}
                 value={staffQuery}
                 onChange={(event) => setStaffQuery(event.target.value)}
               />
             </FormField>
           </FormSection>
 
-          <FormSection title="Submitted staff" description="People in this department who have submitted for the selected period." icon="assignment">
+          <FormSection title="weeklySummaries.department.submittedStaff" description="weeklySummaries.department.submittedStaffHint" icon="assignment">
             <StaffTable
               rows={submittedRows}
-              emptyTitle="No submitted staff"
-              emptyDescription="Submitted weekly summaries for this department will appear here."
-              dateHeader="Submitted"
+              emptyTitle="weeklySummaries.department.noSubmitted"
+              emptyDescription="weeklySummaries.department.noSubmittedHint"
+              dateHeader="weeklySummaries.col.submitted"
               dateValue={(row) => row.submitted_at}
             />
           </FormSection>
 
-          <FormSection title="Missing staff" description="Staff in this department who have not submitted for the selected period." icon="person_off">
+          <FormSection title="weeklySummaries.department.missingStaff" description="weeklySummaries.department.missingStaffHint" icon="person_off">
             <StaffTable
               rows={missingRows}
-              emptyTitle="No missing staff"
-              emptyDescription="No missing staff in this department for the selected period."
-              dateHeader="Due"
+              emptyTitle="weeklySummaries.department.noMissing"
+              emptyDescription="weeklySummaries.department.noMissingHint"
+              dateHeader="weeklySummaries.department.due"
               dateValue={(row) => row.employee_due_at}
             />
           </FormSection>
 
-          <FormSection title="Late staff" description="Overdue missing reports and submissions after the employee due date." icon="schedule">
+          <FormSection title="weeklySummaries.department.lateStaff" description="weeklySummaries.department.lateStaffHint" icon="schedule">
             <StaffTable
               rows={lateRows}
-              emptyTitle="No late staff"
-              emptyDescription="Nobody in this department is late for the selected period."
-              dateHeader="Due"
+              emptyTitle="weeklySummaries.department.noLate"
+              emptyDescription="weeklySummaries.department.noLateHint"
+              dateHeader="weeklySummaries.department.due"
               dateValue={(row) => row.employee_due_at}
             />
           </FormSection>

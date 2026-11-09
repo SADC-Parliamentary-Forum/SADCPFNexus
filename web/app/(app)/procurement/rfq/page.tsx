@@ -19,6 +19,7 @@ import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -32,22 +33,23 @@ function rfqFilter(req: ProcurementRequest): RfqFilter {
 }
 
 function rfqBadge(filter: RfqFilter) {
-  if (filter === "open")        return { label: "Open",      cls: "badge-warning", icon: "hourglass_empty" };
-  if (filter === "in_progress") return { label: "Quotes In", cls: "badge-primary", icon: "rate_review" };
-  return                              { label: "Open",      cls: "badge-warning", icon: "hourglass_empty" };
+  if (filter === "open")        return { label: "procurement.rfq.open",     cls: "badge-warning", icon: "hourglass_empty" };
+  if (filter === "in_progress") return { label: "procurement.rfq.quotesIn", cls: "badge-primary", icon: "rate_review" };
+  return                              { label: "procurement.rfq.open",     cls: "badge-warning", icon: "hourglass_empty" };
 }
 
 const FILTERS: { key: RfqFilter | "awarded"; label: string }[] = [
-  { key: "all",         label: "All" },
-  { key: "open",        label: "Open" },
-  { key: "in_progress", label: "Quotes In" },
-  { key: "awarded",     label: "Awarded" },
+  { key: "all",         label: "procurement.filter.all" },
+  { key: "open",        label: "procurement.rfq.open" },
+  { key: "in_progress", label: "procurement.rfq.quotesIn" },
+  { key: "awarded",     label: "procurement.rfq.awarded" },
 ];
 
 export default function RfqListPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const user = getStoredUser();
+  const { t } = useI18n();
   const canViewRfq = canViewProcurementRfq(user);
   const canIssueRfq = canIssueProcurementRfq(user);
 
@@ -139,13 +141,13 @@ export default function RfqListPage() {
         currency: r.currency,
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "title", header: "Title" },
-        { key: "status", header: "Status" },
-        { key: "quotes", header: "Quotes" },
-        { key: "deadline", header: "Deadline" },
-        { key: "value", header: "Value" },
-        { key: "currency", header: "Currency" },
+        { key: "reference", header: t("procurement.col.reference") },
+        { key: "title", header: t("procurement.col.title") },
+        { key: "status", header: t("procurement.col.status") },
+        { key: "quotes", header: t("procurement.rfq.quotes") },
+        { key: "deadline", header: t("procurement.col.deadline") },
+        { key: "value", header: t("procurement.col.value") },
+        { key: "currency", header: t("procurement.col.currency") },
       ],
     );
   };
@@ -159,13 +161,13 @@ export default function RfqListPage() {
           email: invite.email.trim(),
         }));
 
-      if (!selectedRequestId) throw new Error("Select an approved procurement request.");
+      if (!selectedRequestId) throw new Error(t("procurement.rfq.err.selectRequest"));
       if (categoryIds.length < 1 || categoryIds.length > 3) {
-        throw new Error("Select between 1 and 3 supplier categories.");
+        throw new Error(t("procurement.rfq.err.categories"));
       }
 
       const invalidEmail = filledExternalInvites.find((invite) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invite.email));
-      if (invalidEmail) throw new Error(`Invalid email address: ${invalidEmail.email}`);
+      if (invalidEmail) throw new Error(t("procurement.rfq.err.invalidEmail", { email: invalidEmail.email }));
 
       return procurementApi.issueRfq(selectedRequestId, {
         rfq_deadline: rfqDeadline || undefined,
@@ -191,24 +193,24 @@ export default function RfqListPage() {
       router.push(`/procurement/rfq/${requestId}`);
     },
     onError: (err: unknown) => {
-      setFormError(apiErrorMessage(err, "Failed to issue RFQ."));
+      setFormError(apiErrorMessage(err, t("procurement.rfq.issueFailed")));
     },
   });
 
   const isLoading = loadingApproved || loadingAwarded;
 
   if (!canViewRfq) {
-    return <div className="card p-6">You do not have permission to view RFQs.</div>;
+    return <div className="card p-6">{t("procurement.rfq.noPermission")}</div>;
   }
 
   return (
     <div className="space-y-6">
       <ProcurementPageHeader
-        title="Requests for Quotation"
-        subtitle="Issue RFQs from approved requests that Finance has budget-confirmed, then track supplier responses."
+        title={t("procurement.rfq.title")}
+        subtitle={t("procurement.rfq.subtitle")}
         crumbs={[
           { label: "nav.procurement", href: "/procurement" },
-          { label: "RFQ" },
+          { label: t("procurement.rfq.crumb") },
         ]}
         actions={
           <>
@@ -219,21 +221,21 @@ export default function RfqListPage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[16px]">download</span>
-            Export CSV
+            {t("procurement.exportCsv")}
           </button>
           {canIssueRfq && (
             <button
               type="button"
               className="btn-primary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
               disabled={eligibleRequests.length === 0}
-              title={eligibleRequests.length === 0 ? "Finance must confirm budget before an RFQ can be issued" : undefined}
+              title={eligibleRequests.length === 0 ? t("procurement.rfq.needsBudgetTitle") : undefined}
               onClick={() => {
                 setFormError(null);
                 setShowCreate(true);
               }}
             >
               <span className="material-symbols-outlined text-[16px]">add</span>
-              Create RFQ
+              {t("procurement.rfq.create")}
             </button>
           )}
           </>
@@ -242,10 +244,10 @@ export default function RfqListPage() {
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total RFQs", value: approved.length + awarded.length, icon: "request_quote", color: "text-primary", bg: "bg-primary/10" },
-          { label: "Open", value: open.length, icon: "hourglass_empty", color: "text-amber-600", bg: "bg-amber-50" },
-          { label: "Quotes In", value: inProgress.length, icon: "rate_review", color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Awarded", value: awarded.length, icon: "emoji_events", color: "text-green-600", bg: "bg-green-50" },
+          { label: t("procurement.rfq.kpi.total"), value: approved.length + awarded.length, icon: "request_quote", color: "text-primary", bg: "bg-primary/10" },
+          { label: t("procurement.rfq.open"), value: open.length, icon: "hourglass_empty", color: "text-amber-600", bg: "bg-amber-50" },
+          { label: t("procurement.rfq.quotesIn"), value: inProgress.length, icon: "rate_review", color: "text-blue-600", bg: "bg-blue-50" },
+          { label: t("procurement.rfq.awarded"), value: awarded.length, icon: "emoji_events", color: "text-green-600", bg: "bg-green-50" },
         ].map((k) => (
           <div key={k.label} className="card p-4 flex items-center gap-3">
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${k.bg} flex-shrink-0`}>
@@ -268,7 +270,7 @@ export default function RfqListPage() {
             <input
               type="search"
               className="form-input pl-10"
-              placeholder="Search RFQ reference or title…"
+              placeholder={t("procurement.rfq.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -287,7 +289,7 @@ export default function RfqListPage() {
                 }}
                 className={`filter-tab ${tab === f.key ? "active" : ""}`}
               >
-                {f.label}
+                {t(f.label)}
               </button>
             ))}
           </div>
@@ -296,16 +298,15 @@ export default function RfqListPage() {
 
       {canIssueRfq && awaitingBudget.length > 0 && (
         <div className="card p-4 text-sm text-amber-800 bg-amber-50 border border-amber-200">
-          Finance budget confirmation is required before issuing an RFQ for {awaitingBudget.length} approved
-          {awaitingBudget.length === 1 ? " request" : " requests"}.{" "}
+          {t(awaitingBudget.length === 1 ? "procurement.rfq.awaitingBudgetOne" : "procurement.rfq.awaitingBudgetMany", { count: awaitingBudget.length })}{" "}
           <Link href="/procurement/budget" className="btn-secondary text-xs">
-            Open budget confirmation
+            {t("procurement.rfq.openBudget")}
           </Link>
         </div>
       )}
       {canIssueRfq && eligibleRequests.length === 0 && awaitingBudget.length === 0 && (
         <div className="card p-4 text-sm text-amber-700 bg-amber-50 border-amber-200">
-          No approved procurement requests are ready for a new RFQ. Approve a procurement request first, or update an existing RFQ from its detail page.
+          {t("procurement.rfq.noneReady")}
         </div>
       )}
 
@@ -325,8 +326,8 @@ export default function RfqListPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon="request_quote"
-          title="No RFQs found for this filter."
-          description="RFQs are issued from approved procurement requests."
+          title={t("procurement.rfq.empty")}
+          description={t("procurement.rfq.emptyHint")}
         />
       ) : (
         <div className="card">
@@ -334,13 +335,13 @@ export default function RfqListPage() {
             <table className="data-table min-w-[980px]">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th className="text-right">Est. Value</th>
-                  <th className="text-center">Quotes</th>
-                  <th>Deadline</th>
-                  <th>Status</th>
+                  <th>{t("procurement.col.reference")}</th>
+                  <th>{t("procurement.col.title")}</th>
+                  <th>{t("procurement.certificate.category")}</th>
+                  <th className="text-right">{t("procurement.index.estValue")}</th>
+                  <th className="text-center">{t("procurement.rfq.quotes")}</th>
+                  <th>{t("procurement.col.deadline")}</th>
+                  <th>{t("procurement.col.status")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -351,9 +352,9 @@ export default function RfqListPage() {
                   const needsBudget = !isAwarded && !isBudgetConfirmed(req);
                   const filter = isAwarded ? ("awarded" as const) : rfqFilter(req);
                   const badge = isAwarded
-                    ? { label: "Awarded", cls: "badge-success", icon: "emoji_events" }
+                    ? { label: "procurement.rfq.awarded", cls: "badge-success", icon: "emoji_events" }
                     : needsBudget
-                      ? { label: "Awaiting budget", cls: "badge-warning", icon: "account_balance" }
+                      ? { label: "procurement.rfq.awaitingBudget", cls: "badge-warning", icon: "account_balance" }
                       : rfqBadge(filter as RfqFilter);
                   const lowest = quotes.length > 0 ? Math.min(...quotes.map((q) => q.quoted_amount)) : null;
 
@@ -377,7 +378,7 @@ export default function RfqListPage() {
                             <span className="text-sm font-bold text-neutral-900">{quotes.length}</span>
                             {lowest != null && (
                               <span className="text-[10px] text-green-600 font-medium">
-                                Low: {req.currency ?? DEFAULT_CURRENCY} {lowest.toLocaleString()}
+                                {t("procurement.rfq.low", { amount: `${req.currency ?? DEFAULT_CURRENCY} ${lowest.toLocaleString()}` })}
                               </span>
                             )}
                           </div>
@@ -389,7 +390,7 @@ export default function RfqListPage() {
                       <td>
                         <span className={`badge ${badge.cls} inline-flex items-center gap-1`}>
                           <span className="material-symbols-outlined text-[11px]">{badge.icon}</span>
-                          {badge.label}
+                          {t(badge.label)}
                         </span>
                       </td>
                       <td>
@@ -397,7 +398,7 @@ export default function RfqListPage() {
                           href={`/procurement/rfq/${req.id}`}
                           className="inline-flex items-center gap-1 text-xs text-primary border border-primary/30 rounded-lg px-2.5 py-1 hover:bg-primary/5 transition-colors font-medium"
                         >
-                          Manage
+                          {t("procurement.rfq.manage")}
                           <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
                         </Link>
                       </td>
@@ -421,10 +422,10 @@ export default function RfqListPage() {
           <div className="card w-full max-w-3xl p-6 space-y-5 max-h-[90vh] overflow-y-auto scrollbar-hide" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-neutral-900">Create RFQ</h2>
-                <p className="text-sm text-neutral-500">Select a Finance-confirmed approved request, configure supplier targeting, and issue the RFQ.</p>
+                <h2 className="text-lg font-bold text-neutral-900">{t("procurement.rfq.create")}</h2>
+                <p className="text-sm text-neutral-500">{t("procurement.rfq.createHint")}</p>
               </div>
-              <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>Close</button>
+              <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>{t("common.close")}</button>
             </div>
 
             {formError && (
@@ -434,13 +435,13 @@ export default function RfqListPage() {
             )}
 
             <div className="space-y-2">
-              <label htmlFor="procurement-rfq-approved-procurement-request" className="block text-xs font-semibold text-neutral-600">Approved Procurement Request</label>
+              <label htmlFor="procurement-rfq-approved-procurement-request" className="block text-xs font-semibold text-neutral-600">{t("procurement.rfq.approvedRequest")}</label>
               <select id="procurement-rfq-approved-procurement-request"
                 className="form-input"
                 value={selectedRequestId}
                 onChange={(e) => setSelectedRequestId(e.target.value ? Number(e.target.value) : "")}
               >
-                <option value="">Select an approved request with budget confirmation</option>
+                <option value="">{t("procurement.rfq.selectRequest")}</option>
                 {eligibleRequests.map((request) => (
                   <option key={request.id} value={request.id}>
                     {request.reference_number} - {request.title}
@@ -452,19 +453,19 @@ export default function RfqListPage() {
             {selectedRequest && (
               <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 grid gap-3 md:grid-cols-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Reference</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("procurement.col.reference")}</p>
                   <p className="text-sm font-medium text-neutral-800">{selectedRequest.reference_number}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Title</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("procurement.col.title")}</p>
                   <p className="text-sm font-medium text-neutral-800">{selectedRequest.title}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Category</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("procurement.certificate.category")}</p>
                   <p className="text-sm font-medium text-neutral-800 capitalize">{selectedRequest.category}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Estimated Value</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("procurement.certificate.estimatedValue")}</p>
                   <p className="text-sm font-medium text-neutral-800">
                     {selectedRequest.currency ?? DEFAULT_CURRENCY} {(selectedRequest.estimated_value ?? 0).toLocaleString()}
                   </p>
@@ -474,8 +475,8 @@ export default function RfqListPage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                  <p className="block text-xs font-semibold text-neutral-600">Supplier Categories</p>
-                <span className="text-[11px] text-neutral-400">Select 1 to 3 categories</span>
+                  <p className="block text-xs font-semibold text-neutral-600">{t("procurement.rfq.supplierCategories")}</p>
+                <span className="text-[11px] text-neutral-400">{t("procurement.rfq.selectCategories")}</span>
               </div>
               <div className="grid gap-2 md:grid-cols-2">
                 {categories.map((category) => (
@@ -503,14 +504,14 @@ export default function RfqListPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label htmlFor="procurement-rfq-deadline" className="block text-xs font-semibold text-neutral-600 mb-1">Deadline</label>
+                <label htmlFor="procurement-rfq-deadline" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.col.deadline")}</label>
                 <input id="procurement-rfq-deadline" type="date" className="form-input" value={rfqDeadline} onChange={(e) => setRfqDeadline(e.target.value)} />
               </div>
               <div>
-                <label htmlFor="procurement-rfq-rfq-notes" className="block text-xs font-semibold text-neutral-600 mb-1">RFQ Notes</label>
+                <label htmlFor="procurement-rfq-rfq-notes" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.rfq.notes")}</label>
                 <textarea id="procurement-rfq-rfq-notes"
                   className="form-input h-[42px] resize-none"
-                  placeholder="Special instructions, delivery expectations, or submission notes"
+                  placeholder={t("procurement.rfq.notesPlaceholder")}
                   value={rfqNotes}
                   onChange={(e) => setRfqNotes(e.target.value)}
                 />
@@ -518,18 +519,18 @@ export default function RfqListPage() {
             </div>
 
             <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-neutral-700">
-              Registered suppliers matching the selected categories will receive system notifications and email. Additional email invitees will get a secure external quote link, plus a prompt to register on SADC-PF Nexus so they can view the full RFQ in the supplier portal.
+              {t("procurement.rfq.inviteInfo")}
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-neutral-600">Additional Email Invitees</p>
+                <p className="text-xs font-semibold text-neutral-600">{t("procurement.rfq.additionalInvitees")}</p>
                 <button
                   type="button"
                   className="btn-secondary text-xs"
                   onClick={() => setExternalInvites((current) => [...current, { name: "", email: "" }])}
                 >
-                  Add email address
+                  {t("procurement.rfq.addEmail")}
                 </button>
               </div>
 
@@ -537,7 +538,7 @@ export default function RfqListPage() {
                 <div key={index} className="grid gap-3 md:grid-cols-[1fr,1fr,auto]">
                   <input
                     className="form-input"
-                    placeholder="Supplier name"
+                    placeholder={t("procurement.rfq.supplierName")}
                     value={invite.name}
                     onChange={(e) =>
                       setExternalInvites((current) => current.map((item, i) => i === index ? { ...item, name: e.target.value } : item))
@@ -545,7 +546,7 @@ export default function RfqListPage() {
                   />
                   <input
                     className="form-input"
-                    placeholder="supplier@example.com"
+                    placeholder={t("procurement.rfq.emailPlaceholder")}
                     value={invite.email}
                     onChange={(e) =>
                       setExternalInvites((current) => current.map((item, i) => i === index ? { ...item, email: e.target.value } : item))
@@ -560,21 +561,21 @@ export default function RfqListPage() {
                       )
                     }
                   >
-                    Remove
+                    {t("procurement.remove")}
                   </button>
                 </div>
               ))}
             </div>
 
             <div className="flex justify-end gap-2">
-              <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
+              <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>{t("common.cancel")}</button>
               <button
                 type="button"
                 className="btn-primary disabled:opacity-60"
                 disabled={issueMutation.isPending || !selectedRequestId || categoryIds.length === 0}
                 onClick={() => issueMutation.mutate()}
               >
-                {issueMutation.isPending ? "Issuing..." : "Issue RFQ"}
+                {issueMutation.isPending ? t("procurement.rfq.issuing") : t("procurement.rfq.issue")}
               </button>
             </div>
           </div>

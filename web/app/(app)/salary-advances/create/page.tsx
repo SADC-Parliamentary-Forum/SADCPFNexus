@@ -10,6 +10,7 @@ import { Stepper } from "@/components/ui/Stepper";
 import { useFormDraft } from "@/lib/useFormDraft";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type AdvanceTypeOption = { value: string; label: string; desc?: string; icon?: string };
 
@@ -33,17 +34,16 @@ type EligibilityResult = {
   intended_recovery_payroll_date?: string;
 };
 
-const MONTH_NAMES = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
 const STEPS = [
-  { id: 0, label: "Eligibility",  icon: "assignment_turned_in" },
-  { id: 1, label: "Amount",       icon: "payments" },
-  { id: 2, label: "Review & Sign", icon: "draw" },
+  { id: 0, label: "salaryAdvances.create.step.eligibility", icon: "assignment_turned_in" },
+  { id: 1, label: "salaryAdvances.create.step.amount",      icon: "payments" },
+  { id: 2, label: "salaryAdvances.create.step.review",      icon: "draw" },
 ];
 
 export default function SalaryAdvanceCreatePage() {
   const router = useRouter();
   const toast = useToast();
+  const { t, localeTag } = useI18n();
   const [step, setStep] = useState(0);
 
   // Data from API
@@ -103,17 +103,19 @@ export default function SalaryAdvanceCreatePage() {
   const exceedsMax       = maxEligible != null && amountNum > maxEligible;
   const percentOfMax     = maxEligible != null && maxEligible > 0 ? Math.min((amountNum / maxEligible) * 100, 100) : 0;
   const payslipLabel     = eligibility?.payslip
-    ? `${MONTH_NAMES[eligibility.payslip.period_month] ?? eligibility.payslip.period_month} ${eligibility.payslip.period_year}`
+    ? eligibility.payslip.period_month >= 1 && eligibility.payslip.period_month <= 12
+      ? new Date(eligibility.payslip.period_year, eligibility.payslip.period_month - 1, 1).toLocaleDateString(localeTag, { month: "short", year: "numeric" })
+      : `${eligibility.payslip.period_month} ${eligibility.payslip.period_year}`
     : null;
   const recoveryLabel = eligibility?.intended_recovery_payroll_date
-    ? new Date(eligibility.intended_recovery_payroll_date).toLocaleDateString("en-GB", {
+    ? new Date(eligibility.intended_recovery_payroll_date).toLocaleDateString(localeTag, {
         day: "2-digit", month: "short", year: "numeric",
       })
     : (() => {
         const d = new Date();
         d.setMonth(d.getMonth() + 1);
         d.setDate(0);
-        return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+        return d.toLocaleDateString(localeTag, { day: "2-digit", month: "short", year: "numeric" });
       })();
 
   // Validation per step
@@ -124,7 +126,7 @@ export default function SalaryAdvanceCreatePage() {
     return false;
   };
 
-  const selectedType = advanceTypes.find((t) => t.value === advanceType);
+  const selectedType = advanceTypes.find((at) => at.value === advanceType);
 
   const handleSubmit = async (asDraft = false) => {
     if (!asDraft && !canProceed()) return;
@@ -150,12 +152,12 @@ export default function SalaryAdvanceCreatePage() {
       if (!asDraft && id) {
         await financeApi.submitAdvance(id, { deduction_authority_confirmed: true });
       }
-      toast.success(asDraft ? "Salary advance draft saved" : "Salary advance submitted");
+      toast.success(asDraft ? t("salaryAdvances.create.toast.draftSaved") : t("salaryAdvances.create.toast.submitted"));
       router.push(id ? `/salary-advances/${id}` : "/salary-advances");
     } catch (err) {
-      const message = apiErrorMessage(err, "Failed to submit. Please try again.");
+      const message = apiErrorMessage(err, t("salaryAdvances.create.toast.submitFailed"));
       setError(message);
-      toast.error(asDraft ? "Salary advance draft not saved" : "Salary advance not submitted", message);
+      toast.error(asDraft ? t("salaryAdvances.create.toast.draftNotSaved") : t("salaryAdvances.create.toast.notSubmitted"), message);
     } finally {
       setSubmitting(false);
     }
@@ -165,9 +167,9 @@ export default function SalaryAdvanceCreatePage() {
   const renderStep0 = () => (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-neutral-900">Eligibility & Classification</h3>
+        <h3 className="text-base font-semibold text-neutral-900">{t("salaryAdvances.create.s0.title")}</h3>
         <p className="text-sm text-neutral-500 mt-0.5">
-          Select the advance type that matches your situation. Policy limits apply per classification.
+          {t("salaryAdvances.create.s0.subtitle")}
         </p>
       </div>
 
@@ -181,16 +183,20 @@ export default function SalaryAdvanceCreatePage() {
           <span className="material-symbols-outlined text-amber-600 text-[20px] mt-0.5">warning</span>
           <div>
             <p className="text-sm font-semibold text-amber-900">
-              {eligibility?.exposure?.blocked ? "Outstanding Advance Blocks New Request" : "Not Eligible Yet"}
+              {eligibility?.exposure?.blocked ? t("salaryAdvances.create.s0.blocked") : t("salaryAdvances.create.s0.notEligibleYet")}
             </p>
             <p className="text-xs text-amber-700 mt-1">
               {eligibility?.exposure?.has_outstanding_balance
-                ? `You have an outstanding balance of ${currencySymbol} ${Number(eligibility.exposure.outstanding_balance).toLocaleString()}. Full recovery is required before a new advance.`
+                ? t("salaryAdvances.create.s0.outstanding", {
+                    amount: `${currencySymbol} ${Number(eligibility.exposure.outstanding_balance).toLocaleString()}`,
+                  })
                 : eligibility?.exposure?.has_active_advance
-                  ? `You already have an active advance (${eligibility.exposure.active_advance?.reference_number ?? "in progress"}).`
+                  ? t("salaryAdvances.create.s0.activeAdvance", {
+                      ref: eligibility.exposure.active_advance?.reference_number ?? t("salaryAdvances.create.s0.inProgress"),
+                    })
                   : eligibility?.reason === "no_confirmed_payslip"
-                    ? "Your payslip has not been confirmed by HR. You cannot proceed until HR confirms your net salary."
-                    : "You are not currently eligible to request a salary advance."}
+                    ? t("salaryAdvances.create.s0.noPayslip")
+                    : t("salaryAdvances.create.s0.notEligible")}
             </p>
           </div>
         </div>
@@ -199,7 +205,7 @@ export default function SalaryAdvanceCreatePage() {
           <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
             <span className="material-symbols-outlined text-green-600 text-[20px]">check_circle</span>
             <div>
-              <p className="text-xs font-semibold text-green-800">Confirmed Net Salary</p>
+              <p className="text-xs font-semibold text-green-800">{t("salaryAdvances.detail.snapshot.net")}</p>
               <p className="text-[11px] text-green-600">
                 {netSalary != null ? `${currencySymbol} ${netSalary.toLocaleString()}` : "—"}
                 {payslipLabel ? ` (${payslipLabel})` : ""}
@@ -209,14 +215,14 @@ export default function SalaryAdvanceCreatePage() {
           <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
             <span className="material-symbols-outlined text-green-600 text-[20px]">check_circle</span>
             <div>
-              <p className="text-xs font-semibold text-green-800">No Active Advance</p>
-              <p className="text-[11px] text-green-600">Account is clear</p>
+              <p className="text-xs font-semibold text-green-800">{t("salaryAdvances.create.s0.noActive")}</p>
+              <p className="text-[11px] text-green-600">{t("salaryAdvances.create.s0.accountClear")}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
             <span className="material-symbols-outlined text-green-600 text-[20px]">check_circle</span>
             <div>
-              <p className="text-xs font-semibold text-green-800">Maximum Advance</p>
+              <p className="text-xs font-semibold text-green-800">{t("salaryAdvances.create.s0.maxAdvance")}</p>
               <p className="text-[11px] text-green-600">
                 {maxEligible != null ? `${currencySymbol} ${maxEligible.toLocaleString()}` : "—"}
               </p>
@@ -228,7 +234,7 @@ export default function SalaryAdvanceCreatePage() {
       {/* Advance type grid */}
       <div className="space-y-2">
         <p className="block text-xs font-semibold text-neutral-700">
-          Advance Type <span className="text-red-500">*</span>
+          {t("salaryAdvances.create.s0.advanceType")} <span className="text-red-500">*</span>
         </p>
         {advanceTypes.length === 0 ? (
           <div className="space-y-2">
@@ -238,29 +244,29 @@ export default function SalaryAdvanceCreatePage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {advanceTypes.map((t) => (
+            {advanceTypes.map((at) => (
               <button
-                key={t.value}
+                key={at.value}
                 type="button"
-                onClick={() => setAdvanceType(t.value)}
+                onClick={() => setAdvanceType(at.value)}
                 className={cn(
                   "w-full flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all",
-                  advanceType === t.value
+                  advanceType === at.value
                     ? "border-primary bg-primary/5 ring-1 ring-primary"
                     : "border-neutral-200 bg-white hover:border-neutral-300",
                 )}
               >
                 <div className={cn(
                   "h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0",
-                  advanceType === t.value ? "bg-primary text-white" : "bg-primary/10 text-primary",
+                  advanceType === at.value ? "bg-primary text-white" : "bg-primary/10 text-primary",
                 )}>
-                  <span className="material-symbols-outlined text-[18px]">{t.icon ?? "payments"}</span>
+                  <span className="material-symbols-outlined text-[18px]">{at.icon ?? "payments"}</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-neutral-900">{t.label}</p>
-                  {t.desc && <p className="text-xs text-neutral-500 mt-0.5">{t.desc}</p>}
+                  <p className="text-sm font-semibold text-neutral-900">{at.label}</p>
+                  {at.desc && <p className="text-xs text-neutral-500 mt-0.5">{at.desc}</p>}
                 </div>
-                {advanceType === t.value && (
+                {advanceType === at.value && (
                   <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>
                 )}
               </button>
@@ -273,24 +279,24 @@ export default function SalaryAdvanceCreatePage() {
       <div className="rounded-xl bg-gradient-to-br from-primary to-blue-700 p-5 text-white">
         <div className="flex items-center gap-2 mb-2">
           <span className="material-symbols-outlined text-[18px]">policy</span>
-          <p className="text-sm font-semibold">Policy Limits (Class A)</p>
+          <p className="text-sm font-semibold">{t("salaryAdvances.create.policy.title")}</p>
         </div>
         <ul className="text-xs opacity-90 space-y-1.5">
           <li className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[14px]">arrow_right</span>
-            Maximum advance: 50% of confirmed net salary
+            {t("salaryAdvances.create.policy.max")}
           </li>
           <li className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[14px]">arrow_right</span>
-            Full recovery in the next applicable payroll month
+            {t("salaryAdvances.create.policy.recovery")}
           </li>
           <li className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[14px]">arrow_right</span>
-            One active advance at a time
+            {t("salaryAdvances.create.policy.oneActive")}
           </li>
           <li className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[14px]">arrow_right</span>
-            Finance certify → Principal review → SG approval
+            {t("salaryAdvances.create.policy.chain")}
           </li>
         </ul>
       </div>
@@ -301,9 +307,9 @@ export default function SalaryAdvanceCreatePage() {
   const renderStep1 = () => (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-neutral-900">Amount &amp; Recovery</h3>
+        <h3 className="text-base font-semibold text-neutral-900">{t("salaryAdvances.create.s1.title")}</h3>
         <p className="text-sm text-neutral-500 mt-0.5">
-          Specify the advance amount. Under current policy the full amount is recovered in a single payroll month.
+          {t("salaryAdvances.create.s1.subtitle")}
         </p>
       </div>
 
@@ -311,7 +317,7 @@ export default function SalaryAdvanceCreatePage() {
         {/* Amount */}
         <div className="space-y-1.5">
           <label htmlFor="salary-advance-create-amount" className="block text-xs font-semibold text-neutral-700">
-            Amount ({defaultCurrency}) <span className="text-red-500">*</span>
+            {t("salaryAdvances.create.s1.amount", { currency: defaultCurrency })} <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm font-medium">
@@ -329,7 +335,7 @@ export default function SalaryAdvanceCreatePage() {
           {exceedsMax && (
             <p className="text-[11px] text-red-500 flex items-center gap-1">
               <span className="material-symbols-outlined text-[13px]">error</span>
-              Exceeds 50% of net salary ({currencySymbol} {maxEligible?.toLocaleString() ?? "—"})
+              {t("salaryAdvances.create.s1.exceeds", { amount: `${currencySymbol} ${maxEligible?.toLocaleString() ?? "—"}` })}
             </p>
           )}
           {maxEligible != null && !exceedsMax && amountNum > 0 && (
@@ -337,22 +343,22 @@ export default function SalaryAdvanceCreatePage() {
               <div className="mt-1 w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden">
                 <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${percentOfMax}%` }} />
               </div>
-              <p className="text-[11px] text-neutral-400">{percentOfMax.toFixed(0)}% of maximum limit</p>
+              <p className="text-[11px] text-neutral-400">{t("salaryAdvances.create.s1.ofMax", { percent: percentOfMax.toFixed(0) })}</p>
             </>
           )}
         </div>
 
         {/* Full EOM recovery */}
         <div className="space-y-1.5">
-          <p className="block text-xs font-semibold text-neutral-700">Recovery</p>
+          <p className="block text-xs font-semibold text-neutral-700">{t("salaryAdvances.detail.step.recovery")}</p>
           <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
-            <p className="text-sm font-semibold text-neutral-900">Full amount — one payroll month</p>
+            <p className="text-sm font-semibold text-neutral-900">{t("salaryAdvances.detail.fullAmountOneMonth")}</p>
             <p className="text-xs text-neutral-500 mt-1">
-              Intended recovery: <span className="font-medium text-neutral-800">{recoveryLabel}</span>
+              {t("salaryAdvances.create.s1.intendedRecovery")} <span className="font-medium text-neutral-800">{recoveryLabel}</span>
             </p>
             {amountNum > 0 && (
               <p className="text-xs text-neutral-500 mt-1">
-                Deduction: <span className="font-semibold text-neutral-800">{currencySymbol} {monthlyDeduction.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                {t("salaryAdvances.create.s1.deduction")} <span className="font-semibold text-neutral-800">{currencySymbol} {monthlyDeduction.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </p>
             )}
           </div>
@@ -362,11 +368,11 @@ export default function SalaryAdvanceCreatePage() {
       {/* Purpose */}
       <div className="space-y-1.5">
         <label htmlFor="salary-advances-create-purpose" className="block text-xs font-semibold text-neutral-700">
-          Purpose <span className="text-red-500">*</span>
+          {t("salaryAdvances.detail.purpose")} <span className="text-red-500">*</span>
         </label>
         <input id="salary-advances-create-purpose"
           className="form-input"
-          placeholder="e.g. Medical expenses, School fees, Home improvement…"
+          placeholder={t("salaryAdvances.create.s1.purposePlaceholder")}
           value={purpose}
           onChange={(e) => setPurpose(e.target.value)}
         />
@@ -375,12 +381,12 @@ export default function SalaryAdvanceCreatePage() {
       {/* Justification */}
       <div className="space-y-1.5">
         <label htmlFor="salary-advances-create-detailed-justification" className="block text-xs font-semibold text-neutral-700">
-          Detailed Justification <span className="text-red-500">*</span>
+          {t("salaryAdvances.create.s1.justification")} <span className="text-red-500">*</span>
         </label>
         <textarea id="salary-advances-create-detailed-justification"
           rows={4}
           className="form-input resize-none"
-          placeholder="Explain why this advance is necessary and how it will be used…"
+          placeholder={t("salaryAdvances.create.s1.justificationPlaceholder")}
           value={justification}
           onChange={(e) => setJustification(e.target.value)}
         />
@@ -392,38 +398,38 @@ export default function SalaryAdvanceCreatePage() {
         <div className="flex items-start gap-3">
           <span className="material-symbols-outlined text-primary text-[20px] mt-0.5">info</span>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-neutral-900 mb-3">Projected Deduction Schedule</p>
+            <p className="text-sm font-semibold text-neutral-900 mb-3">{t("salaryAdvances.create.s1.projected")}</p>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Confirmed Net Salary</span>
+                <span className="text-neutral-500">{t("salaryAdvances.detail.snapshot.net")}</span>
                 <span className="font-medium text-neutral-800">
                   {netSalary != null ? `${currencySymbol} ${netSalary.toLocaleString()}` : "—"}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Maximum Eligible (50%)</span>
+                <span className="text-neutral-500">{t("salaryAdvances.create.s1.maxEligible")}</span>
                 <span className="font-medium text-neutral-800">
                   {maxEligible != null ? `${currencySymbol} ${maxEligible.toLocaleString()}` : "—"}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Advance Amount</span>
+                <span className="text-neutral-500">{t("salaryAdvances.create.s1.advanceAmount")}</span>
                 <span className="font-medium text-neutral-800">
                   {amountNum > 0 ? `${currencySymbol} ${amountNum.toLocaleString()}` : "—"}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Recovery</span>
-                <span className="font-medium text-neutral-800">Full amount — one payroll month</span>
+                <span className="text-neutral-500">{t("salaryAdvances.detail.step.recovery")}</span>
+                <span className="font-medium text-neutral-800">{t("salaryAdvances.detail.fullAmountOneMonth")}</span>
               </div>
               <div className="flex justify-between text-sm border-t border-primary/10 pt-2 mt-1">
-                <span className="text-neutral-600 font-medium">Payroll Deduction</span>
+                <span className="text-neutral-600 font-medium">{t("salaryAdvances.create.payrollDeduction")}</span>
                 <span className="font-bold text-primary font-mono">
                   {monthlyDeduction > 0 ? `${currencySymbol} ${monthlyDeduction.toFixed(2)}` : "—"}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Intended Recovery Date</span>
+                <span className="text-neutral-500">{t("salaryAdvances.create.s1.intendedRecoveryDate")}</span>
                 <span className="font-medium text-neutral-800">{recoveryLabel}</span>
               </div>
             </div>
@@ -437,9 +443,9 @@ export default function SalaryAdvanceCreatePage() {
   const renderStep2 = () => (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-neutral-900">Review & Sign</h3>
+        <h3 className="text-base font-semibold text-neutral-900">{t("salaryAdvances.create.step.review")}</h3>
         <p className="text-sm text-neutral-500 mt-0.5">
-          Review your request summary. Your digital consent below authorises the Finance Department to proceed.
+          {t("salaryAdvances.create.s2.subtitle")}
         </p>
       </div>
 
@@ -451,17 +457,17 @@ export default function SalaryAdvanceCreatePage() {
           </div>
           <div>
             <p className="text-sm font-semibold text-neutral-900">{selectedType?.label ?? advanceType}</p>
-            <p className="text-xs text-neutral-500">Salary Advance Request</p>
+            <p className="text-xs text-neutral-500">{t("salaryAdvances.create.title")}</p>
           </div>
         </div>
 
         <div className="divide-y divide-neutral-100">
           {[
-            { label: "Amount Requested", value: `${currencySymbol} ${amountNum.toLocaleString()}` },
-            { label: "Recovery", value: "Full amount — one payroll month" },
-            { label: "Payroll Deduction", value: `${currencySymbol} ${monthlyDeduction.toFixed(2)}`, highlight: true },
-            { label: "Intended Recovery", value: recoveryLabel },
-            { label: "Purpose", value: purpose },
+            { label: t("salaryAdvances.create.s2.amountRequested"), value: `${currencySymbol} ${amountNum.toLocaleString()}` },
+            { label: t("salaryAdvances.detail.step.recovery"), value: t("salaryAdvances.detail.fullAmountOneMonth") },
+            { label: t("salaryAdvances.create.payrollDeduction"), value: `${currencySymbol} ${monthlyDeduction.toFixed(2)}`, highlight: true },
+            { label: t("salaryAdvances.create.s2.intendedRecovery"), value: recoveryLabel },
+            { label: t("salaryAdvances.detail.purpose"), value: purpose },
           ].map(({ label, value, highlight }) => (
             <div key={label} className="flex justify-between py-2.5 text-sm">
               <span className="text-neutral-500">{label}</span>
@@ -474,7 +480,7 @@ export default function SalaryAdvanceCreatePage() {
 
         {justification && (
           <div className="rounded-lg bg-neutral-50 border border-neutral-100 px-4 py-3">
-            <p className="text-[11px] text-neutral-400 font-medium mb-1">Justification</p>
+            <p className="text-[11px] text-neutral-400 font-medium mb-1">{t("salaryAdvances.detail.justification")}</p>
             <p className="text-xs text-neutral-600 leading-relaxed">{justification}</p>
           </div>
         )}
@@ -490,11 +496,12 @@ export default function SalaryAdvanceCreatePage() {
             onChange={(e) => setConsented(e.target.checked)}
           />
           <div>
-            <p className="text-sm font-semibold text-amber-900">I authorise full payroll deduction</p>
+            <p className="text-sm font-semibold text-amber-900">{t("salaryAdvances.create.s2.consentTitle")}</p>
             <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-              By checking this box, I authorise the Finance Department to deduct the full advance of{" "}
-              {currencySymbol} {amountNum.toLocaleString()} from my salary in the applicable payroll month
-              ending {recoveryLabel}. I understand this consent is digitally logged and irrevocable after final approval.
+              {t("salaryAdvances.create.s2.consentBody", {
+                amount: `${currencySymbol} ${amountNum.toLocaleString()}`,
+                date: recoveryLabel,
+              })}
             </p>
           </div>
         </label>
@@ -514,14 +521,14 @@ export default function SalaryAdvanceCreatePage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Salary Advance Request"
-        subtitle="Subject to policy limits and Secretary General approval."
+        title={t("salaryAdvances.create.title")}
+        subtitle={t("salaryAdvances.create.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Finance", href: "/finance" },
-              { label: "Salary Advance", href: "/salary-advances" },
-              { label: "New Request" },
+              { label: "nav.finance", href: "/finance" },
+              { label: "salaryAdvances.type.salary", href: "/salary-advances" },
+              { label: "salaryAdvances.create.newRequest" },
             ]}
           />
         }
@@ -531,16 +538,16 @@ export default function SalaryAdvanceCreatePage() {
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800" role="status">
           <span className="material-symbols-outlined text-[16px]">history</span>
           <span className="flex-1">
-            Unsaved request from {new Date(draft.restorable.savedAt).toLocaleString()} found. Consent is not restored and must be given again.
+            {t("salaryAdvances.create.draftFound", { date: new Date(draft.restorable.savedAt).toLocaleString(localeTag) })}
           </span>
-          <button type="button" className="btn-primary px-3 py-1.5 text-xs" onClick={restoreDraft}>Restore</button>
-          <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={draft.discard}>Discard</button>
+          <button type="button" className="btn-primary px-3 py-1.5 text-xs" onClick={restoreDraft}>{t("salaryAdvances.create.restore")}</button>
+          <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={draft.discard}>{t("salaryAdvances.create.discard")}</button>
         </div>
       )}
 
       <div className="card p-5">
         <Stepper
-          steps={STEPS.map((s) => ({ label: s.label }))}
+          steps={STEPS.map((s) => ({ label: t(s.label) }))}
           currentStep={step + 1}
         />
       </div>
@@ -558,7 +565,7 @@ export default function SalaryAdvanceCreatePage() {
           className="btn-secondary flex items-center gap-2"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          {step === 0 ? "Cancel" : "Back"}
+          {step === 0 ? t("common.cancel") : t("common.back")}
         </button>
 
         <div className="flex items-center gap-2">
@@ -571,7 +578,7 @@ export default function SalaryAdvanceCreatePage() {
                 className="btn-secondary text-sm flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px]">save</span>
-                Save Draft
+                {t("salaryAdvances.create.saveDraft")}
               </button>
               <button
                 type="button"
@@ -580,7 +587,7 @@ export default function SalaryAdvanceCreatePage() {
                 className="btn-primary text-sm flex items-center gap-2 disabled:opacity-40"
               >
                 <span className="material-symbols-outlined text-[18px]">send</span>
-                {submitting ? "Submitting…" : "Submit Request"}
+                {submitting ? t("salaryAdvances.create.submitting") : t("salaryAdvances.create.submitRequest")}
               </button>
             </>
           ) : (
@@ -590,7 +597,7 @@ export default function SalaryAdvanceCreatePage() {
               disabled={!canProceed()}
               className="btn-primary flex items-center gap-2 disabled:opacity-40"
             >
-              Next Step
+              {t("salaryAdvances.create.nextStep")}
               <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
             </button>
           )}

@@ -3,10 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { contractsApi, type ContractAnalytics } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function Bars({ rows, currency = false }: { rows: { label: string; value: number; count: number }[]; currency?: boolean }) {
+  const { t } = useI18n();
   const max = Math.max(1, ...rows.map((r) => r.value));
-  if (rows.length === 0) return <p className="text-sm text-neutral-400 p-4">No data.</p>;
+  if (rows.length === 0) return <p className="text-sm text-neutral-400 p-4">{t("contracts.analytics.noData")}</p>;
   return (
     <div className="space-y-2 p-4">
       {rows.slice(0, 8).map((r) => (
@@ -25,6 +27,7 @@ function Bars({ rows, currency = false }: { rows: { label: string; value: number
 }
 
 export default function ContractAnalyticsPage() {
+  const { t } = useI18n();
   const { data, isLoading } = useQuery({
     queryKey: ["contract-analytics"],
     queryFn: () => contractsApi.analytics().then((r) => r.data.data),
@@ -34,50 +37,50 @@ export default function ContractAnalyticsPage() {
   return (
     <div className="space-y-6">
       <ModulePageHeader
-        title="Contract Analytics"
-        subtitle="Portfolio value, creation trend, expiry forecast, amendments and performance"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Contracts", href: "/contracts" }, { label: "Analytics" }]} />}
+        title="contracts.analytics.title"
+        subtitle="contracts.analytics.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.contracts", href: "/contracts" }, { label: "contracts.analytics.crumb" }]} />}
       />
 
       {isLoading || !a ? (
-        <div className="card p-6 text-sm text-neutral-500">Loading analytics…</div>
+        <div className="card p-6 text-sm text-neutral-500">{t("contracts.analytics.loading")}</div>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {([
-              ["Total contracts", a.totals.contracts],
-              ["Active", a.totals.active],
-              ["Current value", a.totals.current_value.toLocaleString()],
-              ["Avg execution (days)", a.avg_execution_turnaround_days ?? "—"],
-              ["Amendments / contract", a.amendment_frequency.avg_per_contract],
-              ["On-time deliverables", `${a.on_time_deliverable_rate.rate}%`],
-              ["Supplier score (avg)", a.supplier_performance.average_overall ?? "—"],
-              ["Supplier evaluations", a.supplier_performance.evaluations],
+              ["contracts.analytics.totalContracts", a.totals.contracts],
+              ["contracts.status.active", a.totals.active],
+              ["contracts.analytics.currentValue", a.totals.current_value.toLocaleString()],
+              ["contracts.analytics.avgExecution", a.avg_execution_turnaround_days ?? "—"],
+              ["contracts.analytics.amendmentsPer", a.amendment_frequency.avg_per_contract],
+              ["contracts.analytics.onTime", `${a.on_time_deliverable_rate.rate}%`],
+              ["contracts.analytics.supplierScore", a.supplier_performance.average_overall ?? "—"],
+              ["contracts.analytics.supplierEvaluations", a.supplier_performance.evaluations],
             ] as [string, string | number][]).map(([label, val]) => (
               <div key={label} className="card p-4">
                 <p className="text-2xl font-bold text-neutral-900">{val}</p>
-                <p className="text-xs text-neutral-500 mt-0.5">{label}</p>
+                <p className="text-xs text-neutral-500 mt-0.5">{t(label)}</p>
               </div>
             ))}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="card overflow-hidden">
-              <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Value by department</div>
+              <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">{t("contracts.analytics.byDepartment")}</div>
               <Bars rows={a.value_by_department} currency />
             </div>
             <div className="card overflow-hidden">
-              <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Value by type</div>
+              <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">{t("contracts.analytics.byType")}</div>
               <Bars rows={a.value_by_type} currency />
             </div>
             <div className="card overflow-hidden">
-              <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Value by donor</div>
+              <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">{t("contracts.analytics.byDonor")}</div>
               <Bars rows={a.value_by_donor} currency />
             </div>
             <div className="card overflow-hidden">
-              <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Expiry forecast</div>
+              <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">{t("contracts.analytics.expiryForecast")}</div>
               <table className="data-table">
-                <thead><tr><th>Window</th><th className="text-right">Contracts</th><th className="text-right">Value</th></tr></thead>
+                <thead><tr><th>{t("contracts.analytics.window")}</th><th className="text-right">{t("nav.contracts")}</th><th className="text-right">{t("contracts.field.value")}</th></tr></thead>
                 <tbody>
                   {a.expiry_forecast.map((b) => (
                     <tr key={b.bucket}><td className="text-sm">{b.bucket}</td><td className="text-right text-sm">{b.count}</td><td className="text-right text-sm">{b.value.toLocaleString()}</td></tr>
@@ -88,7 +91,7 @@ export default function ContractAnalyticsPage() {
           </div>
 
           <div className="card overflow-hidden">
-            <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Monthly contract creation (last 12 months)</div>
+            <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">{t("contracts.analytics.monthly")}</div>
             <div className="flex items-end gap-1 p-4 h-40">
               {a.monthly_creation.map((m) => {
                 const max = Math.max(1, ...a.monthly_creation.map((x) => x.count));

@@ -6,31 +6,33 @@ import Link from "next/link";
 import { researcherReportsApi, type ResearcherReport } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  draft:              { label: "Draft",              cls: "badge-muted"    },
-  submitted:          { label: "Submitted",          cls: "badge-primary"  },
-  acknowledged:       { label: "Acknowledged",       cls: "badge-success"  },
-  revision_requested: { label: "Revision Requested", cls: "badge-warning"  },
-  archived:           { label: "Archived",           cls: "badge-muted"    },
+  draft:              { label: "srhr.reportStatus.draft", cls: "badge-muted"    },
+  submitted:          { label: "srhr.reportStatus.submitted", cls: "badge-primary"  },
+  acknowledged:       { label: "srhr.reportStatus.acknowledged", cls: "badge-success"  },
+  revision_requested: { label: "srhr.reportStatus.revision_requested", cls: "badge-warning"  },
+  archived:           { label: "srhr.reportStatus.archived", cls: "badge-muted"    },
 };
 
 const typeLabel: Record<string, string> = {
-  monthly:   "Monthly",
-  quarterly: "Quarterly",
-  annual:    "Annual",
-  ad_hoc:    "Ad Hoc",
+  monthly:   "srhr.reportType.monthly",
+  quarterly: "srhr.reportType.quarterly",
+  annual:    "srhr.reportType.annual",
+  ad_hoc:    "srhr.reportType.ad_hoc",
 };
 
 const FILTERS = [
-  { label: "All",        value: "" },
-  { label: "Draft",      value: "draft" },
-  { label: "Submitted",  value: "submitted" },
-  { label: "Acknowledged", value: "acknowledged" },
-  { label: "Revision",   value: "revision_requested" },
+  { label: "timesheet.import.filterAll", value: "" },
+  { label: "srhr.reportStatus.draft", value: "draft" },
+  { label: "srhr.reportStatus.submitted", value: "submitted" },
+  { label: "srhr.reportStatus.acknowledged", value: "acknowledged" },
+  { label: "srhr.reports.filterRevision", value: "revision_requested" },
 ];
 
 export default function ResearcherReportsPage() {
+  const { t } = useI18n();
   const [reports, setReports] = useState<ResearcherReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus]   = useState("");
@@ -57,13 +59,13 @@ export default function ResearcherReportsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Activity Reports"
-        subtitle="Periodic activity reports submitted by SRHR researchers."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Activity Reports" }]} />}
+        title="srhr.deployment.activityReports"
+        subtitle="srhr.reports.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "srhr.deployment.activityReports" }]} />}
       />
         <Link href="/srhr/reports/new" className="btn-primary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">add_notes</span>
-          Submit Report
+          {t("srhr.submitReport")}
         </Link>
       </div>
 
@@ -76,7 +78,7 @@ export default function ResearcherReportsPage() {
               onClick={() => { setStatus(f.value); setPage(1); }}
               className={`filter-tab${status === f.value ? " active" : ""}`}
             >
-              {f.label}
+              {t(f.label)}
             </button>
           ))}
         </div>
@@ -84,12 +86,12 @@ export default function ResearcherReportsPage() {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[18px]">search</span>
           <input
             className="form-input pl-9 w-56"
-            placeholder="Search…"
+            placeholder={t("srhr.search")}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        <p className="text-sm text-neutral-500">{total} report{total !== 1 ? "s" : ""}</p>
+        <p className="text-sm text-neutral-500">{t(total === 1 ? "srhr.reports.countOne" : "srhr.reports.countMany", { count: total })}</p>
       </div>
 
       {/* Table */}
@@ -97,13 +99,13 @@ export default function ResearcherReportsPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Ref</th>
-              <th>Title</th>
-              <th>Researcher</th>
-              <th>Parliament</th>
-              <th>Type</th>
-              <th>Period</th>
-              <th>Status</th>
+              <th>{t("srhr.col.ref")}</th>
+              <th>{t("srhr.reports.colTitle")}</th>
+              <th>{t("srhr.col.researcher")}</th>
+              <th>{t("srhr.col.parliament")}</th>
+              <th>{t("srhr.col.type")}</th>
+              <th>{t("srhr.reports.colPeriod")}</th>
+              <th>{t("hr.timesheets.monthly.status")}</th>
               <th></th>
             </tr>
           </thead>
@@ -118,7 +120,7 @@ export default function ResearcherReportsPage() {
                 ))
               : reports.length === 0
               ? (
-                  <TableEmpty colSpan={8} title="No reports found." />
+                  <TableEmpty colSpan={8} title={t("srhr.reports.empty")} />
                 )
               : reports.map((r) => (
                   <tr key={r.id}>
@@ -128,17 +130,17 @@ export default function ResearcherReportsPage() {
                     </td>
                     <td className="text-sm text-neutral-700">{r.employee?.name ?? "—"}</td>
                     <td className="text-sm text-neutral-600">{r.parliament?.country_name ?? "—"}</td>
-                    <td className="text-sm text-neutral-600">{typeLabel[r.report_type] ?? r.report_type}</td>
+                    <td className="text-sm text-neutral-600">{typeLabel[r.report_type] ? t(typeLabel[r.report_type]) : r.report_type}</td>
                     <td className="text-sm text-neutral-500 whitespace-nowrap">
                       {formatDate(r.period_start)} – {formatDate(r.period_end)}
                     </td>
                     <td>
                       <span className={`badge ${statusConfig[r.status]?.cls ?? "badge-muted"}`}>
-                        {statusConfig[r.status]?.label ?? r.status}
+                        {statusConfig[r.status] ? t(statusConfig[r.status].label) : r.status}
                       </span>
                     </td>
                     <td>
-                      <Link href={`/srhr/reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">View</Link>
+                      <Link href={`/srhr/reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">{t("hr.timesheets.team.view")}</Link>
                     </td>
                   </tr>
                 ))}
@@ -148,9 +150,9 @@ export default function ResearcherReportsPage() {
 
       {lastPage > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <button className="btn-secondary text-xs px-3 py-1.5" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
-          <span className="text-xs text-neutral-500">Page {page} of {lastPage}</span>
-          <button className="btn-secondary text-xs px-3 py-1.5" disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>Next</button>
+          <button className="btn-secondary text-xs px-3 py-1.5" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{t("common.previous")}</button>
+          <span className="text-xs text-neutral-500">{t("common.pageOf", { page, total: lastPage })}</span>
+          <button className="btn-secondary text-xs px-3 py-1.5" disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</button>
         </div>
       )}
     </div>

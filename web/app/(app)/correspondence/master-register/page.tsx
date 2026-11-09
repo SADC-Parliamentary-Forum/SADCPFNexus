@@ -13,8 +13,10 @@ import {
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function MasterRegisterPage() {
+  const { t } = useI18n();
   const [items, setItems] = useState<CorrespondenceLetter[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -49,27 +51,27 @@ export default function MasterRegisterPage() {
         status: item.status,
       })),
       [
-        { key: "date", header: "Date" },
-        { key: "reference", header: "Reference" },
-        { key: "direction", header: "Direction" },
-        { key: "subject", header: "Subject" },
-        { key: "owner", header: "Owner" },
-        { key: "status", header: "Status" },
+        { key: "date", header: t("correspondence.col.date") },
+        { key: "reference", header: t("correspondence.col.reference") },
+        { key: "direction", header: t("correspondence.col.direction") },
+        { key: "subject", header: t("correspondence.col.subject") },
+        { key: "owner", header: t("correspondence.col.owner") },
+        { key: "status", header: t("correspondence.col.status") },
       ],
     );
   };
 
   return (
     <RegisterShell
-      title="Master Register"
-      subtitle="Chronological institutional register — one authoritative document per entry, linked to subject files."
+      title={t("correspondence.masterRegister.title")}
+      subtitle={t("correspondence.masterRegister.subtitle")}
       density={density}
       onDensityChange={setDensity}
       loading={loading}
       filters={
         <input
           className="form-input max-w-md"
-          placeholder="Search reference, subject, sender…"
+          placeholder={t("correspondence.searchPlaceholder")}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -85,14 +87,14 @@ export default function MasterRegisterPage() {
             disabled={selection.selectedCount === 0}
             onClick={handleExportSelected}
           >
-            Export selected
+            {t("correspondence.exportSelected")}
           </button>
         </BulkSelectionBar>
       }
       empty={
         !loading && items.length === 0 ? (
           <div className="card">
-            <EmptyState icon="mail" title="No correspondence entries in the master register." />
+            <EmptyState icon="mail" title={t("correspondence.masterRegister.empty")} />
           </div>
         ) : null
       }
@@ -108,12 +110,12 @@ export default function MasterRegisterPage() {
                   onChange={selection.toggleAllSelectable}
                 />
               </th>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Reference</th>
-              <th className="px-4 py-3">Direction</th>
-              <th className="px-4 py-3">Subject</th>
-              <th className="px-4 py-3">Owner</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">{t("correspondence.col.date")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.reference")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.direction")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.subject")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.owner")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.status")}</th>
             </tr>
           </thead>
           <tbody>
@@ -123,7 +125,7 @@ export default function MasterRegisterPage() {
                   <RowCheckbox
                     checked={selection.isSelected(item.id)}
                     onChange={() => selection.toggle(item.id)}
-                    label={`Select ${item.registry_reference || item.reference_number || item.id}`}
+                    label={t("correspondence.selectRow", { ref: String(item.registry_reference || item.reference_number || item.id) })}
                   />
                 </td>
                 <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">

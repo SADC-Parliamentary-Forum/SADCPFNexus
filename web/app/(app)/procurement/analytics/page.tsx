@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { procurementAnalyticsApi, type ProcurementFlag } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const flagSeverityConfig: Record<string, { cls: string; bg: string; icon: string }> = {
   critical: { cls: "text-red-700",    bg: "bg-red-50 border-red-200",    icon: "error"         },
@@ -13,7 +14,15 @@ const flagSeverityConfig: Record<string, { cls: string; bg: string; icon: string
   low:      { cls: "text-neutral-600",bg: "bg-neutral-50 border-neutral-200",icon: "flag"      },
 };
 
+const SEVERITY_KEYS: Record<string, string> = {
+  critical: "procurement.analytics.severity.critical",
+  high: "procurement.analytics.severity.high",
+  medium: "procurement.analytics.severity.medium",
+  low: "procurement.analytics.severity.low",
+};
+
 export default function ProcurementAnalyticsPage() {
+  const { t } = useI18n();
   const { data: summaryData, isLoading: summaryLoading } = useQuery({
     queryKey: ["procurement-analytics-summary"],
     queryFn:  () => procurementAnalyticsApi.summary().then((r) => r.data.data),
@@ -47,13 +56,13 @@ export default function ProcurementAnalyticsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <ModulePageHeader
-        title="Procurement Analytics"
-        subtitle="Spend intelligence, vendor performance, and compliance flags"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement Analytics" }]} />}
+        title={t("procurement.analytics.title")}
+        subtitle={t("procurement.analytics.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("procurement.analytics.title") }]} />}
       />
         <Link href="/procurement" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Procurement
+          {t("nav.procurement")}
         </Link>
       </div>
 
@@ -67,10 +76,10 @@ export default function ProcurementAnalyticsPage() {
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Total Requests",    value: summary?.total_requests ?? 0,            icon: "assignment",     color: "text-primary",   bg: "bg-primary/10",  fmt: (v: number) => v.toString()   },
-            { label: "Total Spend (NAD)", value: summary?.total_spend ?? 0,               icon: "payments",       color: "text-green-600", bg: "bg-green-50",    fmt: (v: number) => `${(v/1000).toFixed(0)}k` },
-            { label: "Avg Cycle (days)",  value: summary?.avg_cycle_time_days ?? 0,        icon: "schedule",       color: "text-blue-600",  bg: "bg-blue-50",     fmt: (v: number) => v.toString()   },
-            { label: "Active Contracts",  value: summary?.active_contracts ?? 0,           icon: "description",   color: "text-amber-600", bg: "bg-amber-50",    fmt: (v: number) => v.toString()   },
+            { label: t("procurement.analytics.kpi.totalRequests"),    value: summary?.total_requests ?? 0,            icon: "assignment",     color: "text-primary",   bg: "bg-primary/10",  fmt: (v: number) => v.toString()   },
+            { label: t("procurement.analytics.kpi.totalSpend"), value: summary?.total_spend ?? 0,               icon: "payments",       color: "text-green-600", bg: "bg-green-50",    fmt: (v: number) => `${(v/1000).toFixed(0)}k` },
+            { label: t("procurement.analytics.kpi.avgCycle"), value: summary?.avg_cycle_time_days ?? 0,        icon: "schedule",       color: "text-blue-600",  bg: "bg-blue-50",     fmt: (v: number) => v.toString()   },
+            { label: t("procurement.analytics.kpi.activeContracts"), value: summary?.active_contracts ?? 0,           icon: "description",   color: "text-amber-600", bg: "bg-amber-50",    fmt: (v: number) => v.toString()   },
           ].map((k) => (
             <div key={k.label} className="card p-4 flex items-center gap-3">
               <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${k.bg} flex-shrink-0`}>
@@ -90,17 +99,17 @@ export default function ProcurementAnalyticsPage() {
         <div className="card p-5">
           <div className="flex items-center gap-2 mb-4">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">bar_chart</span>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Spend by Category</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("procurement.analytics.spendByCategory")}</h3>
           </div>
           {categories.length === 0 ? (
-            <EmptyState icon="bar_chart" title="No spend data available." className="py-6 min-h-0" />
+            <EmptyState icon="bar_chart" title={t("procurement.analytics.noSpend")} className="py-6 min-h-0" />
           ) : (
             <div className="space-y-3">
               {categories.map((c) => (
                 <div key={c.category}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium text-neutral-700 capitalize">{c.category}</span>
-                    <span className="text-xs text-neutral-500">NAD {(c.total / 1000).toFixed(0)}k</span>
+                    <span className="text-xs text-neutral-500">{t("procurement.analytics.nadK", { value: (c.total / 1000).toFixed(0) })}</span>
                   </div>
                   <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
                     <div
@@ -118,17 +127,17 @@ export default function ProcurementAnalyticsPage() {
         <div className="card p-5">
           <div className="flex items-center gap-2 mb-4">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">storefront</span>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Top Vendors by Spend</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("procurement.analytics.topVendors")}</h3>
           </div>
           {vendors.length === 0 ? (
-            <EmptyState icon="storefront" title="No vendor data available." className="py-6 min-h-0" />
+            <EmptyState icon="storefront" title={t("procurement.analytics.noVendors")} className="py-6 min-h-0" />
           ) : (
             <div className="space-y-3">
               {vendors.map((v) => (
                 <div key={v.vendor_id}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium text-neutral-700 truncate max-w-[180px]">{v.vendor_name}</span>
-                    <span className="text-xs text-neutral-500">{v.po_count} PO{v.po_count !== 1 ? "s" : ""} · NAD {(v.total_value / 1000).toFixed(0)}k</span>
+                    <span className="text-xs text-neutral-500">{t(v.po_count === 1 ? "procurement.analytics.vendorStatOne" : "procurement.analytics.vendorStatMany", { count: v.po_count, value: (v.total_value / 1000).toFixed(0) })}</span>
                   </div>
                   <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
                     <div
@@ -148,11 +157,11 @@ export default function ProcurementAnalyticsPage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className={`material-symbols-outlined text-[18px] ${flags.length > 0 ? "text-amber-500" : "text-neutral-400"}`}>shield</span>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Anti-Corruption Flags</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("procurement.analytics.flagsTitle")}</h3>
           </div>
           {flags.length > 0 && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
-              {flags.length} flag{flags.length !== 1 ? "s" : ""}
+              {t(flags.length === 1 ? "procurement.analytics.flagCountOne" : "procurement.analytics.flagCountMany", { count: flags.length })}
             </span>
           )}
         </div>
@@ -161,8 +170,8 @@ export default function ProcurementAnalyticsPage() {
           <div className="flex items-center gap-3 rounded-lg bg-green-50 border border-green-200 p-4">
             <span className="material-symbols-outlined text-[22px] text-green-600">verified_user</span>
             <div>
-              <p className="text-sm font-medium text-green-800">No flags detected</p>
-              <p className="text-xs text-green-600">All procurement activity appears within normal parameters.</p>
+              <p className="text-sm font-medium text-green-800">{t("procurement.analytics.noFlags")}</p>
+              <p className="text-xs text-green-600">{t("procurement.analytics.noFlagsHint")}</p>
             </div>
           </div>
         ) : (
@@ -174,7 +183,7 @@ export default function ProcurementAnalyticsPage() {
                   <span className={`material-symbols-outlined text-[18px] mt-0.5 flex-shrink-0 ${fc.cls}`}>{fc.icon}</span>
                   <div>
                     <p className={`text-xs font-semibold uppercase tracking-wide mb-0.5 ${fc.cls}`}>
-                      {flag.severity} · {flag.type.replace(/_/g, " ")}
+                      {SEVERITY_KEYS[flag.severity] ? t(SEVERITY_KEYS[flag.severity]) : flag.severity} · {flag.type.replace(/_/g, " ")}
                     </p>
                     <p className="text-sm text-neutral-700">{flag.message}</p>
                   </div>

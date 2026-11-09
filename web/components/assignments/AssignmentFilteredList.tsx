@@ -16,28 +16,29 @@ import {
   selectionColumnClass,
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const priorityConfig: Record<string, { label: string; cls: string }> = {
-  low: { label: "Low", cls: "badge-muted" },
-  medium: { label: "Medium", cls: "badge-primary" },
-  high: { label: "High", cls: "badge-warning" },
-  urgent: { label: "Urgent", cls: "badge-warning" },
-  critical: { label: "Critical", cls: "badge-danger" },
+  low: { label: "assignments.filteredList.priority.low", cls: "badge-muted" },
+  medium: { label: "assignments.filteredList.priority.medium", cls: "badge-primary" },
+  high: { label: "assignments.filteredList.priority.high", cls: "badge-warning" },
+  urgent: { label: "assignments.filteredList.priority.urgent", cls: "badge-warning" },
+  critical: { label: "assignments.filteredList.priority.critical", cls: "badge-danger" },
 };
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  draft: { label: "Draft", cls: "badge-muted" },
-  issued: { label: "Issued", cls: "badge-primary" },
-  awaiting_acceptance: { label: "Awaiting Acceptance", cls: "badge-warning" },
-  accepted: { label: "Accepted", cls: "badge-primary" },
-  active: { label: "Active", cls: "badge-success" },
-  at_risk: { label: "At Risk", cls: "badge-warning" },
-  blocked: { label: "Blocked", cls: "badge-danger" },
-  delayed: { label: "Delayed", cls: "badge-danger" },
-  completed: { label: "Completed", cls: "badge-success" },
-  closed: { label: "Closed", cls: "badge-muted" },
-  returned: { label: "Returned", cls: "badge-warning" },
-  cancelled: { label: "Cancelled", cls: "badge-muted" },
+  draft: { label: "assignments.filteredList.status.draft", cls: "badge-muted" },
+  issued: { label: "assignments.filteredList.status.issued", cls: "badge-primary" },
+  awaiting_acceptance: { label: "assignments.filteredList.status.awaiting_acceptance", cls: "badge-warning" },
+  accepted: { label: "assignments.filteredList.status.accepted", cls: "badge-primary" },
+  active: { label: "assignments.filteredList.status.active", cls: "badge-success" },
+  at_risk: { label: "assignments.filteredList.status.at_risk", cls: "badge-warning" },
+  blocked: { label: "assignments.filteredList.status.blocked", cls: "badge-danger" },
+  delayed: { label: "assignments.filteredList.status.delayed", cls: "badge-danger" },
+  completed: { label: "assignments.filteredList.status.completed", cls: "badge-success" },
+  closed: { label: "assignments.filteredList.status.closed", cls: "badge-muted" },
+  returned: { label: "assignments.filteredList.status.returned", cls: "badge-warning" },
+  cancelled: { label: "assignments.filteredList.status.cancelled", cls: "badge-muted" },
 };
 
 type Fetcher = (params: Record<string, string>) => Promise<{ data: unknown }>;
@@ -48,7 +49,7 @@ export function AssignmentFilteredList({
   queryKey,
   fetcher,
   fixedParams = {},
-  emptyTitle = "No assignments in this view.",
+  emptyTitle,
   emptyIcon = "assignment",
 }: {
   title: string;
@@ -59,6 +60,7 @@ export function AssignmentFilteredList({
   emptyTitle?: string;
   emptyIcon?: string;
 }) {
+  const { t } = useI18n();
   const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
   const { data, isLoading, isError } = useQuery({
@@ -94,13 +96,13 @@ export function AssignmentFilteredList({
         progress: a.progress_percent ?? "",
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "title", header: "Title" },
-        { key: "status", header: "Status" },
-        { key: "priority", header: "Priority" },
-        { key: "assignee", header: "Assignee" },
-        { key: "due_date", header: "Due date" },
-        { key: "progress", header: "Progress %" },
+        { key: "reference", header: t("assignments.filteredList.col.reference") },
+        { key: "title", header: t("assignments.filteredList.col.title") },
+        { key: "status", header: t("assignments.filteredList.col.status") },
+        { key: "priority", header: t("assignments.filteredList.col.priority") },
+        { key: "assignee", header: t("assignments.filteredList.col.assignee") },
+        { key: "due_date", header: t("assignments.filteredList.col.dueDate") },
+        { key: "progress", header: t("assignments.filteredList.col.progressPct") },
       ],
     );
   };
@@ -116,11 +118,11 @@ export function AssignmentFilteredList({
       actions={
         <Link href="/assignments/create" className="btn-primary">
           <span className="material-symbols-outlined text-[18px]">add_task</span>
-          New Assignment
+          {t("assignments.filteredList.new")}
         </Link>
       }
       stats={
-        isError ? <p className="text-sm text-red-600">Failed to load assignments.</p> : null
+        isError ? <p className="text-sm text-red-600">{t("assignments.filteredList.loadFailed")}</p> : null
       }
       bulkBar={
         <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear}>
@@ -130,13 +132,13 @@ export function AssignmentFilteredList({
             disabled={selection.selectedCount === 0}
             onClick={handleExportSelected}
           >
-            Export selected
+            {t("assignments.filteredList.exportSelected")}
           </button>
         </BulkSelectionBar>
       }
       empty={
         !isLoading && !isError && assignments.length === 0 ? (
-          <EmptyState icon={emptyIcon} title={emptyTitle} />
+          <EmptyState icon={emptyIcon} title={emptyTitle ?? t("assignments.filteredList.empty")} />
         ) : null
       }
     >
@@ -151,13 +153,13 @@ export function AssignmentFilteredList({
                   onChange={selection.toggleAllSelectable}
                 />
               </th>
-              <th className="px-4 py-3">Reference</th>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Priority</th>
-              <th className="px-4 py-3">Assignee</th>
-              <th className="px-4 py-3">Due</th>
-              <th className="px-4 py-3">Progress</th>
+              <th className="px-4 py-3">{t("assignments.filteredList.col.reference")}</th>
+              <th className="px-4 py-3">{t("assignments.filteredList.col.title")}</th>
+              <th className="px-4 py-3">{t("assignments.filteredList.col.status")}</th>
+              <th className="px-4 py-3">{t("assignments.filteredList.col.priority")}</th>
+              <th className="px-4 py-3">{t("assignments.filteredList.col.assignee")}</th>
+              <th className="px-4 py-3">{t("assignments.filteredList.col.due")}</th>
+              <th className="px-4 py-3">{t("assignments.filteredList.col.progress")}</th>
             </tr>
           </thead>
           <tbody>
@@ -171,7 +173,7 @@ export function AssignmentFilteredList({
                     <RowCheckbox
                       checked={selection.isSelected(a.id)}
                       onChange={() => selection.toggle(a.id)}
-                      label={`Select ${a.reference_number}`}
+                      label={t("assignments.filteredList.selectRow", { reference: a.reference_number })}
                     />
                   </td>
                   <td className="px-4 py-3 font-mono text-[10px] text-neutral-400">
@@ -183,13 +185,13 @@ export function AssignmentFilteredList({
                     <Link href={`/assignments/${a.id}`} className="font-semibold text-neutral-900">
                       {a.title}
                     </Link>
-                    {overdue ? <span className="ml-2 badge badge-danger">Overdue</span> : null}
+                    {overdue ? <span className="ml-2 badge badge-danger">{t("assignments.filteredList.overdue")}</span> : null}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`badge ${s.cls}`}>{s.label}</span>
+                    <span className={`badge ${s.cls}`}>{statusConfig[a.status] ? t(s.label) : s.label}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`badge ${p.cls}`}>{p.label}</span>
+                    <span className={`badge ${p.cls}`}>{priorityConfig[a.priority] ? t(p.label) : p.label}</span>
                   </td>
                   <td className="px-4 py-3 text-xs text-neutral-500">{a.assignee?.name ?? "—"}</td>
                   <td className="px-4 py-3 text-xs text-neutral-500">{formatDateShort(a.due_date)}</td>

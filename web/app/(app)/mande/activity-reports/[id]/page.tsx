@@ -19,6 +19,31 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { reviewStatusLabel } from "@/lib/mandeStatusLabels";
+
+const EVIDENCE_TYPE_LABEL: Record<string, string> = {
+  attendance: "mande.report.evidenceType.attendance",
+  photo: "mande.report.evidenceType.photo",
+  report: "mande.report.evidenceType.report",
+  publication: "mande.report.evidenceType.publication",
+  media: "mande.report.evidenceType.media",
+  financial: "mande.report.evidenceType.financial",
+  other: "mande.report.evidenceType.other",
+};
+
+const FOLLOW_UP_STATUS_LABEL: Record<string, string> = {
+  open: "mande.report.fuStatus.open",
+  in_progress: "correspondence.status.inProgress",
+  completed: "mande.report.fuStatus.completed",
+  cancelled: "mande.reviewStatus.cancelled",
+};
+
+const EVIDENCE_STATUS_LABEL: Record<string, string> = {
+  pending: "status.pending",
+  validated: "mande.report.evStatus.validated",
+  rejected: "status.rejected",
+};
 
 const STATUS_BADGE: Record<string, string> = {
   not_submitted: "badge-muted",
@@ -68,6 +93,7 @@ export default function ActivityReportDetailPage() {
   const qc = useQueryClient();
   const { confirm } = useConfirm();
   const toast = useToast();
+  const { t } = useI18n();
   const user = getStoredUser();
   const canReview = isSystemAdmin(user) || hasPermission(user, ["mande.review", "mande.admin"]);
   const canCreate = isSystemAdmin(user) || hasPermission(user, ["mande.create", "mande.admin"]);
@@ -142,17 +168,17 @@ export default function ActivityReportDetailPage() {
       });
     },
     onSuccess: () => {
-      setActionMsg("Draft saved.");
-      toast.success("Draft saved");
+      setActionMsg(t("mande.report.draftSavedMsg"));
+      toast.success(t("mande.report.draftSaved"));
       invalidate();
     },
-    onError: (err) => toast.error("Draft not saved", apiErrorMessage(err, "Could not save the report draft.")),
+    onError: (err) => toast.error(t("mande.report.draftNotSaved"), apiErrorMessage(err, t("mande.report.draftFailed"))),
   });
 
   const submitMut = useMutation({
     mutationFn: () => mandeApi.submitReport(id),
-    onSuccess: () => { setActionMsg("Submitted for review."); toast.success("Report submitted for review"); invalidate(); },
-    onError: (err) => toast.error("Report not submitted", apiErrorMessage(err, "Could not submit the report.")),
+    onSuccess: () => { setActionMsg(t("mande.report.submittedMsg")); toast.success(t("mande.report.submitted")); invalidate(); },
+    onError: (err) => toast.error(t("mande.report.notSubmitted"), apiErrorMessage(err, t("mande.report.submitFailed"))),
   });
   const returnMut = useMutation({
     mutationFn: () =>
@@ -163,22 +189,22 @@ export default function ActivityReportDetailPage() {
         correction_due_at: correctionDue || undefined,
       }),
     onSuccess: () => {
-      setActionMsg("Returned for correction.");
-      toast.success("Report returned for correction");
+      setActionMsg(t("mande.report.returnedMsg"));
+      toast.success(t("mande.report.returned"));
       setReturnNotes("");
       invalidate();
     },
-    onError: (err) => toast.error("Report not returned", apiErrorMessage(err, "Could not return the report.")),
+    onError: (err) => toast.error(t("mande.pmReview.notReturned"), apiErrorMessage(err, t("mande.pmReview.returnFailed"))),
   });
   const acceptMut = useMutation({
     mutationFn: () => mandeApi.acceptReport(id, { review_notes: acceptNotes || undefined }),
-    onSuccess: () => { setActionMsg("Report accepted."); toast.success("Report accepted"); invalidate(); },
-    onError: (err) => toast.error("Report not accepted", apiErrorMessage(err, "Could not accept the report.")),
+    onSuccess: () => { setActionMsg(t("mande.report.acceptedMsg")); toast.success(t("mande.report.accepted")); invalidate(); },
+    onError: (err) => toast.error(t("mande.report.notAccepted"), apiErrorMessage(err, t("mande.report.acceptFailed"))),
   });
   const closeMut = useMutation({
     mutationFn: () => mandeApi.closeReport(id),
-    onSuccess: () => { setActionMsg("Report closed."); toast.success("Report closed"); invalidate(); },
-    onError: (err) => toast.error("Report not closed", apiErrorMessage(err, "Could not close the report.")),
+    onSuccess: () => { setActionMsg(t("mande.report.closedMsg")); toast.success(t("mande.report.closed")); invalidate(); },
+    onError: (err) => toast.error(t("mande.report.notClosed"), apiErrorMessage(err, t("mande.report.closeFailed"))),
   });
   const uploadMut = useMutation({
     mutationFn: () => {
@@ -191,20 +217,20 @@ export default function ActivityReportDetailPage() {
     onSuccess: () => {
       setEvidenceFile(null);
       setEvidenceTitle("");
-      setActionMsg("Evidence uploaded.");
-      toast.success("Evidence uploaded");
+      setActionMsg(t("mande.report.evidenceUploadedMsg"));
+      toast.success(t("mande.report.evidenceUploaded"));
       invalidate();
     },
-    onError: (err) => toast.error("Evidence not uploaded", apiErrorMessage(err, "Could not upload the evidence file.")),
+    onError: (err) => toast.error(t("mande.report.evidenceNotUploaded"), apiErrorMessage(err, t("mande.report.evidenceUploadFailed"))),
   });
   const reviewEvidenceMut = useMutation({
     mutationFn: ({ evidenceId, status }: { evidenceId: number; status: "validated" | "rejected" }) =>
       mandeApi.reviewEvidence(id, evidenceId, { review_status: status }),
     onSuccess: (_data, vars) => {
-      toast.success(vars.status === "validated" ? "Evidence validated" : "Evidence rejected");
+      toast.success(vars.status === "validated" ? t("mande.report.evidenceValidated") : t("mande.report.evidenceRejected"));
       invalidate();
     },
-    onError: (err) => toast.error("Evidence review not saved", apiErrorMessage(err, "Could not update the evidence review.")),
+    onError: (err) => toast.error(t("mande.report.evidenceReviewNotSaved"), apiErrorMessage(err, t("mande.report.evidenceReviewFailed"))),
   });
   const createFollowUpMut = useMutation({
     mutationFn: () =>
@@ -217,30 +243,30 @@ export default function ActivityReportDetailPage() {
       setFollowUpAction("");
       setFollowUpDue("");
       setFollowUpPriority("normal");
-      setActionMsg("Follow-up added.");
-      toast.success("Follow-up added");
+      setActionMsg(t("mande.report.followUpAddedMsg"));
+      toast.success(t("mande.report.followUpAdded"));
       invalidate();
     },
-    onError: (err) => toast.error("Follow-up not added", apiErrorMessage(err, "Could not add the follow-up action.")),
+    onError: (err) => toast.error(t("mande.report.followUpNotAdded"), apiErrorMessage(err, t("mande.report.followUpAddFailed"))),
   });
   const completeFollowUpMut = useMutation({
     mutationFn: (followUpId: number) =>
       mandeApi.updateFollowUp(id, followUpId, { status: "completed" }),
     onSuccess: () => {
-      setActionMsg("Follow-up marked complete.");
-      toast.success("Follow-up marked complete");
+      setActionMsg(t("mande.report.followUpCompleteMsg"));
+      toast.success(t("mande.report.followUpComplete"));
       invalidate();
     },
-    onError: (err) => toast.error("Could not complete follow-up", apiErrorMessage(err, "Could not mark the follow-up complete.")),
+    onError: (err) => toast.error(t("mande.report.followUpCompleteTitle"), apiErrorMessage(err, t("mande.report.followUpCompleteFailed"))),
   });
   const deleteFollowUpMut = useMutation({
     mutationFn: (followUpId: number) => mandeApi.deleteFollowUp(id, followUpId),
     onSuccess: () => {
-      setActionMsg("Follow-up deleted.");
-      toast.success("Follow-up deleted");
+      setActionMsg(t("mande.report.followUpDeletedMsg"));
+      toast.success(t("mande.report.followUpDeleted"));
       invalidate();
     },
-    onError: (err) => toast.error("Follow-up not deleted", apiErrorMessage(err, "Could not delete the follow-up action.")),
+    onError: (err) => toast.error(t("mande.report.followUpNotDeleted"), apiErrorMessage(err, t("mande.report.followUpDeleteFailed"))),
   });
 
   const editable = report && ["not_submitted", "returned"].includes(report.review_status);
@@ -254,10 +280,10 @@ export default function ActivityReportDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Activity report"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: "Activity Reports", href: "/mande/activity-reports" }, { label: "Report" }]} />}
+          title={t("mande.report.title")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: t("mande.activityReports.title"), href: "/mande/activity-reports" }, { label: t("mande.intake.report") }]} />}
         />
-        <p className="text-sm text-neutral-400">Loading report…</p>
+        <p className="text-sm text-neutral-400">{t("mande.report.loading")}</p>
       </div>
     );
   }
@@ -265,43 +291,43 @@ export default function ActivityReportDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Activity report"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: "Activity Reports", href: "/mande/activity-reports" }, { label: "Report" }]} />}
+          title={t("mande.report.title")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: t("mande.activityReports.title"), href: "/mande/activity-reports" }, { label: t("mande.intake.report") }]} />}
         />
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">Report not found.</div>
-        <Link href="/mande/activity-reports" className="btn-secondary text-sm">Back to reports</Link>
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{t("mande.report.notFound")}</div>
+        <Link href="/mande/activity-reports" className="btn-secondary text-sm">{t("mande.report.back")}</Link>
       </div>
     );
   }
 
   const SECTIONS = [
-    { id: "identity", label: "Identity" },
-    { id: "outputs", label: "Outputs" },
-    { id: "participants", label: "Participants" },
-    { id: "narrative", label: "Narrative" },
-    { id: "learning", label: "Learning" },
-    { id: "followups", label: "Follow-ups" },
-    { id: "evidence", label: "Evidence" },
-    { id: "review", label: "Review" },
+    { id: "identity", label: t("mande.report.tab.identity") },
+    { id: "outputs", label: t("mande.report.tab.outputs") },
+    { id: "participants", label: t("mande.reports.participants") },
+    { id: "narrative", label: t("mande.report.tab.narrative") },
+    { id: "learning", label: t("mande.report.tab.learning") },
+    { id: "followups", label: t("mande.report.tab.followups") },
+    { id: "evidence", label: t("mande.report.tab.evidence") },
+    { id: "review", label: t("mande.report.tab.review") },
   ];
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={report.activity_title}
-        subtitle={`${report.reference_number}${report.programme ? ` · PIF ${report.programme.reference_number}` : isNonPif ? " · Non-PIF" : ""}`}
+        subtitle={`${report.reference_number}${report.programme ? ` · ${t("mande.report.pifRef", { ref: report.programme.reference_number })}` : isNonPif ? ` · ${t("mande.report.nonPifShort")}` : ""}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.mande", href: "/mande" },
-              { label: "Activity Reports", href: "/mande/activity-reports" },
+              { label: t("mande.activityReports.title"), href: "/mande/activity-reports" },
               { label: report.activity_title },
             ]}
           />
         }
         meta={
           <span className={`badge ${STATUS_BADGE[report.review_status] ?? "badge-muted"}`}>
-            {report.review_status.replace(/_/g, " ")}
+            {reviewStatusLabel(t, report.review_status)}
           </span>
         }
       />
@@ -312,22 +338,22 @@ export default function ActivityReportDetailPage() {
 
       {isNonPif && (
         <div className="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-950">
-          <p className="font-semibold mb-1">Non-PIF activity report</p>
+          <p className="font-semibold mb-1">{t("mande.create.nonPif")}</p>
           <p className="text-sky-900/90">
-            {report.non_pif_reason?.trim() || "No linked programme. Reason not recorded."}
+            {report.non_pif_reason?.trim() || t("mande.report.noReason")}
           </p>
         </div>
       )}
 
       {report.review_status === "returned" && report.review_notes && (
         <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
-          <p className="font-semibold mb-1">Returned for correction</p>
+          <p className="font-semibold mb-1">{t("mande.report.returnedTitle")}</p>
           <p>{report.review_notes}</p>
           {(report.return_section || report.return_required_action || report.correction_due_at) && (
             <ul className="mt-2 text-xs space-y-0.5">
-              {report.return_section && <li>Section: {report.return_section}</li>}
-              {report.return_required_action && <li>Action: {report.return_required_action}</li>}
-              {report.correction_due_at && <li>Due: {formatDateShort(report.correction_due_at)}</li>}
+              {report.return_section && <li>{t("mande.report.sectionValue", { value: report.return_section })}</li>}
+              {report.return_required_action && <li>{t("mande.report.actionValue", { value: report.return_required_action })}</li>}
+              {report.correction_due_at && <li>{t("imprest.detail.due", { date: formatDateShort(report.correction_due_at) })}</li>}
             </ul>
           )}
         </div>
@@ -350,7 +376,7 @@ export default function ActivityReportDetailPage() {
         {section === "identity" && (
           <>
             <div>
-              <label htmlFor="me-activity-title" className="block text-xs font-semibold text-neutral-700 mb-1">Activity title</label>
+              <label htmlFor="me-activity-title" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.activityTitle")}</label>
               <input
                 id="me-activity-title"
                 className="form-input"
@@ -361,26 +387,26 @@ export default function ActivityReportDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="me-start-date" className="block text-xs font-semibold text-neutral-700 mb-1">Start date</label>
+                <label htmlFor="me-start-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("common.startDate")}</label>
                 <input id="me-start-date" type="date" className="form-input" value={draft.start_date} disabled={!editable}
                   onChange={(e) => setField("start_date", e.target.value)} />
               </div>
               <div>
-                <label htmlFor="me-end-date" className="block text-xs font-semibold text-neutral-700 mb-1">End date</label>
+                <label htmlFor="me-end-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("common.endDate")}</label>
                 <input id="me-end-date" type="date" className="form-input" value={draft.end_date} disabled={!editable}
                   onChange={(e) => setField("end_date", e.target.value)} />
               </div>
             </div>
             {report.programme && (
               <div className="rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2 text-xs text-neutral-600">
-                <p className="font-semibold text-neutral-700 mb-1">PIF (read-only)</p>
+                <p className="font-semibold text-neutral-700 mb-1">{t("mande.report.pifReadOnly")}</p>
                 <p>{report.programme.reference_number} — {report.programme.title}</p>
-                {report.programme.strategic_pillar && <p>Pillar: {report.programme.strategic_pillar}</p>}
+                {report.programme.strategic_pillar && <p>{t("mande.report.pillarValue", { value: report.programme.strategic_pillar })}</p>}
               </div>
             )}
             {isNonPif && (
               <div className="rounded-lg bg-sky-50 border border-sky-100 px-3 py-2 text-xs text-sky-900">
-                <p className="font-semibold mb-1">Non-PIF reason</p>
+                <p className="font-semibold mb-1">{t("mande.report.nonPifReason")}</p>
                 <p>{report.non_pif_reason?.trim() || "—"}</p>
               </div>
             )}
@@ -390,12 +416,12 @@ export default function ActivityReportDetailPage() {
         {section === "outputs" && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label htmlFor="me-planned-output" className="block text-xs font-semibold text-neutral-700 mb-1">Planned output</label>
+              <label htmlFor="me-planned-output" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.plannedOutput")}</label>
               <textarea id="me-planned-output" className="form-input min-h-[120px]" value={draft.planned_output} disabled={!editable}
                 onChange={(e) => setField("planned_output", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="me-actual-output" className="block text-xs font-semibold text-neutral-700 mb-1">Actual output</label>
+              <label htmlFor="me-actual-output" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.actualOutput")}</label>
               <textarea id="me-actual-output" className="form-input min-h-[120px]" value={draft.actual_output} disabled={!editable}
                 onChange={(e) => setField("actual_output", e.target.value)} />
             </div>
@@ -405,12 +431,12 @@ export default function ActivityReportDetailPage() {
         {section === "participants" && (
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="me-planned-participants" className="block text-xs font-semibold text-neutral-700 mb-1">Planned participants</label>
+              <label htmlFor="me-planned-participants" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.plannedParticipants")}</label>
               <input id="me-planned-participants" type="number" min={0} className="form-input" value={draft.planned_participants} disabled={!editable}
                 onChange={(e) => setField("planned_participants", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="me-actual-participants" className="block text-xs font-semibold text-neutral-700 mb-1">Actual participants</label>
+              <label htmlFor="me-actual-participants" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.actualParticipants")}</label>
               <input id="me-actual-participants" type="number" min={0} className="form-input" value={draft.actual_participants} disabled={!editable}
                 onChange={(e) => setField("actual_participants", e.target.value)} />
             </div>
@@ -419,7 +445,7 @@ export default function ActivityReportDetailPage() {
 
         {section === "narrative" && (
           <div>
-            <label htmlFor="me-narrative" className="block text-xs font-semibold text-neutral-700 mb-1">Narrative</label>
+            <label htmlFor="me-narrative" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.narrative")}</label>
             <textarea id="me-narrative" className="form-input min-h-[180px]" value={draft.narrative} disabled={!editable}
               onChange={(e) => setField("narrative", e.target.value)} />
           </div>
@@ -428,22 +454,22 @@ export default function ActivityReportDetailPage() {
         {section === "learning" && (
           <div className="space-y-4">
             <div>
-              <label htmlFor="me-challenges" className="block text-xs font-semibold text-neutral-700 mb-1">Challenges</label>
+              <label htmlFor="me-challenges" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.challenges")}</label>
               <textarea id="me-challenges" className="form-input min-h-[100px]" value={draft.challenges} disabled={!editable}
                 onChange={(e) => setField("challenges", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="me-lessons" className="block text-xs font-semibold text-neutral-700 mb-1">Lessons learned</label>
+              <label htmlFor="me-lessons" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.lessons")}</label>
               <textarea id="me-lessons" className="form-input min-h-[100px]" value={draft.lessons_learned} disabled={!editable}
                 onChange={(e) => setField("lessons_learned", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="me-recommendations" className="block text-xs font-semibold text-neutral-700 mb-1">Recommendations</label>
+              <label htmlFor="me-recommendations" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.recommendations")}</label>
               <textarea id="me-recommendations" className="form-input min-h-[100px]" value={draft.recommendations} disabled={!editable}
                 onChange={(e) => setField("recommendations", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="me-follow-up-actions" className="block text-xs font-semibold text-neutral-700 mb-1">Follow-up actions</label>
+              <label htmlFor="me-follow-up-actions" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.followUpActions")}</label>
               <textarea id="me-follow-up-actions" className="form-input min-h-[100px]" value={draft.follow_up_actions} disabled={!editable}
                 onChange={(e) => setField("follow_up_actions", e.target.value)} />
             </div>
@@ -454,20 +480,20 @@ export default function ActivityReportDetailPage() {
           <div className="space-y-4">
             {canCreate && (
               <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
-                <p className="text-sm font-semibold text-neutral-800">Add follow-up</p>
+                <p className="text-sm font-semibold text-neutral-800">{t("mande.report.addFollowUp")}</p>
                 <div>
-                  <label htmlFor="me-fu-action" className="block text-xs font-semibold text-neutral-700 mb-1">Action *</label>
+                  <label htmlFor="me-fu-action" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.actionRequired")}</label>
                   <textarea
                     id="me-fu-action"
                     className="form-input min-h-[72px]"
                     value={followUpAction}
                     onChange={(e) => setFollowUpAction(e.target.value)}
-                    placeholder="Describe the follow-up action"
+                    placeholder={t("mande.report.followUpPlaceholder")}
                   />
                 </div>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
-                    <label htmlFor="me-fu-due" className="block text-xs font-semibold text-neutral-700 mb-1">Due date</label>
+                    <label htmlFor="me-fu-due" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.report.dueDate")}</label>
                     <input
                       id="me-fu-due"
                       type="date"
@@ -477,17 +503,17 @@ export default function ActivityReportDetailPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="me-fu-priority" className="block text-xs font-semibold text-neutral-700 mb-1">Priority</label>
+                    <label htmlFor="me-fu-priority" className="block text-xs font-semibold text-neutral-700 mb-1">{t("correspondence.field.priority")}</label>
                     <select
                       id="me-fu-priority"
                       className="form-input"
                       value={followUpPriority}
                       onChange={(e) => setFollowUpPriority(e.target.value as MeFollowUpPriority)}
                     >
-                      <option value="low">Low</option>
-                      <option value="normal">Normal</option>
-                      <option value="high">High</option>
-                      <option value="urgent">Urgent</option>
+                      <option value="low">{t("correspondence.priority.low")}</option>
+                      <option value="normal">{t("correspondence.priority.normal")}</option>
+                      <option value="high">{t("correspondence.priority.high")}</option>
+                      <option value="urgent">{t("correspondence.priority.urgent")}</option>
                     </select>
                   </div>
                 </div>
@@ -497,13 +523,13 @@ export default function ActivityReportDetailPage() {
                   disabled={followUpAction.trim().length < 2 || createFollowUpMut.isPending}
                   onClick={() => createFollowUpMut.mutate()}
                 >
-                  {createFollowUpMut.isPending ? "Adding…" : "Add follow-up"}
+                  {createFollowUpMut.isPending ? t("mande.report.adding") : t("mande.report.addFollowUp")}
                 </button>
               </div>
             )}
 
             {followUps.length === 0 ? (
-              <p className="text-sm text-neutral-400">No follow-up actions yet.</p>
+              <p className="text-sm text-neutral-400">{t("mande.report.noFollowUps")}</p>
             ) : (
               <ul className="space-y-3">
                 {followUps.map((fu) => (
@@ -516,12 +542,12 @@ export default function ActivityReportDetailPage() {
                         {fu.action}
                       </p>
                       <p className="text-xs text-neutral-500 mt-1">
-                        <span className="capitalize">{fu.status.replace(/_/g, " ")}</span>
+                        <span className="capitalize">{FOLLOW_UP_STATUS_LABEL[fu.status] ? t(FOLLOW_UP_STATUS_LABEL[fu.status]) : fu.status.replace(/_/g, " ")}</span>
                         {" · "}
-                        <span className="capitalize">{fu.priority}</span>
-                        {fu.due_date && <> · Due {formatDateShort(fu.due_date)}</>}
+                        <span className="capitalize">{["low", "normal", "high", "urgent"].includes(fu.priority) ? t(`correspondence.priority.${fu.priority}`) : fu.priority}</span>
+                        {fu.due_date && <> · {t("mande.report.dueOn", { date: formatDateShort(fu.due_date) })}</>}
                         {fu.assignee?.name && <> · {fu.assignee.name}</>}
-                        {fu.completed_at && <> · Done {formatDateShort(fu.completed_at)}</>}
+                        {fu.completed_at && <> · {t("mande.report.doneOn", { date: formatDateShort(fu.completed_at) })}</>}
                       </p>
                       {fu.comments && <p className="text-xs text-neutral-500 mt-1">{fu.comments}</p>}
                     </div>
@@ -533,7 +559,7 @@ export default function ActivityReportDetailPage() {
                           disabled={completeFollowUpMut.isPending}
                           onClick={() => completeFollowUpMut.mutate(fu.id)}
                         >
-                          Mark complete
+                          {t("mande.report.markComplete")}
                         </button>
                       )}
                       {fu.status !== "completed" && canCreate && (
@@ -542,12 +568,12 @@ export default function ActivityReportDetailPage() {
                           className="btn-secondary text-xs text-red-600 disabled:opacity-40"
                           disabled={deleteFollowUpMut.isPending}
                           onClick={async () => {
-                            if (await confirm({ title: "Delete follow-up", message: "Delete this follow-up? This cannot be undone.", variant: "danger" })) {
+                            if (await confirm({ title: t("mande.report.deleteFollowUpTitle"), message: t("mande.report.deleteFollowUpMessage"), variant: "danger" })) {
                               deleteFollowUpMut.mutate(fu.id);
                             }
                           }}
                         >
-                          Delete
+                          {t("common.delete")}
                         </button>
                       )}
                     </div>
@@ -562,17 +588,17 @@ export default function ActivityReportDetailPage() {
           <div className="space-y-4">
             {canCreate && editable && (
               <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
-                <p className="text-sm font-semibold text-neutral-800">Upload evidence</p>
+                <p className="text-sm font-semibold text-neutral-800">{t("mande.report.uploadEvidence")}</p>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
-                    <label htmlFor="me-evidence-title" className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
+                    <label htmlFor="me-evidence-title" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.col.title")}</label>
                     <input id="me-evidence-title" className="form-input" value={evidenceTitle} onChange={(e) => setEvidenceTitle(e.target.value)} />
                   </div>
                   <div>
-                    <label htmlFor="me-evidence-type" className="block text-xs font-semibold text-neutral-700 mb-1">Type</label>
+                    <label htmlFor="me-evidence-type" className="block text-xs font-semibold text-neutral-700 mb-1">{t("correspondence.col.type")}</label>
                     <select id="me-evidence-type" className="form-input" value={evidenceType} onChange={(e) => setEvidenceType(e.target.value)}>
-                      {ME_EVIDENCE_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
+                      {ME_EVIDENCE_TYPES.map((et) => (
+                        <option key={et.value} value={et.value}>{EVIDENCE_TYPE_LABEL[et.value] ? t(EVIDENCE_TYPE_LABEL[et.value]) : et.label}</option>
                       ))}
                     </select>
                   </div>
@@ -581,6 +607,7 @@ export default function ActivityReportDetailPage() {
                   type="file"
                   onChange={(e) => setEvidenceFile(e.target.files?.[0] ?? null)}
                   className="text-sm"
+                  aria-label={t("mande.report.evidenceFile")}
                 />
                 <button
                   type="button"
@@ -588,24 +615,24 @@ export default function ActivityReportDetailPage() {
                   disabled={!evidenceFile || uploadMut.isPending}
                   onClick={() => uploadMut.mutate()}
                 >
-                  {uploadMut.isPending ? "Uploading…" : "Upload"}
+                  {uploadMut.isPending ? t("mande.report.uploading") : t("common.upload")}
                 </button>
               </div>
             )}
 
             {evidence.length === 0 ? (
-              <p className="text-sm text-neutral-400">No evidence uploaded yet.</p>
+              <p className="text-sm text-neutral-400">{t("mande.report.noEvidence")}</p>
             ) : (
               <table className="data-table">
                 <thead>
-                  <tr><th>Title</th><th>Type</th><th>Status</th><th>Uploaded</th><th></th></tr>
+                  <tr><th>{t("mande.col.title")}</th><th>{t("correspondence.col.type")}</th><th>{t("correspondence.col.status")}</th><th>{t("mande.report.uploaded")}</th><th></th></tr>
                 </thead>
                 <tbody>
                   {evidence.map((e) => (
                     <tr key={e.id}>
                       <td className="font-medium text-neutral-900">{e.title ?? "—"}</td>
-                      <td className="text-xs capitalize">{e.evidence_type}</td>
-                      <td><span className="badge badge-muted">{e.review_status}</span></td>
+                      <td className="text-xs capitalize">{EVIDENCE_TYPE_LABEL[e.evidence_type] ? t(EVIDENCE_TYPE_LABEL[e.evidence_type]) : e.evidence_type}</td>
+                      <td><span className="badge badge-muted">{EVIDENCE_STATUS_LABEL[e.review_status] ? t(EVIDENCE_STATUS_LABEL[e.review_status]) : e.review_status}</span></td>
                       <td className="text-xs text-neutral-400">{formatDateShort(e.created_at)}</td>
                       <td className="whitespace-nowrap">
                         {canReview && e.review_status === "pending" && (
@@ -615,14 +642,14 @@ export default function ActivityReportDetailPage() {
                               className="btn-secondary text-xs mr-2"
                               onClick={() => reviewEvidenceMut.mutate({ evidenceId: e.id, status: "validated" })}
                             >
-                              Validate
+                              {t("mande.report.validate")}
                             </button>
                             <button
                               type="button"
                               className="btn-secondary text-xs text-red-600"
                               onClick={() => reviewEvidenceMut.mutate({ evidenceId: e.id, status: "rejected" })}
                             >
-                              Reject
+                              {t("common.reject")}
                             </button>
                           </>
                         )}
@@ -638,18 +665,18 @@ export default function ActivityReportDetailPage() {
         {section === "review" && (
           <div className="space-y-5">
             <div>
-              <h3 className="text-sm font-semibold text-neutral-800 mb-2">History</h3>
+              <h3 className="text-sm font-semibold text-neutral-800 mb-2">{t("mande.report.history")}</h3>
               {history.length === 0 ? (
-                <p className="text-sm text-neutral-400">No review history yet.</p>
+                <p className="text-sm text-neutral-400">{t("mande.report.noHistory")}</p>
               ) : (
                 <ul className="space-y-2">
                   {history.map((h) => (
                     <li key={h.id} className="text-xs text-neutral-600 border-b border-neutral-100 pb-2">
                       <span className="font-medium">{h.change_type}</span>
                       {" · "}
-                      {h.from_status ?? "—"} → {h.to_status ?? "—"}
+                      {h.from_status ? reviewStatusLabel(t, h.from_status) : "—"} → {h.to_status ? reviewStatusLabel(t, h.to_status) : "—"}
                       {" · "}
-                      {h.actor?.name ?? "System"}
+                      {h.actor?.name ?? t("mande.report.system")}
                       {" · "}
                       {formatDateShort(h.created_at)}
                       {h.notes && <p className="mt-0.5 text-neutral-500">{h.notes}</p>}
@@ -661,19 +688,19 @@ export default function ActivityReportDetailPage() {
 
             {canReview && ["submitted", "reviewed"].includes(report.review_status) && (
               <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
-                <p className="text-sm font-semibold text-neutral-800">Return for correction</p>
+                <p className="text-sm font-semibold text-neutral-800">{t("mande.report.returnForCorrection")}</p>
                 <textarea
                   className="form-input min-h-[80px]"
-                  placeholder="Review notes *"
+                  placeholder={t("mande.report.reviewNotes")}
                   value={returnNotes}
                   onChange={(e) => setReturnNotes(e.target.value)}
                 />
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <input className="form-input" placeholder="Section" value={returnSection}
+                  <input className="form-input" placeholder={t("mande.reports.section")} value={returnSection}
                     onChange={(e) => setReturnSection(e.target.value)} />
-                  <input className="form-input" placeholder="Required action" value={returnAction}
+                  <input className="form-input" placeholder={t("mande.report.requiredAction")} value={returnAction}
                     onChange={(e) => setReturnAction(e.target.value)} />
-                  <input type="date" className="form-input" value={correctionDue}
+                  <input type="date" className="form-input" aria-label={t("mande.report.correctionDue")} value={correctionDue}
                     onChange={(e) => setCorrectionDue(e.target.value)} />
                 </div>
                 <button
@@ -682,17 +709,17 @@ export default function ActivityReportDetailPage() {
                   disabled={returnNotes.trim().length < 3 || returnMut.isPending}
                   onClick={() => returnMut.mutate()}
                 >
-                  Return
+                  {t("common.return")}
                 </button>
               </div>
             )}
 
             {canReview && ["submitted", "reviewed"].includes(report.review_status) && (
               <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
-                <p className="text-sm font-semibold text-neutral-800">Accept</p>
+                <p className="text-sm font-semibold text-neutral-800">{t("mande.report.acceptTitle")}</p>
                 <textarea
                   className="form-input min-h-[60px]"
-                  placeholder="Optional notes"
+                  placeholder={t("mande.report.optionalNotes")}
                   value={acceptNotes}
                   onChange={(e) => setAcceptNotes(e.target.value)}
                 />
@@ -702,7 +729,7 @@ export default function ActivityReportDetailPage() {
                   disabled={acceptMut.isPending}
                   onClick={() => acceptMut.mutate()}
                 >
-                  Accept report
+                  {t("mande.report.acceptReport")}
                 </button>
               </div>
             )}
@@ -714,7 +741,7 @@ export default function ActivityReportDetailPage() {
                 disabled={closeMut.isPending}
                 onClick={() => closeMut.mutate()}
               >
-                Close report
+                {t("mande.report.closeReport")}
               </button>
             )}
           </div>
@@ -729,7 +756,7 @@ export default function ActivityReportDetailPage() {
             disabled={saveMut.isPending}
             onClick={() => saveMut.mutate()}
           >
-            {saveMut.isPending ? "Saving…" : "Save draft"}
+            {saveMut.isPending ? t("correspondence.saving") : t("mande.report.saveDraft")}
           </button>
           <button
             type="button"
@@ -744,7 +771,7 @@ export default function ActivityReportDetailPage() {
               }
             }}
           >
-            {submitMut.isPending || saveMut.isPending ? "Submitting…" : "Submit for review"}
+            {submitMut.isPending || saveMut.isPending ? t("imprest.create.submitting") : t("mande.report.submitReview")}
           </button>
         </div>
       )}

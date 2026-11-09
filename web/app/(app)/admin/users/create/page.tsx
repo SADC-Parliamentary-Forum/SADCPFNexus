@@ -7,6 +7,7 @@ import Link from "next/link";
 import { adminApi, lookupsApi, positionsApi, type Department, type Role, type Portfolio, type Position } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Module Permission Matrix ────────────────────────────────────────────────
 export interface ModulePermission {
@@ -33,10 +34,31 @@ const MODULE_DEFINITIONS: Omit<ModulePermission, "granted">[] = [
   { module: "Admin", icon: "admin_panel_settings", actions: ["view", "users", "roles", "settings", "audit"] },
 ];
 
+/** Catalog keys for the column headers of the permission matrix. */
 const ACTION_LABELS: Record<string, string> = {
-  view: "View", create: "Create", edit: "Edit", approve: "Approve",
-  admin: "Admin", export: "Export", users: "Manage Users",
-  roles: "Manage Roles", settings: "System Settings", audit: "Audit Logs",
+  view: "admin.users.create.action.view", create: "admin.users.create.action.create",
+  edit: "admin.users.create.action.edit", approve: "admin.users.create.action.approve",
+  admin: "admin.users.create.action.admin", export: "admin.users.create.action.export",
+  users: "admin.users.create.action.users", roles: "admin.users.create.action.roles",
+  settings: "admin.users.create.action.settings", audit: "admin.users.create.action.audit",
+};
+
+/** Catalog keys for the module names shown in the permission matrix. */
+const MODULE_LABELS: Record<string, string> = {
+  Dashboard: "nav.dashboard",
+  Alerts: "admin.users.create.module.alerts",
+  Travel: "nav.travel",
+  Leave: "nav.leave",
+  Finance: "nav.finance",
+  Imprest: "nav.imprest",
+  Programmes: "admin.users.create.module.programmes",
+  Workplan: "nav.workplan",
+  HR: "nav.hr",
+  Reports: "nav.reports",
+  Assets: "admin.users.create.module.assets",
+  Governance: "admin.users.create.module.governance",
+  SRHR: "admin.users.create.module.srhr",
+  Admin: "admin.users.create.module.admin",
 };
 
 const ACTION_COLOR: Record<string, string> = {
@@ -116,7 +138,12 @@ function applyPreset(preset: string): ModulePermission[] {
 }
 
 // ─── Steps ───────────────────────────────────────────────────────────────────
-const STEPS = ["Account Basic", "Personal & Emergency", "Role & Security", "Module Permissions"];
+const STEPS = [
+  "admin.users.create.step.account",
+  "admin.users.create.step.personal",
+  "admin.users.create.step.role",
+  "admin.users.create.step.permissions",
+];
 
 interface FormData {
   name: string;
@@ -155,6 +182,7 @@ export default function AdminUserCreatePage() {
   const [classifications] = useState(["UNCLASSIFIED", "RESTRICTED", "CONFIDENTIAL", "SECRET"]);
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();
+  const { t } = useI18n();
   const [permissions, setPermissions] = useState<ModulePermission[]>(buildDefaultPermissions());
   const [form, setForm] = useState<FormData>({
     name: "", email: "", employee_number: "", job_title: "",
@@ -186,7 +214,7 @@ export default function AdminUserCreatePage() {
         setPortfolios(portRes.data ?? []);
         setPositions((posRes.data as any).data ?? []);
       })
-      .catch(() => setError("Failed to load departments, roles, and portfolios."));
+      .catch(() => setError(t("admin.users.create.loadFailed")));
   }, []);
 
   const handleCreateJobTitle = async () => {
@@ -204,7 +232,7 @@ export default function AdminUserCreatePage() {
       setIsCreatingJobTitle(false);
       setNewJobTitle("");
     } catch {
-      setError("Failed to create job title.");
+      setError(t("admin.users.create.jobTitleFailed"));
     }
   };
 
@@ -226,7 +254,7 @@ export default function AdminUserCreatePage() {
       setNewDeptName("");
       setError(null);
     } catch (err) {
-      setError("Failed to create department.");
+      setError(t("admin.users.create.departmentFailed"));
     }
   };
 
@@ -292,17 +320,17 @@ export default function AdminUserCreatePage() {
         portfolio_ids: form.portfolio_ids.length > 0 ? form.portfolio_ids : undefined,
       });
       toast.success(
-        form.send_invitation ? "User created and invited" : "User created",
+        form.send_invitation ? t("admin.users.create.createdInvited") : t("admin.users.create.created"),
         form.send_invitation
-          ? `An invitation to complete registration was emailed to ${form.email}.`
-          : `${form.name} has been added. Send the invitation from the user list when ready.`,
+          ? t("admin.users.create.invitationEmailed", { email: form.email })
+          : t("admin.users.create.addedNoInvite", { name: form.name }),
       );
       router.push("/admin/users");
     } catch (err) {
       // The banner sits above the form, out of view of the Create button, so also toast and scroll up.
-      const message = apiErrorMessage(err, "Failed to create user. Ensure email is unique.");
+      const message = apiErrorMessage(err, t("admin.users.create.createFailed"));
       setError(message);
-      toast.error("User not created", message);
+      toast.error(t("admin.users.create.notCreated"), message);
       window.scrollTo({ top: 0, behavior: "smooth" });
       setSubmitting(false);
     }
@@ -313,14 +341,14 @@ export default function AdminUserCreatePage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/admin/users" className="hover:text-primary transition-colors">User Management</Link>
+        <Link href="/admin/users" className="hover:text-primary transition-colors">{t("admin.home.userManagement")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">New User</span>
+        <span className="text-neutral-900 font-medium">{t("admin.users.create.newUser")}</span>
       </div>
       <ModulePageHeader
-        title="Create User Account"
-        subtitle="Add a new staff member with their role, security settings, and module access."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Create User Account" }]} />}
+        title={t("admin.users.create.title")}
+        subtitle={t("admin.users.create.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.users.create.title") }]} />}
       />
 
       {error && (
@@ -338,7 +366,7 @@ export default function AdminUserCreatePage() {
                 <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold flex-shrink-0 transition-colors ${i < step ? "bg-green-500 text-white" : i === step ? "bg-primary text-white" : "bg-neutral-100 text-neutral-400"}`}>
                   {i < step ? <span className="material-symbols-outlined text-[14px]">check</span> : i + 1}
                 </div>
-                <span className={`text-xs font-medium hidden sm:block truncate ${i === step ? "text-primary" : i < step ? "text-neutral-700" : "text-neutral-400"}`}>{label}</span>
+                <span className={`text-xs font-medium hidden sm:block truncate ${i === step ? "text-primary" : i < step ? "text-neutral-700" : "text-neutral-400"}`}>{t(label)}</span>
               </div>
               {i < STEPS.length - 1 && <div className={`flex-1 h-px mx-2 ${i < step ? "bg-green-400" : "bg-neutral-200"}`} />}
             </div>
@@ -353,43 +381,43 @@ export default function AdminUserCreatePage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <span className="material-symbols-outlined text-primary text-[18px]">person</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900">Personal & Contact Details</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("admin.users.create.contactDetails")}</h3>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label htmlFor="admin-users-create-full-name" className="block text-xs font-semibold text-neutral-700 mb-1">Full Name <span className="text-red-500">*</span></label>
-              <input id="admin-users-create-full-name" className="form-input" placeholder="e.g. Sarah Jenkins" value={form.name} onChange={(e) => set("name", e.target.value)} />
+              <label htmlFor="admin-users-create-full-name" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.detail.fullName")} <span className="text-red-500">*</span></label>
+              <input id="admin-users-create-full-name" className="form-input" placeholder={t("admin.users.create.namePlaceholder")} value={form.name} onChange={(e) => set("name", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="admin-users-create-email-address" className="block text-xs font-semibold text-neutral-700 mb-1">Email Address <span className="text-red-500">*</span></label>
-              <input id="admin-users-create-email-address" type="email" className="form-input" placeholder="user@sadcpf.org" value={form.email} onChange={(e) => set("email", e.target.value)} />
+              <label htmlFor="admin-users-create-email-address" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.detail.email")} <span className="text-red-500">*</span></label>
+              <input id="admin-users-create-email-address" type="email" className="form-input" placeholder="user@sadcpf.org" value={form.email} onChange={(e) => set("email", e.target.value)} />{/* i18n-ignore */}
             </div>
             <div>
-              <label htmlFor="admin-users-create-employee-number" className="block text-xs font-semibold text-neutral-700 mb-1">Employee Number</label>
+              <label htmlFor="admin-users-create-employee-number" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.detail.employeeNumber")}</label>
               <input id="admin-users-create-employee-number" className="form-input" placeholder="EMP-0001" value={form.employee_number} onChange={(e) => set("employee_number", e.target.value)} />
             </div>
             <div className="col-span-2">
-              <label htmlFor="admin-users-create-department" className="block text-xs font-semibold text-neutral-700 mb-1">Department <span className="text-red-500">*</span></label>
+              <label htmlFor="admin-users-create-department" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.detail.department")} <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
                 <select id="admin-users-create-department" className="form-input flex-1" value={form.department_id} onChange={(e) => set("department_id", e.target.value)} disabled={isCreatingDept}>
-                  <option value="">Select department…</option>
+                  <option value="">{t("admin.users.create.selectDepartment")}</option>
                   {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
                 {isCreatingDept ? (
                   <div className="flex gap-2 flex-1">
-                    <input autoFocus className="form-input flex-1" placeholder="Department Name" value={newDeptName} onChange={e => setNewDeptName(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCreateDepartment())} />
-                    <button type="button" onClick={handleCreateDepartment} className="btn-primary px-3 text-xs" disabled={!newDeptName.trim()}>Save</button>
-                    <button type="button" onClick={() => (setIsCreatingDept(false), setNewDeptName(""))} className="btn-secondary px-3 text-xs">Cancel</button>
+                    <input autoFocus className="form-input flex-1" placeholder={t("admin.users.create.departmentName")} value={newDeptName} onChange={e => setNewDeptName(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleCreateDepartment())} />
+                    <button type="button" onClick={handleCreateDepartment} className="btn-primary px-3 text-xs" disabled={!newDeptName.trim()}>{t("common.save")}</button>
+                    <button type="button" onClick={() => (setIsCreatingDept(false), setNewDeptName(""))} className="btn-secondary px-3 text-xs">{t("common.cancel")}</button>
                   </div>
                 ) : (
                   <button type="button" onClick={() => setIsCreatingDept(true)} className="btn-secondary px-3 flex items-center gap-1 text-xs whitespace-nowrap">
-                    <span className="material-symbols-outlined text-[16px]">add</span> New
+                    <span className="material-symbols-outlined text-[16px]">add</span> {t("admin.users.create.new")}
                   </button>
                 )}
               </div>
             </div>
             <div className="col-span-2">
-              <label htmlFor="admin-users-create-job-title" className="block text-xs font-semibold text-neutral-700 mb-1">Job Title</label>
+              <label htmlFor="admin-users-create-job-title" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.create.jobTitle")}</label>
               <div className="flex gap-2">
                 <select
                   id="admin-users-create-job-title"
@@ -398,7 +426,7 @@ export default function AdminUserCreatePage() {
                   onChange={(e) => set("job_title", e.target.value)}
                   disabled={isCreatingJobTitle}
                 >
-                  <option value="">Select job title…</option>
+                  <option value="">{t("admin.users.create.selectJobTitle")}</option>
                   {positions.map((p) => (
                     <option key={p.id} value={p.title}>{p.title}{p.department ? ` — ${p.department.name}` : ""}</option>
                   ))}
@@ -411,47 +439,47 @@ export default function AdminUserCreatePage() {
                     <input
                       autoFocus
                       className="form-input flex-1"
-                      placeholder="e.g. Finance Officer"
+                      placeholder={t("admin.users.create.jobTitlePlaceholder")}
                       value={newJobTitle}
                       onChange={(e) => setNewJobTitle(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateJobTitle())}
                     />
-                    <button type="button" onClick={handleCreateJobTitle} className="btn-primary px-3 text-xs" disabled={!newJobTitle.trim()}>Save</button>
-                    <button type="button" onClick={() => { setIsCreatingJobTitle(false); setNewJobTitle(""); }} className="btn-secondary px-3 text-xs">Cancel</button>
+                    <button type="button" onClick={handleCreateJobTitle} className="btn-primary px-3 text-xs" disabled={!newJobTitle.trim()}>{t("common.save")}</button>
+                    <button type="button" onClick={() => { setIsCreatingJobTitle(false); setNewJobTitle(""); }} className="btn-secondary px-3 text-xs">{t("common.cancel")}</button>
                   </div>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setIsCreatingJobTitle(true)}
-                    title={!form.department_id ? "Select a department first" : "Create a new job title"}
+                    title={!form.department_id ? t("admin.users.create.selectDepartmentFirst") : t("admin.users.create.newJobTitle")}
                     className="btn-secondary px-3 flex items-center gap-1 text-xs whitespace-nowrap"
                   >
-                    <span className="material-symbols-outlined text-[16px]">add</span> New
+                    <span className="material-symbols-outlined text-[16px]">add</span> {t("admin.users.create.new")}
                   </button>
                 )}
               </div>
               {!form.department_id && isCreatingJobTitle && (
                 <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[13px]">info</span>
-                  Select a department first — the new position will be linked to it.
+                  {t("admin.users.create.departmentFirstHint")}
                 </p>
               )}
             </div>
             <div>
-              <label htmlFor="admin-users-create-phone-number" className="block text-xs font-semibold text-neutral-700 mb-1">Phone Number</label>
+              <label htmlFor="admin-users-create-phone-number" className="block text-xs font-semibold text-neutral-700 mb-1">{t("profile.field.phone")}</label>
               <input id="admin-users-create-phone-number" type="tel" className="form-input" placeholder="+264 61 000 0000" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="admin-users-create-date-of-birth" className="block text-xs font-semibold text-neutral-700 mb-1">Date of Birth</label>
+              <label htmlFor="admin-users-create-date-of-birth" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.detail.dateOfBirth")}</label>
               <input id="admin-users-create-date-of-birth" type="date" className="form-input" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="admin-users-create-join-date" className="block text-xs font-semibold text-neutral-700 mb-1">Join Date</label>
+              <label htmlFor="admin-users-create-join-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.detail.joinDate")}</label>
               <input id="admin-users-create-join-date" type="date" className="form-input" value={form.join_date} onChange={(e) => set("join_date", e.target.value)} />
             </div>
             <div className="col-span-2">
-              <label htmlFor="admin-users-create-bio" className="block text-xs font-semibold text-neutral-700 mb-1">Bio</label>
-              <textarea id="admin-users-create-bio" className="form-input" placeholder="A brief biography" value={form.bio} onChange={(e) => set("bio", e.target.value)} rows={3} />
+              <label htmlFor="admin-users-create-bio" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.create.bio")}</label>
+              <textarea id="admin-users-create-bio" className="form-input" placeholder={t("admin.users.create.bioPlaceholder")} value={form.bio} onChange={(e) => set("bio", e.target.value)} rows={3} />
             </div>
           </div>
         </div>
@@ -465,45 +493,45 @@ export default function AdminUserCreatePage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50">
                 <span className="material-symbols-outlined text-green-600 text-[18px]">demography</span>
               </div>
-              <h3 className="text-sm font-semibold text-neutral-900">Demographics & Address</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("admin.users.create.demographics")}</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="admin-users-create-nationality" className="block text-xs font-semibold text-neutral-700 mb-1">Nationality</label>
-                <input id="admin-users-create-nationality" className="form-input" placeholder="e.g. Namibian" value={form.nationality} onChange={(e) => set("nationality", e.target.value)} />
+                <label htmlFor="admin-users-create-nationality" className="block text-xs font-semibold text-neutral-700 mb-1">{t("profile.field.nationality")}</label>
+                <input id="admin-users-create-nationality" className="form-input" placeholder={t("admin.users.detail.nationalityPlaceholder")} value={form.nationality} onChange={(e) => set("nationality", e.target.value)} />
               </div>
               <div>
-                <label htmlFor="admin-users-create-gender" className="block text-xs font-semibold text-neutral-700 mb-1">Gender</label>
+                <label htmlFor="admin-users-create-gender" className="block text-xs font-semibold text-neutral-700 mb-1">{t("profile.field.gender")}</label>
                 <select id="admin-users-create-gender" className="form-input" value={form.gender} onChange={(e) => set("gender", e.target.value)}>
-                  <option value="">Select…</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="">{t("admin.users.detail.selectPlaceholder")}</option>
+                  <option value="Male">{t("profile.gender.male")}</option>
+                  <option value="Female">{t("profile.gender.female")}</option>
+                  <option value="Other">{t("profile.gender.other")}</option>
                 </select>
               </div>
               <div>
-                <label htmlFor="admin-users-create-marital-status" className="block text-xs font-semibold text-neutral-700 mb-1">Marital Status</label>
+                <label htmlFor="admin-users-create-marital-status" className="block text-xs font-semibold text-neutral-700 mb-1">{t("profile.field.maritalStatus")}</label>
                 <select id="admin-users-create-marital-status" className="form-input" value={form.marital_status} onChange={(e) => set("marital_status", e.target.value)}>
-                  <option value="">Select…</option>
-                  <option value="Single">Single</option>
-                  <option value="Married">Married</option>
-                  <option value="Divorced">Divorced</option>
-                  <option value="Widowed">Widowed</option>
+                  <option value="">{t("admin.users.detail.selectPlaceholder")}</option>
+                  <option value="Single">{t("profile.marital.single")}</option>
+                  <option value="Married">{t("profile.marital.married")}</option>
+                  <option value="Divorced">{t("profile.marital.divorced")}</option>
+                  <option value="Widowed">{t("profile.marital.widowed")}</option>
                 </select>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label htmlFor="admin-users-create-residential-address-line-1" className="block text-xs font-semibold text-neutral-700 mb-1">Residential Address Line 1</label>
-                <input id="admin-users-create-residential-address-line-1" className="form-input" placeholder="Street name and number" value={form.address_line1} onChange={(e) => set("address_line1", e.target.value)} />
+                <label htmlFor="admin-users-create-residential-address-line-1" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.create.addressLine1")}</label>
+                <input id="admin-users-create-residential-address-line-1" className="form-input" placeholder={t("admin.users.detail.addressPlaceholder")} value={form.address_line1} onChange={(e) => set("address_line1", e.target.value)} />
               </div>
               <div>
-                <label htmlFor="admin-users-create-city" className="block text-xs font-semibold text-neutral-700 mb-1">City</label>
-                <input id="admin-users-create-city" className="form-input" placeholder="Windhoek" value={form.city} onChange={(e) => set("city", e.target.value)} />
+                <label htmlFor="admin-users-create-city" className="block text-xs font-semibold text-neutral-700 mb-1">{t("profile.field.city")}</label>
+                <input id="admin-users-create-city" className="form-input" placeholder={t("admin.users.detail.cityPlaceholder")} value={form.city} onChange={(e) => set("city", e.target.value)} />
               </div>
               <div>
-                <label htmlFor="admin-users-create-country" className="block text-xs font-semibold text-neutral-700 mb-1">Country</label>
-                <input id="admin-users-create-country" className="form-input" placeholder="Namibia" value={form.country} onChange={(e) => set("country", e.target.value)} />
+                <label htmlFor="admin-users-create-country" className="block text-xs font-semibold text-neutral-700 mb-1">{t("profile.field.country")}</label>
+                <input id="admin-users-create-country" className="form-input" placeholder={t("admin.users.detail.countryPlaceholder")} value={form.country} onChange={(e) => set("country", e.target.value)} />
               </div>
             </div>
           </div>
@@ -512,19 +540,19 @@ export default function AdminUserCreatePage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50">
                 <span className="material-symbols-outlined text-red-600 text-[18px]">contact_emergency</span>
               </div>
-              <h3 className="text-sm font-semibold text-neutral-900">Emergency Contact</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("admin.users.detail.emergencyContact")}</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-1">
-                <label htmlFor="admin-users-create-contact-name" className="block text-xs font-semibold text-neutral-700 mb-1">Contact Name</label>
-                <input id="admin-users-create-contact-name" className="form-input" placeholder="Full Name" value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} />
+                <label htmlFor="admin-users-create-contact-name" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.detail.contactName")}</label>
+                <input id="admin-users-create-contact-name" className="form-input" placeholder={t("admin.users.detail.fullNamePlaceholder")} value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} />
               </div>
               <div>
-                <label htmlFor="admin-users-create-relationship" className="block text-xs font-semibold text-neutral-700 mb-1">Relationship</label>
-                <input id="admin-users-create-relationship" className="form-input" placeholder="e.g. Spouse" value={form.emergency_contact_relationship} onChange={(e) => set("emergency_contact_relationship", e.target.value)} />
+                <label htmlFor="admin-users-create-relationship" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.detail.relationship")}</label>
+                <input id="admin-users-create-relationship" className="form-input" placeholder={t("admin.users.detail.relationshipPlaceholder")} value={form.emergency_contact_relationship} onChange={(e) => set("emergency_contact_relationship", e.target.value)} />
               </div>
               <div>
-                <label htmlFor="admin-users-create-contact-phone" className="block text-xs font-semibold text-neutral-700 mb-1">Contact Phone</label>
+                <label htmlFor="admin-users-create-contact-phone" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.detail.contactPhone")}</label>
                 <input id="admin-users-create-contact-phone" type="tel" className="form-input" placeholder="+264..." value={form.emergency_contact_phone} onChange={(e) => set("emergency_contact_phone", e.target.value)} />
               </div>
             </div>
@@ -541,12 +569,12 @@ export default function AdminUserCreatePage() {
                 <span className="material-symbols-outlined text-indigo-600 text-[18px]">hub</span>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-neutral-900">Portfolios & Committees</h3>
-                <p className="text-xs text-neutral-500">Assign the user to organisational thematic areas or committees.</p>
+                <h3 className="text-sm font-semibold text-neutral-900">{t("admin.users.detail.portfolios")}</h3>
+                <p className="text-xs text-neutral-500">{t("admin.users.create.portfoliosDesc")}</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {portfolios.length === 0 && <p className="text-xs text-neutral-400 italic py-2">No portfolios defined.</p>}
+              {portfolios.length === 0 && <p className="text-xs text-neutral-400 italic py-2">{t("admin.users.detail.noPortfolios")}</p>}
               {portfolios.map(p => (
                 <button key={p.id} type="button"
                   onClick={() => {
@@ -569,8 +597,8 @@ export default function AdminUserCreatePage() {
                 <span className="material-symbols-outlined text-primary text-[18px]">badge</span>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-neutral-900">System Role</h3>
-                <p className="text-xs text-neutral-500">Selecting a role pre-fills module permissions.</p>
+                <h3 className="text-sm font-semibold text-neutral-900">{t("admin.users.detail.systemRole")}</h3>
+                <p className="text-xs text-neutral-500">{t("admin.users.create.roleDesc")}</p>
               </div>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
@@ -593,20 +621,21 @@ export default function AdminUserCreatePage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
                 <span className="material-symbols-outlined text-amber-600 text-[18px]">security</span>
               </div>
-              <h3 className="text-sm font-semibold text-neutral-900">Security Settings</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("admin.users.detail.securitySettings")}</h3>
             </div>
             <div>
-              <label htmlFor="admin-users-create-data-classification-level" className="block text-xs font-semibold text-neutral-700 mb-1">Data Classification Level</label>
+              <label htmlFor="admin-users-create-data-classification-level" className="block text-xs font-semibold text-neutral-700 mb-1">{t("admin.users.detail.classificationLevel")}</label>
               <select id="admin-users-create-data-classification-level" className="form-input" value={form.classification} onChange={(e) => set("classification", e.target.value)}>
                 {classifications.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div className="flex items-center justify-between rounded-xl bg-neutral-50 border border-neutral-200 p-4">
               <div>
-                <p className="text-sm font-semibold text-neutral-900">Multi-Factor Authentication</p>
-                <p className="text-xs text-neutral-500 mt-0.5">Require MFA on every login</p>
+                <p className="text-sm font-semibold text-neutral-900">{t("admin.users.detail.mfa")}</p>
+                <p className="text-xs text-neutral-500 mt-0.5">{t("admin.users.detail.mfaDesc")}</p>
               </div>
               <button type="button" onClick={() => set("mfa_enabled", !form.mfa_enabled)}
+                role="switch" aria-checked={form.mfa_enabled} aria-label={t("admin.users.detail.mfa")}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.mfa_enabled ? "bg-primary" : "bg-neutral-200"}`}>
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.mfa_enabled ? "translate-x-6" : "translate-x-1"}`} />
               </button>
@@ -628,18 +657,20 @@ export default function AdminUserCreatePage() {
               data-testid="create-user-send-invitation"
             />
             <span>
-              <span className="block text-sm font-semibold text-neutral-900">Email an invitation now</span>
+              <span className="block text-sm font-semibold text-neutral-900">{t("admin.users.create.inviteNow")}</span>
               <span className="block text-xs text-neutral-500 mt-0.5">
                 {form.send_invitation
-                  ? `${form.email || "The user"} receives a link to set a password and complete registration. The link expires after 48 hours.`
-                  : "The account is created without emailing anyone. Send the invitation later from the user list or the user's page."}
+                  ? (form.email
+                    ? t("admin.users.create.inviteOnDesc", { email: form.email })
+                    : t("admin.users.create.inviteOnDescNoEmail"))
+                  : t("admin.users.create.inviteOffDesc")}
               </span>
             </span>
           </label>
           <div className="card p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-neutral-900">Module Access Matrix</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Role: <span className="font-semibold text-primary">{form.role}</span> · {totalGranted} granted</p>
+              <p className="text-sm font-semibold text-neutral-900">{t("admin.users.create.matrixTitle")}</p>
+              <p className="text-xs text-neutral-500 mt-0.5">{t("admin.users.create.roleLabel")} <span className="font-semibold text-primary">{form.role}</span> · {t("admin.users.create.grantedCount", { count: totalGranted })}</p>
             </div>
           </div>
           <div className="card overflow-hidden">
@@ -647,10 +678,10 @@ export default function AdminUserCreatePage() {
               <table className="w-full text-sm">
                 <thead className="bg-neutral-50 border-b border-neutral-100">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-neutral-600 w-44">Module</th>
-                    <th className="text-center px-2 py-3 text-xs font-bold text-neutral-400 w-12">All</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-neutral-600 w-44">{t("admin.users.create.module")}</th>
+                    <th className="text-center px-2 py-3 text-xs font-bold text-neutral-400 w-12">{t("admin.users.create.all")}</th>
                     {["view", "create", "edit", "approve", "admin", "export", "users", "roles", "settings", "audit"].map((a) => (
-                      <th key={a} className="text-center px-2 py-3 text-xs font-semibold text-neutral-400 min-w-[56px] capitalize">{ACTION_LABELS[a]}</th>
+                      <th key={a} className="text-center px-2 py-3 text-xs font-semibold text-neutral-400 min-w-[56px] capitalize">{t(ACTION_LABELS[a])}</th>
                     ))}
                   </tr>
                 </thead>
@@ -662,11 +693,12 @@ export default function AdminUserCreatePage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 text-xs font-medium">
                             <span className="material-symbols-outlined text-neutral-400 text-[16px]">{perm.icon}</span>
-                            {perm.module}
+                            {MODULE_LABELS[perm.module] ? t(MODULE_LABELS[perm.module]) : perm.module}
                           </div>
                         </td>
                         <td className="px-2 py-3 text-center">
                           <button type="button" onClick={() => toggleAllModule(perm.module, !allChecked)}
+                            aria-label={t("admin.users.create.toggleAll", { module: MODULE_LABELS[perm.module] ? t(MODULE_LABELS[perm.module]) : perm.module })}
                             className={`h-4 w-4 rounded border-2 flex items-center justify-center mx-auto ${allChecked ? "bg-neutral-700 border-neutral-700" : "border-neutral-300"}`}>
                             {allChecked && <span className="material-symbols-outlined text-white text-[11px]">check</span>}
                           </button>
@@ -697,21 +729,21 @@ export default function AdminUserCreatePage() {
           {step > 0 && (
             <button type="button" onClick={() => setStep((s) => s - 1)}
               className="btn-secondary px-4 py-2.5 text-sm flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">arrow_back</span>Back
+              <span className="material-symbols-outlined text-[18px]">arrow_back</span>{t("common.back")}
             </button>
           )}
         </div>
         <div className="flex gap-3">
-          <Link href="/admin/users" className="btn-secondary px-4 py-2.5 text-sm">Cancel</Link>
+          <Link href="/admin/users" className="btn-secondary px-4 py-2.5 text-sm">{t("common.cancel")}</Link>
           {step < STEPS.length - 1 ? (
             <button type="button" onClick={() => setStep((s) => s + 1)} disabled={!canNext()}
               className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2">
-              Next Step<span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              {t("admin.users.create.nextStep")}<span className="material-symbols-outlined text-[18px]">arrow_forward</span>
             </button>
           ) : (
             <button type="button" onClick={handleSubmit} disabled={submitting}
               className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2">
-              {submitting ? "Creating…" : "Create User"}
+              {submitting ? t("admin.users.create.creating") : t("admin.users.create.submit")}
               <span className="material-symbols-outlined text-[18px]">person_add</span>
             </button>
           )}

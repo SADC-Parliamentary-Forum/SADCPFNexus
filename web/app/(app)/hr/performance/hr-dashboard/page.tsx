@@ -6,14 +6,15 @@ import { performanceTrackerApi, type PerformanceTracker } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_LABELS: Record<string, string> = {
-  excellent: "Excellent",
-  strong: "Strong",
-  satisfactory: "Satisfactory",
-  watchlist: "Watchlist",
-  at_risk: "At Risk",
-  critical_review_required: "Critical Review Required",
+  excellent: "hr.performance.status.excellent",
+  strong: "hr.performance.status.strong",
+  satisfactory: "hr.performance.status.satisfactory",
+  watchlist: "hr.performance.status.watchlist",
+  at_risk: "hr.performance.status.at_risk",
+  critical_review_required: "hr.performance.status.critical_review_required",
 };
 
 const STATUS_CLS: Record<string, string> = {
@@ -26,11 +27,11 @@ const STATUS_CLS: Record<string, string> = {
 };
 
 const TREND_LABELS: Record<string, { label: string; icon: string; cls: string }> = {
-  improving: { label: "Improving", icon: "trending_up", cls: "text-green-600" },
-  stable: { label: "Stable", icon: "trending_flat", cls: "text-neutral-500" },
-  declining: { label: "Declining", icon: "trending_down", cls: "text-red-600" },
-  inconsistent: { label: "Inconsistent", icon: "shuffle", cls: "text-amber-600" },
-  insufficient_data: { label: "Insufficient Data", icon: "help_outline", cls: "text-neutral-400" },
+  improving: { label: "hr.performance.trend.improving", icon: "trending_up", cls: "text-green-600" },
+  stable: { label: "hr.performance.trend.stable", icon: "trending_flat", cls: "text-neutral-500" },
+  declining: { label: "hr.performance.trend.declining", icon: "trending_down", cls: "text-red-600" },
+  inconsistent: { label: "hr.performance.trend.inconsistent", icon: "shuffle", cls: "text-amber-600" },
+  insufficient_data: { label: "hr.performance.trend.insufficient_data", icon: "help_outline", cls: "text-neutral-400" },
 };
 
 function formatDate(d: string | null) {
@@ -45,9 +46,10 @@ function Initials({ name }: { name: string }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useI18n();
   return (
     <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium", STATUS_CLS[status] ?? "bg-neutral-100 text-neutral-700 border-neutral-200")}>
-      {STATUS_LABELS[status] ?? status}
+      {STATUS_LABELS[status] ? t(STATUS_LABELS[status]) : status}
     </span>
   );
 }
@@ -55,16 +57,17 @@ function StatusBadge({ status }: { status: string }) {
 type DashboardSection = "overview" | "watchlist" | "at-risk" | "probation" | "dev-actions" | "trends";
 
 const SECTIONS: { id: DashboardSection; label: string; icon: string }[] = [
-  { id: "overview", label: "Overview", icon: "insights" },
-  { id: "watchlist", label: "Watchlist", icon: "warning" },
-  { id: "at-risk", label: "At Risk / Critical", icon: "crisis_alert" },
-  { id: "probation", label: "Probation Review", icon: "pending_actions" },
-  { id: "dev-actions", label: "Development Actions", icon: "emoji_events" },
-  { id: "trends", label: "Trends", icon: "area_chart" },
+  { id: "overview", label: "hr.performance.dash.section.overview", icon: "insights" },
+  { id: "watchlist", label: "hr.performance.dash.section.watchlist", icon: "warning" },
+  { id: "at-risk", label: "hr.performance.dash.section.atRisk", icon: "crisis_alert" },
+  { id: "probation", label: "hr.performance.dash.section.probation", icon: "pending_actions" },
+  { id: "dev-actions", label: "hr.performance.dash.section.devActions", icon: "emoji_events" },
+  { id: "trends", label: "hr.performance.dash.section.trends", icon: "area_chart" },
 ];
 
 export default function HrPerformanceDashboardPage() {
   const [section, setSection] = useState<DashboardSection>("overview");
+  const { t } = useI18n();
   const [overview, setOverview] = useState<{
     status_counts: Record<string, number>;
     watchlist: PerformanceTracker[];
@@ -86,23 +89,23 @@ export default function HrPerformanceDashboardPage() {
       const listData = (listRes.data as { data?: PerformanceTracker[] }).data ?? [];
       setAllTrackers(Array.isArray(listData) ? listData : []);
     } catch {
-      setError("Failed to load HR performance dashboard.");
+      setError(t("hr.performance.dash.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
-  const watchlistTrackers = allTrackers.filter((t) => t.status === "watchlist");
+  const watchlistTrackers = allTrackers.filter((tk) => tk.status === "watchlist");
   const atRiskTrackers = allTrackers.filter(
-    (t) => t.status === "at_risk" || t.status === "critical_review_required"
+    (tk) => tk.status === "at_risk" || tk.status === "critical_review_required"
   );
-  const probationTrackers = allTrackers.filter((t) => t.probation_flag);
-  const hrAttentionTrackers = allTrackers.filter((t) => t.hr_attention_required);
-  const decliningTrackers = allTrackers.filter((t) => t.trend === "declining");
-  const devActionTrackers = allTrackers.filter((t) => (t.active_development_action_count ?? 0) > 0);
-  const warningTrackers = allTrackers.filter((t) => t.active_warning_flag);
+  const probationTrackers = allTrackers.filter((tk) => tk.probation_flag);
+  const hrAttentionTrackers = allTrackers.filter((tk) => tk.hr_attention_required);
+  const decliningTrackers = allTrackers.filter((tk) => tk.trend === "declining");
+  const devActionTrackers = allTrackers.filter((tk) => (tk.active_development_action_count ?? 0) > 0);
+  const warningTrackers = allTrackers.filter((tk) => tk.active_warning_flag);
 
   const total = allTrackers.length;
   const statusCounts = overview?.status_counts ?? {};
@@ -112,20 +115,20 @@ export default function HrPerformanceDashboardPage() {
   const atRiskCount = (statusCounts.at_risk ?? 0) + (statusCounts.critical_review_required ?? 0);
 
   const avgCompletion = allTrackers.length > 0
-    ? allTrackers.reduce((acc, t) => acc + (t.assignment_completion_rate ?? 0), 0) / allTrackers.length
+    ? allTrackers.reduce((acc, tk) => acc + (tk.assignment_completion_rate ?? 0), 0) / allTrackers.length
     : 0;
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="HR Performance Monitoring"
-        subtitle="Institution-wide performance intelligence, watchlist monitoring, and pre-appraisal evidence overview."
+        title={t("hr.performance.dash.title")}
+        subtitle={t("hr.performance.dash.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Performance Tracker", href: "/hr/performance" },
-              { label: "HR Monitoring Dashboard" },
+              { label: "hr.performance.crumb", href: "/hr/performance" },
+              { label: "hr.performance.dash.crumb" },
             ]}
           />
         }
@@ -133,11 +136,11 @@ export default function HrPerformanceDashboardPage() {
           <>
           <Link href="/hr/performance/team" className="btn-secondary flex items-center gap-2 py-2 px-3 text-sm">
             <span className="material-symbols-outlined text-[18px]">group</span>
-            Team View
+            {t("hr.performance.dash.teamView")}
           </Link>
           <Link href="/hr/performance" className="btn-secondary flex items-center gap-2 py-2 px-3 text-sm">
             <span className="material-symbols-outlined text-[18px]">trending_up</span>
-            All Trackers
+            {t("hr.performance.dash.allTrackers")}
           </Link>
           </>
         }
@@ -147,26 +150,26 @@ export default function HrPerformanceDashboardPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           {error}
-          <button type="button" onClick={load} className="ml-auto btn-secondary text-xs">Retry</button>
+          <button type="button" onClick={load} className="ml-auto btn-secondary text-xs">{t("common.retry")}</button>
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-24 text-neutral-500 gap-2">
           <span className="material-symbols-outlined animate-spin text-[28px]">progress_activity</span>
-          <span>Loading dashboard…</span>
+          <span>{t("hr.performance.dash.loading")}</span>
         </div>
       ) : (
         <>
           {/* KPI Row */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
             {[
-              { label: "Total Tracked", value: total, icon: "group", color: "text-primary", bg: "bg-primary/10" },
-              { label: "Excellent / Strong", value: excellentStrong, icon: "emoji_events", color: "text-green-600", bg: "bg-green-50" },
-              { label: "Satisfactory", value: satisfactory, icon: "check_circle", color: "text-neutral-600", bg: "bg-neutral-100" },
-              { label: "Watchlist", value: watchlistCount, icon: "warning", color: "text-amber-600", bg: "bg-amber-50" },
-              { label: "At Risk / Critical", value: atRiskCount, icon: "crisis_alert", color: "text-red-600", bg: "bg-red-50" },
-              { label: "Avg Completion", value: `${Math.round(avgCompletion)}%`, icon: "donut_large", color: "text-primary", bg: "bg-primary/10" },
+              { label: t("hr.performance.dash.kpi.total"), value: total, icon: "group", color: "text-primary", bg: "bg-primary/10" },
+              { label: t("hr.performance.dash.kpi.excellentStrong"), value: excellentStrong, icon: "emoji_events", color: "text-green-600", bg: "bg-green-50" },
+              { label: t("hr.performance.dash.kpi.satisfactory"), value: satisfactory, icon: "check_circle", color: "text-neutral-600", bg: "bg-neutral-100" },
+              { label: t("hr.performance.dash.kpi.watchlist"), value: watchlistCount, icon: "warning", color: "text-amber-600", bg: "bg-amber-50" },
+              { label: t("hr.performance.dash.kpi.atRisk"), value: atRiskCount, icon: "crisis_alert", color: "text-red-600", bg: "bg-red-50" },
+              { label: t("hr.performance.dash.kpi.avgCompletion"), value: `${Math.round(avgCompletion)}%`, icon: "donut_large", color: "text-primary", bg: "bg-primary/10" },
             ].map((stat) => (
               <div key={stat.label} className="card p-4">
                 <div className={`h-9 w-9 rounded-lg ${stat.bg} flex items-center justify-center mb-2`}>
@@ -182,9 +185,9 @@ export default function HrPerformanceDashboardPage() {
           {(warningTrackers.length > 0 || probationTrackers.length > 0 || hrAttentionTrackers.length > 0) && (
             <div className="grid gap-3 sm:grid-cols-3">
               {[
-                { label: "Active Warnings", count: warningTrackers.length, icon: "flag", color: "text-red-600", bg: "bg-red-50", border: "border-red-200" },
-                { label: "Probation Active", count: probationTrackers.length, icon: "pending_actions", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
-                { label: "HR Attention Required", count: hrAttentionTrackers.length, icon: "notifications_active", color: "text-primary", bg: "bg-primary/10", border: "border-primary/20" },
+                { label: t("hr.performance.dash.alert.warnings"), count: warningTrackers.length, icon: "flag", color: "text-red-600", bg: "bg-red-50", border: "border-red-200" },
+                { label: t("hr.performance.dash.alert.probation"), count: probationTrackers.length, icon: "pending_actions", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
+                { label: t("hr.performance.dash.alert.hrAttention"), count: hrAttentionTrackers.length, icon: "notifications_active", color: "text-primary", bg: "bg-primary/10", border: "border-primary/20" },
               ].filter((a) => a.count > 0).map((alert) => (
                 <div key={alert.label} className={`rounded-xl border ${alert.border} ${alert.bg} px-4 py-3 flex items-center gap-3`}>
                   <span className={`material-symbols-outlined ${alert.color} text-[22px]`}>{alert.icon}</span>
@@ -211,7 +214,7 @@ export default function HrPerformanceDashboardPage() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[16px]">{s.icon}</span>
-                {s.label}
+                {t(s.label)}
               </button>
             ))}
           </div>
@@ -223,7 +226,7 @@ export default function HrPerformanceDashboardPage() {
                 <div className="card-header">
                   <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px] text-neutral-400">bar_chart</span>
-                    Performance Status Distribution
+                    {t("hr.performance.dash.distribution")}
                   </h3>
                 </div>
                 <div className="p-4">
@@ -233,7 +236,7 @@ export default function HrPerformanceDashboardPage() {
                       const pct = total > 0 ? (count / total) * 100 : 0;
                       return (
                         <div key={status} className="flex items-center gap-3">
-                          <span className="text-xs text-neutral-600 w-40 shrink-0">{STATUS_LABELS[status]}</span>
+                          <span className="text-xs text-neutral-600 w-40 shrink-0">{t(STATUS_LABELS[status])}</span>
                           <div className="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all ${
@@ -260,18 +263,18 @@ export default function HrPerformanceDashboardPage() {
                   <div className="card-header">
                     <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
                       <span className="material-symbols-outlined text-[16px] text-red-500">trending_down</span>
-                      Declining Trend
+                      {t("hr.performance.dash.declining")}
                     </h3>
                     <span className="badge badge-danger">{decliningTrackers.length}</span>
                   </div>
                   <div className="divide-y divide-neutral-50 max-h-64 overflow-y-auto">
                     {decliningTrackers.length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-neutral-400 text-center">None currently declining.</p>
+                      <p className="px-4 py-6 text-sm text-neutral-400 text-center">{t("hr.performance.dash.noneDeclining")}</p>
                     ) : (
-                      decliningTrackers.slice(0, 10).map((t) => (
-                        <Link key={t.id} href={`/hr/performance/${t.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
-                          <span className="text-sm font-medium text-neutral-900">{t.employee?.name ?? `#${t.employee_id}`}</span>
-                          <StatusBadge status={t.status} />
+                      decliningTrackers.slice(0, 10).map((tk) => (
+                        <Link key={tk.id} href={`/hr/performance/${tk.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
+                          <span className="text-sm font-medium text-neutral-900">{tk.employee?.name ?? `#${tk.employee_id}`}</span>
+                          <StatusBadge status={tk.status} />
                         </Link>
                       ))
                     )}
@@ -283,18 +286,18 @@ export default function HrPerformanceDashboardPage() {
                   <div className="card-header">
                     <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
                       <span className="material-symbols-outlined text-[16px] text-green-500">trending_up</span>
-                      Improving Trend
+                      {t("hr.performance.dash.improving")}
                     </h3>
-                    <span className="badge badge-success">{allTrackers.filter((t) => t.trend === "improving").length}</span>
+                    <span className="badge badge-success">{allTrackers.filter((tk) => tk.trend === "improving").length}</span>
                   </div>
                   <div className="divide-y divide-neutral-50 max-h-64 overflow-y-auto">
-                    {allTrackers.filter((t) => t.trend === "improving").length === 0 ? (
-                      <EmptyState icon="trending_up" title="No improving trend data." className="py-6 min-h-0" />
+                    {allTrackers.filter((tk) => tk.trend === "improving").length === 0 ? (
+                      <EmptyState icon="trending_up" title={t("hr.performance.dash.noImproving")} className="py-6 min-h-0" />
                     ) : (
-                      allTrackers.filter((t) => t.trend === "improving").slice(0, 10).map((t) => (
-                        <Link key={t.id} href={`/hr/performance/${t.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
-                          <span className="text-sm font-medium text-neutral-900">{t.employee?.name ?? `#${t.employee_id}`}</span>
-                          <StatusBadge status={t.status} />
+                      allTrackers.filter((tk) => tk.trend === "improving").slice(0, 10).map((tk) => (
+                        <Link key={tk.id} href={`/hr/performance/${tk.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
+                          <span className="text-sm font-medium text-neutral-900">{tk.employee?.name ?? `#${tk.employee_id}`}</span>
+                          <StatusBadge status={tk.status} />
                         </Link>
                       ))
                     )}
@@ -309,8 +312,8 @@ export default function HrPerformanceDashboardPage() {
             <TrackerTable
               trackers={watchlistTrackers}
               emptyIcon="warning"
-              emptyMessage="No employees currently on the watchlist."
-              emptyNote="Watchlist status is assigned when performance monitoring flags concern."
+              emptyMessage={t("hr.performance.dash.watchlistEmpty")}
+              emptyNote={t("hr.performance.dash.watchlistNote")}
             />
           )}
 
@@ -320,14 +323,14 @@ export default function HrPerformanceDashboardPage() {
               {atRiskTrackers.length > 0 && (
                 <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px]">crisis_alert</span>
-                  <strong>{atRiskTrackers.length} employee{atRiskTrackers.length > 1 ? "s" : ""}</strong>&nbsp;at risk or requiring critical review. Immediate supervisor and HR follow-up recommended.
+                  <strong>{t(atRiskTrackers.length > 1 ? "hr.performance.dash.atRiskMany" : "hr.performance.dash.atRiskOne", { count: atRiskTrackers.length })}</strong>&nbsp;{t("hr.performance.dash.atRiskRest")}
                 </div>
               )}
               <TrackerTable
                 trackers={atRiskTrackers}
                 emptyIcon="crisis_alert"
-                emptyMessage="No at-risk employees."
-                emptyNote="Employees flagged at-risk or critical review required will appear here."
+                emptyMessage={t("hr.performance.dash.atRiskEmpty")}
+                emptyNote={t("hr.performance.dash.atRiskNote")}
               />
             </div>
           )}
@@ -335,12 +338,12 @@ export default function HrPerformanceDashboardPage() {
           {/* Probation section */}
           {section === "probation" && (
             <div className="space-y-4">
-              <p className="text-sm text-neutral-500">Employees currently on probation or awaiting confirmation review. Tracker data provides pre-review evidence.</p>
+              <p className="text-sm text-neutral-500">{t("hr.performance.dash.probationIntro")}</p>
               <TrackerTable
                 trackers={probationTrackers}
                 emptyIcon="pending_actions"
-                emptyMessage="No active probation cases."
-                emptyNote="Employees on probation with active performance trackers will appear here."
+                emptyMessage={t("hr.performance.dash.probationEmpty")}
+                emptyNote={t("hr.performance.dash.probationNote")}
               />
             </div>
           )}
@@ -348,49 +351,49 @@ export default function HrPerformanceDashboardPage() {
           {/* Development Actions section */}
           {section === "dev-actions" && (
             <div className="space-y-4">
-              <p className="text-sm text-neutral-500">Employees with open development actions from prior appraisals or performance plans. <strong>{devActionTrackers.length}</strong> active.</p>
+              <p className="text-sm text-neutral-500">{t("hr.performance.dash.devIntro")} <strong>{devActionTrackers.length}</strong> {t("hr.performance.dash.devActive")}</p>
               <div className="card overflow-hidden">
                 <div className="card-header">
-                  <h3 className="text-sm font-semibold text-neutral-900">Open development actions</h3>
+                  <h3 className="text-sm font-semibold text-neutral-900">{t("hr.performance.dash.devTitle")}</h3>
                   <span className="badge badge-warning">{devActionTrackers.length}</span>
                 </div>
                 {devActionTrackers.length === 0 ? (
-                  <EmptyState icon="emoji_events" title="No open development actions." />
+                  <EmptyState icon="emoji_events" title={t("hr.performance.dash.devEmpty")} />
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="data-table">
                       <thead>
                         <tr>
-                          <th>Employee</th>
-                          <th>Status</th>
-                          <th>Trend</th>
-                          <th>Open Dev. Actions</th>
-                          <th>Completion Rate</th>
-                          <th className="text-right">Action</th>
+                          <th>{t("hr.performance.dash.col.employee")}</th>
+                          <th>{t("hr.performance.dash.col.status")}</th>
+                          <th>{t("hr.performance.dash.col.trend")}</th>
+                          <th>{t("hr.performance.dash.col.openDevActions")}</th>
+                          <th>{t("hr.performance.dash.col.completionRate")}</th>
+                          <th className="text-right">{t("hr.performance.dash.col.action")}</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {devActionTrackers.map((t) => {
-                          const trendConf = TREND_LABELS[t.trend] ?? { label: t.trend, icon: "trending_flat", cls: "text-neutral-500" };
+                        {devActionTrackers.map((tk) => {
+                          const trendConf = TREND_LABELS[tk.trend] ?? { label: tk.trend, icon: "trending_flat", cls: "text-neutral-500" };
                           return (
-                            <tr key={t.id}>
-                              <td className="font-medium text-neutral-900">{t.employee?.name ?? `#${t.employee_id}`}</td>
-                              <td><StatusBadge status={t.status} /></td>
+                            <tr key={tk.id}>
+                              <td className="font-medium text-neutral-900">{tk.employee?.name ?? `#${tk.employee_id}`}</td>
+                              <td><StatusBadge status={tk.status} /></td>
                               <td>
                                 <span className={`flex items-center gap-1 text-xs font-medium ${trendConf.cls}`}>
                                   <span className="material-symbols-outlined text-[14px]">{trendConf.icon}</span>
-                                  {trendConf.label}
+                                  {t(trendConf.label)}
                                 </span>
                               </td>
                               <td>
-                                <span className="font-bold text-amber-700 text-sm">{t.active_development_action_count}</span>
+                                <span className="font-bold text-amber-700 text-sm">{tk.active_development_action_count}</span>
                               </td>
                               <td className="text-sm">
-                                {t.assignment_completion_rate != null ? `${t.assignment_completion_rate}%` : "—"}
+                                {tk.assignment_completion_rate != null ? `${tk.assignment_completion_rate}%` : "—"}
                               </td>
                               <td className="text-right">
-                                <Link href={`/hr/performance/${t.id}`} className="btn-secondary text-xs">
-                                  View profile
+                                <Link href={`/hr/performance/${tk.id}`} className="btn-secondary text-xs">
+                                  {t("hr.performance.dash.viewProfile")}
                                 </Link>
                               </td>
                             </tr>
@@ -413,25 +416,25 @@ export default function HrPerformanceDashboardPage() {
                   <div className="card-header">
                     <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
                       <span className="material-symbols-outlined text-[16px] text-green-500">star</span>
-                      Commendations &amp; Recognition
+                      {t("hr.performance.dash.commendations")}
                     </h3>
                   </div>
                   <div className="divide-y divide-neutral-50 max-h-64 overflow-y-auto">
                     {allTrackers
-                      .filter((t) => (t.commendation_count ?? 0) > 0)
+                      .filter((tk) => (tk.commendation_count ?? 0) > 0)
                       .sort((a, b) => (b.commendation_count ?? 0) - (a.commendation_count ?? 0))
                       .slice(0, 10)
-                      .map((t) => (
-                        <Link key={t.id} href={`/hr/performance/${t.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
-                          <span className="text-sm font-medium text-neutral-900">{t.employee?.name ?? `#${t.employee_id}`}</span>
+                      .map((tk) => (
+                        <Link key={tk.id} href={`/hr/performance/${tk.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
+                          <span className="text-sm font-medium text-neutral-900">{tk.employee?.name ?? `#${tk.employee_id}`}</span>
                           <span className="flex items-center gap-1 text-xs text-green-700 font-semibold">
                             <span className="material-symbols-outlined text-[14px]">star</span>
-                            {t.commendation_count}
+                            {tk.commendation_count}
                           </span>
                         </Link>
                       ))}
-                    {allTrackers.filter((t) => (t.commendation_count ?? 0) > 0).length === 0 && (
-                      <EmptyState icon="star" title="No commendations recorded." className="py-6 min-h-0" />
+                    {allTrackers.filter((tk) => (tk.commendation_count ?? 0) > 0).length === 0 && (
+                      <EmptyState icon="star" title={t("hr.performance.dash.noCommendations")} className="py-6 min-h-0" />
                     )}
                   </div>
                 </div>
@@ -441,17 +444,17 @@ export default function HrPerformanceDashboardPage() {
                   <div className="card-header">
                     <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
                       <span className="material-symbols-outlined text-[16px] text-red-500">gavel</span>
-                      Active Warnings / Conduct
+                      {t("hr.performance.dash.warnings")}
                     </h3>
                   </div>
                   <div className="divide-y divide-neutral-50 max-h-64 overflow-y-auto">
                     {warningTrackers.length === 0 ? (
-                      <EmptyState icon="gavel" title="No active warnings." className="py-6 min-h-0" />
+                      <EmptyState icon="gavel" title={t("hr.performance.dash.noWarnings")} className="py-6 min-h-0" />
                     ) : (
-                      warningTrackers.slice(0, 10).map((t) => (
-                        <Link key={t.id} href={`/hr/performance/${t.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
-                          <span className="text-sm font-medium text-neutral-900">{t.employee?.name ?? `#${t.employee_id}`}</span>
-                          <span className="badge badge-danger text-xs">Warning active</span>
+                      warningTrackers.slice(0, 10).map((tk) => (
+                        <Link key={tk.id} href={`/hr/performance/${tk.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
+                          <span className="text-sm font-medium text-neutral-900">{tk.employee?.name ?? `#${tk.employee_id}`}</span>
+                          <span className="badge badge-danger text-xs">{t("hr.performance.dash.warningActive")}</span>
                         </Link>
                       ))
                     )}
@@ -462,18 +465,18 @@ export default function HrPerformanceDashboardPage() {
               {/* Trend summary table */}
               <div className="card overflow-hidden">
                 <div className="card-header">
-                  <h3 className="text-sm font-semibold text-neutral-900">Trend distribution</h3>
+                  <h3 className="text-sm font-semibold text-neutral-900">{t("hr.performance.dash.trendDistribution")}</h3>
                 </div>
                 <div className="p-4 flex flex-wrap gap-4">
                   {["improving", "stable", "declining", "inconsistent", "insufficient_data"].map((trend) => {
-                    const count = allTrackers.filter((t) => t.trend === trend).length;
+                    const count = allTrackers.filter((tk) => tk.trend === trend).length;
                     const conf = TREND_LABELS[trend];
                     return (
                       <div key={trend} className="flex items-center gap-2 rounded-lg bg-neutral-50 border border-neutral-100 px-4 py-3 min-w-[140px]">
                         <span className={`material-symbols-outlined text-[20px] ${conf?.cls ?? "text-neutral-500"}`}>{conf?.icon ?? "trending_flat"}</span>
                         <div>
                           <p className={`text-sm font-bold ${conf?.cls ?? "text-neutral-700"}`}>{count}</p>
-                          <p className="text-xs text-neutral-500">{conf?.label ?? trend}</p>
+                          <p className="text-xs text-neutral-500">{conf ? t(conf.label) : trend}</p>
                         </div>
                       </div>
                     );
@@ -499,10 +502,11 @@ function TrackerTable({
   emptyMessage: string;
   emptyNote?: string;
 }) {
+  const { t } = useI18n();
   return (
     <div className="card overflow-hidden">
       <div className="card-header">
-        <h3 className="text-sm font-semibold text-neutral-900">Employees</h3>
+        <h3 className="text-sm font-semibold text-neutral-900">{t("hr.performance.dash.employees")}</h3>
         <span className="badge badge-muted">{trackers.length}</span>
       </div>
       {trackers.length === 0 ? (
@@ -516,65 +520,65 @@ function TrackerTable({
           <table className="data-table">
             <thead>
               <tr>
-                <th>Employee</th>
-                <th>Status</th>
-                <th>Trend</th>
-                <th>Completion</th>
-                <th>Overdue</th>
-                <th>Dev. Actions</th>
-                <th>Warning</th>
-                <th className="text-right">Action</th>
+                <th>{t("hr.performance.dash.col.employee")}</th>
+                <th>{t("hr.performance.dash.col.status")}</th>
+                <th>{t("hr.performance.dash.col.trend")}</th>
+                <th>{t("hr.performance.dash.col.completion")}</th>
+                <th>{t("hr.performance.dash.col.overdue")}</th>
+                <th>{t("hr.performance.dash.col.devActions")}</th>
+                <th>{t("hr.performance.dash.col.warning")}</th>
+                <th className="text-right">{t("hr.performance.dash.col.action")}</th>
               </tr>
             </thead>
             <tbody>
-              {trackers.map((t) => {
-                const trendConf = TREND_LABELS[t.trend] ?? { label: t.trend, icon: "trending_flat", cls: "text-neutral-500" };
+              {trackers.map((tk) => {
+                const trendConf = TREND_LABELS[tk.trend] ?? { label: tk.trend, icon: "trending_flat", cls: "text-neutral-500" };
                 return (
-                  <tr key={t.id}>
+                  <tr key={tk.id}>
                     <td>
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <span className="text-xs font-bold text-primary">
-                            <Initials name={t.employee?.name ?? ""} />
+                            <Initials name={tk.employee?.name ?? ""} />
                           </span>
                         </div>
-                        <span className="font-medium text-neutral-900">{t.employee?.name ?? `#${t.employee_id}`}</span>
+                        <span className="font-medium text-neutral-900">{tk.employee?.name ?? `#${tk.employee_id}`}</span>
                       </div>
                     </td>
-                    <td><StatusBadge status={t.status} /></td>
+                    <td><StatusBadge status={tk.status} /></td>
                     <td>
                       <span className={`flex items-center gap-1 text-xs font-medium ${trendConf.cls}`}>
                         <span className="material-symbols-outlined text-[14px]">{trendConf.icon}</span>
-                        {trendConf.label}
+                        {t(trendConf.label)}
                       </span>
                     </td>
                     <td className="text-sm">
-                      {t.assignment_completion_rate != null ? `${t.assignment_completion_rate}%` : "—"}
+                      {tk.assignment_completion_rate != null ? `${tk.assignment_completion_rate}%` : "—"}
                     </td>
                     <td className="text-sm">
-                      {(t.overdue_task_count ?? 0) > 0 ? (
-                        <span className="text-red-600 font-semibold">{t.overdue_task_count}</span>
+                      {(tk.overdue_task_count ?? 0) > 0 ? (
+                        <span className="text-red-600 font-semibold">{tk.overdue_task_count}</span>
                       ) : (
                         <span className="text-neutral-400">0</span>
                       )}
                     </td>
                     <td className="text-sm">
-                      {(t.active_development_action_count ?? 0) > 0 ? (
-                        <span className="text-amber-700 font-semibold">{t.active_development_action_count}</span>
+                      {(tk.active_development_action_count ?? 0) > 0 ? (
+                        <span className="text-amber-700 font-semibold">{tk.active_development_action_count}</span>
                       ) : (
                         <span className="text-neutral-400">—</span>
                       )}
                     </td>
                     <td>
-                      {t.active_warning_flag ? (
-                        <span className="badge badge-danger text-xs">Yes</span>
+                      {tk.active_warning_flag ? (
+                        <span className="badge badge-danger text-xs">{t("hr.performance.dash.yes")}</span>
                       ) : (
                         <span className="text-neutral-300 text-xs">—</span>
                       )}
                     </td>
                     <td className="text-right">
-                      <Link href={`/hr/performance/${t.id}`} className="btn-secondary text-xs">
-                        View
+                      <Link href={`/hr/performance/${tk.id}`} className="btn-secondary text-xs">
+                        {t("hr.performance.dash.view")}
                       </Link>
                     </td>
                   </tr>

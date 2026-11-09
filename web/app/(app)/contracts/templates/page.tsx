@@ -5,10 +5,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { contractsApi, type ContractTemplateSummary, type ContractTemplateVersionSummary, type ContractType } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function ContractTemplatesPage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
 
   const { data: templates = [] } = useQuery({
     queryKey: ["contract-templates"],
@@ -21,12 +23,12 @@ export default function ContractTemplatesPage() {
 
   const refreshTemplates = () => qc.invalidateQueries({ queryKey: ["contract-templates"] });
 
-  const err = (e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Action failed");
+  const err = (e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("contracts.common.actionFailed"));
 
-  const typeName = (id: number | null) => (id == null ? "—" : types.find((t: ContractType) => t.id === id)?.name ?? `#${id}`);
+  const typeName = (id: number | null) => (id == null ? "—" : types.find((ty: ContractType) => ty.id === id)?.name ?? `#${id}`);
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const selected = useMemo(() => templates.find((t) => t.id === selectedId) ?? null, [templates, selectedId]);
+  const selected = useMemo(() => templates.find((tpl) => tpl.id === selectedId) ?? null, [templates, selectedId]);
 
   // New version form
   const [versionLabel, setVersionLabel] = useState("");
@@ -36,7 +38,7 @@ export default function ContractTemplatesPage() {
     if (!selected || !versionLabel.trim() || !versionBody.trim()) return;
     contractsApi.addTemplateVersion(selected.id, { version: versionLabel.trim(), body: versionBody })
       .then(() => {
-        toast.success("Template version added");
+        toast.success(t("contracts.templates.versionAdded"));
         setVersionLabel("");
         setVersionBody("");
         refreshTemplates();
@@ -46,7 +48,7 @@ export default function ContractTemplatesPage() {
   const activateVersion = (versionId: number) => {
     if (!selected) return;
     contractsApi.activateTemplateVersion(selected.id, versionId)
-      .then(() => { toast.success("Version activated"); refreshTemplates(); }).catch(err);
+      .then(() => { toast.success(t("contracts.templates.versionActivated")); refreshTemplates(); }).catch(err);
   };
 
   // New template form
@@ -65,7 +67,7 @@ export default function ContractTemplatesPage() {
       description: newDescription.trim() || undefined,
       body: newBody,
     }).then(() => {
-      toast.success("Template created");
+      toast.success(t("contracts.templates.created"));
       setNewName(""); setNewTypeId(""); setNewCounterparty("either"); setNewDescription(""); setNewBody("");
       refreshTemplates();
     }).catch(err);
@@ -74,30 +76,30 @@ export default function ContractTemplatesPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <ModulePageHeader
-        title="Contract Templates"
-        subtitle="Versioned document templates — only APPROVED/ACTIVE versions can generate contracts."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Contracts", href: "/contracts" }, { label: "Templates" }]} />}
+        title="contracts.templates.title"
+        subtitle="contracts.templates.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.contracts", href: "/contracts" }, { label: "contracts.templates.crumb" }]} />}
       />
 
       {/* Templates list */}
       <div className="card overflow-hidden">
-        <div className="px-5 py-3 border-b border-neutral-100"><h2 className="text-sm font-semibold text-neutral-800">Templates</h2></div>
+        <div className="px-5 py-3 border-b border-neutral-100"><h2 className="text-sm font-semibold text-neutral-800">{t("contracts.templates.crumb")}</h2></div>
         {templates.length === 0 ? (
-          <div className="p-6 text-sm text-neutral-400">No templates have been created yet.</div>
+          <div className="p-6 text-sm text-neutral-400">{t("contracts.templates.empty")}</div>
         ) : (
           <table className="data-table">
-            <thead><tr><th>Name</th><th>Contract type</th><th>Counterparty</th><th>Status</th><th>Current version</th><th></th></tr></thead>
+            <thead><tr><th>{t("contracts.field.name")}</th><th>{t("contracts.field.contractType")}</th><th>{t("contracts.field.counterparty")}</th><th>{t("contracts.field.status")}</th><th>{t("contracts.templates.currentVersion")}</th><th></th></tr></thead>
             <tbody>
-              {templates.map((t) => (
-                <tr key={t.id} className={t.id === selectedId ? "bg-neutral-50" : ""}>
-                  <td className="text-sm font-medium text-neutral-800">{t.name}</td>
-                  <td className="text-xs text-neutral-500">{typeName(t.contract_type_id)}</td>
-                  <td className="text-xs capitalize text-neutral-500">{t.counterparty_type ?? "—"}</td>
-                  <td className="text-sm"><span className="badge">{t.status}</span></td>
-                  <td className="text-xs text-neutral-500">{t.current_version?.version ?? "—"}</td>
+              {templates.map((tpl) => (
+                <tr key={tpl.id} className={tpl.id === selectedId ? "bg-neutral-50" : ""}>
+                  <td className="text-sm font-medium text-neutral-800">{tpl.name}</td>
+                  <td className="text-xs text-neutral-500">{typeName(tpl.contract_type_id)}</td>
+                  <td className="text-xs capitalize text-neutral-500">{tpl.counterparty_type ?? "—"}</td>
+                  <td className="text-sm"><span className="badge">{tpl.status}</span></td>
+                  <td className="text-xs text-neutral-500">{tpl.current_version?.version ?? "—"}</td>
                   <td className="text-right">
-                    <button className="btn-secondary text-xs py-0.5" onClick={() => setSelectedId(t.id === selectedId ? null : t.id)}>
-                      {t.id === selectedId ? "Close" : "Open"}
+                    <button className="btn-secondary text-xs py-0.5" onClick={() => setSelectedId(tpl.id === selectedId ? null : tpl.id)}>
+                      {tpl.id === selectedId ? t("common.close") : t("common.open")}
                     </button>
                   </td>
                 </tr>
@@ -111,22 +113,22 @@ export default function ContractTemplatesPage() {
       {selected && (
         <div className="card overflow-hidden">
           <div className="px-5 py-3 border-b border-neutral-100">
-            <h2 className="text-sm font-semibold text-neutral-800">{selected.name} — versions</h2>
-            <p className="text-xs text-neutral-500 mt-0.5">Current version: {selected.current_version?.version ?? "none set"}</p>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("contracts.templates.versionsOf", { name: selected.name })}</h2>
+            <p className="text-xs text-neutral-500 mt-0.5">{t("contracts.templates.currentVersionLine", { version: selected.current_version?.version ?? t("contracts.templates.noneSet") })}</p>
           </div>
           <table className="data-table">
-            <thead><tr><th>Version</th><th>Status</th><th>Current</th><th></th></tr></thead>
+            <thead><tr><th>{t("contracts.templates.version")}</th><th>{t("contracts.field.status")}</th><th>{t("contracts.templates.current")}</th><th></th></tr></thead>
             <tbody>
               {(selected.versions ?? []).length === 0 ? (
-                <tr><td colSpan={4} className="text-sm text-neutral-400 p-4">No versions yet.</td></tr>
+                <tr><td colSpan={4} className="text-sm text-neutral-400 p-4">{t("contracts.templates.noVersions")}</td></tr>
               ) : (selected.versions ?? []).map((v: ContractTemplateVersionSummary) => (
                 <tr key={v.id}>
                   <td className="text-sm font-mono text-neutral-800">{v.version}</td>
                   <td className="text-sm"><span className="badge">{v.status}</span></td>
-                  <td className="text-sm">{v.id === selected.current_version_id ? "Yes" : "No"}</td>
+                  <td className="text-sm">{v.id === selected.current_version_id ? t("contracts.common.yes") : t("contracts.common.no")}</td>
                   <td className="text-right">
                     {v.status !== "ACTIVE" && (
-                      <button className="btn-secondary text-xs py-0.5" onClick={() => activateVersion(v.id)}>Activate</button>
+                      <button className="btn-secondary text-xs py-0.5" onClick={() => activateVersion(v.id)}>{t("contracts.templates.activate")}</button>
                     )}
                   </td>
                 </tr>
@@ -134,46 +136,46 @@ export default function ContractTemplatesPage() {
             </tbody>
           </table>
           <div className="p-4 border-t border-neutral-100 space-y-2">
-            <h3 className="text-xs font-semibold text-neutral-600">Add a new version</h3>
+            <h3 className="text-xs font-semibold text-neutral-600">{t("contracts.templates.addNewVersion")}</h3>
             <div className="flex flex-wrap items-end gap-2">
-              <div className="space-y-1"><label htmlFor="contracts-templates-version-label" className="text-xs font-semibold text-neutral-600">Version</label><input id="contracts-templates-version-label" className="form-input w-32" value={versionLabel} onChange={(e) => setVersionLabel(e.target.value)} placeholder="v1.1" /></div>
+              <div className="space-y-1"><label htmlFor="contracts-templates-version-label" className="text-xs font-semibold text-neutral-600">{t("contracts.templates.version")}</label><input id="contracts-templates-version-label" className="form-input w-32" value={versionLabel} onChange={(e) => setVersionLabel(e.target.value)} placeholder="v1.1" /></div>
             </div>
             <div className="space-y-1">
-              <label htmlFor="contracts-templates-version-body" className="text-xs font-semibold text-neutral-600">Body</label>
-              <textarea id="contracts-templates-version-body" className="form-input w-full" rows={6} value={versionBody} onChange={(e) => setVersionBody(e.target.value)} placeholder="Template body text..." />
+              <label htmlFor="contracts-templates-version-body" className="text-xs font-semibold text-neutral-600">{t("contracts.templates.body")}</label>
+              <textarea id="contracts-templates-version-body" className="form-input w-full" rows={6} value={versionBody} onChange={(e) => setVersionBody(e.target.value)} placeholder={t("contracts.templates.bodyPlaceholder")} />
             </div>
-            <button className="btn-primary text-sm" onClick={addVersion}>Add version</button>
+            <button className="btn-primary text-sm" onClick={addVersion}>{t("contracts.templates.addVersion")}</button>
           </div>
         </div>
       )}
 
       {/* New template */}
       <div className="card overflow-hidden">
-        <div className="px-5 py-3 border-b border-neutral-100"><h2 className="text-sm font-semibold text-neutral-800">New template</h2></div>
+        <div className="px-5 py-3 border-b border-neutral-100"><h2 className="text-sm font-semibold text-neutral-800">{t("contracts.templates.newTemplate")}</h2></div>
         <div className="p-4 space-y-2">
           <div className="flex flex-wrap items-end gap-2">
-            <div className="space-y-1"><label htmlFor="contracts-templates-new-name" className="text-xs font-semibold text-neutral-600">Name</label><input id="contracts-templates-new-name" className="form-input" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Standard Consultancy Agreement" /></div>
-            <div className="space-y-1"><label htmlFor="contracts-templates-new-type" className="text-xs font-semibold text-neutral-600">Contract type</label>
+            <div className="space-y-1"><label htmlFor="contracts-templates-new-name" className="text-xs font-semibold text-neutral-600">{t("contracts.field.name")}</label><input id="contracts-templates-new-name" className="form-input" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("contracts.templates.namePlaceholder")} /></div>
+            <div className="space-y-1"><label htmlFor="contracts-templates-new-type" className="text-xs font-semibold text-neutral-600">{t("contracts.field.contractType")}</label>
               <select id="contracts-templates-new-type" className="form-input" value={newTypeId} onChange={(e) => setNewTypeId(e.target.value)}>
-                <option value="">— none —</option>
-                {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                <option value="">{t("contracts.common.noneOption")}</option>
+                {types.map((ty) => <option key={ty.id} value={ty.id}>{ty.name}</option>)}
               </select>
             </div>
-            <div className="space-y-1"><label htmlFor="contracts-templates-new-counterparty" className="text-xs font-semibold text-neutral-600">Counterparty</label>
+            <div className="space-y-1"><label htmlFor="contracts-templates-new-counterparty" className="text-xs font-semibold text-neutral-600">{t("contracts.field.counterparty")}</label>
               <select id="contracts-templates-new-counterparty" className="form-input" value={newCounterparty} onChange={(e) => setNewCounterparty(e.target.value)}>
-                <option value="individual">Individual</option><option value="organisation">Organisation</option><option value="either">Either</option>
+                <option value="individual">{t("contracts.counterpartyType.individual")}</option><option value="organisation">{t("contracts.counterpartyType.organisation")}</option><option value="either">{t("contracts.counterpartyType.either")}</option>
               </select>
             </div>
           </div>
           <div className="space-y-1">
-            <label htmlFor="contracts-templates-new-description" className="text-xs font-semibold text-neutral-600">Description (optional)</label>
-            <textarea id="contracts-templates-new-description" className="form-input w-full" rows={2} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Short description" />
+            <label htmlFor="contracts-templates-new-description" className="text-xs font-semibold text-neutral-600">{t("contracts.templates.descriptionOptional")}</label>
+            <textarea id="contracts-templates-new-description" className="form-input w-full" rows={2} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder={t("contracts.templates.shortDescription")} />
           </div>
           <div className="space-y-1">
-            <label htmlFor="contracts-templates-new-body" className="text-xs font-semibold text-neutral-600">Body (first version)</label>
-            <textarea id="contracts-templates-new-body" className="form-input w-full" rows={8} value={newBody} onChange={(e) => setNewBody(e.target.value)} placeholder="Template body text..." />
+            <label htmlFor="contracts-templates-new-body" className="text-xs font-semibold text-neutral-600">{t("contracts.templates.bodyFirst")}</label>
+            <textarea id="contracts-templates-new-body" className="form-input w-full" rows={8} value={newBody} onChange={(e) => setNewBody(e.target.value)} placeholder={t("contracts.templates.bodyPlaceholder")} />
           </div>
-          <button className="btn-primary text-sm" onClick={createTemplate}>Create template</button>
+          <button className="btn-primary text-sm" onClick={createTemplate}>{t("contracts.templates.create")}</button>
         </div>
       </div>
     </div>

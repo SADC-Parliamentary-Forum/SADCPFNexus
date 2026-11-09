@@ -6,10 +6,12 @@ import { useState } from "react";
 import { stockEventPacksApi, stockItemsApi } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type PackLine = { stock_item_id: string; quantity: string };
 
 export default function StockEventPacksPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
   const [name, setName] = useState("Plenary welcome pack");
@@ -36,36 +38,36 @@ export default function StockEventPacksPage() {
           .map((line) => ({ stock_item_id: Number(line.stock_item_id), quantity: Number(line.quantity) || 1 })),
       }),
     onSuccess: () => {
-      setMsg("Pack saved. Instantiate creates a draft request only.");
+      setMsg(t("stock.eventPacks.saved"));
       qc.invalidateQueries({ queryKey: ["stock", "event-packs"] });
-      toast.success("Event pack saved");
+      toast.success(t("stock.eventPacks.savedToast"));
     },
     onError: (err: unknown) => {
-      toast.error("Event pack not saved", apiErrorMessage(err, "Failed to save the event pack."));
+      toast.error(t("stock.eventPacks.notSaved"), apiErrorMessage(err, t("stock.eventPacks.saveFailed")));
     },
   });
 
   const instantiate = useMutation({
     mutationFn: (id: number) => stockEventPacksApi.instantiate(id, { purpose: name }),
     onSuccess: () => {
-      setMsg("Draft stock request created. Nothing was issued.");
+      setMsg(t("stock.eventPacks.instantiated"));
       qc.invalidateQueries({ queryKey: ["stock"] });
-      toast.success("Draft stock request created");
+      toast.success(t("stock.eventPacks.instantiatedToast"));
     },
     onError: (err: unknown) => {
-      toast.error("Stock request not created", apiErrorMessage(err, "Failed to create a draft stock request from the pack."));
+      toast.error(t("stock.eventPacks.instantiateNotCreated"), apiErrorMessage(err, t("stock.eventPacks.instantiateFailed")));
     },
   });
 
   const duplicate = useMutation({
     mutationFn: (id: number) => stockEventPacksApi.duplicate(id),
     onSuccess: () => {
-      setMsg("Pack copied. Instantiate still drafts a request only.");
+      setMsg(t("stock.eventPacks.copied"));
       qc.invalidateQueries({ queryKey: ["stock", "event-packs"] });
-      toast.success("Event pack copied");
+      toast.success(t("stock.eventPacks.copiedToast"));
     },
     onError: (err: unknown) => {
-      toast.error("Event pack not copied", apiErrorMessage(err, "Failed to copy the event pack."));
+      toast.error(t("stock.eventPacks.notCopied"), apiErrorMessage(err, t("stock.eventPacks.copyFailed")));
     },
   });
 
@@ -74,21 +76,21 @@ export default function StockEventPacksPage() {
     onSuccess: (res) => {
       const matched = res.data.data.matched[0];
       if (!matched) {
-        setMsg(`No stock item for barcode ${barcode}.`);
+        setMsg(t("stock.eventPacks.barcodeNotFound", { barcode }));
         return;
       }
       setLines((prev) => [...prev, { stock_item_id: String(matched.id), quantity: "1" }]);
       setBarcode("");
-      setMsg(`Added ${String(matched.name)} from barcode. Pack is not issued.`);
+      setMsg(t("stock.eventPacks.barcodeAdded", { name: String(matched.name) }));
     },
   });
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Event packs"
-        subtitle="Reusable kits of consumables. Instantiating a pack drafts a stock request — it never auto-issues stock."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Event packs" }]} />}
+        title={t("stock.eventPacks.title")}
+        subtitle={t("stock.eventPacks.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("stock.common.stock"), href: "/stock" }, { label: t("stock.eventPacks.title") }]} />}
       />
       {msg && <p className="text-sm text-green-700">{msg}</p>}
 
@@ -100,7 +102,7 @@ export default function StockEventPacksPage() {
           create.mutate();
         }}
       >
-        <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Pack name" />
+        <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("stock.eventPacks.namePlaceholder")} />
         {lines.map((line, index) => (
           <div key={`${index}-${line.stock_item_id}`} className="grid gap-2 sm:grid-cols-[1fr_8rem_auto]">
             <select
@@ -109,7 +111,7 @@ export default function StockEventPacksPage() {
               required={index === 0}
               onChange={(e) => setLines((prev) => prev.map((row, i) => (i === index ? { ...row, stock_item_id: e.target.value } : row)))}
             >
-              <option value="">Select item</option>
+              <option value="">{t("stock.eventPacks.selectItem")}</option>
               {(items.data ?? []).map((item) => (
                 <option key={item.id} value={item.id}>{item.name}</option>
               ))}
@@ -126,27 +128,27 @@ export default function StockEventPacksPage() {
               className="btn-secondary text-sm"
               onClick={() => setLines((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== index)))}
             >
-              Remove
+              {t("stock.eventPacks.remove")}
             </button>
           </div>
         ))}
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-secondary text-sm" onClick={() => setLines((prev) => [...prev, { stock_item_id: "", quantity: "1" }])}>
-            Add line
+            {t("stock.eventPacks.addLine")}
           </button>
-          <button type="submit" className="btn-primary" disabled={create.isPending}>Save pack</button>
+          <button type="submit" className="btn-primary" disabled={create.isPending}>{t("stock.eventPacks.save")}</button>
         </div>
         <div className="flex flex-wrap gap-2" data-testid="event-pack-barcode-add">
-          <input className="form-input flex-1" value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Add line by barcode" />
+          <input className="form-input flex-1" value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder={t("stock.eventPacks.barcodePlaceholder")} />
           <button type="button" className="btn-secondary text-sm" disabled={!barcode.trim() || addFromBarcode.isPending} onClick={() => addFromBarcode.mutate()}>
-            Add from barcode
+            {t("stock.eventPacks.addFromBarcode")}
           </button>
         </div>
       </form>
 
       <div className="card overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead><tr className="text-left text-neutral-500"><th className="p-2">Pack</th><th className="p-2">Lines</th><th className="p-2">Action</th></tr></thead>
+          <thead><tr className="text-left text-neutral-500"><th className="p-2">{t("stock.common.pack")}</th><th className="p-2">{t("stock.common.lines")}</th><th className="p-2">{t("stock.common.action")}</th></tr></thead>
           <tbody>
             {(packs.data ?? []).map((pack) => (
               <tr key={String(pack.id)} className="border-t border-neutral-200">
@@ -154,10 +156,10 @@ export default function StockEventPacksPage() {
                 <td className="p-2">{Array.isArray(pack.lines) ? pack.lines.length : 0}</td>
                 <td className="p-2 flex flex-wrap gap-2">
                   <button type="button" className="btn-secondary text-sm" onClick={() => instantiate.mutate(Number(pack.id))}>
-                    Create draft request
+                    {t("stock.eventPacks.createDraft")}
                   </button>
                   <button type="button" className="btn-secondary text-sm" onClick={() => duplicate.mutate(Number(pack.id))}>
-                    Duplicate
+                    {t("stock.eventPacks.duplicate")}
                   </button>
                 </td>
               </tr>

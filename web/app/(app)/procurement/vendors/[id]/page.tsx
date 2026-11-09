@@ -13,6 +13,9 @@ import { SupplierActivityPanel, SupplierChangeRequestsPanel, SupplierRegisterPan
 import { safeExternalUrl } from "@/lib/safeExternalUrl";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+type TFn = ReturnType<typeof useI18n>["t"];
 
 function canManageVendors(): boolean {
   return canManageProcurementVendors(getStoredUser());
@@ -25,8 +28,9 @@ const toNum = (v: unknown): number | null => {
 
 // ─── Star Components ──────────────────────────────────────────────────────────
 function StarDisplay({ avg, count }: { avg?: number | null; count?: number }) {
+  const { t } = useI18n();
   const safeAvg = toNum(avg);
-  if (safeAvg == null) return <span className="text-sm text-neutral-400">No ratings yet</span>;
+  if (safeAvg == null) return <span className="text-sm text-neutral-400">{t("procurement.vendorDetail.noRatings")}</span>;
   const full = Math.floor(safeAvg);
   const half = safeAvg - full >= 0.5;
   return (
@@ -40,12 +44,13 @@ function StarDisplay({ avg, count }: { avg?: number | null; count?: number }) {
       ))}
       <span className="text-sm font-bold text-neutral-700 ml-1">{safeAvg.toFixed(1)}</span>
       <span className="text-xs text-neutral-400">/ 5</span>
-      {count !== undefined && <span className="text-xs text-neutral-400">· {count} {count === 1 ? "rating" : "ratings"}</span>}
+      {count !== undefined && <span className="text-xs text-neutral-400">{t(count === 1 ? "procurement.vendorDetail.ratingCountOne" : "procurement.vendorDetail.ratingCountMany", { count })}</span>}
     </span>
   );
 }
 
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const { t } = useI18n();
   const [hover, setHover] = useState(0);
   return (
     <div className="flex items-center gap-0.5">
@@ -70,7 +75,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
       })}
       {value > 0 && (
         <span className="ml-2 text-sm font-semibold text-neutral-600">
-          {["", "Poor", "Fair", "Good", "Very Good", "Excellent"][value]}
+          {t(`procurement.vendorDetail.score.${value}`)}
         </span>
       )}
     </div>
@@ -102,11 +107,11 @@ function SectionIcon({ icon, color, bg }: { icon: string; color: string; bg: str
 }
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  approved:  { label: "Approved",  cls: "badge-success", icon: "check_circle"  },
-  submitted: { label: "Pending",   cls: "badge-warning", icon: "pending"       },
-  rejected:  { label: "Rejected",  cls: "badge-danger",  icon: "cancel"        },
-  draft:     { label: "Draft",     cls: "badge-muted",   icon: "edit_note"     },
-  awarded:   { label: "Awarded",   cls: "badge-primary", icon: "emoji_events"  },
+  approved:  { label: "procurement.vendors.status.approved",  cls: "badge-success", icon: "check_circle"  },
+  submitted: { label: "procurement.vendors.status.pending",   cls: "badge-warning", icon: "pending"       },
+  rejected:  { label: "procurement.vendorDetail.status.rejected",  cls: "badge-danger",  icon: "cancel"        },
+  draft:     { label: "procurement.vendorDetail.status.draft",     cls: "badge-muted",   icon: "edit_note"     },
+  awarded:   { label: "procurement.vendorDetail.status.awarded",   cls: "badge-primary", icon: "emoji_events"  },
 };
 
 const categoryConfig: Record<string, { icon: string; color: string; bg: string }> = {
@@ -157,6 +162,36 @@ const COUNTRIES_EDIT = [
   "South Africa", "Tanzania", "Zambia", "Zimbabwe", "Other",
 ] as const;
 
+const COUNTRY_KEYS: Record<string, string> = {
+  Botswana: "procurement.vendors.country.botswana",
+  Comoros: "procurement.vendors.country.comoros",
+  "Democratic Republic of Congo": "procurement.vendors.country.drc",
+  Eswatini: "procurement.vendors.country.eswatini",
+  Lesotho: "procurement.vendors.country.lesotho",
+  Madagascar: "procurement.vendors.country.madagascar",
+  Malawi: "procurement.vendors.country.malawi",
+  Mauritius: "procurement.vendors.country.mauritius",
+  Mozambique: "procurement.vendors.country.mozambique",
+  Namibia: "procurement.vendors.country.namibia",
+  Seychelles: "procurement.vendors.country.seychelles",
+  "South Africa": "procurement.vendors.country.southAfrica",
+  Tanzania: "procurement.vendors.country.tanzania",
+  Zambia: "procurement.vendors.country.zambia",
+  Zimbabwe: "procurement.vendors.country.zimbabwe",
+  Other: "procurement.vendors.country.other",
+};
+
+function countryLabel(t: TFn, country: string): string {
+  const key = COUNTRY_KEYS[country];
+  return key ? t(key) : country;
+}
+
+function paymentTermLabel(t: TFn, term: string): string {
+  if (term === "Immediate") return t("procurement.vendors.term.immediate");
+  const m = /^Net (\d+)$/.exec(term);
+  return m ? t("procurement.vendors.term.net", { days: m[1] }) : term;
+}
+
 type EditTab = "basic" | "contact" | "banking" | "admin";
 
 interface EditModalProps {
@@ -165,6 +200,7 @@ interface EditModalProps {
 }
 
 function EditModal({ vendor, onClose }: EditModalProps) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [tab, setTab] = useState<EditTab>("basic");
@@ -209,28 +245,28 @@ function EditModal({ vendor, onClose }: EditModalProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor", vendor.id] });
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
-      toast.success("Vendor updated");
+      toast.success(t("procurement.vendors.toast.updated"));
       onClose();
     },
     onError: (err: unknown) => {
-      const msg = apiErrorMessage(err, "Failed to update vendor.");
+      const msg = apiErrorMessage(err, t("procurement.vendorDetail.updateFailed"));
       setFormError(msg);
-      toast.error("Vendor not updated", msg);
+      toast.error(t("procurement.vendors.toast.notUpdated"), msg);
     },
   });
 
   const handleSubmit = () => {
-    if (!form.name.trim()) { setFormError("Vendor name is required."); setTab("basic"); return; }
-    if (form.category_ids.length === 0) { setFormError("Select at least one category."); setTab("basic"); return; }
+    if (!form.name.trim()) { setFormError(t("procurement.vendors.nameRequired")); setTab("basic"); return; }
+    if (form.category_ids.length === 0) { setFormError(t("procurement.vendorDetail.selectAtLeastOne")); setTab("basic"); return; }
     setFormError("");
     mutation.mutate(form);
   };
 
   const EDIT_TABS = [
-    { key: "basic"   as EditTab, label: "Business", icon: "business"        },
-    { key: "contact" as EditTab, label: "Contact",  icon: "contacts"        },
-    { key: "banking" as EditTab, label: "Banking",  icon: "account_balance" },
-    { key: "admin"   as EditTab, label: "Admin",    icon: "settings"        },
+    { key: "basic"   as EditTab, label: t("procurement.vendors.tab.basic"), icon: "business"        },
+    { key: "contact" as EditTab, label: t("procurement.vendors.tab.contact"),  icon: "contacts"        },
+    { key: "banking" as EditTab, label: t("procurement.vendors.tab.banking"),  icon: "account_balance" },
+    { key: "admin"   as EditTab, label: t("procurement.vendors.tab.admin"),    icon: "settings"        },
   ];
 
   return (
@@ -243,22 +279,22 @@ function EditModal({ vendor, onClose }: EditModalProps) {
               <span className="material-symbols-outlined text-[20px] text-primary">edit</span>
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-neutral-800">Edit Vendor</h2>
+              <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendors.editVendor")}</h2>
               <p className="text-xs text-neutral-500">{vendor.name}</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close vendor edit dialog" className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100">
+          <button type="button" onClick={onClose} aria-label={t("procurement.vendorDetail.closeEdit")} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-0 border-b border-neutral-200 px-6 mt-4 flex-shrink-0">
-          {EDIT_TABS.map((t) => (
-            <button key={t.key} type="button" onClick={() => setTab(t.key)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors ${tab === t.key ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
-              <span className="material-symbols-outlined text-[14px]">{t.icon}</span>
-              {t.label}
+          {EDIT_TABS.map((tabItem) => (
+            <button key={tabItem.key} type="button" onClick={() => setTab(tabItem.key)}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors ${tab === tabItem.key ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
+              <span className="material-symbols-outlined text-[14px]">{tabItem.icon}</span>
+              {tabItem.label}
             </button>
           ))}
         </div>
@@ -275,22 +311,22 @@ function EditModal({ vendor, onClose }: EditModalProps) {
           {tab === "basic" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label htmlFor="procurement-vendors-detail-vendor-name" className="block text-xs font-semibold text-neutral-600 mb-1">Vendor Name <span className="text-red-500">*</span></label>
+                <label htmlFor="procurement-vendors-detail-vendor-name" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendorDetail.vendorName")} <span className="text-red-500">*</span></label>
                 <input id="procurement-vendors-detail-vendor-name" type="text" className="form-input" autoFocus value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
               </div>
               {(["registration_number", "tax_number"] as const).map((k) => (
                 <div key={k}>
-                  <label htmlFor="procurement-vendors-detail-field" className="block text-xs font-semibold text-neutral-600 mb-1">{k === "registration_number" ? "Registration Number" : "VAT / Tax Number"}</label>
+                  <label htmlFor="procurement-vendors-detail-field" className="block text-xs font-semibold text-neutral-600 mb-1">{k === "registration_number" ? t("procurement.vendorDetail.registrationNumber") : t("procurement.vendors.field.tax")}</label>
                   <input id="procurement-vendors-detail-field" type="text" className="form-input" value={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} />
                 </div>
               ))}
               <div className="sm:col-span-2">
                 <div className="flex items-center justify-between mb-1.5">
                   <p className="block text-xs font-semibold text-neutral-600">
-                    Categories <span className="text-red-500">*</span>
+                    {t("procurement.vendorDetail.categories")} <span className="text-red-500">*</span>
                   </p>
                   <span className="text-xs font-medium tabular-nums text-neutral-400">
-                    {form.category_ids.length} selected
+                    {t("procurement.vendorDetail.selectedCount", { count: form.category_ids.length })}
                   </span>
                 </div>
                 {catsLoading ? (
@@ -298,7 +334,7 @@ function EditModal({ vendor, onClose }: EditModalProps) {
                     {[1,2,3,4].map((i) => <div key={i} className="h-9 rounded-lg bg-neutral-100 animate-pulse" />)}
                   </div>
                 ) : availableCategories.length === 0 ? (
-                  <p className="text-xs text-neutral-400 py-2">No categories configured.</p>
+                  <p className="text-xs text-neutral-400 py-2">{t("procurement.vendorDetail.noCategoriesConfigured")}</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-1">
                     {availableCategories.map((cat) => {
@@ -324,23 +360,23 @@ function EditModal({ vendor, onClose }: EditModalProps) {
                     })}
                   </div>
                 )}
-                <p className="mt-1.5 text-[11px] text-neutral-400">Select up to 3 categories that best describe this vendor.</p>
+                <p className="mt-1.5 text-[11px] text-neutral-400">{t("procurement.vendorDetail.upToThree")}</p>
               </div>
               <div>
-                <label htmlFor="procurement-vendors-detail-country" className="block text-xs font-semibold text-neutral-600 mb-1">Country</label>
+                <label htmlFor="procurement-vendors-detail-country" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendors.csv.country")}</label>
                 <select id="procurement-vendors-detail-country" className="form-input" value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}>
-                  <option value="">— Select —</option>
-                  {COUNTRIES_EDIT.map((o) => <option key={o} value={o}>{o}</option>)}
+                  <option value="">{t("procurement.vendors.selectPlaceholder")}</option>
+                  {COUNTRIES_EDIT.map((o) => <option key={o} value={o}>{countryLabel(t, o)}</option>)}
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <label htmlFor="procurement-vendors-detail-website" className="block text-xs font-semibold text-neutral-600 mb-1">Website</label>
-                <input id="procurement-vendors-detail-website" type="url" className="form-input" value={form.website} onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))} placeholder="https://" />
+                <label htmlFor="procurement-vendors-detail-website" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendors.field.website")}</label>
+                <input id="procurement-vendors-detail-website" type="url" className="form-input" value={form.website} onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))} placeholder="https://" />{/* i18n-ignore */}
               </div>
               <div className="sm:col-span-2">
                 <label htmlFor="procurement-vendors-detail-setform-f-small-or-medium-enterprise-sme" className="flex cursor-pointer items-center gap-2">
                   <input id="procurement-vendors-detail-setform-f-small-or-medium-enterprise-sme" type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-primary" checked={form.is_sme} onChange={(e) => setForm((f) => ({ ...f, is_sme: e.target.checked }))} />
-                  <span className="text-xs font-medium text-neutral-700">Small or Medium Enterprise (SME)</span>
+                  <span className="text-xs font-medium text-neutral-700">{t("procurement.vendors.smeLabel")}</span>
                 </label>
               </div>
             </div>
@@ -348,17 +384,17 @@ function EditModal({ vendor, onClose }: EditModalProps) {
           {tab === "contact" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label htmlFor="procurement-vendors-detail-primary-contact-person" className="block text-xs font-semibold text-neutral-600 mb-1">Primary Contact Person</label>
+                <label htmlFor="procurement-vendors-detail-primary-contact-person" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendors.field.contactName")}</label>
                 <input id="procurement-vendors-detail-primary-contact-person" type="text" className="form-input" value={form.contact_name} onChange={(e) => setForm((f) => ({ ...f, contact_name: e.target.value }))} />
               </div>
               {(["contact_email", "contact_phone"] as const).map((k) => (
                 <div key={k}>
-                  <label htmlFor="procurement-vendors-detail-field-2" className="block text-xs font-semibold text-neutral-600 mb-1">{k === "contact_email" ? "Contact Email" : "Contact Phone"}</label>
+                  <label htmlFor="procurement-vendors-detail-field-2" className="block text-xs font-semibold text-neutral-600 mb-1">{k === "contact_email" ? t("procurement.vendors.field.contactEmail") : t("procurement.vendors.field.contactPhone")}</label>
                   <input id="procurement-vendors-detail-field-2" type={k === "contact_email" ? "email" : "text"} className="form-input" value={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} />
                 </div>
               ))}
               <div className="sm:col-span-2">
-                <label htmlFor="procurement-vendors-detail-address" className="block text-xs font-semibold text-neutral-600 mb-1">Address</label>
+                <label htmlFor="procurement-vendors-detail-address" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendorDetail.address")}</label>
                 <input id="procurement-vendors-detail-address" type="text" className="form-input" value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
               </div>
             </div>
@@ -366,22 +402,22 @@ function EditModal({ vendor, onClose }: EditModalProps) {
           {tab === "banking" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="procurement-vendors-detail-bank-name" className="block text-xs font-semibold text-neutral-600 mb-1">Bank Name</label>
+                <label htmlFor="procurement-vendors-detail-bank-name" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendors.field.bankName")}</label>
                 <input id="procurement-vendors-detail-bank-name" type="text" className="form-input" value={form.bank_name} onChange={(e) => setForm((f) => ({ ...f, bank_name: e.target.value }))} />
               </div>
               <div>
-                <label htmlFor="procurement-vendors-detail-payment-terms" className="block text-xs font-semibold text-neutral-600 mb-1">Payment Terms</label>
+                <label htmlFor="procurement-vendors-detail-payment-terms" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendors.field.paymentTerms")}</label>
                 <select id="procurement-vendors-detail-payment-terms" className="form-input" value={form.payment_terms} onChange={(e) => setForm((f) => ({ ...f, payment_terms: e.target.value }))}>
-                  <option value="">— Select —</option>
-                  {PAYMENT_TERMS_EDIT.map((o) => <option key={o} value={o}>{o}</option>)}
+                  <option value="">{t("procurement.vendors.selectPlaceholder")}</option>
+                  {PAYMENT_TERMS_EDIT.map((o) => <option key={o} value={o}>{paymentTermLabel(t, o)}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="procurement-vendors-detail-account-number" className="block text-xs font-semibold text-neutral-600 mb-1">Account Number</label>
+                <label htmlFor="procurement-vendors-detail-account-number" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendors.field.accountNumber")}</label>
                 <input id="procurement-vendors-detail-account-number" type="text" className="form-input" value={form.bank_account} onChange={(e) => setForm((f) => ({ ...f, bank_account: e.target.value }))} />
               </div>
               <div>
-                <label htmlFor="procurement-vendors-detail-branch-swift-code" className="block text-xs font-semibold text-neutral-600 mb-1">Branch / SWIFT Code</label>
+                <label htmlFor="procurement-vendors-detail-branch-swift-code" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendors.field.branch")}</label>
                 <input id="procurement-vendors-detail-branch-swift-code" type="text" className="form-input" value={form.bank_branch} onChange={(e) => setForm((f) => ({ ...f, bank_branch: e.target.value }))} />
               </div>
             </div>
@@ -389,14 +425,14 @@ function EditModal({ vendor, onClose }: EditModalProps) {
           {tab === "admin" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label htmlFor="procurement-vendors-detail-internal-notes" className="block text-xs font-semibold text-neutral-600 mb-1">Internal Notes</label>
+                <label htmlFor="procurement-vendors-detail-internal-notes" className="block text-xs font-semibold text-neutral-600 mb-1">{t("procurement.vendors.field.notes")}</label>
                 <textarea id="procurement-vendors-detail-internal-notes" className="form-input h-28 resize-none" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
               </div>
               <div className="sm:col-span-2 flex gap-6">
                 {(["is_approved", "is_active"] as const).map((k) => (
                   <label htmlFor="procurement-vendors-detail-setform-f" key={k} className="flex cursor-pointer items-center gap-2">
                     <input id="procurement-vendors-detail-setform-f" type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-primary" checked={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.checked }))} />
-                    <span className="text-xs font-medium text-neutral-700">{k === "is_approved" ? "Approved" : "Active"}</span>
+                    <span className="text-xs font-medium text-neutral-700">{k === "is_approved" ? t("procurement.vendors.status.approved") : t("procurement.vendors.active")}</span>
                   </label>
                 ))}
               </div>
@@ -406,11 +442,11 @@ function EditModal({ vendor, onClose }: EditModalProps) {
 
         {/* Footer */}
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-neutral-100 flex-shrink-0">
-          <button type="button" onClick={onClose} className="btn-secondary py-2 px-4 text-sm">Cancel</button>
+          <button type="button" onClick={onClose} className="btn-secondary py-2 px-4 text-sm">{t("common.cancel")}</button>
           <button type="button" onClick={handleSubmit} disabled={mutation.isPending}
             className="btn-primary py-2 px-4 text-sm flex items-center gap-1.5 disabled:opacity-60">
             {mutation.isPending && <span className="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>}
-            {mutation.isPending ? "Saving…" : "Save Changes"}
+            {mutation.isPending ? t("procurement.vendors.saving") : t("procurement.vendors.saveChanges")}
           </button>
         </div>
       </div>
@@ -420,6 +456,7 @@ function EditModal({ vendor, onClose }: EditModalProps) {
 
 // ─── Delete / Deactivate Dialog ───────────────────────────────────────────────
 function DeactivateDialog({ vendor, onClose }: { vendor: Vendor; onClose: () => void }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const router = useRouter();
   const toast = useToast();
@@ -428,11 +465,11 @@ function DeactivateDialog({ vendor, onClose }: { vendor: Vendor; onClose: () => 
     mutationFn: () => vendorsApi.destroy(vendor.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
-      toast.success("Vendor deactivated");
+      toast.success(t("procurement.vendors.toast.deactivated"));
       router.push("/procurement/vendors");
     },
     onError: (err: unknown) => {
-      toast.error("Vendor not deactivated", apiErrorMessage(err, "Failed to deactivate vendor."));
+      toast.error(t("procurement.vendors.toast.notDeactivated"), apiErrorMessage(err, t("procurement.vendorDetail.deactivateFailedShort")));
     },
   });
 
@@ -447,21 +484,23 @@ function DeactivateDialog({ vendor, onClose }: { vendor: Vendor; onClose: () => 
             <span className="material-symbols-outlined text-[22px] text-red-600">warning</span>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-neutral-800">Deactivate Vendor?</h3>
+            <h3 className="text-sm font-semibold text-neutral-800">{t("procurement.vendors.deactivateTitle")}</h3>
             <p className="mt-1 text-xs text-neutral-500">
-              <strong className="text-neutral-700">{vendor.name}</strong> will be marked inactive.
-              Existing quote history is preserved.
+              {(() => {
+                const [before, after = ""] = t("procurement.vendorDetail.deactivateBody").split("{name}");
+                return <>{before}<strong className="text-neutral-700">{vendor.name}</strong>{after}</>;
+              })()}
             </p>
           </div>
         </div>
         {mutation.isError && (
           <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-            Failed to deactivate vendor. Please try again.
+            {t("procurement.vendors.deactivateFailed")}
           </div>
         )}
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-secondary py-2 px-4 text-sm">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -472,7 +511,7 @@ function DeactivateDialog({ vendor, onClose }: { vendor: Vendor; onClose: () => 
             {mutation.isPending && (
               <span className="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>
             )}
-            {mutation.isPending ? "Deactivating…" : "Deactivate"}
+            {mutation.isPending ? t("procurement.vendors.deactivating") : t("procurement.vendors.deactivate")}
           </button>
         </div>
       </div>
@@ -482,6 +521,7 @@ function DeactivateDialog({ vendor, onClose }: { vendor: Vendor; onClose: () => 
 
 // ─── Main detail page ─────────────────────────────────────────────────────────
 export default function VendorDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = useI18n();
   const { id } = React.use(params);
   const vendorId = Number(id);
   const queryClient = useQueryClient();
@@ -519,17 +559,17 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
     setAttachmentsError(null);
     vendorAttachmentsApi.list(vendorId)
       .then((r) => setAttachments(r.data.data ?? []))
-      .catch(() => setAttachmentsError("Could not load vendor documents."));
-  }, [vendorId]);
+      .catch(() => setAttachmentsError(t("procurement.vendorDetail.docsLoadFailed")));
+  }, [vendorId, t]);
 
   const approveMutation = useMutation({
     mutationFn: () => vendorsApi.approve(vendorId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
-      toast.success("Vendor approved");
+      toast.success(t("procurement.vendorDetail.approvedToast"));
     },
     onError: (e: unknown) => {
-      toast.error("Could not approve vendor", apiErrorMessage(e, "Failed to approve vendor."));
+      toast.error(t("procurement.vendorDetail.couldNotApprove"), apiErrorMessage(e, t("procurement.vendorDetail.approveFailed")));
     },
   });
 
@@ -539,12 +579,12 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
       queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
       setShowReject(false);
       setRejectReason("");
-      toast.success("Vendor rejected");
+      toast.success(t("procurement.vendorDetail.rejectedToast"));
     },
     onError: (e: unknown) => {
-      const message = apiErrorMessage(e, "Failed to reject vendor.");
+      const message = apiErrorMessage(e, t("procurement.vendorDetail.rejectFailed"));
       setRejectError(message);
-      toast.error("Could not reject vendor", message);
+      toast.error(t("procurement.vendorDetail.couldNotReject"), message);
     },
   });
 
@@ -573,10 +613,10 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
       <div className="w-full min-w-0">
         <div className="card p-8 text-center space-y-3">
           <span className="material-symbols-outlined text-4xl text-neutral-300">error</span>
-          <p className="text-sm text-neutral-500">Vendor not found or failed to load.</p>
+          <p className="text-sm text-neutral-500">{t("procurement.vendorDetail.notFound")}</p>
           <Link href="/procurement/vendors" className="btn-secondary inline-flex items-center gap-1.5 text-sm py-2 px-4">
             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-            Back to Vendors
+            {t("procurement.vendorDetail.backToVendors")}
           </Link>
         </div>
       </div>
@@ -618,20 +658,20 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
         {/* Tab Bar */}
         <div className="flex gap-1 border-b border-neutral-200">
           {([
-            { key: "profile", label: "Profile" },
-            { key: "documents", label: "Documents" },
-            { key: "compliance", label: "Compliance" },
-            { key: "categories", label: "Categories" },
-            { key: "contacts", label: "Contacts" },
-            { key: "banking", label: "Banking" },
-            { key: "rfqs", label: "RFQs" },
-            { key: "quotes", label: "Quotes" },
-            { key: "pos", label: "POs" },
-            { key: "invoices", label: "Invoices" },
-            { key: "audit", label: "Audit" },
-            { key: "ratings", label: `Ratings${ratings.length > 0 ? ` (${ratings.length})` : ""}` },
-            { key: "contracts", label: `Contracts${contractsData && contractsData.length > 0 ? ` (${contractsData.length})` : ""}` },
-            { key: "details", label: "Overview" },
+            { key: "profile", label: t("procurement.vendorDetail.tab.profile") },
+            { key: "documents", label: t("procurement.vendorDetail.tab.documents") },
+            { key: "compliance", label: t("procurement.vendorDetail.tab.compliance") },
+            { key: "categories", label: t("procurement.vendorDetail.categories") },
+            { key: "contacts", label: t("procurement.vendorDetail.tab.contacts") },
+            { key: "banking", label: t("procurement.vendors.tab.banking") },
+            { key: "rfqs", label: t("procurement.vendorDetail.tab.rfqs") },
+            { key: "quotes", label: t("procurement.vendors.col.quotes") },
+            { key: "pos", label: t("procurement.vendorDetail.tab.pos") },
+            { key: "invoices", label: t("procurement.vendorDetail.tab.invoices") },
+            { key: "audit", label: t("procurement.vendorDetail.tab.audit") },
+            { key: "ratings", label: ratings.length > 0 ? t("procurement.vendorDetail.tab.ratingsCount", { count: ratings.length }) : t("procurement.vendorDetail.tab.ratings") },
+            { key: "contracts", label: contractsData && contractsData.length > 0 ? t("procurement.vendorDetail.tab.contractsCount", { count: contractsData.length }) : t("procurement.vendorDetail.tab.contracts") },
+            { key: "details", label: t("procurement.vendorDetail.tab.overview") },
           ] as const).map(({ key, label }) => (
             <button
               key={key}
@@ -656,10 +696,10 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               return (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: "Total Contracts",  value: contractsData.length,                  icon: "description",   color: "text-primary",    bg: "bg-primary/10" },
-                    { label: "Active",           value: activeContracts.length,                icon: "check_circle",  color: "text-green-600",  bg: "bg-green-50"   },
-                    { label: "Terminated",       value: contractsData.filter(c => c.status === "terminated").length, icon: "cancel", color: "text-red-500", bg: "bg-red-50" },
-                    { label: "Active Value",     value: formatCurrency(totalActive, currency), icon: "payments",      color: "text-amber-600",  bg: "bg-amber-50"   },
+                    { label: t("procurement.vendorDetail.kpi.totalContracts"),  value: contractsData.length,                  icon: "description",   color: "text-primary",    bg: "bg-primary/10" },
+                    { label: t("procurement.vendors.active"),           value: activeContracts.length,                icon: "check_circle",  color: "text-green-600",  bg: "bg-green-50"   },
+                    { label: t("procurement.vendorDetail.kpi.terminated"),       value: contractsData.filter(c => c.status === "terminated").length, icon: "cancel", color: "text-red-500", bg: "bg-red-50" },
+                    { label: t("procurement.vendorDetail.kpi.activeValue"),     value: formatCurrency(totalActive, currency), icon: "payments",      color: "text-amber-600",  bg: "bg-amber-50"   },
                   ].map(s => (
                     <div key={s.label} className="card p-4">
                       <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${s.bg} mb-2`}>
@@ -677,36 +717,36 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100">
                 <SectionIcon icon="description" color="text-primary" bg="bg-primary/10" />
                 <div>
-                  <h2 className="text-sm font-semibold text-neutral-800">Contracts</h2>
-                  <p className="text-xs text-neutral-400">All contracts linked to this vendor</p>
+                  <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.tab.contracts")}</h2>
+                  <p className="text-xs text-neutral-400">{t("procurement.vendorDetail.contractsSubtitle")}</p>
                 </div>
               </div>
               {!contractsData || contractsData.length === 0 ? (
                 <div className="py-12 text-center text-neutral-400 space-y-2">
                   <span className="material-symbols-outlined text-3xl">description</span>
-                  <p className="text-sm">No contracts found for this vendor.</p>
+                  <p className="text-sm">{t("procurement.vendorDetail.noContracts")}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="data-table w-full">
                     <thead>
                       <tr>
-                        <th className="text-left">Reference</th>
-                        <th className="text-left">Title</th>
-                        <th className="text-right">Value</th>
-                        <th className="text-left">Start</th>
-                        <th className="text-left">End</th>
-                        <th className="text-left">Status</th>
+                        <th className="text-left">{t("procurement.col.reference")}</th>
+                        <th className="text-left">{t("procurement.col.title")}</th>
+                        <th className="text-right">{t("procurement.col.value")}</th>
+                        <th className="text-left">{t("procurement.vendorDetail.col.start")}</th>
+                        <th className="text-left">{t("procurement.vendorDetail.col.end")}</th>
+                        <th className="text-left">{t("procurement.col.status")}</th>
                         <th />
                       </tr>
                     </thead>
                     <tbody>
                       {contractsData.map((c) => {
                         const contractStatusCfg: Record<string, { cls: string; label: string }> = {
-                          active:     { cls: "badge-success", label: "Active"     },
-                          draft:      { cls: "badge-muted",   label: "Draft"      },
-                          completed:  { cls: "badge-primary", label: "Completed"  },
-                          terminated: { cls: "badge-danger",  label: "Terminated" },
+                          active:     { cls: "badge-success", label: t("procurement.vendors.active")     },
+                          draft:      { cls: "badge-muted",   label: t("procurement.vendorDetail.status.draft")      },
+                          completed:  { cls: "badge-primary", label: t("procurement.vendorDetail.contractStatus.completed")  },
+                          terminated: { cls: "badge-danger",  label: t("procurement.vendorDetail.kpi.terminated") },
                         };
                         const st = contractStatusCfg[c.status] ?? { cls: "badge-muted", label: c.status };
                         // Expiry warning: ends within 30 days and is still active
@@ -722,7 +762,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                               {expiring && (
                                 <span className="ml-2 inline-flex items-center gap-0.5 rounded-full bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600">
                                   <span className="material-symbols-outlined text-[11px]">warning</span>
-                                  Exp. {daysLeft}d
+                                  {t("procurement.vendorDetail.expiring", { days: daysLeft ?? 0 })}
                                 </span>
                               )}
                             </td>
@@ -734,7 +774,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                             <td><span className={`badge ${st.cls}`}>{st.label}</span></td>
                             <td>
                               <Link href={`/procurement/contracts/${c.id}`} className="btn-secondary text-xs py-1 px-2">
-                                View
+                                {t("procurement.vendorDetail.view")}
                               </Link>
                             </td>
                           </tr>
@@ -752,7 +792,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
           <div className="space-y-6">
             <SupplierRegisterPanel vendorId={vendorId} canManage={canManageVendors()} />
             <div className="card p-6">
-              <h2 className="text-sm font-semibold text-neutral-800 mb-5">Legacy attachments</h2>
+              <h2 className="text-sm font-semibold text-neutral-800 mb-5">{t("procurement.vendorDetail.legacyAttachments")}</h2>
               {attachmentsError && (
                 <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   {attachmentsError}
@@ -760,7 +800,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               )}
               <GenericDocumentsPanel
                 documents={attachments}
-                documentTypes={VENDOR_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
+                documentTypes={VENDOR_DOC_TYPES.map((dt) => ({ ...dt, label: t(`procurement.vendorDetail.docType.${dt.value}`) }))}
                 defaultType="company_profile"
                 loading={false}
                 uploading={uploading}
@@ -770,18 +810,18 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   try {
                     const r = await vendorAttachmentsApi.upload(vendorId, file, type);
                     setAttachments((p) => [r.data.data, ...p]);
-                    toast.success("Document uploaded");
+                    toast.success(t("procurement.vendorDetail.docUploaded"));
                   } catch (err) {
-                    toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload the document."));
+                    toast.error(t("procurement.vendorDetail.docNotUploaded"), apiErrorMessage(err, t("procurement.vendorDetail.uploadFailed")));
                   } finally { setUploading(false); }
                 }}
                 onDelete={async (id) => {
                   try {
                     await vendorAttachmentsApi.delete(vendorId, id);
                     setAttachments((p) => p.filter((a) => a.id !== id));
-                    toast.success("Document deleted");
+                    toast.success(t("procurement.vendorDetail.docDeleted"));
                   } catch (err) {
-                    toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete the document."));
+                    toast.error(t("procurement.vendorDetail.docNotDeleted"), apiErrorMessage(err, t("procurement.vendorDetail.deleteFailed")));
                   }
                 }}
                 downloadUrl={(id) => vendorAttachmentsApi.downloadUrl(vendorId, id)}
@@ -792,38 +832,38 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
 
         {activeTab === "categories" && (
           <div className="card p-6" data-testid="supplier-360-categories">
-            <h2 className="text-sm font-semibold mb-3">Categories</h2>
+            <h2 className="text-sm font-semibold mb-3">{t("procurement.vendorDetail.categories")}</h2>
             <div className="flex flex-wrap gap-2">
               {(vendor.categories ?? []).map((c) => (
                 <span key={c.id} className="badge badge-primary">{c.name}</span>
               ))}
-              {(vendor.categories ?? []).length === 0 && <p className="text-sm text-neutral-500">No categories assigned.</p>}
+              {(vendor.categories ?? []).length === 0 && <p className="text-sm text-neutral-500">{t("procurement.vendorDetail.noCategoriesAssigned")}</p>}
             </div>
           </div>
         )}
 
         {activeTab === "contacts" && (
           <div className="card p-6" data-testid="supplier-360-contacts">
-            <h2 className="text-sm font-semibold mb-3">Contacts</h2>
-            <p className="text-sm">Primary: {vendor.contact_name} · {vendor.contact_email} · {vendor.contact_phone}</p>
+            <h2 className="text-sm font-semibold mb-3">{t("procurement.vendorDetail.tab.contacts")}</h2>
+            <p className="text-sm">{t("procurement.vendorDetail.primaryContact", { name: vendor.contact_name ?? "", email: vendor.contact_email ?? "", phone: vendor.contact_phone ?? "" })}</p>
           </div>
         )}
 
         {activeTab === "banking" && (
           <div className="card p-6 space-y-3" data-testid="supplier-360-banking">
-            <h2 className="text-sm font-semibold">Banking</h2>
-            <p className="text-sm">Bank: {vendor.bank_name || "—"}</p>
-            <p className="text-sm font-mono">Account: {vendor.bank_account || "—"}{vendor.bank_account_masked ? " (masked)" : ""}</p>
-            <p className="text-sm">Branch: {vendor.bank_branch || "—"}</p>
-            <p className="text-xs text-neutral-500">Finance verified: {vendor.finance_verified_at ? formatDateShort(vendor.finance_verified_at) : "Not verified"}</p>
+            <h2 className="text-sm font-semibold">{t("procurement.vendors.tab.banking")}</h2>
+            <p className="text-sm">{t("procurement.vendorDetail.bankLine", { value: vendor.bank_name || "—" })}</p>
+            <p className="text-sm font-mono">{t(vendor.bank_account_masked ? "procurement.vendorDetail.accountLineMasked" : "procurement.vendorDetail.accountLine", { value: vendor.bank_account || "—" })}</p>
+            <p className="text-sm">{t("procurement.vendorDetail.branchLine", { value: vendor.bank_branch || "—" })}</p>
+            <p className="text-xs text-neutral-500">{t("procurement.vendorDetail.financeVerified", { value: vendor.finance_verified_at ? formatDateShort(vendor.finance_verified_at) : t("procurement.vendorDetail.notVerified") })}</p>
             {canManageVendors() && !vendor.finance_verified_at && (
               <button type="button" className="btn-secondary text-sm" onClick={() => vendorsApi.verifyBanking(vendorId)
                 .then(() => {
                   queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
-                  toast.success("Banking details verified");
+                  toast.success(t("procurement.vendorDetail.bankingVerified"));
                 })
-                .catch((err: unknown) => toast.error("Banking not verified", apiErrorMessage(err, "Failed to verify banking details.")))}>
-                Verify banking
+                .catch((err: unknown) => toast.error(t("procurement.vendorDetail.bankingNotVerified"), apiErrorMessage(err, t("procurement.vendorDetail.verifyFailed"))))}>
+                {t("procurement.vendorDetail.verifyBanking")}
               </button>
             )}
           </div>
@@ -836,12 +876,12 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
         {activeTab === "audit" && (
           <>
             <div className="card p-6" data-testid="supplier-360-audit">
-              <h2 className="text-sm font-semibold mb-3">Audit</h2>
+              <h2 className="text-sm font-semibold mb-3">{t("procurement.vendorDetail.tab.audit")}</h2>
               <ul className="space-y-2 text-sm">
                 {(vendor.approval_logs ?? []).map((log) => (
                   <li key={log.id}>{log.action} — {log.reason || "—"} — {log.performer?.name}</li>
                 ))}
-                {(vendor.approval_logs ?? []).length === 0 && <li className="text-neutral-500">No approval log entries.</li>}
+                {(vendor.approval_logs ?? []).length === 0 && <li className="text-neutral-500">{t("procurement.vendorDetail.noApprovalLogs")}</li>}
               </ul>
             </div>
             <SupplierChangeRequestsPanel vendorId={vendorId} canManage={canManageVendors()} />
@@ -863,19 +903,22 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
             !s ? "bg-neutral-200" : s >= 80 ? "bg-green-500" : s >= 60 ? "bg-amber-400" : "bg-red-500";
 
           const complianceDocs = attachments.filter((a) =>
-            ["registration_certificate", "tax_clearance", "company_profile", "certificate", "insurance", "bee_certificate"].some((t) => a.document_type?.toLowerCase().includes(t)),
+            ["registration_certificate", "tax_clearance", "company_profile", "certificate", "insurance", "bee_certificate"].some((dt) => a.document_type?.toLowerCase().includes(dt)),
           );
 
           return (
             <div className="space-y-5">
               {vendor.eligibility && (
                 <div className="card p-5" data-testid="supplier-360-eligibility">
-                  <h3 className="text-sm font-semibold text-neutral-800">Computed eligibility</h3>
+                  <h3 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.computedEligibility")}</h3>
                   <p className="mt-1 text-xs text-neutral-500">
-                    Status {vendor.eligibility.registration_status.replace(/_/g, " ")} · compliance {vendor.eligibility.compliance_status.replace(/_/g, " ")}
+                    {t("procurement.vendorDetail.eligibilityStatus", { registration: vendor.eligibility.registration_status.replace(/_/g, " "), compliance: vendor.eligibility.compliance_status.replace(/_/g, " ") })}
                   </p>
                   <p className="mt-2 text-sm">
-                    Quotes: {vendor.eligibility.can_submit_quotes ? "allowed" : "blocked"} · POs: {vendor.eligibility.can_receive_pos ? "allowed" : "blocked"}
+                    {t("procurement.vendorDetail.eligibilityPermissions", {
+                      quotes: vendor.eligibility.can_submit_quotes ? t("procurement.vendorDetail.allowed") : t("procurement.vendorDetail.blocked"),
+                      pos: vendor.eligibility.can_receive_pos ? t("procurement.vendorDetail.allowed") : t("procurement.vendorDetail.blocked"),
+                    })}
                   </p>
                   {vendor.eligibility.reasons.length > 0 && (
                     <p className="mt-1 text-xs text-amber-700">{vendor.eligibility.reasons.join(", ")}</p>
@@ -887,12 +930,12 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 flex items-start gap-3">
                   <span className="material-symbols-outlined text-red-600 text-[22px] mt-0.5">block</span>
                   <div>
-                    <p className="text-sm font-bold text-red-800">Vendor is Blacklisted / Debarred</p>
+                    <p className="text-sm font-bold text-red-800">{t("procurement.vendorDetail.blacklistedBanner")}</p>
                     {vendor.blacklist_reason && (
                       <p className="text-xs text-red-700 mt-0.5">{vendor.blacklist_reason}</p>
                     )}
                     {vendor.blacklist_reference && (
-                      <p className="text-xs text-red-600 mt-0.5">Ref: {vendor.blacklist_reference}</p>
+                      <p className="text-xs text-red-600 mt-0.5">{t("procurement.vendorDetail.refLine", { ref: vendor.blacklist_reference })}</p>
                     )}
                   </div>
                 </div>
@@ -903,20 +946,20 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <div className="flex items-center gap-2 mb-4">
                   <SectionIcon icon="verified_user" color="text-green-600" bg="bg-green-50" />
                   <div>
-                    <h3 className="text-sm font-semibold text-neutral-800">Compliance Score</h3>
-                    <p className="text-xs text-neutral-400">Based on {evals.length} performance evaluation{evals.length !== 1 ? "s" : ""}</p>
+                    <h3 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.complianceScore")}</h3>
+                    <p className="text-xs text-neutral-400">{t(evals.length === 1 ? "procurement.vendorDetail.basedOnOne" : "procurement.vendorDetail.basedOnMany", { count: evals.length })}</p>
                   </div>
                 </div>
                 {evals.length === 0 ? (
-                  <p className="text-sm text-neutral-400 italic">No evaluations recorded yet.</p>
+                  <p className="text-sm text-neutral-400 italic">{t("procurement.vendorDetail.noEvaluations")}</p>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     {[
-                      { label: "Compliance",     value: avgCompliance },
-                      { label: "Delivery",       value: avgDelivery },
-                      { label: "Quality",        value: avgQuality },
-                      { label: "Price",          value: avgPrice },
-                      { label: "Communication",  value: avgComms },
+                      { label: t("procurement.vendorDetail.dim.compliance"),     value: avgCompliance },
+                      { label: t("procurement.vendorDetail.dim.delivery"),       value: avgDelivery },
+                      { label: t("procurement.vendorDetail.dim.quality"),        value: avgQuality },
+                      { label: t("procurement.vendorDetail.dim.price"),          value: avgPrice },
+                      { label: t("procurement.vendorDetail.dim.communication"),  value: avgComms },
                     ].map(({ label, value }) => (
                       <div key={label} className="rounded-xl bg-neutral-50 border border-neutral-100 p-4 text-center">
                         <div className="flex items-center justify-center mb-2">
@@ -936,21 +979,21 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               <div className="card p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <SectionIcon icon="business" color="text-primary" bg="bg-primary/10" />
-                  <h3 className="text-sm font-semibold text-neutral-800">Registration & Tax Status</h3>
+                  <h3 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.registrationTax")}</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   {[
-                    { label: "Registration Number", value: vendor.registration_number, icon: "badge" },
-                    { label: "Tax Number",          value: vendor.tax_number,          icon: "receipt" },
-                    { label: "Country",             value: vendor.country,             icon: "location_on" },
-                    { label: "Vendor Status",       value: vendor.is_blacklisted ? "Blacklisted" : !vendor.is_active ? "Inactive" : !vendor.is_approved ? "Pending Approval" : "Active & Approved", icon: "info" },
+                    { label: t("procurement.vendorDetail.registrationNumber"), value: vendor.registration_number, icon: "badge" },
+                    { label: t("procurement.vendorDetail.taxNumber"),          value: vendor.tax_number,          icon: "receipt" },
+                    { label: t("procurement.vendors.csv.country"),             value: vendor.country,             icon: "location_on" },
+                    { label: t("procurement.vendorDetail.vendorStatus"),       value: vendor.is_blacklisted ? t("procurement.vendors.status.blacklisted") : !vendor.is_active ? t("procurement.vendors.status.inactive") : !vendor.is_approved ? t("procurement.vendors.kpi.pending") : t("procurement.vendorDetail.activeApproved"), icon: "info" },
                   ].map(({ label, value, icon }) => (
                     <div key={label} className="flex items-start gap-3 rounded-lg bg-neutral-50 border border-neutral-100 px-4 py-3">
                       <span className="material-symbols-outlined text-neutral-400 text-[18px] mt-0.5">{icon}</span>
                       <div>
                         <p className="text-xs text-neutral-400">{label}</p>
                         <p className={`text-sm font-medium mt-0.5 ${!value ? "text-neutral-300 italic" : "text-neutral-800"}`}>
-                          {value ?? "Not provided"}
+                          {value ?? t("procurement.vendorDetail.notProvided")}
                         </p>
                       </div>
                     </div>
@@ -963,24 +1006,24 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-neutral-50">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px] text-neutral-400">folder_open</span>
-                    <span className="text-sm font-semibold text-neutral-700">Compliance Documents</span>
+                    <span className="text-sm font-semibold text-neutral-700">{t("procurement.vendorDetail.complianceDocs")}</span>
                     {complianceDocs.length > 0 && (
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                        {complianceDocs.length} on file
+                        {t("procurement.vendorDetail.onFile", { count: complianceDocs.length })}
                       </span>
                     )}
                   </div>
                   <button type="button" onClick={() => setActiveTab("documents")} className="btn-secondary text-xs py-1 px-2">
-                    Manage all documents
+                    {t("procurement.vendorDetail.manageAllDocs")}
                   </button>
                 </div>
                 {complianceDocs.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-10 text-neutral-300">
                     <span className="material-symbols-outlined text-[32px]">folder_open</span>
-                    <p className="text-sm text-neutral-400">No compliance documents uploaded.</p>
+                    <p className="text-sm text-neutral-400">{t("procurement.vendorDetail.noComplianceDocs")}</p>
                     <button type="button" onClick={() => setActiveTab("documents")}
                       className="btn-secondary text-xs py-1 px-2">
-                      Upload documents in the Documents tab
+                      {t("procurement.vendorDetail.uploadInDocsTab")}
                     </button>
                   </div>
                 ) : (
@@ -993,7 +1036,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-neutral-800 truncate">{doc.original_filename}</p>
                           <p className="text-[11px] text-neutral-400 capitalize">
-                            {doc.document_type?.replace(/_/g, " ") ?? "Document"} · Uploaded {formatDateShort(doc.created_at)}
+                            {t("procurement.vendorDetail.uploadedOn", { type: doc.document_type?.replace(/_/g, " ") ?? t("procurement.vendorDetail.document"), date: formatDateShort(doc.created_at) })}
                           </p>
                         </div>
                         <a href={vendorAttachmentsApi.downloadUrl(vendorId, doc.id)} target="_blank" rel="noreferrer"
@@ -1012,25 +1055,25 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-neutral-50">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-[18px] text-neutral-400">analytics</span>
-                      <span className="text-sm font-semibold text-neutral-700">Performance History</span>
+                      <span className="text-sm font-semibold text-neutral-700">{t("procurement.vendorDetail.performanceHistory")}</span>
                     </div>
                     <div className="flex items-center gap-3 text-[11px] text-neutral-400">
-                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" />Good ≥80%</span>
-                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />Warning ≥60%</span>
-                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />Critical</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" />{t("procurement.vendorDetail.legendGood")}</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />{t("procurement.vendorDetail.legendWarning")}</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />{t("procurement.vendorDetail.legendCritical")}</span>
                     </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="data-table w-full">
                       <thead>
                         <tr>
-                          <th>Contract Ref</th>
-                          <th className="text-center">Delivery</th>
-                          <th className="text-center">Quality</th>
-                          <th className="text-center">Price</th>
-                          <th className="text-center">Compliance</th>
-                          <th className="text-center">Communication</th>
-                          <th className="text-right">Overall</th>
+                          <th>{t("procurement.vendorDetail.col.contractRef")}</th>
+                          <th className="text-center">{t("procurement.vendorDetail.dim.delivery")}</th>
+                          <th className="text-center">{t("procurement.vendorDetail.dim.quality")}</th>
+                          <th className="text-center">{t("procurement.vendorDetail.dim.price")}</th>
+                          <th className="text-center">{t("procurement.vendorDetail.dim.compliance")}</th>
+                          <th className="text-center">{t("procurement.vendorDetail.dim.communication")}</th>
+                          <th className="text-right">{t("procurement.vendorDetail.col.overall")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1071,7 +1114,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
             <div className="card p-6">
               <div className="flex items-center gap-3 mb-5">
                 <SectionIcon icon="star" color="text-amber-500" bg="bg-amber-50" />
-                <h2 className="text-sm font-semibold text-neutral-800">Vendor Rating</h2>
+                <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.vendorRating")}</h2>
               </div>
               <div className="flex flex-col sm:flex-row gap-8 items-start">
                 {/* Big average */}
@@ -1080,7 +1123,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                     {avgRating ? avgRating.toFixed(1) : "—"}
                   </span>
                   <StarDisplay avg={avgRating} />
-                  <span className="text-xs text-neutral-400">{ratings.length} {ratings.length === 1 ? "rating" : "ratings"}</span>
+                  <span className="text-xs text-neutral-400">{t(ratings.length === 1 ? "procurement.vendorDetail.ratingsOne" : "procurement.vendorDetail.ratingsMany", { count: ratings.length })}</span>
                 </div>
                 {/* Distribution bars */}
                 {ratings.length > 0 && (
@@ -1098,15 +1141,15 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               <div className="flex items-center gap-3">
                 <SectionIcon icon="verified" color="text-amber-500" bg="bg-amber-50" />
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-800">Overall Vendor Rating</h3>
+                  <h3 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.overallRating")}</h3>
                   <p className="text-xs text-neutral-400">
-                    Derived from structured performance evaluations — submit an evaluation below to update.
+                    {t("procurement.vendorDetail.overallHint")}
                   </p>
                 </div>
               </div>
               <StarDisplay avg={derivedStars} count={evaluationsData?.length} />
               {!derivedStars && (
-                <p className="text-xs text-neutral-400">No evaluations yet. Complete a performance evaluation to generate stars.</p>
+                <p className="text-xs text-neutral-400">{t("procurement.vendorDetail.noEvalsYet")}</p>
               )}
             </div>
 
@@ -1114,7 +1157,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
             {ratings.length > 0 && (
               <div className="card overflow-hidden">
                 <div className="px-5 py-3.5 border-b border-neutral-100">
-                  <h3 className="text-sm font-semibold text-neutral-800">All Reviews</h3>
+                  <h3 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.allReviews")}</h3>
                 </div>
                 <div className="divide-y divide-neutral-50">
                   {ratings.map((r) => (
@@ -1124,7 +1167,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-neutral-800">{r.rater?.name ?? "Staff member"}</span>
+                          <span className="text-sm font-semibold text-neutral-800">{r.rater?.name ?? t("procurement.vendorDetail.staffMember")}</span>
                           <div className="flex items-center gap-1">
                             {Array.from({ length: 5 }, (_, i) => (
                               <span key={i} className={`material-symbols-outlined text-[14px] leading-none ${i < r.rating ? "text-amber-400" : "text-neutral-200"}`} style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
@@ -1145,21 +1188,21 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               <div className="flex items-center gap-3">
                 <SectionIcon icon="verified" color="text-primary" bg="bg-primary/10" />
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-800">Performance Evaluations</h3>
-                  <p className="text-xs text-neutral-400">Formal 5-dimension scored evaluations (linked to contracts)</p>
+                  <h3 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.perfEvaluations")}</h3>
+                  <p className="text-xs text-neutral-400">{t("procurement.vendorDetail.perfHint")}</p>
                 </div>
               </div>
 
               {/* Submit evaluation form */}
               <div className="rounded-xl border border-neutral-100 bg-neutral-50/60 p-4 space-y-4">
-                <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wide">Submit Evaluation</p>
+                <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wide">{t("procurement.vendorDetail.submitEvaluation")}</p>
                 {(["delivery", "quality", "price", "compliance", "communication"] as const).map((dim) => {
                   const labels: Record<typeof dim, { label: string; icon: string }> = {
-                    delivery:      { label: "Delivery",      icon: "local_shipping" },
-                    quality:       { label: "Quality",       icon: "high_quality"   },
-                    price:         { label: "Price",         icon: "payments"       },
-                    compliance:    { label: "Compliance",    icon: "gavel"          },
-                    communication: { label: "Communication", icon: "forum"          },
+                    delivery:      { label: t("procurement.vendorDetail.dim.delivery"),      icon: "local_shipping" },
+                    quality:       { label: t("procurement.vendorDetail.dim.quality"),       icon: "high_quality"   },
+                    price:         { label: t("procurement.vendorDetail.dim.price"),         icon: "payments"       },
+                    compliance:    { label: t("procurement.vendorDetail.dim.compliance"),    icon: "gavel"          },
+                    communication: { label: t("procurement.vendorDetail.dim.communication"), icon: "forum"          },
                   };
                   return (
                     <div key={dim} className="flex items-center gap-4">
@@ -1175,27 +1218,27 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 {contractsData && contractsData.length > 0 && (
                   <div>
                     <label htmlFor="procurement-vendors-detail-linked-contract-optional" className="block text-xs font-semibold text-neutral-600 mb-1">
-                      Linked Contract <span className="text-neutral-400 font-normal">(optional)</span>
+                      {t("procurement.vendorDetail.linkedContract")} <span className="text-neutral-400 font-normal">{t("procurement.vendorDetail.optional")}</span>
                     </label>
                     <select id="procurement-vendors-detail-linked-contract-optional"
                       className="form-input"
                       value={evalContractId}
                       onChange={(e) => setEvalContractId(e.target.value ? Number(e.target.value) : "")}
                     >
-                      <option value="">— None —</option>
+                      <option value="">{t("procurement.vendorDetail.none")}</option>
                       {contractsData.map((c) => (
-                        <option key={c.id} value={c.id}>{c.reference_number ?? `Contract #${c.id}`}{c.title ? ` — ${c.title}` : ""}</option>
+                        <option key={c.id} value={c.id}>{c.reference_number ?? t("procurement.vendorDetail.contractNumber", { id: c.id })}{c.title ? ` — ${c.title}` : ""}</option>
                       ))}
                     </select>
                   </div>
                 )}
                 <div>
                   <label htmlFor="procurement-vendors-detail-notes-optional" className="block text-xs font-semibold text-neutral-600 mb-1">
-                    Notes <span className="text-neutral-400 font-normal">(optional)</span>
+                    {t("procurement.vendorDetail.notes")} <span className="text-neutral-400 font-normal">{t("procurement.vendorDetail.optional")}</span>
                   </label>
                   <textarea id="procurement-vendors-detail-notes-optional"
                     className="form-input h-16 resize-none"
-                    placeholder="Additional evaluation notes…"
+                    placeholder={t("procurement.vendorDetail.evalNotesPlaceholder")}
                     value={evalNotes}
                     onChange={(e) => setEvalNotes(e.target.value)}
                   />
@@ -1220,23 +1263,23 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                       setEvalContractId("");
                       setEvalNotes("");
                       refetchEvaluations();
-                      toast.success("Evaluation submitted");
+                      toast.success(t("procurement.vendorDetail.evalSubmitted"));
                     } catch (err) {
-                      toast.error("Evaluation not submitted", apiErrorMessage(err, "Failed to submit the evaluation."));
+                      toast.error(t("procurement.vendorDetail.evalNotSubmitted"), apiErrorMessage(err, t("procurement.vendorDetail.evalFailed")));
                     } finally {
                       setEvalSubmitting(false);
                     }
                   }}
                 >
                   {evalSubmitting && <span className="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>}
-                  {evalSubmitting ? "Submitting…" : "Submit Evaluation"}
+                  {evalSubmitting ? t("procurement.vendorDetail.submitting") : t("procurement.vendorDetail.submitEvaluation")}
                 </button>
               </div>
 
               {/* Evaluation history */}
               {evaluationsData && evaluationsData.length > 0 && (
                 <div className="space-y-3">
-                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Evaluation History</p>
+                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">{t("procurement.vendorDetail.evaluationHistory")}</p>
                   {evaluationsData.map((ev) => {
                     const overall = toNum(ev.overall_score) ??
                       ([ev.delivery_score, ev.quality_score, ev.price_score, ev.compliance_score, ev.communication_score]
@@ -1249,7 +1292,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                             <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                               {(ev.evaluator?.name ?? "?")[0].toUpperCase()}
                             </div>
-                            <span className="text-sm font-semibold text-neutral-800">{ev.evaluator?.name ?? "Staff member"}</span>
+                            <span className="text-sm font-semibold text-neutral-800">{ev.evaluator?.name ?? t("procurement.vendorDetail.staffMember")}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-primary">{overall != null ? overall.toFixed(1) : "—"} / 5</span>
@@ -1261,7 +1304,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                             const score = ev[`${dim}_score` as keyof VendorPerformanceEvaluation] as number;
                             return (
                               <div key={dim} className="rounded-lg bg-neutral-50 px-3 py-2">
-                                <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide capitalize mb-1">{dim}</p>
+                                <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide capitalize mb-1">{t(`procurement.vendorDetail.dim.${dim}`)}</p>
                                 <div className="flex items-center gap-1.5">
                                   <div className="flex-1 h-1.5 rounded-full bg-neutral-200 overflow-hidden">
                                     <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${(score / 5) * 100}%` }} />
@@ -1288,7 +1331,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
           subtitle={vendor.registration_number ?? undefined}
           crumbs={[
             { label: "nav.procurement", href: "/procurement" },
-            { label: "Vendors", href: "/procurement/vendors" },
+            { label: "procurement.vendors.crumb", href: "/procurement/vendors" },
             { label: vendor.name },
           ]}
         />
@@ -1298,12 +1341,12 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
           <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
             <span className="material-symbols-outlined text-[20px] text-red-600 mt-0.5 flex-shrink-0">gpp_bad</span>
             <div>
-              <p className="text-sm font-semibold text-red-700">This vendor is blacklisted</p>
+              <p className="text-sm font-semibold text-red-700">{t("procurement.vendorDetail.blacklistedTitle")}</p>
               {vendor.blacklist_reason && (
                 <p className="text-xs text-red-600 mt-0.5">{vendor.blacklist_reason}</p>
               )}
               {vendor.blacklisted_at && (
-                <p className="text-xs text-red-400 mt-0.5">Blacklisted on {formatDateShort(vendor.blacklisted_at)}</p>
+                <p className="text-xs text-red-400 mt-0.5">{t("procurement.vendorDetail.blacklistedOn", { date: formatDateShort(vendor.blacklisted_at) })}</p>
               )}
             </div>
           </div>
@@ -1315,13 +1358,13 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
             <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-neutral-50">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px] text-neutral-400">folder_open</span>
-                <span className="text-sm font-semibold text-neutral-700">Registration documents</span>
+                <span className="text-sm font-semibold text-neutral-700">{t("procurement.vendorDetail.registrationDocs")}</span>
                 <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                  {attachments.length} on file
+                  {t("procurement.vendorDetail.onFile", { count: attachments.length })}
                 </span>
               </div>
               <button type="button" onClick={() => setActiveTab("documents")} className="btn-secondary text-xs py-1 px-2">
-                {canManageVendors() ? "Manage all documents" : "View all documents"}
+                {canManageVendors() ? t("procurement.vendorDetail.manageAllDocs") : t("procurement.vendorDetail.viewAllDocs")}
               </button>
             </div>
             <ul className="divide-y divide-neutral-50">
@@ -1333,7 +1376,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-neutral-800 truncate">{doc.original_filename}</p>
                     <p className="text-[11px] text-neutral-400 capitalize">
-                      {doc.document_type?.replace(/_/g, " ") ?? "Document"}
+                      {doc.document_type?.replace(/_/g, " ") ?? t("procurement.vendorDetail.document")}
                     </p>
                   </div>
                   <a href={vendorAttachmentsApi.downloadUrl(vendorId, doc.id)} className="text-neutral-400 hover:text-primary">
@@ -1365,17 +1408,17 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 )}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   {vendor.is_blacklisted ? (
-                    <span className="badge badge-danger">Blacklisted</span>
+                    <span className="badge badge-danger">{t("procurement.vendors.status.blacklisted")}</span>
                   ) : vendor.is_active ? (
                     vendor.is_approved ? (
-                      <span className="badge badge-success">Approved</span>
+                      <span className="badge badge-success">{t("procurement.vendors.status.approved")}</span>
                     ) : (
-                      <span className="badge badge-warning">Pending Approval</span>
+                      <span className="badge badge-warning">{t("procurement.vendors.kpi.pending")}</span>
                     )
                   ) : (
-                    <span className="badge badge-muted">Inactive</span>
+                    <span className="badge badge-muted">{t("procurement.vendors.status.inactive")}</span>
                   )}
-                  {vendor.is_sme && <span className="badge badge-primary">SME</span>}
+                  {vendor.is_sme && <span className="badge badge-primary">{t("procurement.vendors.sme")}</span>}
                   {vendor.category && (
                     <span className="inline-flex items-center gap-1 text-xs text-neutral-500">
                       <span className="material-symbols-outlined text-[13px]">category</span>
@@ -1388,7 +1431,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                       {vendor.country}
                     </span>
                   )}
-                  <span className="badge badge-primary">{vendor.quotes_count ?? 0} quotes</span>
+                  <span className="badge badge-primary">{t("procurement.vendorDetail.quotesCount", { count: vendor.quotes_count ?? 0 })}</span>
                   {avgRating && (
                     <span className="inline-flex items-center gap-0.5 text-xs text-amber-500">
                       <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
@@ -1397,7 +1440,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   )}
                   {vendor.created_at && (
                     <span className="text-xs text-neutral-400">
-                      Registered {formatDateShort(vendor.created_at)}
+                      {t("procurement.vendorDetail.registered", { date: formatDateShort(vendor.created_at) })}
                     </span>
                   )}
                 </div>
@@ -1416,7 +1459,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                     className="btn-primary flex items-center gap-1.5 py-2 px-3 text-sm"
                   >
                     <span className="material-symbols-outlined text-[17px]">check_circle</span>
-                    {approveMutation.isPending ? "Approving…" : "Approve"}
+                    {approveMutation.isPending ? t("procurement.vendorDetail.approving") : t("procurement.vendorDetail.approve")}
                   </button>
                   <button
                     type="button"
@@ -1424,7 +1467,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                     className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
                   >
                     <span className="material-symbols-outlined text-[17px]">cancel</span>
-                    Reject
+                    {t("procurement.vendorDetail.reject")}
                   </button>
                 </>
               )}
@@ -1435,7 +1478,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   className="btn-secondary flex items-center gap-1.5 py-2 px-3 text-sm"
                 >
                   <span className="material-symbols-outlined text-[17px]">edit</span>
-                  Edit
+                  {t("procurement.vendorDetail.edit")}
                 </button>
               )}
               {canManageVendors() && vendor.is_active && !vendor.is_blacklisted && (
@@ -1445,7 +1488,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[17px]">block</span>
-                  Deactivate
+                  {t("procurement.vendors.deactivate")}
                 </button>
               )}
               {canManageVendors() && !vendor.is_blacklisted && (
@@ -1455,7 +1498,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   className="flex items-center gap-1.5 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[17px]">gpp_bad</span>
-                  Blacklist
+                  {t("procurement.vendorDetail.blacklist")}
                 </button>
               )}
               {canManageVendors() && vendor.is_blacklisted && (
@@ -1466,15 +1509,15 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                       await vendorsApi.unblacklist(vendorId);
                       queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
                       queryClient.invalidateQueries({ queryKey: ["vendors"] });
-                      toast.success("Vendor removed from blacklist");
+                      toast.success(t("procurement.vendorDetail.removedFromBlacklist"));
                     } catch (err) {
-                      toast.error("Could not remove from blacklist", apiErrorMessage(err, "Failed to remove the vendor from the blacklist."));
+                      toast.error(t("procurement.vendorDetail.couldNotRemove"), apiErrorMessage(err, t("procurement.vendorDetail.removeFailed")));
                     }
                   }}
                   className="flex items-center gap-1.5 rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[17px]">verified_user</span>
-                  Remove from Blacklist
+                  {t("procurement.vendorDetail.removeFromBlacklist")}
                 </button>
               )}
             </div>
@@ -1487,24 +1530,24 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
           <div className="lg:col-span-1 card p-5 space-y-5">
             <div className="flex items-center gap-3">
               <SectionIcon icon="contacts" color="text-primary" bg="bg-primary/10" />
-              <h2 className="text-sm font-semibold text-neutral-800">Contact Information</h2>
+              <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.contactInfo")}</h2>
             </div>
             <div className="space-y-4">
-              {vendor.contact_name && infoRow("person", "Contact Person", vendor.contact_name)}
+              {vendor.contact_name && infoRow("person", t("procurement.vendorDetail.contactPerson"), vendor.contact_name)}
               {infoRow(
                 "mail",
-                "Email",
+                t("procurement.vendors.csv.email"),
                 vendor.contact_email ? (
                   <a href={`mailto:${vendor.contact_email}`} className="text-primary hover:underline">
                     {vendor.contact_email}
                   </a>
-                ) : <span className="text-neutral-400">Not provided</span>
+                ) : <span className="text-neutral-400">{t("procurement.vendorDetail.notProvided")}</span>
               )}
-              {infoRow("phone", "Phone", vendor.contact_phone ?? <span className="text-neutral-400">Not provided</span>)}
-              {infoRow("location_on", "Address", vendor.address ?? <span className="text-neutral-400">Not provided</span>)}
+              {infoRow("phone", t("procurement.vendors.csv.phone"), vendor.contact_phone ?? <span className="text-neutral-400">{t("procurement.vendorDetail.notProvided")}</span>)}
+              {infoRow("location_on", t("procurement.vendorDetail.address"), vendor.address ?? <span className="text-neutral-400">{t("procurement.vendorDetail.notProvided")}</span>)}
               {vendor.website && infoRow(
                 "language",
-                "Website",
+                t("procurement.vendors.field.website"),
                 safeExternalUrl(vendor.website) ? (
                   <a href={safeExternalUrl(vendor.website)!} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate block">
                     {vendor.website.replace(/^https?:\/\//, "")}
@@ -1513,27 +1556,27 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   <span className="truncate block">{vendor.website}</span>
                 )
               )}
-              {vendor.tax_number && infoRow("receipt_long", "VAT / Tax No.", vendor.tax_number)}
-              {vendor.payment_terms && infoRow("schedule", "Payment Terms", vendor.payment_terms)}
+              {vendor.tax_number && infoRow("receipt_long", t("procurement.vendorDetail.vatTaxNo"), vendor.tax_number)}
+              {vendor.payment_terms && infoRow("schedule", t("procurement.vendors.field.paymentTerms"), paymentTermLabel(t, vendor.payment_terms))}
               {vendor.bank_name && (
                 <div className="rounded-xl border border-neutral-100 bg-neutral-50/60 px-3 py-2.5 space-y-1.5">
-                  <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide">Banking Details</p>
+                  <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide">{t("procurement.vendorDetail.bankingDetails")}</p>
                   {vendor.bank_name && <p className="text-xs text-neutral-700">{vendor.bank_name}</p>}
                   {vendor.bank_account && <p className="text-xs font-mono text-neutral-600">{vendor.bank_account}</p>}
-                  {vendor.bank_branch && <p className="text-[10px] text-neutral-500">Branch: {vendor.bank_branch}</p>}
+                  {vendor.bank_branch && <p className="text-[10px] text-neutral-500">{t("procurement.vendorDetail.branchLine", { value: vendor.bank_branch })}</p>}
                 </div>
               )}
               {vendor.notes && (
                 <div className="rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-2.5">
-                  <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">Internal Notes</p>
+                  <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">{t("procurement.vendors.field.notes")}</p>
                   <p className="text-xs text-neutral-700">{vendor.notes}</p>
                 </div>
               )}
               {canManageVendors() && (
                 <div className="rounded-xl border border-neutral-100 bg-neutral-50/60 px-3 py-2.5 space-y-2">
-                  <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wide">Supplier Portal Credentials</p>
+                  <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wide">{t("procurement.vendorDetail.portalCredentials")}</p>
                   {(vendor.portal_users ?? []).length === 0 ? (
-                    <p className="text-xs text-neutral-500">No supplier portal users linked yet.</p>
+                    <p className="text-xs text-neutral-500">{t("procurement.vendorDetail.noPortalUsers")}</p>
                   ) : (
                     <div className="space-y-2">
                       {(vendor.portal_users ?? []).map((pu) => (
@@ -1553,7 +1596,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                               setShowPortalPwModal(true);
                             }}
                           >
-                            Reset Password
+                            {t("procurement.vendors.pw.reset")}
                           </button>
                         </div>
                       ))}
@@ -1568,26 +1611,26 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
           <div className="lg:col-span-2 card p-5 space-y-5">
             <div className="flex items-center gap-3">
               <SectionIcon icon="analytics" color="text-primary" bg="bg-primary/10" />
-              <h2 className="text-sm font-semibold text-neutral-800">Procurement Activity</h2>
+              <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.procurementActivity")}</h2>
             </div>
             <div className="grid grid-cols-3 gap-4">
               {[
                 {
-                  label: "Total Quotes",
+                  label: t("procurement.vendorDetail.totalQuotes"),
                   value: vendor.quotes_count ?? 0,
                   icon: "request_quote",
                   color: "text-primary",
                   bg: "bg-primary/10",
                 },
                 {
-                  label: "Recommended",
+                  label: t("procurement.vendorDetail.recommended"),
                   value: quotes.filter((q) => q.is_recommended).length,
                   icon: "thumb_up",
                   color: "text-green-600",
                   bg: "bg-green-50",
                 },
                 {
-                  label: "Unique RFQs",
+                  label: t("procurement.vendorDetail.uniqueRfqs"),
                   value: new Set(quotes.map((q) => q.procurement_request?.id)).size,
                   icon: "description",
                   color: "text-primary",
@@ -1613,7 +1656,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <div className="rounded-xl border border-neutral-100 bg-neutral-50/60 px-4 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-[17px] text-amber-500">payments</span>
-                    <span className="text-xs text-neutral-500">Total recommended quote value</span>
+                    <span className="text-xs text-neutral-500">{t("procurement.vendorDetail.totalRecommendedValue")}</span>
                   </div>
                   <span className="text-sm font-bold text-neutral-800">
                     {formatCurrency(totalValue, currency)}
@@ -1629,8 +1672,8 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
           <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100">
             <SectionIcon icon="shopping_bag" color="text-orange-600" bg="bg-orange-50" />
             <div>
-              <h2 className="text-sm font-semibold text-neutral-800">Linked Procurement Requests</h2>
-              <p className="text-xs text-neutral-400">Requests where this vendor has submitted a quote</p>
+              <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.linkedRequests")}</h2>
+              <p className="text-xs text-neutral-400">{t("procurement.vendorDetail.linkedHint")}</p>
             </div>
           </div>
 
@@ -1638,7 +1681,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
             <div className="py-12 text-center">
               <div className="flex flex-col items-center gap-2 text-neutral-400">
                 <span className="material-symbols-outlined text-3xl">request_quote</span>
-                <p className="text-sm">No quotes submitted yet.</p>
+                <p className="text-sm">{t("procurement.vendorDetail.noQuotesSubmitted")}</p>
               </div>
             </div>
           ) : (
@@ -1646,13 +1689,13 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               <table className="data-table w-full">
                 <thead>
                   <tr>
-                    <th className="text-left">Reference</th>
-                    <th className="text-left">Title</th>
-                    <th className="text-left">Category</th>
-                    <th className="text-right">Quoted Amount</th>
-                    <th className="text-left">Quote Date</th>
-                    <th className="text-left">Rec.</th>
-                    <th className="text-left">RFQ Status</th>
+                    <th className="text-left">{t("procurement.col.reference")}</th>
+                    <th className="text-left">{t("procurement.col.title")}</th>
+                    <th className="text-left">{t("procurement.vendors.col.category")}</th>
+                    <th className="text-right">{t("procurement.vendorDetail.col.quotedAmount")}</th>
+                    <th className="text-left">{t("procurement.vendorDetail.col.quoteDate")}</th>
+                    <th className="text-left">{t("procurement.vendorDetail.col.rec")}</th>
+                    <th className="text-left">{t("procurement.vendorDetail.col.rfqStatus")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1681,7 +1724,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                           {cat && req ? (
                             <span className={`flex items-center gap-1 text-xs font-medium ${cat.color}`}>
                               <span className="material-symbols-outlined text-[14px]">{cat.icon}</span>
-                              <span className="capitalize">{req.category}</span>
+                              <span className="capitalize">{categoryConfig[req.category] ? t(`procurement.category.${req.category}`) : req.category}</span>
                             </span>
                           ) : (
                             <span className="text-neutral-400">—</span>
@@ -1697,7 +1740,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                           {q.is_recommended ? (
                             <span className="flex items-center gap-1 text-xs font-medium text-green-600">
                               <span className="material-symbols-outlined text-[14px]">thumb_up</span>
-                              Yes
+                              {t("procurement.vendorDetail.yes")}
                             </span>
                           ) : (
                             <span className="text-xs text-neutral-400">—</span>
@@ -1705,7 +1748,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                         </td>
                         <td>
                           {st ? (
-                            <span className={`badge ${st.cls}`}>{st.label}</span>
+                            <span className={`badge ${st.cls}`}>{t(st.label)}</span>
                           ) : (
                             <span className="text-neutral-400">—</span>
                           )}
@@ -1724,14 +1767,14 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
           <div className="card p-5 space-y-4">
             <div className="flex items-center gap-3">
               <SectionIcon icon="notes" color="text-teal-600" bg="bg-teal-50" />
-              <h2 className="text-sm font-semibold text-neutral-800">Quote Notes</h2>
+              <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.quoteNotes")}</h2>
             </div>
             <div className="space-y-3">
               {quotes.filter((q) => q.notes).map((q) => (
                 <div key={q.id} className="rounded-xl border border-neutral-100 bg-neutral-50/60 px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium text-neutral-500">
-                      {q.procurement_request?.reference_number ?? `Quote #${q.id}`}
+                      {q.procurement_request?.reference_number ?? t("procurement.vendorDetail.quoteNumber", { id: q.id })}
                     </span>
                     <span className="text-xs text-neutral-400">
                       {q.quote_date ? formatDateShort(q.quote_date) : ""}
@@ -1761,36 +1804,36 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <span className="material-symbols-outlined text-[20px] text-red-700">gpp_bad</span>
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-neutral-800">Blacklist Vendor</h2>
+                <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.blacklistVendor")}</h2>
                 <p className="text-xs text-neutral-500">{vendor.name}</p>
               </div>
             </div>
             <div>
               <label htmlFor="procurement-vendors-detail-reason" className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                Reason <span className="text-red-500">*</span>
+                {t("common.reason")} <span className="text-red-500">*</span>
               </label>
               <textarea id="procurement-vendors-detail-reason"
                 className="form-input w-full h-24 resize-none"
-                placeholder="Provide a formal reason for blacklisting this vendor…"
+                placeholder={t("procurement.vendorDetail.blacklistPlaceholder")}
                 value={blacklistReason}
                 onChange={(e) => setBlacklistReason(e.target.value)}
               />
             </div>
             <div>
               <label htmlFor="procurement-vendors-detail-reference-case-no-optional" className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                Reference / Case No. <span className="text-neutral-400 font-normal">(optional)</span>
+                {t("procurement.vendorDetail.referenceCaseNo")} <span className="text-neutral-400 font-normal">{t("procurement.vendorDetail.optional")}</span>
               </label>
               <input id="procurement-vendors-detail-reference-case-no-optional"
                 type="text"
                 className="form-input"
-                placeholder="e.g. AUDIT/2026/001"
+                placeholder={t("procurement.vendorDetail.refPlaceholder")}
                 value={blacklistRef}
                 onChange={(e) => setBlacklistRef(e.target.value)}
               />
             </div>
             <div className="flex gap-3">
               <button className="btn-secondary flex-1" onClick={() => { setShowBlacklist(false); setBlacklistReason(""); setBlacklistRef(""); }}>
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-60 transition-colors"
@@ -1803,14 +1846,14 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                     setShowBlacklist(false);
                     setBlacklistReason("");
                     setBlacklistRef("");
-                    toast.success("Vendor blacklisted");
+                    toast.success(t("procurement.vendorDetail.vendorBlacklisted"));
                   } catch (err) {
-                    toast.error("Vendor not blacklisted", apiErrorMessage(err, "Failed to blacklist the vendor."));
+                    toast.error(t("procurement.vendorDetail.notBlacklisted"), apiErrorMessage(err, t("procurement.vendorDetail.blacklistFailed")));
                   }
                 }}
               >
                 <span className="material-symbols-outlined text-[14px]">gpp_bad</span>
-                Confirm Blacklist
+                {t("procurement.vendorDetail.confirmBlacklist")}
               </button>
             </div>
           </div>
@@ -1824,7 +1867,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <span className="material-symbols-outlined text-[20px] text-red-600">cancel</span>
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-neutral-800">Reject Vendor</h2>
+                <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendorDetail.rejectVendor")}</h2>
                 <p className="text-xs text-neutral-500">{vendor.name}</p>
               </div>
             </div>
@@ -1833,17 +1876,17 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
             )}
             <div>
               <label htmlFor="procurement-vendors-detail-reason-for-rejection" className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                Reason for Rejection <span className="text-red-500">*</span>
+                {t("procurement.vendorDetail.reasonForRejection")} <span className="text-red-500">*</span>
               </label>
               <textarea id="procurement-vendors-detail-reason-for-rejection"
                 className="form-input w-full h-24 resize-none"
-                placeholder="Explain why this vendor is being rejected…"
+                placeholder={t("procurement.vendorDetail.rejectPlaceholder")}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
               />
             </div>
             <div className="flex gap-3">
-              <button className="btn-secondary flex-1" onClick={() => { setShowReject(false); setRejectError(null); }}>Cancel</button>
+              <button className="btn-secondary flex-1" onClick={() => { setShowReject(false); setRejectError(null); }}>{t("common.cancel")}</button>
               <button
                 className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
                 disabled={rejectMutation.isPending || !rejectReason.trim()}
@@ -1853,7 +1896,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   ? <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                   : <span className="material-symbols-outlined text-[14px]">cancel</span>
                 }
-                {rejectMutation.isPending ? "Rejecting…" : "Confirm Reject"}
+                {rejectMutation.isPending ? t("procurement.vendorDetail.rejecting") : t("procurement.vendorDetail.confirmReject")}
               </button>
             </div>
           </div>
@@ -1867,7 +1910,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <span className="material-symbols-outlined text-[20px] text-primary">lock_reset</span>
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-neutral-800">Reset Supplier Password</h2>
+                <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.vendors.pw.title")}</h2>
                 <p className="text-xs text-neutral-500">{selectedPortalUser.email}</p>
               </div>
             </div>
@@ -1875,27 +1918,27 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{portalPwError}</div>
             )}
             <div>
-              <label htmlFor="procurement-vendors-detail-new-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
+              <label htmlFor="procurement-vendors-detail-new-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("procurement.vendors.pw.new")}</label>
               <input id="procurement-vendors-detail-new-password"
                 type="password"
                 className="form-input"
                 value={portalPassword}
                 onChange={(e) => setPortalPassword(e.target.value)}
-                placeholder="Minimum 8 characters"
+                placeholder={t("procurement.vendors.pw.minPlaceholder")}
               />
             </div>
             <div>
-              <label htmlFor="procurement-vendors-detail-confirm-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm Password</label>
+              <label htmlFor="procurement-vendors-detail-confirm-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("procurement.vendors.pw.confirm")}</label>
               <input id="procurement-vendors-detail-confirm-password"
                 type="password"
                 className="form-input"
                 value={portalPasswordConfirm}
                 onChange={(e) => setPortalPasswordConfirm(e.target.value)}
-                placeholder="Repeat password"
+                placeholder={t("procurement.vendors.pw.repeat")}
               />
             </div>
             <p className="text-[11px] text-neutral-500">
-              The supplier user will be required to set a new password on next login.
+              {t("procurement.vendorDetail.pwNote")}
             </p>
             <div className="flex gap-3">
               <button
@@ -1905,18 +1948,18 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   setPortalPwError(null);
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 className="btn-primary flex-1 disabled:opacity-60"
                 disabled={portalPwSaving || !portalPassword || !portalPasswordConfirm}
                 onClick={async () => {
                   if (portalPassword.length < 8) {
-                    setPortalPwError("Password must be at least 8 characters.");
+                    setPortalPwError(t("procurement.vendors.pw.tooShort"));
                     return;
                   }
                   if (portalPassword !== portalPasswordConfirm) {
-                    setPortalPwError("Passwords do not match.");
+                    setPortalPwError(t("procurement.vendors.pw.mismatch"));
                     return;
                   }
                   setPortalPwSaving(true);
@@ -1933,17 +1976,17 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                     setShowPortalPwModal(false);
                     setPortalPassword("");
                     setPortalPasswordConfirm("");
-                    toast.success("Supplier password reset");
+                    toast.success(t("procurement.vendorDetail.pwResetToast"));
                   } catch (e: unknown) {
-                    const msg = apiErrorMessage(e, "Failed to reset supplier password.");
+                    const msg = apiErrorMessage(e, t("procurement.vendorDetail.pwResetFailed"));
                     setPortalPwError(msg);
-                    toast.error("Password not reset", msg);
+                    toast.error(t("procurement.vendors.toast.pwNotReset"), msg);
                   } finally {
                     setPortalPwSaving(false);
                   }
                 }}
               >
-                {portalPwSaving ? "Saving..." : "Reset Password"}
+                {portalPwSaving ? t("procurement.vendorDetail.savingDots") : t("procurement.vendors.pw.reset")}
               </button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { procurementWorkbenchApi } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type InboxRow = {
   id: number;
@@ -16,6 +17,7 @@ type InboxRow = {
 };
 
 export default function ProcurementInboxPage() {
+  const { t } = useI18n();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["procurement", "inbox"],
     queryFn: () => procurementWorkbenchApi.inbox().then((r) => r.data),
@@ -30,29 +32,29 @@ export default function ProcurementInboxPage() {
   const note = payload?.note?.trim() || null;
   const subtitle = note
     ?? (configured
-      ? "Unread PDF, Word, or image attachments from the designated procurement mailbox are ingested for review. They are never auto-confirmed."
-      : "IMAP is not configured. Upload remains the live invoice intake path.");
+      ? t("procurement.inbox.subtitleConfigured")
+      : t("procurement.inbox.subtitleNotConfigured"));
   const emptyCopy = configured
-    ? "No invoice attachments yet. Forward supplier documents to the designated procurement mailbox, then review them here before confirming."
-    : (note ?? "No forwarded invoices. IMAP is not configured — upload a PDF or DOCX from Create from Invoice / Quote.");
+    ? t("procurement.inbox.emptyConfigured")
+    : (note ?? t("procurement.inbox.emptyNotConfigured"));
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Procurement Inbox"
+        title={t("procurement.inbox.title")}
         subtitle={subtitle}
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement", href: "/procurement" }, { label: "Inbox" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("nav.procurement"), href: "/procurement" }, { label: t("procurement.inbox.crumb") }]} />}
       />
       <p className="text-sm text-neutral-600">
-        System Admins configure the designated invoice mailbox under{" "}
-        <Link href="/admin/email" className="btn-secondary text-xs py-1 px-2">Admin → Email</Link>.
-        Attachments become intakes for review and are never auto-confirmed.
+        {t("procurement.inbox.adminHintBefore")}{" "}
+        <Link href="/admin/email" className="btn-secondary text-xs py-1 px-2">{t("procurement.inbox.adminLink")}</Link>
+        {t("procurement.inbox.adminHintAfter")}
       </p>
       {note && (
         <p className={`rounded-lg border px-4 py-3 text-sm ${configured ? "border-sky-200 bg-sky-50 text-sky-950" : "border-amber-200 bg-amber-50 text-amber-900"}`}>{note}</p>
       )}
-      {isLoading && <p className="text-sm text-neutral-500">Loading inbox…</p>}
-      {isError && <p className="text-sm text-rose-700">Could not load the procurement inbox.</p>}
+      {isLoading && <p className="text-sm text-neutral-500">{t("procurement.inbox.loading")}</p>}
+      {isError && <p className="text-sm text-rose-700">{t("procurement.inbox.loadError")}</p>}
       {!isLoading && rows.length === 0 && (
         <div className="card">
           <EmptyState icon="inbox" title={emptyCopy} />
@@ -62,11 +64,11 @@ export default function ProcurementInboxPage() {
         {rows.map((row) => (
           <li key={row.id} className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm">
             <div>
-              <p className="font-medium">{row.subject || "Supplier document"}</p>
+              <p className="font-medium">{row.subject || t("procurement.inbox.supplierDocument")}</p>
               <p className="text-neutral-600">{row.from_email} · {row.status}</p>
             </div>
             {row.intake_id ? (
-              <Link href={`/procurement/from-document?intake=${row.intake_id}`} className="btn-secondary text-xs">Review</Link>
+              <Link href={`/procurement/from-document?intake=${row.intake_id}`} className="btn-secondary text-xs">{t("procurement.inbox.review")}</Link>
             ) : (
               <span className="text-xs uppercase text-neutral-400">{row.status}</span>
             )}

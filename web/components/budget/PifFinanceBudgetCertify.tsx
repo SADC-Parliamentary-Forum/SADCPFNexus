@@ -5,13 +5,14 @@ import { programmeApi, type Programme } from "@/lib/api";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_OPTIONS = [
-  { value: "not_checked", label: "Not checked" },
-  { value: "available", label: "Available (certify / commit)" },
-  { value: "partially_available", label: "Partially available" },
-  { value: "unavailable", label: "Unavailable (release)" },
-  { value: "confirmed_with_conditions", label: "Confirmed with conditions (commit)" },
+  { value: "not_checked", label: "budget.pifCertify.status.not_checked" },
+  { value: "available", label: "budget.pifCertify.status.available" },
+  { value: "partially_available", label: "budget.pifCertify.status.partially_available" },
+  { value: "unavailable", label: "budget.pifCertify.status.unavailable" },
+  { value: "confirmed_with_conditions", label: "budget.pifCertify.status.confirmed_with_conditions" },
 ];
 
 export default function PifFinanceBudgetCertify({
@@ -34,6 +35,7 @@ export default function PifFinanceBudgetCertify({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const toast = useToast();
+  const { t } = useI18n();
 
   if (!canCertify) return null;
 
@@ -53,19 +55,19 @@ export default function PifFinanceBudgetCertify({
       onUpdated(res.data.data ?? res.data);
       const savedMessage =
         needsLine && budgetLineId
-          ? "Finance review saved and budget commitment updated."
-          : "Finance review saved.";
+          ? t("budget.pifCertify.savedWithCommitment")
+          : t("budget.pifCertify.saved");
       setMessage(savedMessage);
-      toast.success("Finance certification saved", savedMessage);
+      toast.success(t("budget.pifCertify.toastSaved"), savedMessage);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       const failMessage =
         err.response?.data?.message
           ?? err.response?.data?.errors?.amount?.[0]
           ?? err.response?.data?.errors?.budget_line_id?.[0]
-          ?? "Failed to save finance review.";
+          ?? t("budget.pifCertify.saveFailed");
       setError(failMessage);
-      toast.error("Finance certification not saved", failMessage);
+      toast.error(t("budget.pifCertify.toastNotSaved"), failMessage);
     } finally {
       setSaving(false);
     }
@@ -74,24 +76,24 @@ export default function PifFinanceBudgetCertify({
   return (
     <div className="card p-5 space-y-4 border-l-4 border-l-indigo-500">
       <div>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Finance budget certification</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("budget.pifCertify.title")}</h3>
         <p className="text-xs text-neutral-400 mt-1">
-          Certifying as available creates an institutional commitment. Marking unavailable releases it.
+          {t("budget.pifCertify.hint")}
         </p>
       </div>
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
       {message && <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{message}</div>}
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="pif-finance-status" className="block text-xs font-semibold text-neutral-700 mb-1">Availability status</label>
+          <label htmlFor="pif-finance-status" className="block text-xs font-semibold text-neutral-700 mb-1">{t("budget.pifCertify.availabilityStatus")}</label>
           <select id="pif-finance-status" className="form-input w-full" value={status} onChange={(e) => setStatus(e.target.value)}>
             {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>{t(opt.label)}</option>
             ))}
           </select>
         </div>
         <div>
-          <label htmlFor="pif-finance-amount" className="block text-xs font-semibold text-neutral-700 mb-1">Commitment amount</label>
+          <label htmlFor="pif-finance-amount" className="block text-xs font-semibold text-neutral-700 mb-1">{t("budget.pifCertify.commitmentAmount")}</label>
           <input
             id="pif-finance-amount"
             type="number"
@@ -113,7 +115,7 @@ export default function PifFinanceBudgetCertify({
         />
       )}
       <div>
-        <label htmlFor="pif-finance-comments" className="block text-xs font-semibold text-neutral-700 mb-1">Finance comments</label>
+        <label htmlFor="pif-finance-comments" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.field.financeComments")}</label>
         <textarea
           id="pif-finance-comments"
           className="form-input w-full h-20 resize-none"
@@ -122,7 +124,7 @@ export default function PifFinanceBudgetCertify({
         />
       </div>
       <button type="button" className="btn-primary text-sm disabled:opacity-50" disabled={saving || (needsLine && !budgetLineId)} onClick={save}>
-        {saving ? "Saving…" : "Save finance certification"}
+        {saving ? t("hr.positions.form.saving") : t("budget.pifCertify.save")}
       </button>
     </div>
   );

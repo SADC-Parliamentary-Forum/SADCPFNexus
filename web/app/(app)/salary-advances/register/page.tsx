@@ -1,15 +1,17 @@
 "use client";
 
 import { AdvanceQueueTable } from "@/components/salary-advance/AdvanceQueueTable";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function SalaryAdvanceRegisterPage() {
+  const { t } = useI18n();
   return (
     <AdvanceQueueTable
       queue="register"
-      title="Salary Advance Register"
-      subtitle="Full tenant register of salary advance applications."
+      title={t("salaryAdvances.register.title")}
+      subtitle={t("salaryAdvances.register.subtitle")}
       showRequester
-      emptyHint="No salary advances recorded yet."
+      emptyHint={t("salaryAdvances.register.empty")}
     />
   );
 }

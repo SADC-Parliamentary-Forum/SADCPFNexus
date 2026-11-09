@@ -3,6 +3,14 @@
 import { useEffect, useState } from "react";
 import { platformAuditApi, type PlatformAuditEvent } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+const OUTCOME_LABEL: Record<string, string> = {
+  success: "audit.timeline.outcome.success",
+  failed: "audit.timeline.outcome.failed",
+  denied: "audit.timeline.outcome.denied",
+  cancelled: "audit.timeline.outcome.cancelled",
+};
 
 const OUTCOME_BADGE: Record<string, string> = {
   success: "badge-success",
@@ -21,7 +29,8 @@ type Props = {
  * Reusable record-level Platform Audit Trail timeline (append-only evidence).
  * Distinct from Internal Audit engagements/findings.
  */
-export function AuditTimeline({ subjectType, subjectId, title = "Audit Trail" }: Props) {
+export function AuditTimeline({ subjectType, subjectId, title }: Props) {
+  const { t } = useI18n();
   const [events, setEvents] = useState<PlatformAuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +45,7 @@ export function AuditTimeline({ subjectType, subjectId, title = "Audit Trail" }:
         if (!cancelled) setEvents(res.data?.data ?? []);
       })
       .catch(() => {
-        if (!cancelled) setError("Audit timeline unavailable for this record.");
+        if (!cancelled) setError(t("audit.timeline.unavailable"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -44,7 +53,7 @@ export function AuditTimeline({ subjectType, subjectId, title = "Audit Trail" }:
     return () => {
       cancelled = true;
     };
-  }, [subjectType, subjectId]);
+  }, [subjectType, subjectId, t]);
 
   return (
     <div className="card p-5">
@@ -53,15 +62,15 @@ export function AuditTimeline({ subjectType, subjectId, title = "Audit Trail" }:
           <span className="material-symbols-outlined text-primary text-[20px]">history</span>
         </div>
         <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{title}</h3>
-          <p className="text-[11px] text-neutral-400">Append-only platform evidence — not editable.</p>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{title ?? t("audit.timeline.title")}</h3>
+          <p className="text-[11px] text-neutral-400">{t("audit.timeline.hint")}</p>
         </div>
       </div>
 
-      {loading && <p className="text-sm text-neutral-500">Loading audit events…</p>}
+      {loading && <p className="text-sm text-neutral-500">{t("audit.timeline.loading")}</p>}
       {error && <p className="text-sm text-amber-700">{error}</p>}
       {!loading && !error && events.length === 0 && (
-        <p className="text-sm text-neutral-500">No platform audit events recorded for this record yet.</p>
+        <p className="text-sm text-neutral-500">{t("audit.timeline.empty")}</p>
       )}
 
       {!loading && events.length > 0 && (
@@ -76,7 +85,7 @@ export function AuditTimeline({ subjectType, subjectId, title = "Audit Trail" }:
                 <div className="flex-1 min-w-0 pb-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-neutral-900 truncate">{e.event_key}</p>
-                    <span className={`badge ${OUTCOME_BADGE[e.outcome] ?? "badge-muted"}`}>{e.outcome}</span>
+                    <span className={`badge ${OUTCOME_BADGE[e.outcome] ?? "badge-muted"}`}>{OUTCOME_LABEL[e.outcome] ? t(OUTCOME_LABEL[e.outcome]) : e.outcome}</span>
                     {e.migration_status && (
                       <span className="badge badge-muted">{e.migration_status}</span>
                     )}
@@ -84,8 +93,8 @@ export function AuditTimeline({ subjectType, subjectId, title = "Audit Trail" }:
                   <p className="text-xs text-neutral-500 mt-0.5">
                     {e.occurred_at ? formatDateShort(e.occurred_at) : "—"}
                     {e.actor_snapshot?.display_name ? ` · ${e.actor_snapshot.display_name}` : ""}
-                    {e.acting_appointment_id ? " · acting" : ""}
-                    {e.delegation_id ? " · delegated" : ""}
+                    {e.acting_appointment_id ? ` · ${t("audit.timeline.acting")}` : ""}
+                    {e.delegation_id ? ` · ${t("audit.timeline.delegated")}` : ""}
                   </p>
                   {e.reason && <p className="text-xs text-neutral-600 mt-1">{e.reason}</p>}
                 </div>

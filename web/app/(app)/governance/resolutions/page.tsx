@@ -10,13 +10,14 @@ import api from "@/lib/api";
 import type { TenantUserOption } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
 import { TableEmpty, EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LANGUAGES = [
-  { code: "en" as const, label: "English", flag: "🇬🇧" },
-  { code: "fr" as const, label: "French", flag: "🇫🇷" },
-  { code: "pt" as const, label: "Portuguese", flag: "🇵🇹" },
+  { code: "en" as const, label: "governance.resolutions.lang.en", flag: "🇬🇧" },
+  { code: "fr" as const, label: "governance.resolutions.lang.fr", flag: "🇫🇷" },
+  { code: "pt" as const, label: "governance.resolutions.lang.pt", flag: "🇵🇹" },
 ];
 
 const STATUSES = ["Draft", "Adopted", "In Progress", "Pending Review", "Implemented", "Rejected", "Actioned"] as const;
@@ -45,6 +46,19 @@ const COMMITTEE_COLOR = new Proxy(committeeColorCache, {
   get: (_, key: string) => committeeColorCache[key] ?? (committeeColorCache[key] = COMMITTEE_COLORS[Object.keys(committeeColorCache).length % COMMITTEE_COLORS.length]),
 });
 
+const STATUS_LABEL: Record<ResStatus, string> = {
+  "Draft": "governance.status.draft",
+  "Adopted": "governance.status.adopted",
+  "In Progress": "governance.status.inProgress",
+  "Pending Review": "governance.status.pendingReview",
+  "Implemented": "governance.status.implemented",
+  "Rejected": "governance.status.rejected",
+  "Actioned": "governance.status.actioned",
+};
+function statusLabel(s: string, t: (key: string) => string) {
+  const key = STATUS_LABEL[s as ResStatus];
+  return key ? t(key) : s;
+}
 function statusStyle(s: string) { return STATUS_STYLE[s as ResStatus] ?? "bg-neutral-100 text-neutral-700 border-neutral-200"; }
 function statusDot(s: string) { return STATUS_DOT[s as ResStatus] ?? "bg-neutral-400"; }
 function fmtBytes(n: number | null) {
@@ -59,6 +73,7 @@ function fmtBytes(n: number | null) {
 function DocumentsPanel({ resolution, onRefresh }: { resolution: GovernanceResolution; onRefresh: () => void }) {
   const { toast } = useToast();
   const { confirm } = useConfirm();
+  const { t } = useI18n();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
@@ -76,24 +91,24 @@ function DocumentsPanel({ resolution, onRefresh }: { resolution: GovernanceResol
     setUploading((p) => ({ ...p, [lang]: true }));
     try {
       await governanceApi.uploadDocument(resolution.id, fd);
-      toast("success", "Uploaded", `${LANGUAGES.find((l) => l.code === lang)?.label} document uploaded.`);
+      toast("success", t("governance.resolutions.uploaded"), t("governance.resolutions.docUploaded", { language: t(`governance.resolutions.lang.${lang}`) }));
       input.value = "";
       onRefresh();
     } catch {
-      toast("error", "Upload failed", "Could not upload document.");
+      toast("error", t("governance.resolutions.uploadFailed"), t("governance.resolutions.uploadFailedDetail"));
     } finally {
       setUploading((p) => ({ ...p, [lang]: false }));
     }
   };
 
   const handleDelete = async (lang: "en" | "fr" | "pt", doc: GovernanceDocument) => {
-    if (!(await confirm({ title: "Remove Document", message: `Remove the ${LANGUAGES.find((l) => l.code === lang)?.label} version?`, variant: "danger" }))) return;
+    if (!(await confirm({ title: t("governance.resolutions.removeDocTitle"), message: t("governance.resolutions.removeDocConfirm", { language: t(`governance.resolutions.lang.${lang}`) }), variant: "danger" }))) return;
     try {
       await governanceApi.deleteDocument(resolution.id, doc.id);
-      toast("success", "Removed", "Document removed.");
+      toast("success", t("governance.resolutions.removed"), t("governance.resolutions.docRemoved"));
       onRefresh();
     } catch {
-      toast("error", "Error", "Could not remove document.");
+      toast("error", t("governance.resolutions.error"), t("governance.resolutions.removeFailed"));
     }
   };
 
@@ -107,13 +122,13 @@ function DocumentsPanel({ resolution, onRefresh }: { resolution: GovernanceResol
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast("error", "Error", "Could not download document.");
+      toast("error", t("governance.resolutions.error"), t("governance.resolutions.downloadFailed"));
     }
   };
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Official Documents</p>
+      <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">{t("governance.resolutions.officialDocs")}</p>
       <div className="grid grid-cols-3 gap-3">
         {LANGUAGES.map(({ code, label, flag }) => {
           const doc = docsByLang[code];
@@ -122,7 +137,7 @@ function DocumentsPanel({ resolution, onRefresh }: { resolution: GovernanceResol
               <div className="flex items-center gap-2">
                 <span className="text-lg">{flag}</span>
                 <div>
-                  <p className="text-xs font-semibold text-neutral-800">{label}</p>
+                  <p className="text-xs font-semibold text-neutral-800">{t(label)}</p>
                   <p className="text-[10px] text-neutral-400 uppercase">{code}</p>
                 </div>
                 {doc && (
@@ -141,11 +156,11 @@ function DocumentsPanel({ resolution, onRefresh }: { resolution: GovernanceResol
                       className="flex items-center gap-0.5 rounded px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[13px]">download</span>
-                      Download
+                      {t("common.download")}
                     </button>
                     <button
                       onClick={() => handleDelete(code, doc)}
-                      aria-label={`Delete ${doc.original_filename}`}
+                      aria-label={t("governance.resolutions.deleteFile", { name: doc.original_filename })}
                       className="flex items-center gap-0.5 rounded px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[13px]">delete</span>
@@ -171,7 +186,7 @@ function DocumentsPanel({ resolution, onRefresh }: { resolution: GovernanceResol
                     ) : (
                       <span className="material-symbols-outlined text-[14px]">upload_file</span>
                     )}
-                    {uploading[code] ? "Uploading…" : "Upload PDF/DOC"}
+                    {uploading[code] ? t("governance.resolutions.uploading") : t("governance.resolutions.uploadPdfDoc")}
                   </button>
                 </div>
               )}
@@ -197,6 +212,7 @@ interface ResolutionFormProps {
 
 function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: ResolutionFormProps) {
   const { toast } = useToast();
+  const { t } = useI18n();
   const isEdit = !!initial?.id;
   const [saving, setSaving] = useState(false);
   const [queuedFiles, setQueuedFiles] = useState<{ lang: "en" | "fr" | "pt"; file: File }[]>([]);
@@ -212,9 +228,9 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
   });
 
   const LANG_OPTIONS = [
-    { code: "en" as const, label: "English" },
-    { code: "fr" as const, label: "French" },
-    { code: "pt" as const, label: "Portuguese" },
+    { code: "en" as const, label: t("governance.resolutions.lang.en") },
+    { code: "fr" as const, label: t("governance.resolutions.lang.fr") },
+    { code: "pt" as const, label: t("governance.resolutions.lang.pt") },
   ];
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
@@ -253,13 +269,13 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
         try {
           await governanceApi.uploadDocument(savedId, fd);
         } catch {
-          toast("error", "Upload failed", `Could not upload ${lang.toUpperCase()} document.`);
+          toast("error", t("governance.resolutions.uploadFailed"), t("governance.resolutions.uploadLangFailed", { lang: lang.toUpperCase() }));
         }
       }
-      toast("success", isEdit ? "Updated" : "Created", isEdit ? "Resolution updated." : "Resolution created.");
+      toast("success", isEdit ? t("governance.resolutions.updated") : t("governance.resolutions.created"), isEdit ? t("governance.resolutions.resolutionUpdated") : t("governance.resolutions.resolutionCreated"));
       onSaved(res.data.data);
     } catch (err: unknown) {
-      toast("error", "Error", err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Failed to save.");
+      toast("error", t("governance.resolutions.error"), err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : t("governance.resolutions.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -274,52 +290,52 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
               {type === "committee" ? "groups" : "account_balance"}
             </span>
             <h2 className="font-semibold text-neutral-900">
-              {isEdit ? "Edit" : "New"} {type === "committee" ? "Committee" : "Plenary"} Resolution
+              {t(type === "committee" ? (isEdit ? "governance.resolutions.form.editCommittee" : "governance.resolutions.form.newCommittee") : (isEdit ? "governance.resolutions.form.editPlenary" : "governance.resolutions.form.newPlenary"))}
             </h2>
           </div>
-          <button onClick={onClose} aria-label="Close resolution form" className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label={t("governance.resolutions.form.close")} className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-hide">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="governance-resolutions-reference-no" className="block text-xs font-semibold text-neutral-700 mb-1">Reference No. *</label>
-              <input id="governance-resolutions-reference-no" className="form-input" required value={form.reference_number} onChange={(e) => set("reference_number", e.target.value)} placeholder="e.g. RES-2026-001" />
+              <label htmlFor="governance-resolutions-reference-no" className="block text-xs font-semibold text-neutral-700 mb-1">{t("governance.resolutions.form.reference")}</label>
+              <input id="governance-resolutions-reference-no" className="form-input" required value={form.reference_number} onChange={(e) => set("reference_number", e.target.value)} placeholder={t("governance.resolutions.form.referencePlaceholder")} />
             </div>
             <div>
-              <label htmlFor="governance-resolutions-status" className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
+              <label htmlFor="governance-resolutions-status" className="block text-xs font-semibold text-neutral-700 mb-1">{t("governance.resolutions.form.status")}</label>
               <select id="governance-resolutions-status" className="form-input" value={form.status} onChange={(e) => set("status", e.target.value)}>
-                {STATUSES.map((s) => <option key={s}>{s}</option>)}
+                {STATUSES.map((s) => <option key={s} value={s}>{t(STATUS_LABEL[s])}</option>)}
               </select>
             </div>
             <div className="col-span-2">
-              <label htmlFor="governance-resolutions-resolution-title" className="block text-xs font-semibold text-neutral-700 mb-1">Resolution Title *</label>
-              <input id="governance-resolutions-resolution-title" className="form-input" required value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Official resolution title…" />
+              <label htmlFor="governance-resolutions-resolution-title" className="block text-xs font-semibold text-neutral-700 mb-1">{t("governance.resolutions.form.title")}</label>
+              <input id="governance-resolutions-resolution-title" className="form-input" required value={form.title} onChange={(e) => set("title", e.target.value)} placeholder={t("governance.resolutions.form.titlePlaceholder")} />
             </div>
             {type === "committee" && (
               <div>
-                <label htmlFor="governance-resolutions-committee" className="block text-xs font-semibold text-neutral-700 mb-1">Committee</label>
+                <label htmlFor="governance-resolutions-committee" className="block text-xs font-semibold text-neutral-700 mb-1">{t("governance.resolutions.form.committee")}</label>
                 <select id="governance-resolutions-committee" className="form-input" value={form.committee} onChange={(e) => set("committee", e.target.value)}>
                   {committees.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
             )}
             <div>
-              <label htmlFor="governance-resolutions-date-of-adoption" className="block text-xs font-semibold text-neutral-700 mb-1">Date of Adoption</label>
+              <label htmlFor="governance-resolutions-date-of-adoption" className="block text-xs font-semibold text-neutral-700 mb-1">{t("governance.resolutions.form.adoptionDate")}</label>
               <input id="governance-resolutions-date-of-adoption" type="date" className="form-input" value={form.adopted_at} onChange={(e) => set("adopted_at", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="governance-resolutions-lead-member" className="block text-xs font-semibold text-neutral-700 mb-1">Lead Member</label>
-              <input id="governance-resolutions-lead-member" className="form-input" value={form.lead_member} onChange={(e) => set("lead_member", e.target.value)} placeholder="Name…" />
+              <label htmlFor="governance-resolutions-lead-member" className="block text-xs font-semibold text-neutral-700 mb-1">{t("governance.resolutions.form.leadMember")}</label>
+              <input id="governance-resolutions-lead-member" className="form-input" value={form.lead_member} onChange={(e) => set("lead_member", e.target.value)} placeholder={t("governance.resolutions.form.namePlaceholder")} />
             </div>
             <div>
-              <label htmlFor="governance-resolutions-role-title" className="block text-xs font-semibold text-neutral-700 mb-1">Role / Title</label>
-              <input id="governance-resolutions-role-title" className="form-input" value={form.lead_role} onChange={(e) => set("lead_role", e.target.value)} placeholder="Chairperson, Member…" />
+              <label htmlFor="governance-resolutions-role-title" className="block text-xs font-semibold text-neutral-700 mb-1">{t("governance.resolutions.form.role")}</label>
+              <input id="governance-resolutions-role-title" className="form-input" value={form.lead_role} onChange={(e) => set("lead_role", e.target.value)} placeholder={t("governance.resolutions.form.rolePlaceholder")} />
             </div>
             <div className="col-span-2">
-              <label htmlFor="governance-resolutions-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
-              <textarea id="governance-resolutions-description" rows={3} className="form-input resize-none" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Resolution details…" />
+              <label htmlFor="governance-resolutions-description" className="block text-xs font-semibold text-neutral-700 mb-1">{t("governance.resolutions.form.description")}</label>
+              <textarea id="governance-resolutions-description" rows={3} className="form-input resize-none" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder={t("governance.resolutions.form.descriptionPlaceholder")} />
             </div>
           </div>
 
@@ -327,7 +343,7 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
           <div className="pt-2 border-t border-neutral-100">
             <div className="flex items-center gap-2 mb-3">
               <span className="material-symbols-outlined text-neutral-400 text-[16px]">attach_file</span>
-              <p className="text-xs font-semibold text-neutral-700">Attach Documents <span className="font-normal text-neutral-400">(optional — upload by language)</span></p>
+              <p className="text-xs font-semibold text-neutral-700">{t("governance.resolutions.form.attach")} <span className="font-normal text-neutral-400">{t("governance.resolutions.form.attachHint")}</span></p>
             </div>
             <div className="space-y-2">
               {LANG_OPTIONS.map(({ code, label }) => {
@@ -339,14 +355,14 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
                       <div className="flex flex-1 items-center gap-2 min-w-0">
                         <span className="material-symbols-outlined text-green-600 text-[15px]">check_circle</span>
                         <span className="text-xs text-neutral-700 truncate flex-1">{queued.file.name}</span>
-                        <button type="button" onClick={() => removeQueued(code)} aria-label="Remove queued document" className="text-neutral-300 hover:text-red-500">
+                        <button type="button" onClick={() => removeQueued(code)} aria-label={t("governance.resolutions.form.removeQueued")} className="text-neutral-300 hover:text-red-500">
                           <span className="material-symbols-outlined text-[15px]">close</span>
                         </button>
                       </div>
                     ) : (
                       <label htmlFor={`governance-resolutions-upload-file-choose-file-${label }}`} className="flex-1 flex items-center gap-1.5 cursor-pointer text-xs text-primary">
                         <span className="material-symbols-outlined text-[15px]">upload_file</span>
-                        Choose file…
+                        {t("governance.resolutions.form.chooseFile")}
                         <input id={`governance-resolutions-upload-file-choose-file-${label }}`} type="file" accept=".pdf,.doc,.docx,.odt" className="sr-only"
                           onChange={(ev) => { if (ev.target.files?.[0]) addFile(code, ev.target.files[0]); ev.target.value = ""; }} />
                       </label>
@@ -358,9 +374,9 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
           </div>
 
           <div className="flex justify-end gap-3 pt-1 border-t border-neutral-100">
-            <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+            <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
             <button type="submit" disabled={saving} className="btn-primary px-5 py-2 text-sm disabled:opacity-50">
-              {saving ? "Saving…" : isEdit ? "Update" : "Create Resolution"}
+              {saving ? t("governance.resolutions.saving") : isEdit ? t("governance.resolutions.update") : t("governance.resolutions.form.create")}
             </button>
           </div>
         </form>
@@ -382,6 +398,7 @@ function ResolutionDrawer({
   const { toast } = useToast();
   const { confirm } = useConfirm();
   const { fmt: fmtDate } = useFormatDate();
+  const { t } = useI18n();
   const [detail, setDetail] = useState<GovernanceResolution>(resolution);
   const [loading, setLoading] = useState(false);
 
@@ -395,14 +412,14 @@ function ResolutionDrawer({
   }, [resolution.id, onRefresh]);
 
   const handleDelete = async () => {
-    if (!(await confirm({ title: "Delete Resolution", message: `Delete "${detail.title}"? This cannot be undone.`, variant: "danger" }))) return; // ship-safe-ignore
+    if (!(await confirm({ title: t("governance.resolutions.deleteTitle"), message: t("governance.resolutions.deleteConfirm", { title: detail.title }), variant: "danger" }))) return; // ship-safe-ignore
     try {
       await governanceApi.deleteResolution(detail.id);
-      toast("success", "Deleted", "Resolution deleted.");
+      toast("success", t("governance.resolutions.deleted"), t("governance.resolutions.resolutionDeleted"));
       onClose();
       onRefresh();
     } catch {
-      toast("error", "Error", "Could not delete resolution.");
+      toast("error", t("governance.resolutions.error"), t("governance.resolutions.deleteFailed"));
     }
   };
 
@@ -420,12 +437,12 @@ function ResolutionDrawer({
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={onEdit} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 transition-colors border border-neutral-200">
-              <span className="material-symbols-outlined text-[14px]">edit</span>Edit
+              <span className="material-symbols-outlined text-[14px]">edit</span>{t("common.edit")}
             </button>
-            <button onClick={handleDelete} aria-label="Delete resolution" className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors border border-red-200">
+            <button onClick={handleDelete} aria-label={t("governance.resolutions.drawer.delete")} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors border border-red-200">
               <span className="material-symbols-outlined text-[14px]">delete</span>
             </button>
-            <button onClick={onClose} aria-label="Close resolution details" className="text-neutral-400 hover:text-neutral-600 ml-1">
+            <button onClick={onClose} aria-label={t("governance.resolutions.drawer.close")} className="text-neutral-400 hover:text-neutral-600 ml-1">
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>
@@ -436,12 +453,12 @@ function ResolutionDrawer({
           {/* Status + Date row */}
           <div className="flex flex-wrap gap-3">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusStyle(detail.status)}`}>
-              <span className={`size-1.5 rounded-full ${statusDot(detail.status)}`} />{detail.status}
+              <span className={`size-1.5 rounded-full ${statusDot(detail.status)}`} />{statusLabel(detail.status, t)}
             </span>
             {detail.adopted_at && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600 border border-neutral-200">
                 <span className="material-symbols-outlined text-[13px]">calendar_today</span>
-                Adopted {fmtDate(detail.adopted_at)}
+                {t("governance.resolutions.drawer.adopted", { date: fmtDate(detail.adopted_at) })}
               </span>
             )}
             {detail.committee && (
@@ -468,7 +485,7 @@ function ResolutionDrawer({
           {/* Description */}
           {detail.description && (
             <div>
-              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Description</p>
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">{t("governance.resolutions.form.description")}</p>
               <p className="text-sm text-neutral-700 leading-relaxed">{detail.description}</p>
             </div>
           )}
@@ -477,7 +494,7 @@ function ResolutionDrawer({
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-                Official Documents
+                {t("governance.resolutions.officialDocs")}
                 {docsCount > 0 && (
                   <span className="ml-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-white text-[10px] px-1">{docsCount}/3</span>
                 )}
@@ -501,18 +518,18 @@ const COLOR_SWATCHES = [
 ];
 
 const COLOR_SWATCH_NAMES: Record<string, string> = {
-  "#3b82f6": "Blue",
-  "#f43f5e": "Rose",
-  "#f59e0b": "Amber",
-  "#6366f1": "Indigo",
-  "#a855f7": "Purple",
-  "#f97316": "Orange",
-  "#14b8a6": "Teal",
-  "#ec4899": "Pink",
-  "#10b981": "Emerald",
-  "#64748b": "Slate",
-  "#ef4444": "Red",
-  "#0ea5e9": "Sky Blue",
+  "#3b82f6": "governance.resolutions.color.blue",
+  "#f43f5e": "governance.resolutions.color.rose",
+  "#f59e0b": "governance.resolutions.color.amber",
+  "#6366f1": "governance.resolutions.color.indigo",
+  "#a855f7": "governance.resolutions.color.purple",
+  "#f97316": "governance.resolutions.color.orange",
+  "#14b8a6": "governance.resolutions.color.teal",
+  "#ec4899": "governance.resolutions.color.pink",
+  "#10b981": "governance.resolutions.color.emerald",
+  "#64748b": "governance.resolutions.color.slate",
+  "#ef4444": "governance.resolutions.color.red",
+  "#0ea5e9": "governance.resolutions.color.sky",
 };
 
 // ─── Manage Committees Modal ──────────────────────────────────────────────────
@@ -528,6 +545,7 @@ function ManageCommitteesModal({
 }) {
   const { toast } = useToast();
   const { confirm } = useConfirm();
+  const { t } = useI18n();
   const [items, setItems] = useState<GovernanceCommittee[]>(initial);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -552,20 +570,20 @@ function ManageCommitteesModal({
       onChanged(updated);
       setEditingId(null);
     } catch {
-      toast("error", "Error", "Could not update committee.");
+      toast("error", t("governance.resolutions.error"), t("governance.resolutions.committeeUpdateFailed"));
     } finally {
       setSaving(false); }
   };
 
   const deleteItem = async (c: GovernanceCommittee) => {
-    if (!(await confirm({ title: "Delete Committee", message: `Delete "${c.name}"? Existing resolutions will retain the name. This cannot be undone.`, variant: "danger" }))) return; // ship-safe-ignore
+    if (!(await confirm({ title: t("governance.resolutions.deleteCommitteeTitle"), message: t("governance.resolutions.deleteCommitteeConfirm", { name: c.name }), variant: "danger" }))) return; // ship-safe-ignore
     try {
       await committeeApi.remove(c.id);
       const updated = items.filter((i) => i.id !== c.id);
       setItems(updated);
       onChanged(updated);
     } catch {
-      toast("error", "Error", "Could not delete committee.");
+      toast("error", t("governance.resolutions.error"), t("governance.resolutions.committeeDeleteFailed"));
     }
   };
 
@@ -580,7 +598,7 @@ function ManageCommitteesModal({
       setNewName("");
       setNewColor(COLOR_SWATCHES[0]);
     } catch {
-      toast("error", "Error", "Could not add committee.");
+      toast("error", t("governance.resolutions.error"), t("governance.resolutions.committeeAddFailed"));
     } finally {
       setSaving(false);
     }
@@ -592,9 +610,9 @@ function ManageCommitteesModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 shrink-0">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-[20px]">settings</span>
-            <h2 className="font-semibold text-neutral-900">Manage Committees</h2>
+            <h2 className="font-semibold text-neutral-900">{t("governance.resolutions.manageCommittees")}</h2>
           </div>
-          <button onClick={onClose} aria-label="Close committee manager" className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label={t("governance.resolutions.closeCommitteeManager")} className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -607,7 +625,7 @@ function ManageCommitteesModal({
                   <div className="flex gap-1 flex-wrap">
                     {COLOR_SWATCHES.map((sw) => (
                       <button key={sw} onClick={() => setEditColor(sw)}
-                        aria-label={COLOR_SWATCH_NAMES[sw] ?? sw}
+                        aria-label={COLOR_SWATCH_NAMES[sw] ? t(COLOR_SWATCH_NAMES[sw]) : sw}
                         aria-pressed={editColor === sw}
                         className={`size-5 rounded-full border-2 transition-transform ${editColor === sw ? "border-neutral-800 scale-110" : "border-transparent"}`}
                         style={{ backgroundColor: sw }} />
@@ -616,8 +634,8 @@ function ManageCommitteesModal({
                   <input autoFocus className="form-input flex-1 text-sm py-1"
                     value={editName} onChange={(e) => setEditName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingId(null); }} />
-                  <button onClick={saveEdit} disabled={saving} className="btn-primary px-3 py-1 text-xs">Save</button>
-                  <button onClick={() => setEditingId(null)} className="btn-secondary px-3 py-1 text-xs">Cancel</button>
+                  <button onClick={saveEdit} disabled={saving} className="btn-primary px-3 py-1 text-xs">{t("common.save")}</button>
+                  <button onClick={() => setEditingId(null)} className="btn-secondary px-3 py-1 text-xs">{t("common.cancel")}</button>
                 </>
               ) : (
                 <>
@@ -626,7 +644,7 @@ function ManageCommitteesModal({
                   <button onClick={() => startEdit(c)} className="text-neutral-400 hover:text-primary p-1 transition-colors">
                     <span className="material-symbols-outlined text-[16px]">edit</span>
                   </button>
-                  <button onClick={() => deleteItem(c)} aria-label={`Delete ${c.name}`} className="text-neutral-400 hover:text-red-500 p-1 transition-colors">
+                  <button onClick={() => deleteItem(c)} aria-label={t("governance.resolutions.deleteItem", { name: c.name })} className="text-neutral-400 hover:text-red-500 p-1 transition-colors">
                     <span className="material-symbols-outlined text-[16px]">delete</span>
                   </button>
                 </>
@@ -634,28 +652,28 @@ function ManageCommitteesModal({
             </div>
           ))}
           {items.length === 0 && (
-            <EmptyState icon="groups" title="No committees yet. Add one below." className="py-8 min-h-0" />
+            <EmptyState icon="groups" title={t("governance.resolutions.noCommittees")} className="py-8 min-h-0" />
           )}
         </div>
 
         {/* Add new */}
         <div className="px-5 py-4 border-t border-neutral-200 space-y-3 shrink-0">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Add Committee</p>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">{t("governance.resolutions.addCommittee")}</p>
           <div className="flex gap-1 flex-wrap">
             {COLOR_SWATCHES.map((sw) => (
               <button key={sw} onClick={() => setNewColor(sw)}
-                aria-label={COLOR_SWATCH_NAMES[sw] ?? sw}
+                aria-label={COLOR_SWATCH_NAMES[sw] ? t(COLOR_SWATCH_NAMES[sw]) : sw}
                 aria-pressed={newColor === sw}
                 className={`size-5 rounded-full border-2 transition-transform ${newColor === sw ? "border-neutral-800 scale-110" : "border-transparent"}`}
                 style={{ backgroundColor: sw }} />
             ))}
           </div>
           <div className="flex gap-2">
-            <input className="form-input flex-1 text-sm" placeholder="Committee name…"
+            <input className="form-input flex-1 text-sm" placeholder={t("governance.resolutions.committeeNamePlaceholder")}
               value={newName} onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") addNew(); }} />
             <button onClick={addNew} disabled={saving || !newName.trim()} className="btn-primary px-4 py-2 text-sm disabled:opacity-50">
-              Add
+              {t("governance.resolutions.add")}
             </button>
           </div>
         </div>
@@ -677,15 +695,16 @@ function ManageMeetingTypesModal({
 }) {
   const { toast } = useToast();
   const { confirm } = useConfirm();
+  const { t } = useI18n();
   const [items, setItems] = useState<GovernanceMeetingType[]>(initial);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [newName, setNewName] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const startEdit = (t: GovernanceMeetingType) => {
-    setEditingId(t.id);
-    setEditName(t.name);
+  const startEdit = (mt: GovernanceMeetingType) => {
+    setEditingId(mt.id);
+    setEditName(mt.name);
   };
 
   const saveEdit = async () => {
@@ -698,21 +717,21 @@ function ManageMeetingTypesModal({
       onChanged(updated);
       setEditingId(null);
     } catch {
-      toast("error", "Error", "Could not update meeting type.");
+      toast("error", t("governance.resolutions.error"), t("governance.resolutions.typeUpdateFailed"));
     } finally {
       setSaving(false);
     }
   };
 
-  const deleteItem = async (t: GovernanceMeetingType) => {
-    if (!(await confirm({ title: "Delete Meeting Type", message: `Delete "${t.name}"? This cannot be undone.`, variant: "danger" }))) return; // ship-safe-ignore
+  const deleteItem = async (mt: GovernanceMeetingType) => {
+    if (!(await confirm({ title: t("governance.resolutions.deleteTypeTitle"), message: t("governance.resolutions.deleteTypeConfirm", { name: mt.name }), variant: "danger" }))) return; // ship-safe-ignore
     try {
-      await governanceMeetingTypeApi.remove(t.id);
-      const updated = items.filter((i) => i.id !== t.id);
+      await governanceMeetingTypeApi.remove(mt.id);
+      const updated = items.filter((i) => i.id !== mt.id);
       setItems(updated);
       onChanged(updated);
     } catch {
-      toast("error", "Error", "Could not delete meeting type.");
+      toast("error", t("governance.resolutions.error"), t("governance.resolutions.typeDeleteFailed"));
     }
   };
 
@@ -726,7 +745,7 @@ function ManageMeetingTypesModal({
       onChanged(updated);
       setNewName("");
     } catch {
-      toast("error", "Error", "Could not add meeting type.");
+      toast("error", t("governance.resolutions.error"), t("governance.resolutions.typeAddFailed"));
     } finally {
       setSaving(false);
     }
@@ -738,32 +757,32 @@ function ManageMeetingTypesModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 shrink-0">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-[20px]">settings</span>
-            <h2 className="font-semibold text-neutral-900">Manage Meeting Types</h2>
+            <h2 className="font-semibold text-neutral-900">{t("governance.resolutions.manageTypes")}</h2>
           </div>
-          <button onClick={onClose} aria-label="Close meeting type manager" className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label={t("governance.resolutions.closeTypeManager")} className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-1">
-          {items.map((t) => (
-            <div key={t.id} className="flex items-center gap-2 py-2 border-b border-neutral-100 last:border-0">
-              {editingId === t.id ? (
+          {items.map((mt) => (
+            <div key={mt.id} className="flex items-center gap-2 py-2 border-b border-neutral-100 last:border-0">
+              {editingId === mt.id ? (
                 <>
                   <input autoFocus className="form-input flex-1 text-sm py-1"
                     value={editName} onChange={(e) => setEditName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingId(null); }} />
-                  <button onClick={saveEdit} disabled={saving} className="btn-primary px-3 py-1 text-xs">Save</button>
-                  <button onClick={() => setEditingId(null)} className="btn-secondary px-3 py-1 text-xs">Cancel</button>
+                  <button onClick={saveEdit} disabled={saving} className="btn-primary px-3 py-1 text-xs">{t("common.save")}</button>
+                  <button onClick={() => setEditingId(null)} className="btn-secondary px-3 py-1 text-xs">{t("common.cancel")}</button>
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-neutral-400 text-[16px]">event_note</span>
-                  <span className="flex-1 text-sm text-neutral-800">{t.name}</span>
-                  <button onClick={() => startEdit(t)} className="text-neutral-400 hover:text-primary p-1 transition-colors">
+                  <span className="flex-1 text-sm text-neutral-800">{mt.name}</span>
+                  <button onClick={() => startEdit(mt)} className="text-neutral-400 hover:text-primary p-1 transition-colors">
                     <span className="material-symbols-outlined text-[16px]">edit</span>
                   </button>
-                  <button onClick={() => deleteItem(t)} aria-label={`Delete ${t.name}`} className="text-neutral-400 hover:text-red-500 p-1 transition-colors">
+                  <button onClick={() => deleteItem(mt)} aria-label={t("governance.resolutions.deleteItem", { name: mt.name })} className="text-neutral-400 hover:text-red-500 p-1 transition-colors">
                     <span className="material-symbols-outlined text-[16px]">delete</span>
                   </button>
                 </>
@@ -771,18 +790,18 @@ function ManageMeetingTypesModal({
             </div>
           ))}
           {items.length === 0 && (
-            <EmptyState icon="event_note" title="No meeting types yet." className="py-8 min-h-0" />
+            <EmptyState icon="event_note" title={t("governance.resolutions.noTypes")} className="py-8 min-h-0" />
           )}
         </div>
 
         <div className="px-5 py-4 border-t border-neutral-200 space-y-2 shrink-0">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Add Type</p>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">{t("governance.resolutions.addType")}</p>
           <div className="flex gap-2">
-            <input className="form-input flex-1 text-sm" placeholder="e.g. Workshop, Review…"
+            <input className="form-input flex-1 text-sm" placeholder={t("governance.resolutions.typePlaceholder")}
               value={newName} onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") addNew(); }} />
             <button onClick={addNew} disabled={saving || !newName.trim()} className="btn-primary px-4 py-2 text-sm disabled:opacity-50">
-              Add
+              {t("governance.resolutions.add")}
             </button>
           </div>
         </div>
@@ -795,6 +814,7 @@ function ManageMeetingTypesModal({
 
 function ResolutionsList({ type }: { type: ResolutionType }) {
   const { fmt: fmtDate } = useFormatDate();
+  const { t, localeTag } = useI18n();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [resolutions, setResolutions] = useState<GovernanceResolution[]>([]);
@@ -855,47 +875,47 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
 
   const handleExport = () => {
     if (filtered.length === 0) {
-      toast("error", "Nothing to export", "There are no resolutions matching the current filters.");
+      toast("error", t("governance.resolutions.nothingToExport"), t("governance.resolutions.noMatching"));
       return;
     }
     exportToCsv(
       `${isCommittee ? "committee" : "plenary"}-resolutions-${new Date().toISOString().slice(0, 10)}`,
       filtered as unknown as Record<string, unknown>[],
       [
-        { key: "reference_number", header: "Reference" },
-        { key: "title", header: "Title" },
-        { key: "status", header: "Status" },
-        { key: "committee", header: "Committee" },
-        { key: "lead_member", header: "Lead Member" },
-        { key: "lead_role", header: "Lead Role" },
-        { key: "adopted_at", header: "Adopted At" },
+        { key: "reference_number", header: t("governance.resolutions.col.reference") },
+        { key: "title", header: t("governance.resolutions.col.title") },
+        { key: "status", header: t("governance.resolutions.col.status") },
+        { key: "committee", header: t("governance.resolutions.col.committee") },
+        { key: "lead_member", header: t("governance.resolutions.col.leadMember") },
+        { key: "lead_role", header: t("governance.resolutions.col.leadRole") },
+        { key: "adopted_at", header: t("governance.resolutions.col.adoptedAt") },
       ]
     );
-    toast("success", "Exported", "Resolutions exported to CSV.");
+    toast("success", t("governance.resolutions.exported"), t("governance.resolutions.exportedDetail"));
   };
 
   const handleOfficialReport = () => {
     if (filtered.length === 0) {
-      toast("error", "Nothing to report", "There are no resolutions matching the current filters.");
+      toast("error", t("governance.resolutions.nothingToReport"), t("governance.resolutions.noMatching"));
       return;
     }
     const win = window.open("", "_blank");
     if (!win) {
-      toast("error", "Popup blocked", "Allow popups for this site to generate the official report.");
+      toast("error", t("governance.resolutions.popupBlocked"), t("governance.resolutions.popupBlockedDetail"));
       return;
     }
     const rows = filtered.map((r) => `
       <tr>
         <td>${r.reference_number ?? "—"}</td>
         <td>${r.title}</td>
-        <td>${r.status}</td>
+        <td>${statusLabel(r.status, t)}</td>
         <td>${r.lead_member ?? "—"}</td>
         <td>${r.adopted_at ? fmtDate(r.adopted_at) : "—"}</td>
-      </tr>`).join("");
+      </tr>`).join(""); // i18n-ignore
     win.document.write(`
       <html>
         <head>
-          <title>Official Report — Plenary Resolutions</title>
+          <title>${t("governance.resolutions.reportTitle")}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 32px; color: #1a1a1a; }
             h1 { font-size: 18px; margin-bottom: 4px; }
@@ -906,10 +926,10 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
           </style>
         </head>
         <body>
-          <h1>Official Report — Plenary Resolutions</h1>
-          <p class="subtitle">Generated ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+          <h1>${t("governance.resolutions.reportTitle")}</h1>
+          <p class="subtitle">${t("governance.resolutions.reportGenerated", { date: new Date().toLocaleDateString(localeTag, { day: "numeric", month: "long", year: "numeric" }) })}</p>
           <table>
-            <thead><tr><th>Reference</th><th>Title</th><th>Status</th><th>Lead Member</th><th>Adopted</th></tr></thead>
+            <thead><tr><th>${t("governance.resolutions.col.reference")}</th><th>${t("governance.resolutions.col.title")}</th><th>${t("governance.resolutions.col.status")}</th><th>${t("governance.resolutions.col.leadMember")}</th><th>${t("governance.resolutions.col.adopted")}</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </body>
@@ -926,21 +946,21 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <p className="page-subtitle">
           {isCommittee
-            ? "Formal resolutions adopted by parliamentary committees."
-            : "Full plenary session resolutions, motions, and official decisions."}
+            ? t("governance.resolutions.committeeSubtitle")
+            : t("governance.resolutions.plenarySubtitle")}
         </p>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowManageCommittees(true)} className={`btn-secondary px-3 py-2 text-sm flex items-center gap-1.5 ${isCommittee ? "" : "hidden"}`}>
-            <span className="material-symbols-outlined text-[16px]">settings</span>Committees
+            <span className="material-symbols-outlined text-[16px]">settings</span>{t("governance.resolutions.committees")}
           </button>
           <button onClick={handleOfficialReport} className={`btn-secondary px-3 py-2 text-xs flex items-center gap-1 ${isCommittee ? "hidden" : ""}`}>
-            <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>Official Report
+            <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>{t("governance.resolutions.officialReport")}
           </button>
           <button onClick={handleExport} className={`btn-secondary px-3 py-2 text-xs flex items-center gap-1 ${isCommittee ? "hidden" : ""}`}>
-            <span className="material-symbols-outlined text-[16px]">download</span>Export
+            <span className="material-symbols-outlined text-[16px]">download</span>{t("governance.resolutions.export")}
           </button>
           <button onClick={() => { setEditingResolution(null); setShowForm(true); }} className="btn-primary px-4 py-2 text-sm flex items-center gap-2 whitespace-nowrap">
-            <span className="material-symbols-outlined text-[18px]">add</span>New Resolution
+            <span className="material-symbols-outlined text-[18px]">add</span>{t("governance.resolutions.newResolution")}
           </button>
         </div>
       </div>
@@ -949,13 +969,13 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
       <div className="card p-4 space-y-3">
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 text-[20px]">search</span>
-          <input className="form-input pl-10" placeholder={`Search by Reference, Title${isCommittee ? ", Committee" : ""}, Lead Member…`} value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="form-input pl-10" placeholder={isCommittee ? t("governance.resolutions.searchCommittee") : t("governance.resolutions.searchPlenary")} value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="flex flex-wrap gap-2">
           {["", ...STATUSES].map((s) => (
             <button key={s || "all"} onClick={() => { setStatusFilter(s); setPage(1); }}
               className={`filter-tab ${statusFilter === s ? "active" : ""}`}>
-              {s || "All"}
+              {s ? statusLabel(s, t) : t("governance.status.all")}
             </button>
           ))}
         </div>
@@ -972,14 +992,14 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Title</th>
-                  {isCommittee && <th>Committee</th>}
-                  <th>Lead Member</th>
-                  <th>Adopted</th>
-                  <th>Docs</th>
-                  <th>Status</th>
-                  <th className="text-right">Action</th>
+                  <th>{t("governance.resolutions.col.reference")}</th>
+                  <th>{t("governance.resolutions.col.title")}</th>
+                  {isCommittee && <th>{t("governance.resolutions.col.committee")}</th>}
+                  <th>{t("governance.resolutions.col.leadMember")}</th>
+                  <th>{t("governance.resolutions.col.adopted")}</th>
+                  <th>{t("governance.resolutions.col.docs")}</th>
+                  <th>{t("governance.resolutions.col.status")}</th>
+                  <th className="text-right">{t("governance.resolutions.col.action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1020,18 +1040,18 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
                           {LANGUAGES.map(({ code, flag }) => {
                             const has = (r.documents ?? []).some((d) => d.language === code);
                             return (
-                              <span key={code} title={has ? `${code.toUpperCase()} version uploaded` : `No ${code.toUpperCase()} version`}
+                              <span key={code} title={has ? t("governance.resolutions.versionUploaded", { lang: code.toUpperCase() }) : t("governance.resolutions.noVersion", { lang: code.toUpperCase() })}
                                 className={`text-base ${has ? "opacity-100" : "opacity-20 grayscale"}`}>{flag}</span>
                             );
                           })}
                         </div>
                       ) : (
-                        <span className="text-xs text-neutral-400">None</span>
+                        <span className="text-xs text-neutral-400">{t("governance.resolutions.none")}</span>
                       )}
                     </td>
                     <td>
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyle(r.status)}`}>
-                        <span className={`size-1.5 rounded-full ${statusDot(r.status)}`} />{r.status}
+                        <span className={`size-1.5 rounded-full ${statusDot(r.status)}`} />{statusLabel(r.status, t)}
                       </span>
                     </td>
                     <td className="text-right">
@@ -1039,23 +1059,23 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
                         onClick={() => setViewingResolution(r)}
                         className="text-sm font-medium text-primary hover:text-blue-700 transition-colors"
                       >
-                        View
+                        {t("governance.resolutions.view")}
                       </button>
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <TableEmpty colSpan={isCommittee ? 8 : 7} icon="description" title="No resolutions found" />
+                  <TableEmpty colSpan={isCommittee ? 8 : 7} icon="description" title={t("governance.resolutions.empty")} />
                 )}
               </tbody>
             </table>
           </div>
         )}
         <div className="flex items-center justify-between px-6 py-3 border-t border-neutral-100 bg-neutral-50">
-          <p className="text-sm text-neutral-500">Showing {filtered.length} of {total} result{total !== 1 ? "s" : ""}</p>
+          <p className="text-sm text-neutral-500">{t(total === 1 ? "governance.resolutions.showingOne" : "governance.resolutions.showingMany", { shown: filtered.length, total })}</p>
           <div className="flex gap-2">
-            <button className="btn-secondary px-3 py-1.5 text-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
-            <button className="btn-secondary px-3 py-1.5 text-xs" disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>Next</button>
+            <button className="btn-secondary px-3 py-1.5 text-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{t("common.previous")}</button>
+            <button className="btn-secondary px-3 py-1.5 text-xs" disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</button>
           </div>
         </div>
       </div>
@@ -1116,6 +1136,7 @@ function MeetingFormModal({
   onSaved: () => void;
 }) {
   const { toast } = useToast();
+  const { t } = useI18n();
   const [saving, setSaving] = useState(false);
   const [queuedFiles, setQueuedFiles] = useState<File[]>([]);
 
@@ -1158,11 +1179,11 @@ function MeetingFormModal({
       if (existing) {
         await minutesApi.update(existing.id, payload);
         savedId = existing.id;
-        toast("success", "Updated", "Meeting minutes updated.");
+        toast("success", t("governance.resolutions.updated"), t("governance.resolutions.minutesUpdated"));
       } else {
         const res = await minutesApi.create(payload);
         savedId = res.data.data.id;
-        toast("success", "Created", "Meeting minutes recorded.");
+        toast("success", t("governance.resolutions.created"), t("governance.resolutions.minutesRecorded"));
       }
       // Upload queued documents
       for (const file of queuedFiles) {
@@ -1171,12 +1192,12 @@ function MeetingFormModal({
         try {
           await minutesApi.uploadDocument(savedId, fd);
         } catch {
-          toast("error", "Upload failed", `Could not upload ${file.name}.`);
+          toast("error", t("governance.resolutions.uploadFailed"), t("governance.resolutions.uploadFileFailed", { name: file.name }));
         }
       }
       onSaved();
     } catch {
-      toast("error", "Error", "Could not save meeting minutes.");
+      toast("error", t("governance.resolutions.error"), t("governance.resolutions.minutesSaveFailed"));
     } finally {
       setSaving(false);
     }
@@ -1196,9 +1217,9 @@ function MeetingFormModal({
         {/* ── Header (fixed) ── */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 shrink-0">
           <h3 className="font-semibold text-neutral-900">
-            {existing ? "Edit Meeting Minutes" : "Record Meeting Minutes"}
+            {existing ? t("governance.resolutions.meetingForm.edit") : t("governance.resolutions.meetingForm.record")}
           </h3>
-          <button onClick={onClose} aria-label="Close meeting form" className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label={t("governance.resolutions.meetingForm.close")} className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -1208,24 +1229,24 @@ function MeetingFormModal({
 
           {/* Row 1: Title */}
           <div>
-            <F label="Meeting Title" required htmlFor="gov-minutes-title" />
-            <input id="gov-minutes-title" className="form-input" placeholder="e.g. Monthly Staff Meeting — March 2026"
+            <F label={t("governance.resolutions.meetingForm.title")} required htmlFor="gov-minutes-title" />
+            <input id="gov-minutes-title" className="form-input" placeholder={t("governance.resolutions.meetingForm.titlePlaceholder")}
               value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
           </div>
 
           {/* Row 2: Date + Meeting Type + custom */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <F label="Date" required htmlFor="gov-minutes-date" />
+              <F label={t("governance.resolutions.meetingForm.date")} required htmlFor="gov-minutes-date" />
               <input id="gov-minutes-date" type="date" className="form-input" value={form.meeting_date}
                 onChange={(e) => setForm((p) => ({ ...p, meeting_date: e.target.value }))} />
             </div>
             <div>
-              <F label="Meeting Type" htmlFor="gov-minutes-type" />
+              <F label={t("governance.resolutions.meetingForm.type")} htmlFor="gov-minutes-type" />
               <select id="gov-minutes-type" className="form-input" value={form.meeting_type}
                 onChange={(e) => setForm((p) => ({ ...p, meeting_type: e.target.value }))}>
-                {meetingTypes.map((t) => (
-                  <option key={t.id} value={t.name}>{t.name}</option>
+                {meetingTypes.map((mt) => (
+                  <option key={mt.id} value={mt.name}>{mt.name}</option>
                 ))}
               </select>
             </div>
@@ -1235,13 +1256,13 @@ function MeetingFormModal({
           {/* Row 3: Location + Chairperson */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <F label="Location / Venue" htmlFor="gov-minutes-location" />
-              <input id="gov-minutes-location" className="form-input" placeholder="e.g. Conference Room A"
+              <F label={t("governance.resolutions.meetingForm.location")} htmlFor="gov-minutes-location" />
+              <input id="gov-minutes-location" className="form-input" placeholder={t("governance.resolutions.meetingForm.locationPlaceholder")}
                 value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
             </div>
             <div>
-              <F label="Chairperson" htmlFor="gov-minutes-chair" />
-              <input id="gov-minutes-chair" className="form-input" placeholder="Name of chairperson"
+              <F label={t("governance.resolutions.meetingForm.chair")} htmlFor="gov-minutes-chair" />
+              <input id="gov-minutes-chair" className="form-input" placeholder={t("governance.resolutions.meetingForm.chairPlaceholder")}
                 value={form.chairperson} onChange={(e) => setForm((p) => ({ ...p, chairperson: e.target.value }))} />
             </div>
           </div>
@@ -1249,16 +1270,16 @@ function MeetingFormModal({
           {/* Row 4: Attendees + Apologies side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <F label="Attendees (one per line)" htmlFor="gov-minutes-attendees" />
+              <F label={t("governance.resolutions.meetingForm.attendees")} htmlFor="gov-minutes-attendees" />
               <textarea id="gov-minutes-attendees" rows={4} className="form-input resize-none font-mono text-xs"
-                placeholder={"Ronald Windwaai\nJane Smith\n..."}
+                placeholder={"Ronald Windwaai\nJane Smith\n..."} // i18n-ignore
                 value={form.attendeesText}
                 onChange={(e) => setForm((p) => ({ ...p, attendeesText: e.target.value }))} />
             </div>
             <div>
-              <F label="Apologies (one per line)" htmlFor="gov-minutes-apologies" />
+              <F label={t("governance.resolutions.meetingForm.apologies")} htmlFor="gov-minutes-apologies" />
               <textarea id="gov-minutes-apologies" rows={4} className="form-input resize-none font-mono text-xs"
-                placeholder={"Alice Brown (on leave)\n..."}
+                placeholder={t("governance.resolutions.meetingForm.apologiesPlaceholder")}
                 value={form.apologiesText}
                 onChange={(e) => setForm((p) => ({ ...p, apologiesText: e.target.value }))} />
             </div>
@@ -1266,9 +1287,9 @@ function MeetingFormModal({
 
           {/* Row 5: Notes */}
           <div>
-            <F label="Meeting Notes / Summary" htmlFor="gov-minutes-notes" />
+            <F label={t("governance.resolutions.meetingForm.notes")} htmlFor="gov-minutes-notes" />
             <textarea id="gov-minutes-notes" rows={4} className="form-input resize-none"
-              placeholder="Key discussion points, decisions taken, and any other relevant matters..."
+              placeholder={t("governance.resolutions.meetingForm.notesPlaceholder")}
               value={form.notes}
               onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} />
           </div>
@@ -1277,11 +1298,11 @@ function MeetingFormModal({
           <div className="pt-1 border-t border-neutral-100">
             <div className="flex items-center gap-2 mb-2">
               <span className="material-symbols-outlined text-neutral-400 text-[16px]">attach_file</span>
-              <p className="text-xs font-semibold text-neutral-700">Attachments <span className="font-normal text-neutral-400">(minutes, verbatim reports, supporting docs)</span></p>
+              <p className="text-xs font-semibold text-neutral-700">{t("governance.resolutions.meetingForm.attachments")} <span className="font-normal text-neutral-400">{t("governance.resolutions.meetingForm.attachmentsHint")}</span></p>
             </div>
             <label htmlFor="governance-resolutions-upload-file-click-to-add-files-pdf-doc-docx-odt" className="flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-neutral-300 px-4 py-3 hover:border-primary/50 hover:bg-primary/5 transition-colors">
               <span className="material-symbols-outlined text-primary text-[20px]">upload_file</span>
-              <span className="text-xs text-neutral-600">Click to add files <span className="text-neutral-400">(PDF, DOC, DOCX, ODT)</span></span>
+              <span className="text-xs text-neutral-600">{t("governance.resolutions.meetingForm.clickToAdd")} <span className="text-neutral-400">(PDF, DOC, DOCX, ODT)</span></span>
               <input id="governance-resolutions-upload-file-click-to-add-files-pdf-doc-docx-odt" type="file" accept=".pdf,.doc,.docx,.odt" multiple className="sr-only"
                 onChange={(ev) => { addFiles(ev.target.files); ev.target.value = ""; }} />
             </label>
@@ -1292,7 +1313,7 @@ function MeetingFormModal({
                     <span className="material-symbols-outlined text-primary text-[15px]">description</span>
                     <span className="text-xs text-neutral-700 flex-1 truncate">{f.name}</span>
                     <span className="text-xs text-neutral-400">{f.size < 1024 ? `${f.size} B` : f.size < 1048576 ? `${(f.size / 1024).toFixed(0)} KB` : `${(f.size / 1048576).toFixed(1)} MB`}</span>
-                    <button type="button" onClick={() => removeQueued(i)} aria-label={`Remove ${f.name}`} className="text-neutral-300 hover:text-red-500">
+                    <button type="button" onClick={() => removeQueued(i)} aria-label={t("governance.resolutions.removeFile", { name: f.name })} className="text-neutral-300 hover:text-red-500">
                       <span className="material-symbols-outlined text-[15px]">close</span>
                     </button>
                   </div>
@@ -1304,12 +1325,12 @@ function MeetingFormModal({
 
         {/* ── Footer (fixed) ── */}
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100 shrink-0">
-          <button onClick={onClose} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+          <button onClick={onClose} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
           <button
             onClick={handleSave}
             disabled={saving || !form.title.trim() || !form.meeting_date}
             className="btn-primary px-5 py-2 text-sm disabled:opacity-50">
-            {saving ? "Saving…" : existing ? "Save Changes" : "Record Minutes"}
+            {saving ? t("governance.resolutions.saving") : existing ? t("governance.resolutions.saveChanges") : t("governance.resolutions.meetingForm.recordMinutes")}
           </button>
         </div>
       </div>
@@ -1334,6 +1355,7 @@ function MeetingDrawer({
   const { toast } = useToast();
   const { confirm } = useConfirm();
   const { fmt: fmtDate } = useFormatDate();
+  const { t } = useI18n();
   const [meeting, setMeeting] = useState(initialMeeting);
   const [activeTab, setActiveTab] = useState<"details" | "action_items" | "documents">("details");
   const [showEdit, setShowEdit] = useState(false);
@@ -1359,12 +1381,12 @@ function MeetingDrawer({
   };
 
   const handleFinalise = async () => {
-    if (!(await confirm({ title: "Finalise minutes?", message: "This will mark the minutes as final. You can still edit them later." }))) return;
+    if (!(await confirm({ title: t("governance.resolutions.finaliseTitle"), message: t("governance.resolutions.finaliseMessage") }))) return;
     try {
       await minutesApi.update(meeting.id, { status: "final" });
-      toast("success", "Finalised", "Minutes marked as final.");
+      toast("success", t("governance.resolutions.finalised"), t("governance.resolutions.markedFinal"));
       reload();
-    } catch { toast("error", "Error", "Could not finalise."); }
+    } catch { toast("error", t("governance.resolutions.error"), t("governance.resolutions.finaliseFailed")); }
   };
 
   const handleUploadDoc = async () => {
@@ -1375,20 +1397,20 @@ function MeetingDrawer({
     setUploadingDoc(true);
     try {
       await minutesApi.uploadDocument(meeting.id, fd);
-      toast("success", "Uploaded", "Document uploaded.");
+      toast("success", t("governance.resolutions.uploaded"), t("governance.resolutions.docUploadedPlain"));
       if (docRef.current) docRef.current.value = "";
       reload();
-    } catch { toast("error", "Upload failed", "Could not upload."); }
+    } catch { toast("error", t("governance.resolutions.uploadFailed"), t("governance.resolutions.uploadFailedShort")); }
     finally { setUploadingDoc(false); }
   };
 
   const handleDeleteDoc = async (attId: number) => {
-    if (!(await confirm({ title: "Delete document?", message: "This cannot be undone.", variant: "danger" }))) return;
+    if (!(await confirm({ title: t("governance.resolutions.deleteDocTitle"), message: t("governance.resolutions.cannotUndo"), variant: "danger" }))) return;
     try {
       await minutesApi.deleteDocument(meeting.id, attId);
-      toast("success", "Deleted", "Document removed.");
+      toast("success", t("governance.resolutions.deleted"), t("governance.resolutions.docRemoved"));
       reload();
-    } catch { toast("error", "Error", "Could not delete."); }
+    } catch { toast("error", t("governance.resolutions.error"), t("governance.resolutions.deleteFailedShort")); }
   };
 
   const handleAddItem = async () => {
@@ -1402,21 +1424,21 @@ function MeetingDrawer({
         deadline: newItem.deadline || undefined,
         notes: newItem.notes || undefined,
       });
-      toast("success", "Added", "Action item added.");
+      toast("success", t("governance.resolutions.added"), t("governance.resolutions.itemAdded"));
       setNewItem({ description: "", responsible_id: "", responsible_name: "", deadline: "", notes: "" });
       setShowAddItem(false);
       reload();
-    } catch { toast("error", "Error", "Could not add action item."); }
+    } catch { toast("error", t("governance.resolutions.error"), t("governance.resolutions.itemAddFailed")); }
     finally { setSavingItem(false); }
   };
 
   const handleDeleteItem = async (itemId: number) => {
-    if (!(await confirm({ title: "Delete action item?", message: "This cannot be undone.", variant: "danger" }))) return;
+    if (!(await confirm({ title: t("governance.resolutions.deleteItemTitle"), message: t("governance.resolutions.cannotUndo"), variant: "danger" }))) return;
     try {
       await minutesApi.deleteActionItem(meeting.id, itemId);
-      toast("success", "Deleted", "Action item removed.");
+      toast("success", t("governance.resolutions.deleted"), t("governance.resolutions.itemRemoved"));
       reload();
-    } catch { toast("error", "Error", "Could not delete."); }
+    } catch { toast("error", t("governance.resolutions.error"), t("governance.resolutions.deleteFailedShort")); }
   };
 
   const handleMarkItemDone = async (item: MeetingActionItem) => {
@@ -1425,7 +1447,7 @@ function MeetingDrawer({
         status: item.status === "completed" ? "open" : "completed",
       });
       reload();
-    } catch { toast("error", "Error", "Could not update status."); }
+    } catch { toast("error", t("governance.resolutions.error"), t("governance.resolutions.statusUpdateFailed")); }
   };
 
   const handleAssign = async () => {
@@ -1437,10 +1459,10 @@ function MeetingDrawer({
         due_date: assignForm.due_date,
         priority: assignForm.priority,
       });
-      toast("success", "Assigned", "Action item formally assigned. Check Assignments module.");
+      toast("success", t("governance.resolutions.assigned"), t("governance.resolutions.assignedDetail"));
       setAssignItem(null);
       reload();
-    } catch { toast("error", "Error", "Could not create assignment."); }
+    } catch { toast("error", t("governance.resolutions.error"), t("governance.resolutions.assignFailed")); }
     finally { setAssigning(false); }
   };
 
@@ -1462,7 +1484,7 @@ function MeetingDrawer({
                   {meetingTypeLabel(meeting.meeting_type)}
                 </span>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${meeting.status === "final" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                  {meeting.status === "final" ? "Final" : "Draft"}
+                  {meeting.status === "final" ? t("governance.resolutions.final") : t("governance.resolutions.draft")}
                 </span>
               </div>
               <h2 className="font-bold text-neutral-900 text-lg leading-snug">{meeting.title}</h2>
@@ -1471,13 +1493,13 @@ function MeetingDrawer({
             <div className="flex items-center gap-2 shrink-0">
               {meeting.status === "draft" && (
                 <button onClick={handleFinalise} className="btn-primary px-3 py-1.5 text-xs flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px]">check_circle</span>Finalise
+                  <span className="material-symbols-outlined text-[14px]">check_circle</span>{t("governance.resolutions.finalise")}
                 </button>
               )}
               <button onClick={() => setShowEdit(true)} className="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">edit</span>Edit
+                <span className="material-symbols-outlined text-[14px]">edit</span>{t("common.edit")}
               </button>
-              <button onClick={onClose} aria-label="Close meeting details" className="text-neutral-400 hover:text-neutral-600 ml-1">
+              <button onClick={onClose} aria-label={t("governance.resolutions.closeMeeting")} className="text-neutral-400 hover:text-neutral-600 ml-1">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -1486,14 +1508,14 @@ function MeetingDrawer({
           {/* Tab bar */}
           <div className="flex border-b border-neutral-100 px-6 bg-white">
             {[
-              { id: "details" as const, label: "Details", icon: "description" },
-              { id: "action_items" as const, label: `Tasks (${actionItems.length})`, icon: "task_alt" },
-              { id: "documents" as const, label: `Documents (${(meeting.attachments ?? []).length})`, icon: "attach_file" },
-            ].map((t) => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)}
-                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === t.id ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
-                <span className="material-symbols-outlined text-[16px]">{t.icon}</span>
-                {t.label}
+              { id: "details" as const, label: t("governance.resolutions.tab.details"), icon: "description" },
+              { id: "action_items" as const, label: t("governance.resolutions.tab.tasks", { count: actionItems.length }), icon: "task_alt" },
+              { id: "documents" as const, label: t("governance.resolutions.tab.documents", { count: (meeting.attachments ?? []).length }), icon: "attach_file" },
+            ].map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
+                <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
+                {tab.label}
               </button>
             ))}
           </div>
@@ -1505,10 +1527,10 @@ function MeetingDrawer({
               <div className="p-6 space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { label: "Chairperson", value: meeting.chairperson ?? "—", icon: "manage_accounts" },
-                    { label: "Recorded by", value: meeting.creator?.name ?? "—", icon: "person" },
-                    { label: "Date", value: fmtDate(meeting.meeting_date), icon: "calendar_today" },
-                    { label: "Location", value: meeting.location ?? "—", icon: "location_on" },
+                    { label: t("governance.resolutions.detail.chair"), value: meeting.chairperson ?? "—", icon: "manage_accounts" },
+                    { label: t("governance.resolutions.detail.recordedBy"), value: meeting.creator?.name ?? "—", icon: "person" },
+                    { label: t("governance.resolutions.detail.date"), value: fmtDate(meeting.meeting_date), icon: "calendar_today" },
+                    { label: t("governance.resolutions.detail.location"), value: meeting.location ?? "—", icon: "location_on" },
                   ].map(({ label, value, icon }) => (
                     <div key={label} className="flex items-start gap-2">
                       <span className="material-symbols-outlined text-[16px] text-neutral-400 mt-0.5">{icon}</span>
@@ -1525,7 +1547,7 @@ function MeetingDrawer({
                   <div>
                     <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2 flex items-center gap-1">
                       <span className="material-symbols-outlined text-[14px]">groups</span>
-                      Attendees ({meeting.attendees.length})
+                      {t("governance.resolutions.detail.attendees", { count: meeting.attendees.length })}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {meeting.attendees.map((a, i) => (
@@ -1540,7 +1562,7 @@ function MeetingDrawer({
                   <div>
                     <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2 flex items-center gap-1">
                       <span className="material-symbols-outlined text-[14px]">person_off</span>
-                      Apologies ({meeting.apologies.length})
+                      {t("governance.resolutions.detail.apologies", { count: meeting.apologies.length })}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {meeting.apologies.map((a, i) => (
@@ -1554,7 +1576,7 @@ function MeetingDrawer({
                 {meeting.notes && (
                   <div>
                     <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">notes</span>Notes &amp; Summary
+                      <span className="material-symbols-outlined text-[14px]">notes</span>{t("governance.resolutions.detail.notes")}
                     </p>
                     <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4">
                       <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">{meeting.notes}</p>
@@ -1572,20 +1594,19 @@ function MeetingDrawer({
                 <div className="rounded-xl bg-blue-50 border border-blue-100 p-4 flex gap-3">
                   <span className="material-symbols-outlined text-blue-500 text-[20px] shrink-0 mt-0.5">info</span>
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-blue-800">How task assignment works</p>
+                    <p className="text-xs font-semibold text-blue-800">{t("governance.resolutions.tasks.howTitle")}</p>
                     <p className="text-xs text-blue-700 leading-relaxed">
-                      Record tasks discussed in this meeting below — e.g. <em>&ldquo;Ronald to provide feedback on the PIF system by Friday&rdquo;</em>.
-                      Once recorded, click <strong>Send to Assignments</strong> to create a formally tracked task with deadlines,
-                      progress updates, and approval workflow in the Assignments module.
+                      {t("governance.resolutions.tasks.howPart1")} <em>{t("governance.resolutions.tasks.howExample")}</em>.{" "}
+                      {t("governance.resolutions.tasks.howPart2")} <strong>{t("governance.resolutions.tasks.sendToAssignments")}</strong> {t("governance.resolutions.tasks.howPart3")}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-neutral-600">{actionItems.length} task{actionItems.length !== 1 ? "s" : ""} from this meeting</p>
+                  <p className="text-xs font-semibold text-neutral-600">{t(actionItems.length === 1 ? "governance.resolutions.tasks.countOne" : "governance.resolutions.tasks.countMany", { count: actionItems.length })}</p>
                   <button onClick={() => setShowAddItem(true)}
                     className="btn-primary px-3 py-1.5 text-xs flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]">add_task</span>Record Task
+                    <span className="material-symbols-outlined text-[14px]">add_task</span>{t("governance.resolutions.tasks.record")}
                   </button>
                 </div>
 
@@ -1594,49 +1615,49 @@ function MeetingDrawer({
                   <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
                     <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-[15px]">edit_note</span>
-                      Record a task from this meeting
+                      {t("governance.resolutions.tasks.recordTitle")}
                     </p>
                     <div>
-                      <label htmlFor="governance-resolutions-task-description" className="block text-[10px] font-medium text-neutral-600 mb-1">Task Description <span className="text-red-500">*</span></label>
+                      <label htmlFor="governance-resolutions-task-description" className="block text-[10px] font-medium text-neutral-600 mb-1">{t("governance.resolutions.tasks.description")} <span className="text-red-500">*</span></label>
                       <textarea id="governance-resolutions-task-description" rows={2} className="form-input resize-none text-sm"
-                        placeholder='e.g. "Ronald to provide feedback on the PIF system" or "Finance team to prepare Q1 budget report"'
+                        placeholder={t("governance.resolutions.tasks.descriptionPlaceholder")}
                         value={newItem.description}
                         onChange={(e) => setNewItem((p) => ({ ...p, description: e.target.value }))} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label htmlFor="governance-resolutions-assigned-to-staff" className="block text-[10px] font-medium text-neutral-600 mb-1">Assigned To (staff)</label>
+                        <label htmlFor="governance-resolutions-assigned-to-staff" className="block text-[10px] font-medium text-neutral-600 mb-1">{t("governance.resolutions.tasks.assignedTo")}</label>
                         <select id="governance-resolutions-assigned-to-staff" className="form-input text-xs" value={newItem.responsible_id}
                           onChange={(e) => setNewItem((p) => ({ ...p, responsible_id: e.target.value, responsible_name: "" }))}>
-                          <option value="">— Select staff member —</option>
+                          <option value="">{t("governance.resolutions.tasks.selectStaff")}</option>
                           {tenantUsers.map((u) => <option key={u.id} value={String(u.id)}>{u.name}{u.job_title ? ` — ${u.job_title}` : ""}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label htmlFor="governance-resolutions-or-type-name-non-staff" className="block text-[10px] font-medium text-neutral-600 mb-1">Or type name (non-staff)</label>
-                        <input id="governance-resolutions-or-type-name-non-staff" className="form-input text-xs" placeholder="External / non-staff name"
+                        <label htmlFor="governance-resolutions-or-type-name-non-staff" className="block text-[10px] font-medium text-neutral-600 mb-1">{t("governance.resolutions.tasks.orName")}</label>
+                        <input id="governance-resolutions-or-type-name-non-staff" className="form-input text-xs" placeholder={t("governance.resolutions.tasks.externalPlaceholder")}
                           value={newItem.responsible_name}
                           disabled={!!newItem.responsible_id}
                           onChange={(e) => setNewItem((p) => ({ ...p, responsible_name: e.target.value }))} />
                       </div>
                       <div>
-                        <label htmlFor="governance-resolutions-target-deadline" className="block text-[10px] font-medium text-neutral-600 mb-1">Target Deadline</label>
+                        <label htmlFor="governance-resolutions-target-deadline" className="block text-[10px] font-medium text-neutral-600 mb-1">{t("governance.resolutions.tasks.deadline")}</label>
                         <input id="governance-resolutions-target-deadline" type="date" className="form-input text-xs" value={newItem.deadline}
                           onChange={(e) => setNewItem((p) => ({ ...p, deadline: e.target.value }))} />
                       </div>
                       <div>
-                        <label htmlFor="governance-resolutions-additional-notes" className="block text-[10px] font-medium text-neutral-600 mb-1">Additional Notes</label>
-                        <input id="governance-resolutions-additional-notes" className="form-input text-xs" placeholder="Context, deliverable, references..."
+                        <label htmlFor="governance-resolutions-additional-notes" className="block text-[10px] font-medium text-neutral-600 mb-1">{t("governance.resolutions.tasks.notes")}</label>
+                        <input id="governance-resolutions-additional-notes" className="form-input text-xs" placeholder={t("governance.resolutions.tasks.notesPlaceholder")}
                           value={newItem.notes}
                           onChange={(e) => setNewItem((p) => ({ ...p, notes: e.target.value }))} />
                       </div>
                     </div>
                     <div className="flex justify-end gap-2">
                       <button onClick={() => { setShowAddItem(false); setNewItem({ description: "", responsible_id: "", responsible_name: "", deadline: "", notes: "" }); }}
-                        className="btn-secondary px-3 py-1.5 text-xs">Cancel</button>
+                        className="btn-secondary px-3 py-1.5 text-xs">{t("common.cancel")}</button>
                       <button onClick={handleAddItem} disabled={savingItem || !newItem.description.trim()}
                         className="btn-primary px-4 py-1.5 text-xs disabled:opacity-50">
-                        {savingItem ? "Saving…" : "Save Task"}
+                        {savingItem ? t("governance.resolutions.saving") : t("governance.resolutions.tasks.save")}
                       </button>
                     </div>
                   </div>
@@ -1645,14 +1666,14 @@ function MeetingDrawer({
                 {actionItems.length === 0 ? (
                   <div className="py-10 text-center">
                     <span className="material-symbols-outlined text-3xl text-neutral-200 block mb-2">task_alt</span>
-                    <p className="text-xs text-neutral-400">No action items recorded yet</p>
+                    <p className="text-xs text-neutral-400">{t("governance.resolutions.tasks.empty")}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {/* Open items */}
                     {openItems.length > 0 && (
                       <>
-                        <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Pending</p>
+                        <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">{t("governance.resolutions.tasks.pending")}</p>
                         {openItems.map((item) => (
                           <ActionItemCard key={item.id} item={item} meetingId={meeting.id}
                             onToggleDone={() => handleMarkItemDone(item)}
@@ -1665,7 +1686,7 @@ function MeetingDrawer({
                     {/* Done items */}
                     {doneItems.length > 0 && (
                       <>
-                        <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mt-4">Done / Cancelled</p>
+                        <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mt-4">{t("governance.resolutions.tasks.done")}</p>
                         {doneItems.map((item) => (
                           <ActionItemCard key={item.id} item={item} meetingId={meeting.id}
                             onToggleDone={() => handleMarkItemDone(item)}
@@ -1685,20 +1706,20 @@ function MeetingDrawer({
               <div className="p-6 space-y-4">
                 <div className="rounded-xl border-2 border-dashed border-neutral-200 p-6 text-center">
                   <span className="material-symbols-outlined text-3xl text-neutral-300 block mb-2">upload_file</span>
-                  <p className="text-sm font-medium text-neutral-700 mb-1">Upload Minutes Document</p>
-                  <p className="text-xs text-neutral-400 mb-3">PDF, DOC, or DOCX up to 20 MB</p>
+                  <p className="text-sm font-medium text-neutral-700 mb-1">{t("governance.resolutions.docs.uploadTitle")}</p>
+                  <p className="text-xs text-neutral-400 mb-3">{t("governance.resolutions.docs.uploadHint")}</p>
                   <input ref={docRef} type="file" accept=".pdf,.doc,.docx" className="hidden"
                     onChange={handleUploadDoc} />
                   <button onClick={() => docRef.current?.click()}
                     disabled={uploadingDoc}
                     className="btn-primary px-4 py-2 text-sm disabled:opacity-50">
-                    {uploadingDoc ? "Uploading…" : "Choose File"}
+                    {uploadingDoc ? t("governance.resolutions.uploading") : t("governance.resolutions.docs.chooseFile")}
                   </button>
                 </div>
 
                 {(meeting.attachments ?? []).length === 0 ? (
                   <div className="py-6 text-center">
-                    <p className="text-xs text-neutral-400">No documents uploaded yet</p>
+                    <p className="text-xs text-neutral-400">{t("governance.resolutions.docs.empty")}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -1711,10 +1732,10 @@ function MeetingDrawer({
                         </div>
                         <a href={minutesApi.downloadUrl(meeting.id, att.id)} target="_blank" rel="noreferrer"
                           className="text-xs text-primary hover:text-blue-700 flex items-center gap-1 font-medium">
-                          <span className="material-symbols-outlined text-[14px]">download</span>Download
+                          <span className="material-symbols-outlined text-[14px]">download</span>{t("common.download")}
                         </a>
                         <button onClick={() => handleDeleteDoc(att.id)}
-                          aria-label={`Delete ${att.original_filename}`}
+                          aria-label={t("governance.resolutions.deleteFile", { name: att.original_filename })}
                           className="text-neutral-300 hover:text-red-500 transition-colors ml-1">
                           <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>
@@ -1739,53 +1760,53 @@ function MeetingDrawer({
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
-              <h3 className="font-semibold text-neutral-900">Formally Assign Task</h3>
-              <button onClick={() => setAssignItem(null)} aria-label="Close assignment dialog" className="text-neutral-400 hover:text-neutral-600">
+              <h3 className="font-semibold text-neutral-900">{t("governance.resolutions.assign.title")}</h3>
+              <button onClick={() => setAssignItem(null)} aria-label={t("governance.resolutions.assign.close")} className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div className="rounded-lg bg-neutral-50 border border-neutral-200 px-4 py-3">
-                <p className="text-xs text-neutral-500 mb-0.5">Action Item</p>
+                <p className="text-xs text-neutral-500 mb-0.5">{t("governance.resolutions.assign.actionItem")}</p>
                 <p className="text-sm font-medium text-neutral-800">{assignItem.description}</p>
               </div>
               <p className="text-xs text-neutral-500">
-                This will create a formal tracked assignment in the Assignments module with the full approval workflow.
+                {t("governance.resolutions.assign.hint")}
               </p>
               <div className="space-y-3">
                 <div>
-                  <label htmlFor="governance-resolutions-assign-to" className="block text-xs font-medium text-neutral-700 mb-1">Assign To</label>
+                  <label htmlFor="governance-resolutions-assign-to" className="block text-xs font-medium text-neutral-700 mb-1">{t("governance.resolutions.assign.to")}</label>
                   <select id="governance-resolutions-assign-to" className="form-input" value={assignForm.assigned_to}
                     onChange={(e) => setAssignForm((p) => ({ ...p, assigned_to: e.target.value }))}>
-                    <option value="">— Select staff member —</option>
+                    <option value="">{t("governance.resolutions.tasks.selectStaff")}</option>
                     {tenantUsers.map((u) => <option key={u.id} value={String(u.id)}>{u.name} — {u.job_title ?? ""}</option>)}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="governance-resolutions-due-date" className="block text-xs font-medium text-neutral-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+                    <label htmlFor="governance-resolutions-due-date" className="block text-xs font-medium text-neutral-700 mb-1">{t("governance.resolutions.assign.dueDate")} <span className="text-red-500">*</span></label>
                     <input id="governance-resolutions-due-date" type="date" className="form-input" value={assignForm.due_date}
                       onChange={(e) => setAssignForm((p) => ({ ...p, due_date: e.target.value }))} />
                   </div>
                   <div>
-                    <label htmlFor="governance-resolutions-priority" className="block text-xs font-medium text-neutral-700 mb-1">Priority</label>
+                    <label htmlFor="governance-resolutions-priority" className="block text-xs font-medium text-neutral-700 mb-1">{t("governance.resolutions.assign.priority")}</label>
                     <select id="governance-resolutions-priority" className="form-input" value={assignForm.priority}
                       onChange={(e) => setAssignForm((p) => ({ ...p, priority: e.target.value }))}>
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="critical">Critical</option>
+                      <option value="low">{t("governance.resolutions.priority.low")}</option>
+                      <option value="medium">{t("governance.resolutions.priority.medium")}</option>
+                      <option value="high">{t("governance.resolutions.priority.high")}</option>
+                      <option value="critical">{t("governance.resolutions.priority.critical")}</option>
                     </select>
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
-              <button onClick={() => setAssignItem(null)} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+              <button onClick={() => setAssignItem(null)} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
               <button onClick={handleAssign} disabled={assigning || !assignForm.due_date}
                 className="btn-primary px-5 py-2 text-sm flex items-center gap-2 disabled:opacity-50">
                 <span className="material-symbols-outlined text-[16px]">assignment_ind</span>
-                {assigning ? "Assigning…" : "Create Assignment"}
+                {assigning ? t("governance.resolutions.assign.assigning") : t("governance.resolutions.assign.create")}
               </button>
             </div>
           </div>
@@ -1804,6 +1825,7 @@ function ActionItemCard({ item, meetingId, onToggleDone, onDelete, onAssign }: {
   onAssign: () => void;
 }) {
   const { fmt: fmtDate } = useFormatDate();
+  const { t } = useI18n();
   const done = item.status === "completed" || item.status === "cancelled";
   return (
     <div className={`rounded-xl border px-4 py-3 flex items-start gap-3 transition-colors ${done ? "border-neutral-100 bg-neutral-50/50 opacity-70" : "border-neutral-200 bg-white"}`}>
@@ -1830,25 +1852,25 @@ function ActionItemCard({ item, meetingId, onToggleDone, onDelete, onAssign }: {
             </span>
           )}
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${ACTION_STATUS_STYLE[item.status] ?? "bg-neutral-100 text-neutral-600"}`}>
-            {item.status.replace("_", " ")}
+            {ACTION_STATUS_STYLE[item.status] ? t(`governance.resolutions.actionStatus.${item.status}`) : item.status.replace("_", " ")}
           </span>
           {item.assignment_id && (
             <a href={`/assignments/${item.assignment_id}`}
               className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
               <span className="material-symbols-outlined text-[12px]">link</span>
-              {item.assignment?.reference_number ?? "Assignment"}
+              {item.assignment?.reference_number ?? t("governance.resolutions.assignment")}
             </a>
           )}
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
         {!item.assignment_id && !done && (
-          <button onClick={onAssign} title="Formally assign"
+          <button onClick={onAssign} title={t("governance.resolutions.formallyAssign")}
             className="flex items-center gap-1 text-xs text-primary hover:text-blue-700 font-medium px-2 py-1 rounded-lg hover:bg-primary/5 transition-colors">
-            <span className="material-symbols-outlined text-[14px]">assignment_ind</span>Assign
+            <span className="material-symbols-outlined text-[14px]">assignment_ind</span>{t("governance.resolutions.assign.button")}
           </button>
         )}
-        <button onClick={onDelete} aria-label="Delete action item" className="text-neutral-300 hover:text-red-500 transition-colors p-1">
+        <button onClick={onDelete} aria-label={t("governance.resolutions.deleteActionItem")} className="text-neutral-300 hover:text-red-500 transition-colors p-1">
           <span className="material-symbols-outlined text-[16px]">delete</span>
         </button>
       </div>
@@ -1871,6 +1893,7 @@ function MeetingMinutes() {
   const [tenantUsers, setTenantUsers] = useState<TenantUserOption[]>([]);
   const [meetingTypes, setMeetingTypes] = useState<GovernanceMeetingType[]>([]);
   const [showManageTypes, setShowManageTypes] = useState(false);
+  const { t, localeTag } = useI18n();
 
   useEffect(() => {
     governanceMeetingTypeApi.list().then((r) => setMeetingTypes(r.data.data ?? [])).catch(() => {});
@@ -1913,11 +1936,11 @@ function MeetingMinutes() {
     <div className="space-y-5">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <p className="page-subtitle">
-          Record staff meetings, capture notes, assign tasks, and track action items through to completion.
+          {t("governance.resolutions.minutes.subtitle")}
         </p>
         <button onClick={() => setShowCreate(true)}
           className="btn-primary px-4 py-2 text-sm flex items-center gap-2 whitespace-nowrap">
-          <span className="material-symbols-outlined text-[18px]">add</span>Record Meeting
+          <span className="material-symbols-outlined text-[18px]">add</span>{t("governance.resolutions.minutes.record")}
         </button>
       </div>
 
@@ -1925,25 +1948,25 @@ function MeetingMinutes() {
       <div className="card p-4 flex flex-wrap gap-3 items-center">
         <input
           className="form-input w-56 text-sm"
-          placeholder="Search meetings..."
+          placeholder={t("governance.resolutions.minutes.search")}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
         <div className="flex flex-wrap gap-2">
-          {[{ v: "", l: "All Status" }, { v: "draft", l: "Draft" }, { v: "final", l: "Final" }].map(({ v, l }) => (
+          {[{ v: "", l: t("governance.resolutions.minutes.allStatus") }, { v: "draft", l: t("governance.resolutions.draft") }, { v: "final", l: t("governance.resolutions.final") }].map(({ v, l }) => (
             <button key={v || "all-s"} onClick={() => { setStatusFilter(v); setPage(1); }}
               className={`filter-tab ${statusFilter === v ? "active" : ""}`}>{l}</button>
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
           <button key="all-t" onClick={() => { setTypeFilter(""); setPage(1); }}
-            className={`filter-tab ${typeFilter === "" ? "active" : ""}`}>All Types</button>
-          {meetingTypes.map((t) => (
-            <button key={t.id} onClick={() => { setTypeFilter(t.name); setPage(1); }}
-              className={`filter-tab ${typeFilter === t.name ? "active" : ""}`}>{t.name}</button>
+            className={`filter-tab ${typeFilter === "" ? "active" : ""}`}>{t("governance.resolutions.minutes.allTypes")}</button>
+          {meetingTypes.map((mt) => (
+            <button key={mt.id} onClick={() => { setTypeFilter(mt.name); setPage(1); }}
+              className={`filter-tab ${typeFilter === mt.name ? "active" : ""}`}>{mt.name}</button>
           ))}
         </div>
-        <button onClick={() => setShowManageTypes(true)} title="Manage meeting types"
+        <button onClick={() => setShowManageTypes(true)} title={t("governance.resolutions.minutes.manageTypes")}
           className="ml-auto text-neutral-400 hover:text-neutral-700 transition-colors p-1.5 rounded-lg hover:bg-neutral-100">
           <span className="material-symbols-outlined text-[18px]">settings</span>
         </button>
@@ -1958,10 +1981,10 @@ function MeetingMinutes() {
         ) : records.length === 0 ? (
           <EmptyState
             icon="event_note"
-            title="No meeting minutes found"
+            title={t("governance.resolutions.minutes.empty")}
             action={
               <button type="button" onClick={() => setShowCreate(true)} className="btn-primary px-4 py-2 text-xs">
-                Record first meeting
+                {t("governance.resolutions.minutes.recordFirst")}
               </button>
             }
           />
@@ -1976,7 +1999,7 @@ function MeetingMinutes() {
                   <div className="flex-shrink-0 w-12 text-center">
                     <div className="rounded-xl bg-primary/10 px-2 py-1.5">
                       <p className="text-[10px] text-primary font-bold uppercase">
-                        {m.meeting_date ? new Date(m.meeting_date.slice(0, 10) + "T00:00:00").toLocaleDateString("en-GB", { month: "short" }) : "—"}
+                        {m.meeting_date ? new Date(m.meeting_date.slice(0, 10) + "T00:00:00").toLocaleDateString(localeTag, { month: "short" }) : "—"}
                       </p>
                       <p className="text-lg font-bold text-primary leading-none">
                         {m.meeting_date ? String(new Date(m.meeting_date.slice(0, 10) + "T00:00:00").getDate()) : "—"}
@@ -1990,7 +2013,7 @@ function MeetingMinutes() {
                         {m.meeting_type}
                       </span>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${m.status === "final" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                        {m.status === "final" ? "Final" : "Draft"}
+                        {m.status === "final" ? t("governance.resolutions.final") : t("governance.resolutions.draft")}
                       </span>
                     </div>
                     <p className="font-semibold text-neutral-900">{m.title}</p>
@@ -2008,7 +2031,7 @@ function MeetingMinutes() {
                       {(m.attendees ?? []).length > 0 && (
                         <span className="flex items-center gap-1 text-xs text-neutral-400">
                           <span className="material-symbols-outlined text-[12px]">groups</span>
-                          {m.attendees.length} attendee{m.attendees.length !== 1 ? "s" : ""}
+                          {t(m.attendees.length === 1 ? "governance.resolutions.minutes.attendeeOne" : "governance.resolutions.minutes.attendeeMany", { count: m.attendees.length })}
                         </span>
                       )}
                     </div>
@@ -2018,13 +2041,13 @@ function MeetingMinutes() {
                     {open > 0 && (
                       <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                         <span className="material-symbols-outlined text-[12px]">pending_actions</span>
-                        {open} open
+                        {t("governance.resolutions.minutes.open", { count: open })}
                       </span>
                     )}
                     {(m.attachments ?? []).length > 0 && (
                       <span className="flex items-center gap-1 text-xs text-neutral-400">
                         <span className="material-symbols-outlined text-[12px]">attach_file</span>
-                        {m.attachments!.length} doc{m.attachments!.length !== 1 ? "s" : ""}
+                        {t(m.attachments!.length === 1 ? "governance.resolutions.minutes.docOne" : "governance.resolutions.minutes.docMany", { count: m.attachments!.length })}
                       </span>
                     )}
                     <span className="material-symbols-outlined text-[16px] text-neutral-300">chevron_right</span>
@@ -2035,10 +2058,10 @@ function MeetingMinutes() {
           </div>
         )}
         <div className="flex items-center justify-between px-6 py-3 border-t border-neutral-100 bg-neutral-50">
-          <p className="text-sm text-neutral-500">{total} record{total !== 1 ? "s" : ""}</p>
+          <p className="text-sm text-neutral-500">{t(total === 1 ? "governance.resolutions.minutes.recordOne" : "governance.resolutions.minutes.recordMany", { count: total })}</p>
           <div className="flex gap-2">
-            <button className="btn-secondary px-3 py-1.5 text-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
-            <button className="btn-secondary px-3 py-1.5 text-xs" disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>Next</button>
+            <button className="btn-secondary px-3 py-1.5 text-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>{t("common.previous")}</button>
+            <button className="btn-secondary px-3 py-1.5 text-xs" disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>{t("common.next")}</button>
           </div>
         </div>
       </div>
@@ -2075,6 +2098,7 @@ function MeetingMinutes() {
 
 function ImplementationTracker() {
   const { fmt: fmtDate } = useFormatDate();
+  const { t } = useI18n();
   const [resolutions, setResolutions] = useState<GovernanceResolution[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("Adopted");
@@ -2104,15 +2128,15 @@ function ImplementationTracker() {
 
   return (
     <div className="space-y-5">
-      <p className="page-subtitle">Track implementation progress of adopted resolutions across all committees and plenary sessions.</p>
+      <p className="page-subtitle">{t("governance.resolutions.tracker.subtitle")}</p>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Adopted", icon: "gavel", value: counts["Adopted"] ?? 0, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "In Progress", icon: "pending", value: counts["In Progress"] ?? 0, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Implemented", icon: "task_alt", value: implemented, color: "text-teal-600", bg: "bg-teal-50" },
-          { label: "Rejected", icon: "cancel", value: counts["Rejected"] ?? 0, color: "text-red-600", bg: "bg-red-50" },
+          { label: t("governance.status.adopted"), icon: "gavel", value: counts["Adopted"] ?? 0, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: t("governance.status.inProgress"), icon: "pending", value: counts["In Progress"] ?? 0, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: t("governance.status.implemented"), icon: "task_alt", value: implemented, color: "text-teal-600", bg: "bg-teal-50" },
+          { label: t("governance.status.rejected"), icon: "cancel", value: counts["Rejected"] ?? 0, color: "text-red-600", bg: "bg-red-50" },
         ].map(({ label, icon, value, color, bg }) => (
           <div key={label} className="card p-4 flex items-center gap-3">
             <div className={`size-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
@@ -2130,13 +2154,13 @@ function ImplementationTracker() {
       {total > 0 && (
         <div className="card p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-neutral-700">Overall Implementation Rate</p>
+            <p className="text-sm font-semibold text-neutral-700">{t("governance.resolutions.tracker.rate")}</p>
             <p className="text-sm font-bold text-primary">{pct}%</p>
           </div>
           <div className="h-2.5 rounded-full bg-neutral-100 overflow-hidden">
             <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
-          <p className="text-xs text-neutral-400 mt-1">{implemented} of {total} resolutions implemented or actioned</p>
+          <p className="text-xs text-neutral-400 mt-1">{t("governance.resolutions.tracker.rateDetail", { implemented, total })}</p>
         </div>
       )}
 
@@ -2144,7 +2168,7 @@ function ImplementationTracker() {
       <div className="card p-4 flex flex-wrap gap-2">
         {["", ...trackerStatuses].map((s) => (
           <button key={s || "all"} onClick={() => setFilter(s)}
-            className={`filter-tab ${filter === s ? "active" : ""}`}>{s || "All"}</button>
+            className={`filter-tab ${filter === s ? "active" : ""}`}>{s ? statusLabel(s, t) : t("governance.status.all")}</button>
         ))}
       </div>
 
@@ -2154,18 +2178,18 @@ function ImplementationTracker() {
             <span className="material-symbols-outlined animate-spin text-neutral-300 text-[28px]">progress_activity</span>
           </div>
         ) : resolutions.length === 0 ? (
-          <EmptyState icon="playlist_add_check" title="No resolutions match this filter" />
+          <EmptyState icon="playlist_add_check" title={t("governance.resolutions.tracker.empty")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Resolution</th>
-                  <th>Type</th>
-                  <th>Adopted</th>
-                  <th>Status</th>
-                  <th className="text-right">Docs</th>
+                  <th>{t("governance.resolutions.col.reference")}</th>
+                  <th>{t("governance.resolutions.col.resolution")}</th>
+                  <th>{t("governance.resolutions.col.type")}</th>
+                  <th>{t("governance.resolutions.col.adopted")}</th>
+                  <th>{t("governance.resolutions.col.status")}</th>
+                  <th className="text-right">{t("governance.resolutions.col.docs")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2179,13 +2203,13 @@ function ImplementationTracker() {
                     <td>
                       <span className="inline-flex items-center gap-1 text-xs text-neutral-600 capitalize">
                         <span className="material-symbols-outlined text-[13px]">{r.type === "plenary" ? "account_balance" : "groups"}</span>
-                        {r.type ?? "—"}
+                        {r.type === "plenary" || r.type === "committee" ? t(`governance.resolutions.type.${r.type}`) : (r.type ?? "—")}
                       </span>
                     </td>
                     <td className="text-sm text-neutral-600 whitespace-nowrap">{fmtDate(r.adopted_at)}</td>
                     <td>
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyle(r.status)}`}>
-                        <span className={`size-1.5 rounded-full ${statusDot(r.status)}`} />{r.status}
+                        <span className={`size-1.5 rounded-full ${statusDot(r.status)}`} />{statusLabel(r.status, t)}
                       </span>
                     </td>
                     <td className="text-right">
@@ -2210,30 +2234,31 @@ function ImplementationTracker() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: "committee" as const,       label: "Committee Resolutions",  icon: "groups" },
-  { id: "plenary" as const,         label: "Plenary Resolutions",     icon: "account_balance" },
-  { id: "minutes" as const,         label: "Meeting Minutes",         icon: "event_note" },
-  { id: "implementation" as const,  label: "Implementation Tracker",  icon: "playlist_add_check" },
+  { id: "committee" as const,       label: "governance.resolutions.tab.committee",  icon: "groups" },
+  { id: "plenary" as const,         label: "governance.resolutions.tab.plenary",     icon: "account_balance" },
+  { id: "minutes" as const,         label: "governance.resolutions.tab.minutes",         icon: "event_note" },
+  { id: "implementation" as const,  label: "governance.resolutions.tab.implementation",  icon: "playlist_add_check" },
 ];
 
 export default function GovernancePage() {
   const [tab, setTab] = useState<"committee" | "plenary" | "minutes" | "implementation">("committee");
+  const { t } = useI18n();
 
   return (
     <div className="space-y-6">
       <ModulePageHeader
-        title="Governance"
-        subtitle="Committee and plenary resolutions."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Governance" }]} />}
+        title={t("governance.resolutions.title")}
+        subtitle={t("governance.resolutions.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "governance.resolutions.title" }]} />}
       />
 
       {/* Tab bar */}
       <div className="card p-1 flex gap-1 overflow-x-auto">
-        {TABS.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0 ${tab === t.id ? "bg-primary text-white shadow-sm" : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50"}`}>
-            <span className="material-symbols-outlined text-[18px]">{t.icon}</span>
-            <span className="hidden sm:inline">{t.label}</span>
+        {TABS.map((tb) => (
+          <button key={tb.id} onClick={() => setTab(tb.id)}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0 ${tab === tb.id ? "bg-primary text-white shadow-sm" : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50"}`}>
+            <span className="material-symbols-outlined text-[18px]">{tb.icon}</span>
+            <span className="hidden sm:inline">{t(tb.label)}</span>
           </button>
         ))}
       </div>

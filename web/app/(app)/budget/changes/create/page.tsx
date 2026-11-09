@@ -7,6 +7,7 @@ import { budgetApi, type OrgBudgetLine } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function unwrapLines(payload: unknown): OrgBudgetLine[] {
   if (!payload || typeof payload !== "object") return [];
@@ -33,6 +34,7 @@ function unwrapBudgets(payload: unknown): Array<{ id: number; name: string; stat
 }
 
 export default function CreateBudgetChangePage() {
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [type, setType] = useState("transfer");
@@ -96,25 +98,25 @@ export default function CreateBudgetChangePage() {
       });
     },
     onSuccess: (res) => {
-      toast.success("Budget change created");
+      toast.success(t("budget.changeCreate.created"));
       router.push(`/budget/changes/${res.data.data.id}`);
     },
     onError: (err) => {
-      setError("Could not create change request.");
-      toast.error("Budget change not created", apiErrorMessage(err, "Could not create change request."));
+      setError(t("budget.changeCreate.createFailed"));
+      toast.error(t("budget.changeCreate.notCreated"), apiErrorMessage(err, t("budget.changeCreate.createFailed")));
     },
   });
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="New budget change"
+        title="budget.changeCreate.title"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.finance", href: "/finance" },
-              { label: "Budget Changes", href: "/budget/changes" },
-              { label: "New budget change" },
+              { label: "budget.changes.title", href: "/budget/changes" },
+              { label: "budget.changeCreate.title" },
             ]}
           />
         }
@@ -124,18 +126,18 @@ export default function CreateBudgetChangePage() {
 
       <div className="space-y-3 rounded-xl border border-[var(--border)] bg-white p-4">
         <label htmlFor="bc-type" className="block text-sm">
-          Type
+          {t("srhr.col.type")}
           <select id="bc-type" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="transfer">Transfer</option>
-            <option value="revision">Revision</option>
-            <option value="supplementary">Supplementary</option>
-            <option value="contingency">Contingency draw</option>
+            <option value="transfer">{t("budget.changeCreate.type.transfer")}</option>
+            <option value="revision">{t("budget.changeCreate.type.revision")}</option>
+            <option value="supplementary">{t("budget.changeCreate.type.supplementary")}</option>
+            <option value="contingency">{t("budget.changeCreate.type.contingency")}</option>
           </select>
         </label>
         <label htmlFor="bc-budget" className="block text-sm">
-          Budget
+          {t("budget.changeCreate.budget")}
           <select id="bc-budget" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={budgetId} onChange={(e) => setBudgetId(e.target.value)}>
-            <option value="">Select…</option>
+            <option value="">{t("budget.changeCreate.select")}</option>
             {budgets.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -144,20 +146,20 @@ export default function CreateBudgetChangePage() {
           </select>
         </label>
         <label htmlFor="bc-title" className="block text-sm">
-          Title
+          {t("srhr.reports.colTitle")}
           <input id="bc-title" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
         <label htmlFor="bc-justification" className="block text-sm">
-          Justification
+          {t("budget.change.justification")}
           <textarea id="bc-justification" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" rows={2} value={justification} onChange={(e) => setJustification(e.target.value)} />
         </label>
 
         {(type === "transfer" || type === "contingency") && (
           <>
             <label htmlFor="bc-from-line" className="block text-sm">
-              From line
+              {t("budget.changeCreate.fromLine")}
               <select id="bc-from-line" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
-                <option value="">Select…</option>
+                <option value="">{t("budget.changeCreate.select")}</option>
                 {filteredLines
                   .filter((l) => (type === "contingency" ? Boolean((l as OrgBudgetLine & { is_contingency?: boolean }).is_contingency) : true))
                   .map((l) => (
@@ -168,9 +170,9 @@ export default function CreateBudgetChangePage() {
               </select>
             </label>
             <label htmlFor="bc-to-line" className="block text-sm">
-              To line
+              {t("budget.changeCreate.toLine")}
               <select id="bc-to-line" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
-                <option value="">Select…</option>
+                <option value="">{t("budget.changeCreate.select")}</option>
                 {filteredLines.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.code || l.name} (#{l.id})
@@ -184,9 +186,9 @@ export default function CreateBudgetChangePage() {
         {type === "revision" && (
           <>
             <label htmlFor="bc-rev-line" className="block text-sm">
-              Line
+              {t("budget.changeCreate.line")}
               <select id="bc-rev-line" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
-                <option value="">Select…</option>
+                <option value="">{t("budget.changeCreate.select")}</option>
                 {filteredLines.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.code || l.name}
@@ -196,7 +198,7 @@ export default function CreateBudgetChangePage() {
             </label>
             <label htmlFor="bc-decrease" className="flex items-center gap-2 text-sm">
               <input id="bc-decrease" type="checkbox" checked={isDecrease} onChange={(e) => setIsDecrease(e.target.checked)} />
-              Decrease (otherwise increase)
+              {t("budget.changeCreate.decrease")}
             </label>
           </>
         )}
@@ -204,9 +206,9 @@ export default function CreateBudgetChangePage() {
         {type === "supplementary" && (
           <>
             <label htmlFor="bc-existing-line" className="block text-sm">
-              Existing line (optional)
+              {t("budget.changeCreate.existingLine")}
               <select id="bc-existing-line" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
-                <option value="">Create new line…</option>
+                <option value="">{t("budget.changeCreate.createNewLine")}</option>
                 {filteredLines.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.code || l.name}
@@ -216,15 +218,15 @@ export default function CreateBudgetChangePage() {
             </label>
             {!targetId && (
               <>
-                <input className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm" placeholder="New line code" value={newCode} onChange={(e) => setNewCode(e.target.value)} />
-                <input className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm" placeholder="New line name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                <input className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm" placeholder={t("budget.changeCreate.newLineCode")} aria-label={t("budget.changeCreate.newLineCode")} value={newCode} onChange={(e) => setNewCode(e.target.value)} />
+                <input className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm" placeholder={t("budget.changeCreate.newLineName")} aria-label={t("budget.changeCreate.newLineName")} value={newName} onChange={(e) => setNewName(e.target.value)} />
               </>
             )}
           </>
         )}
 
         <label htmlFor="bc-amount" className="block text-sm">
-          Amount
+          {t("budget.amount")}
           <input id="bc-amount" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </label>
 
@@ -234,7 +236,7 @@ export default function CreateBudgetChangePage() {
           disabled={!title.trim() || !budgetId || !amount || createMut.isPending}
           onClick={() => createMut.mutate()}
         >
-          Create
+          {t("common.create")}
         </button>
       </div>
     </div>

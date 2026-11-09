@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 import { readApiSource } from "./apiSourceForTests.mts";
 
@@ -31,7 +32,7 @@ test("approvals inbox opens the signing modal for requires_signature steps", () 
 });
 
 test("email approval page blocks signing steps and points at Nexus", () => {
-  const source = readFileSync(join(webRoot, "app/approval/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/approval/page.tsx"));
   assert.match(source, /requires_signature/);
   assert.match(source, /Open My Approvals/);
 });

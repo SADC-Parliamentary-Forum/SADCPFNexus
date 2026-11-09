@@ -3,37 +3,38 @@
 import { useState } from "react";
 import { stockTransactionsApi, type StockItem, type StockReasonCode } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type MovementType = "in" | "out" | "adjustment";
 
 const TYPE_OPTIONS: { value: MovementType; label: string; help: string }[] = [
-  { value: "in", label: "Stock In (Receipt)", help: "Increase the balance — replenishment or receipt." },
-  { value: "out", label: "Stock Out (Issue)", help: "Decrease the balance — issued to a person or department." },
-  { value: "adjustment", label: "Adjustment", help: "Correct the balance (use a negative quantity to reduce)." },
+  { value: "in", label: "stock.movementModal.type.in", help: "stock.movementModal.type.inHelp" },
+  { value: "out", label: "stock.movementModal.type.out", help: "stock.movementModal.type.outHelp" },
+  { value: "adjustment", label: "stock.movementModal.type.adjustment", help: "stock.movementModal.type.adjustmentHelp" },
 ];
 
 const REASON_OPTIONS: { value: StockReasonCode; label: string }[] = [
-  { value: "receipt", label: "Receipt / replenishment" },
-  { value: "issue", label: "Issue to staff / dept" },
-  { value: "shortage", label: "Shortage" },
-  { value: "damaged", label: "Damaged" },
-  { value: "expired", label: "Expired" },
-  { value: "stocktake", label: "Stocktake variance" },
-  { value: "other", label: "Other" },
+  { value: "receipt", label: "stock.movementModal.reason.receipt" },
+  { value: "issue", label: "stock.movementModal.reason.issue" },
+  { value: "shortage", label: "stock.movementModal.reason.shortage" },
+  { value: "damaged", label: "stock.movementModal.reason.damaged" },
+  { value: "expired", label: "stock.movementModal.reason.expired" },
+  { value: "stocktake", label: "stock.movementModal.reason.stocktake" },
+  { value: "other", label: "stock.movementModal.reason.other" },
 ];
 
 interface ApiError {
   response?: { data?: { message?: string; errors?: Record<string, string[]> } };
 }
 
-function errorMessage(err: unknown): string {
+function errorMessage(err: unknown, fallback: string): string {
   const e = err as ApiError;
   const errors = e?.response?.data?.errors;
   if (errors) {
     const first = Object.values(errors)[0];
     if (first?.[0]) return first[0];
   }
-  return e?.response?.data?.message || "Failed to record movement.";
+  return e?.response?.data?.message || fallback;
 }
 
 export function StockMovementModal({
@@ -48,6 +49,7 @@ export function StockMovementModal({
   onSaved: () => void;
 }) {
   const { toast } = useToast();
+  const { t } = useI18n();
   const [itemId, setItemId] = useState<number | "">(presetItem?.id ?? "");
   const [type, setType] = useState<MovementType>("in");
   const [quantity, setQuantity] = useState("");
@@ -60,14 +62,14 @@ export function StockMovementModal({
   const [error, setError] = useState<string | null>(null);
 
   const selectedItem = presetItem ?? items.find((i) => i.id === itemId) ?? null;
-  const typeMeta = TYPE_OPTIONS.find((t) => t.value === type)!;
+  const typeMeta = TYPE_OPTIONS.find((o) => o.value === type)!;
 
   const handleSave = async () => {
     const qty = Number(quantity);
-    if (!itemId) { setError("Select a stock item."); return; }
-    if (!quantity || Number.isNaN(qty)) { setError("Enter a valid quantity."); return; }
-    if (type !== "adjustment" && qty < 1) { setError("Quantity must be at least 1."); return; }
-    if (type === "adjustment" && qty === 0) { setError("Adjustment quantity cannot be zero."); return; }
+    if (!itemId) { setError(t("stock.movementModal.err.selectItem")); return; }
+    if (!quantity || Number.isNaN(qty)) { setError(t("stock.movementModal.err.quantity")); return; }
+    if (type !== "adjustment" && qty < 1) { setError(t("stock.movementModal.err.minQuantity")); return; }
+    if (type === "adjustment" && qty === 0) { setError(t("stock.movementModal.err.zeroAdjustment")); return; }
 
     setSaving(true);
     setError(null);
@@ -82,10 +84,10 @@ export function StockMovementModal({
         reason_code: reasonCode || null,
         transaction_date: date,
       });
-      toast("success", "Stock movement recorded");
+      toast("success", t("stock.movementModal.recorded"));
       onSaved();
     } catch (err: unknown) {
-      const msg = errorMessage(err);
+      const msg = errorMessage(err, t("stock.movementModal.err.failed"));
       setError(msg);
       toast("error", msg);
     } finally {
@@ -102,15 +104,15 @@ export function StockMovementModal({
               <span className="material-symbols-outlined text-primary text-[18px]">swap_vert</span>
             </div>
             <div>
-              <h3 className="font-semibold text-neutral-900 text-sm">Record Stock Movement</h3>
+              <h3 className="font-semibold text-neutral-900 text-sm">{t("stock.movementModal.title")}</h3>
               {selectedItem && (
                 <p className="text-xs text-neutral-400">
-                  {selectedItem.item_code} — {selectedItem.name} (on hand: {selectedItem.current_balance})
+                  {t("stock.movementModal.onHand", { code: selectedItem.item_code, name: selectedItem.name, balance: selectedItem.current_balance })}
                 </p>
               )}
             </div>
           </div>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600" aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -124,49 +126,49 @@ export function StockMovementModal({
 
           {!presetItem && (
             <div>
-              <label htmlFor="stock-move-item" className="block text-xs font-semibold text-neutral-700 mb-1">Stock Item *</label>
+              <label htmlFor="stock-move-item" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.movementModal.item")}</label>
               <select id="stock-move-item" className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value ? Number(e.target.value) : "")}>
-                <option value="">Select an item…</option>
+                <option value="">{t("stock.movementModal.selectItem")}</option>
                 {items.map((i) => (
-                  <option key={i.id} value={i.id}>{i.item_code} — {i.name} (bal: {i.current_balance})</option>
+                  <option key={i.id} value={i.id}>{t("stock.movementModal.itemOption", { code: i.item_code, name: i.name, balance: i.current_balance })}</option>
                 ))}
               </select>
             </div>
           )}
 
           <div>
-            <label htmlFor="stock-move-type" className="block text-xs font-semibold text-neutral-700 mb-1">Movement Type *</label>
+            <label htmlFor="stock-move-type" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.movementModal.movementType")}</label>
             <select id="stock-move-type" className="form-input" value={type} onChange={(e) => setType(e.target.value as MovementType)}>
-              {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t(o.label)}</option>)}
             </select>
-            <p className="text-xs text-neutral-400 mt-1">{typeMeta.help}</p>
+            <p className="text-xs text-neutral-400 mt-1">{t(typeMeta.help)}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="stock-move-qty" className="block text-xs font-semibold text-neutral-700 mb-1">Quantity *</label>
+              <label htmlFor="stock-move-qty" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.movementModal.quantity")}</label>
               <input
                 id="stock-move-qty"
                 type="number"
                 className="form-input"
-                placeholder={type === "adjustment" ? "e.g. -5 or 5" : "e.g. 10"}
+                placeholder={type === "adjustment" ? t("stock.movementModal.qtyAdjustPlaceholder") : t("stock.movementModal.qtyPlaceholder")}
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="stock-move-date" className="block text-xs font-semibold text-neutral-700 mb-1">Date *</label>
+              <label htmlFor="stock-move-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.movementModal.date")}</label>
               <input id="stock-move-date" type="date" className="form-input" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
           </div>
 
           {type === "out" && (
             <div>
-              <label htmlFor="stock-move-issued-to" className="block text-xs font-semibold text-neutral-700 mb-1">Issued To</label>
+              <label htmlFor="stock-move-issued-to" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.movementModal.issuedTo")}</label>
               <input
                 id="stock-move-issued-to"
                 className="form-input"
-                placeholder="Recipient name / department"
+                placeholder={t("stock.movementModal.issuedToPlaceholder")}
                 value={issuedTo}
                 onChange={(e) => setIssuedTo(e.target.value)}
               />
@@ -175,29 +177,29 @@ export function StockMovementModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="stock-move-reference" className="block text-xs font-semibold text-neutral-700 mb-1">Reference</label>
-              <input id="stock-move-reference" className="form-input" placeholder="GRN / requisition no." value={reference} onChange={(e) => setReference(e.target.value)} />
+              <label htmlFor="stock-move-reference" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.movementModal.reference")}</label>
+              <input id="stock-move-reference" className="form-input" placeholder={t("stock.movementModal.referencePlaceholder")} value={reference} onChange={(e) => setReference(e.target.value)} />
             </div>
             <div>
-              <label htmlFor="stock-move-reason-code" className="block text-xs font-semibold text-neutral-700 mb-1">Reason code</label>
+              <label htmlFor="stock-move-reason-code" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.movementModal.reasonCode")}</label>
               <select id="stock-move-reason-code" className="form-input" value={reasonCode} onChange={(e) => setReasonCode(e.target.value as StockReasonCode | "")}>
-                <option value="">Optional…</option>
-                {REASON_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                <option value="">{t("stock.movementModal.optional")}</option>
+                {REASON_OPTIONS.map((r) => <option key={r.value} value={r.value}>{t(r.label)}</option>)}
               </select>
             </div>
           </div>
 
           <div>
-            <label htmlFor="stock-move-reason" className="block text-xs font-semibold text-neutral-700 mb-1">Reason / Note</label>
-            <input id="stock-move-reason" className="form-input" placeholder="Optional detail" value={reason} onChange={(e) => setReason(e.target.value)} />
+            <label htmlFor="stock-move-reason" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.movementModal.reasonNote")}</label>
+            <input id="stock-move-reason" className="form-input" placeholder={t("stock.movementModal.reasonPlaceholder")} value={reason} onChange={(e) => setReason(e.target.value)} />
           </div>
         </div>
 
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
-          <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+          <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
           <button type="button" onClick={handleSave} disabled={saving} className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
             <span className="material-symbols-outlined text-[16px]">save</span>
-            {saving ? "Saving…" : "Record Movement"}
+            {saving ? t("stock.movementModal.saving") : t("stock.movementModal.submit")}
           </button>
         </div>
       </div>

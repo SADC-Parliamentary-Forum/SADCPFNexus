@@ -14,32 +14,34 @@ import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { useToast } from "@/components/ui/Toast";
 import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string; icon: string }> = {
-  draft:                   { label: "Draft",                  badge: "badge-muted",    icon: "edit_note" },
-  submitted:               { label: "Pending Finance Certify", badge: "badge-warning",  icon: "pending" },
-  finance_certified:       { label: "Finance Certified",      badge: "badge-primary",  icon: "verified" },
-  finance_returned:        { label: "Returned by Finance",    badge: "badge-warning",  icon: "undo" },
-  not_eligible:            { label: "Not Eligible",           badge: "badge-danger",   icon: "block" },
-  approved:                { label: "Approved",               badge: "badge-success",  icon: "check_circle" },
-  approved_for_payment:    { label: "Approved for Payment",   badge: "badge-success",  icon: "payments" },
-  rejected:                { label: "Rejected",               badge: "badge-danger",   icon: "cancel" },
-  paid:                    { label: "Paid",                   badge: "badge-primary",  icon: "payments" },
-  recovery_scheduled:      { label: "Recovery Scheduled",     badge: "badge-primary",  icon: "event" },
-  recovered:               { label: "Recovered",              badge: "badge-success",  icon: "check_circle" },
-  reconciliation_required: { label: "Reconciliation Required", badge: "badge-warning", icon: "warning" },
-  closed:                  { label: "Closed",                 badge: "badge-muted",    icon: "lock" },
-  returned_for_correction: { label: "Returned for Correction", badge: "badge-warning", icon: "undo" },
-  withdrawn:               { label: "Withdrawn",              badge: "badge-muted",    icon: "block" },
-  resubmitted:             { label: "Resubmitted",            badge: "badge-warning",  icon: "refresh" },
+  draft:                   { label: "salaryAdvances.detail.status.draft",                  badge: "badge-muted",    icon: "edit_note" },
+  submitted:               { label: "salaryAdvances.detail.status.submitted", badge: "badge-warning",  icon: "pending" },
+  finance_certified:       { label: "salaryAdvances.detail.status.financeCertified",      badge: "badge-primary",  icon: "verified" },
+  finance_returned:        { label: "salaryAdvances.detail.status.financeReturned",    badge: "badge-warning",  icon: "undo" },
+  not_eligible:            { label: "salaryAdvances.detail.status.notEligible",           badge: "badge-danger",   icon: "block" },
+  approved:                { label: "salaryAdvances.detail.status.approved",               badge: "badge-success",  icon: "check_circle" },
+  approved_for_payment:    { label: "salaryAdvances.detail.status.approvedForPayment",   badge: "badge-success",  icon: "payments" },
+  rejected:                { label: "salaryAdvances.detail.status.rejected",               badge: "badge-danger",   icon: "cancel" },
+  paid:                    { label: "salaryAdvances.detail.status.paid",                   badge: "badge-primary",  icon: "payments" },
+  recovery_scheduled:      { label: "salaryAdvances.detail.status.recoveryScheduled",     badge: "badge-primary",  icon: "event" },
+  recovered:               { label: "salaryAdvances.detail.status.recovered",              badge: "badge-success",  icon: "check_circle" },
+  reconciliation_required: { label: "salaryAdvances.detail.status.reconciliationRequired", badge: "badge-warning", icon: "warning" },
+  closed:                  { label: "salaryAdvances.detail.status.closed",                 badge: "badge-muted",    icon: "lock" },
+  returned_for_correction: { label: "salaryAdvances.detail.status.returnedForCorrection", badge: "badge-warning", icon: "undo" },
+  withdrawn:               { label: "salaryAdvances.detail.status.withdrawn",              badge: "badge-muted",    icon: "block" },
+  resubmitted:             { label: "salaryAdvances.detail.status.resubmitted",            badge: "badge-warning",  icon: "refresh" },
 };
 
+/** i18n keys of the advance type labels. */
 const TYPE_LABELS: Record<string, string> = {
-  salary_advance:    "Salary Advance",
-  education_advance: "Education Advance",
-  medical_advance:   "Medical Advance",
-  emergency_advance: "Emergency Advance",
-  other:             "Other",
+  salary_advance:    "salaryAdvances.type.salary",
+  education_advance: "salaryAdvances.type.education",
+  medical_advance:   "salaryAdvances.type.medical",
+  emergency_advance: "salaryAdvances.type.emergency",
+  other:             "salaryAdvances.type.other",
 };
 
 function getEntity<T>(payload: unknown): T | null {
@@ -56,6 +58,7 @@ function RepaymentSchedule({
   advance: SalaryAdvanceRequest;
   formatCurrency: (amount: number, currency: string) => string;
 }) {
+  const { t, localeTag } = useI18n();
   const monthly = advance.amount / advance.repayment_months;
   const startDate = advance.approved_at ? new Date(advance.approved_at) : new Date();
   // Repayments begin the month after approval
@@ -82,15 +85,17 @@ function RepaymentSchedule({
         <div className="h-7 w-7 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
           <span className="material-symbols-outlined text-emerald-600 text-[16px]">calendar_month</span>
         </div>
-        <h2 className="text-sm font-semibold text-neutral-900">Repayment Schedule</h2>
-        <span className="ml-auto text-xs text-neutral-400">{paidCount}/{advance.repayment_months} installments</span>
+        <h2 className="text-sm font-semibold text-neutral-900">{t("salaryAdvances.detail.schedule.title")}</h2>
+        <span className="ml-auto text-xs text-neutral-400">
+          {t("salaryAdvances.detail.schedule.installments", { paid: paidCount, total: advance.repayment_months })}
+        </span>
       </div>
 
       {/* Progress bar */}
       <div>
         <div className="flex items-center justify-between text-xs mb-1.5">
-          <span className="text-neutral-500">Repaid: <span className="font-semibold text-neutral-800">{formatCurrency(paidAmount, advance.currency)}</span></span>
-          <span className="text-neutral-500">Remaining: <span className="font-semibold text-neutral-800">{formatCurrency(remaining, advance.currency)}</span></span>
+          <span className="text-neutral-500">{t("salaryAdvances.detail.schedule.repaid")} <span className="font-semibold text-neutral-800">{formatCurrency(paidAmount, advance.currency)}</span></span>
+          <span className="text-neutral-500">{t("salaryAdvances.detail.schedule.remaining")} <span className="font-semibold text-neutral-800">{formatCurrency(remaining, advance.currency)}</span></span>
         </div>
         <div className="h-2 w-full rounded-full bg-neutral-100 overflow-hidden">
           <div
@@ -98,7 +103,7 @@ function RepaymentSchedule({
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="text-[11px] text-neutral-400 mt-1">{progress}% repaid</p>
+        <p className="text-[11px] text-neutral-400 mt-1">{t("salaryAdvances.detail.schedule.progress", { percent: progress })}</p>
       </div>
 
       {/* Table */}
@@ -107,10 +112,10 @@ function RepaymentSchedule({
           <thead>
             <tr className="border-b border-neutral-100">
               <th className="text-left py-2 text-xs font-semibold text-neutral-500">#</th>
-              <th className="text-left py-2 text-xs font-semibold text-neutral-500">Month</th>
-              <th className="text-right py-2 text-xs font-semibold text-neutral-500">Deduction</th>
-              <th className="text-right py-2 text-xs font-semibold text-neutral-500">Balance</th>
-              <th className="text-center py-2 text-xs font-semibold text-neutral-500">Status</th>
+              <th className="text-left py-2 text-xs font-semibold text-neutral-500">{t("salaryAdvances.detail.schedule.month")}</th>
+              <th className="text-right py-2 text-xs font-semibold text-neutral-500">{t("salaryAdvances.detail.schedule.deduction")}</th>
+              <th className="text-right py-2 text-xs font-semibold text-neutral-500">{t("salaryAdvances.detail.schedule.balance")}</th>
+              <th className="text-center py-2 text-xs font-semibold text-neutral-500">{t("salaryAdvances.detail.schedule.status")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-50">
@@ -118,7 +123,7 @@ function RepaymentSchedule({
               <tr key={i} className={row.isPast ? "opacity-60" : ""}>
                 <td className="py-2 pr-3 text-neutral-400 font-mono text-xs">{i + 1}</td>
                 <td className="py-2 font-medium text-neutral-800">
-                  {row.month.toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                  {row.month.toLocaleDateString(localeTag, { month: "short", year: "numeric" })}
                 </td>
                 <td className="py-2 text-right font-semibold text-neutral-900">
                   {formatCurrency(row.installment, advance.currency)}
@@ -130,12 +135,12 @@ function RepaymentSchedule({
                   {row.isPast ? (
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 rounded-full px-2 py-0.5">
                       <span className="material-symbols-outlined text-[12px]">check_circle</span>
-                      Deducted
+                      {t("salaryAdvances.detail.schedule.deducted")}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-neutral-500 bg-neutral-100 rounded-full px-2 py-0.5">
                       <span className="material-symbols-outlined text-[12px]">schedule</span>
-                      Upcoming
+                      {t("salaryAdvances.detail.schedule.upcoming")}
                     </span>
                   )}
                 </td>
@@ -145,7 +150,7 @@ function RepaymentSchedule({
         </table>
       </div>
       <p className="text-[11px] text-neutral-400">
-        Deduction status is estimated based on approval date. Actual payroll records may differ.
+        {t("salaryAdvances.detail.schedule.note")}
       </p>
     </div>
   );
@@ -153,6 +158,7 @@ function RepaymentSchedule({
 
 export default function AdvanceDetailPage() {
   const { success, error: showErrorToast, info } = useToast();
+  const { t, localeTag } = useI18n();
   const params = useParams();
   const router = useRouter();
   const id = params?.id != null ? Number(params.id) : NaN;
@@ -203,9 +209,9 @@ export default function AdvanceDetailPage() {
     setLoading(true);
     financeApi.getAdvance(id)
       .then((res) => setAdvance(getEntity<SalaryAdvanceRequest>(res.data)))
-      .catch(() => setError("Could not load advance request."))
+      .catch(() => setError(t("salaryAdvances.detail.err.load")))
       .finally(() => setLoading(false));
-  }, [id, router]);
+  }, [id, router, t]);
 
   const handleSubmit = async () => {
     if (!advance) return;
@@ -213,7 +219,7 @@ export default function AdvanceDetailPage() {
     try {
       const res = await financeApi.submitAdvance(advance.id, { deduction_authority_confirmed: true });
       setAdvance(res.data.data);
-    } catch { setError("Failed to submit request."); }
+    } catch { setError(t("salaryAdvances.detail.err.submit")); }
     finally { setActionLoading(false); }
   };
 
@@ -239,19 +245,19 @@ export default function AdvanceDetailPage() {
     setError(null);
     try {
       if (certifyMode === "return") {
-        if (!actionReason.trim()) { setError("Return reason is required."); return; }
+        if (!actionReason.trim()) { setError(t("salaryAdvances.detail.err.returnReason")); return; }
         await financeApi.financeReturnAdvance(advance.id, actionReason.trim());
-        success("Returned to requester.");
+        success(t("salaryAdvances.detail.ok.returned"));
       } else if (certifyMode === "not_eligible") {
-        if (!actionReason.trim()) { setError("Not-eligible reason is required."); return; }
+        if (!actionReason.trim()) { setError(t("salaryAdvances.detail.err.notEligibleReason")); return; }
         await financeApi.markAdvanceNotEligible(advance.id, actionReason.trim());
-        success("Marked not eligible.");
+        success(t("salaryAdvances.detail.ok.notEligible"));
       } else {
         const net = Number(certifyForm.confirmed_net_salary);
         const recommended = Number(certifyForm.recommended_amount);
-        if (!Number.isFinite(net) || net < 0) { setError("Confirmed net salary is required."); return; }
-        if (!certifyForm.intended_recovery_payroll_date) { setError("Recovery payroll date is required."); return; }
-        if (!Number.isFinite(recommended) || recommended < 1) { setError("Recommended amount is required."); return; }
+        if (!Number.isFinite(net) || net < 0) { setError(t("salaryAdvances.detail.err.netSalary")); return; }
+        if (!certifyForm.intended_recovery_payroll_date) { setError(t("salaryAdvances.detail.err.recoveryDate")); return; }
+        if (!Number.isFinite(recommended) || recommended < 1) { setError(t("salaryAdvances.detail.err.recommended")); return; }
         await financeApi.financeCertifyAdvance(advance.id, {
           confirmed_net_salary: net,
           confirmed_gross_salary: certifyForm.confirmed_gross_salary
@@ -262,12 +268,12 @@ export default function AdvanceDetailPage() {
           eligible: true,
           comments: certifyForm.comments || undefined,
         });
-        success("Finance certified (Part B).");
+        success(t("salaryAdvances.detail.ok.certified"));
       }
       setShowCertifyModal(false);
       await refreshAdvance();
     } catch {
-      setError(certifyMode === "certify" ? "Failed to certify advance." : "Failed to complete Finance action.");
+      setError(certifyMode === "certify" ? t("salaryAdvances.detail.err.certify") : t("salaryAdvances.detail.err.financeAction"));
     } finally {
       setActionLoading(false);
     }
@@ -276,7 +282,7 @@ export default function AdvanceDetailPage() {
   const handleRecordPaymentSubmit = async () => {
     if (!advance) return;
     if (!paymentForm.payment_reference.trim()) {
-      setError("Payment reference is required.");
+      setError(t("salaryAdvances.detail.err.paymentRef"));
       return;
     }
     setActionLoading(true);
@@ -289,8 +295,8 @@ export default function AdvanceDetailPage() {
       });
       setShowPaymentModal(false);
       await refreshAdvance();
-      success("Payment recorded.");
-    } catch { setError("Failed to record payment."); }
+      success(t("salaryAdvances.detail.ok.payment"));
+    } catch { setError(t("salaryAdvances.detail.err.payment")); }
     finally { setActionLoading(false); }
   };
 
@@ -298,11 +304,11 @@ export default function AdvanceDetailPage() {
     if (!advance) return;
     const amount = Number(recoveryForm.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      setError("Recovery amount must be greater than zero.");
+      setError(t("salaryAdvances.detail.err.recoveryAmount"));
       return;
     }
     if (!recoveryForm.reference_doc.trim()) {
-      setError("Payroll transaction reference is required.");
+      setError(t("salaryAdvances.detail.err.recoveryRef"));
       return;
     }
     setActionLoading(true);
@@ -315,8 +321,8 @@ export default function AdvanceDetailPage() {
       });
       setShowRecoveryModal(false);
       await refreshAdvance();
-      success("Recovery recorded.");
-    } catch { setError("Failed to record recovery."); }
+      success(t("salaryAdvances.detail.ok.recovery"));
+    } catch { setError(t("salaryAdvances.detail.err.recovery")); }
     finally { setActionLoading(false); }
   };
 
@@ -334,11 +340,11 @@ export default function AdvanceDetailPage() {
       const notified: string[] = (res.data as any).notified_approvers ?? [];
       await refreshAdvance();
       if (notified.length > 0) {
-        success(`Approved. Notified: ${notified.join(", ")}`);
+        success(t("salaryAdvances.detail.ok.approvedNotified", { names: notified.join(", ") }));
       } else {
-        success("Request fully approved.");
+        success(t("salaryAdvances.detail.ok.fullyApproved"));
       }
-    } catch { setError("Failed to approve request."); }
+    } catch { setError(t("salaryAdvances.detail.err.approve")); }
     finally { setActionLoading(false); }
   };
 
@@ -349,7 +355,7 @@ export default function AdvanceDetailPage() {
       await financeApi.rejectAdvance(advance.id, rejectReason.trim());
       await refreshAdvance();
       setShowRejectDialog(false);
-    } catch { setError("Failed to reject request."); }
+    } catch { setError(t("salaryAdvances.detail.err.reject")); }
     finally { setActionLoading(false); }
   };
 
@@ -360,32 +366,32 @@ export default function AdvanceDetailPage() {
       await financeApi.returnAdvanceForCorrection(advance.id, comment);
       await refreshAdvance();
       setShowReturnModal(false);
-      success("Request returned to requester for correction.");
-    } catch { setError("Failed to return request."); }
+      success(t("salaryAdvances.detail.ok.returnedForCorrection"));
+    } catch { setError(t("salaryAdvances.detail.err.return")); }
     finally { setReturnLoading(false); }
   };
 
   const handleWithdraw = async () => {
     if (!advance) return;
-    if (!(await confirm({ title: "Withdraw Request", message: "Withdraw this salary advance request? This cannot be undone.", variant: "danger" }))) return;
+    if (!(await confirm({ title: t("salaryAdvances.detail.withdrawTitle"), message: t("salaryAdvances.detail.withdrawMessage"), variant: "danger" }))) return;
     setActionLoading(true);
     try {
       await financeApi.withdrawAdvance(advance.id);
       await refreshAdvance();
-      success("Request withdrawn.");
-    } catch { setError("Failed to withdraw request."); }
+      success(t("salaryAdvances.detail.ok.withdrawn"));
+    } catch { setError(t("salaryAdvances.detail.err.withdraw")); }
     finally { setActionLoading(false); }
   };
 
   const handleResubmit = async () => {
     if (!advance) return;
-    if (!(await confirm({ title: "Resubmit Request", message: "Resubmit this salary advance request? It will restart from the first step.", variant: "primary" }))) return;
+    if (!(await confirm({ title: t("salaryAdvances.detail.resubmitTitle"), message: t("salaryAdvances.detail.resubmitMessage"), variant: "primary" }))) return;
     setActionLoading(true);
     try {
       await financeApi.resubmitAdvance(advance.id);
       await refreshAdvance();
-      success("Request resubmitted for approval.");
-    } catch { setError("Failed to resubmit request."); }
+      success(t("salaryAdvances.detail.ok.resubmitted"));
+    } catch { setError(t("salaryAdvances.detail.err.resubmit")); }
     finally { setActionLoading(false); }
   };
 
@@ -402,16 +408,20 @@ export default function AdvanceDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-3">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {error ?? "Not found"}
+          {error ?? t("salaryAdvances.detail.notFound")}
         </div>
         <Link href="/salary-advances" className="btn-secondary text-sm">
-          Back to Advances
+          {t("salaryAdvances.detail.backToAdvances")}
         </Link>
       </div>
     );
   }
 
-  const sc = STATUS_CONFIG[advance.status] ?? { label: advance.status, badge: "badge-muted", icon: "info" };
+  const scConfig = STATUS_CONFIG[advance.status];
+  const sc = scConfig
+    ? { ...scConfig, label: t(scConfig.label) }
+    : { label: advance.status, badge: "badge-muted", icon: "info" };
+  const typeLabel = TYPE_LABELS[advance.advance_type] ? t(TYPE_LABELS[advance.advance_type]) : advance.advance_type;
   const monthlyRepayment = advance.repayment_months > 0
     ? formatCurrency(advance.amount / advance.repayment_months, advance.currency)
     : "—";
@@ -458,11 +468,11 @@ export default function AdvanceDetailPage() {
       />
 
       <SalaryAdvancePageHeader
-        title={TYPE_LABELS[advance.advance_type] ?? advance.advance_type}
+        title={typeLabel}
         subtitle={advance.reference_number}
         crumbs={[
           { label: "nav.salary_advances", href: "/salary-advances" },
-          { label: "Applications", href: "/salary-advances/applications" },
+          { label: "salaryAdvances.detail.crumbApplications", href: "/salary-advances/applications" },
           { label: advance.reference_number },
         ]}
         meta={
@@ -480,7 +490,7 @@ export default function AdvanceDetailPage() {
                 className="btn-secondary text-xs"
               >
                 <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
-                Certificate
+                {t("salaryAdvances.detail.certificate")}
               </Link>
               <button
                 type="button"
@@ -495,12 +505,12 @@ export default function AdvanceDetailPage() {
                     a.click();
                     URL.revokeObjectURL(url);
                   } catch {
-                    setError("Failed to download FORM-002 PDF.");
+                    setError(t("salaryAdvances.detail.err.downloadPdf"));
                   }
                 }}
               >
                 <span className="material-symbols-outlined text-[14px]">picture_as_pdf</span>
-                FORM-002 PDF
+                {t("salaryAdvances.detail.formPdf")}
               </button>
             </>
           )}
@@ -512,7 +522,7 @@ export default function AdvanceDetailPage() {
               className="btn-secondary text-xs disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[14px]">block</span>
-              Withdraw
+              {t("salaryAdvances.detail.withdraw")}
             </button>
           )}
           {isReturnedForCorrection && (
@@ -523,7 +533,7 @@ export default function AdvanceDetailPage() {
               className="btn-primary text-xs disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[14px]">refresh</span>
-              Resubmit
+              {t("salaryAdvances.detail.resubmit")}
             </button>
           )}
           </>
@@ -540,7 +550,7 @@ export default function AdvanceDetailPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 flex gap-3">
           <span className="material-symbols-outlined text-[20px] text-red-500 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
           <div>
-            <p className="text-sm font-semibold text-red-800">Rejected</p>
+            <p className="text-sm font-semibold text-red-800">{t("salaryAdvances.detail.status.rejected")}</p>
             <p className="text-sm text-red-700 mt-0.5">{advance.rejection_reason}</p>
           </div>
         </div>
@@ -551,18 +561,18 @@ export default function AdvanceDetailPage() {
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-2">
             <span className="material-symbols-outlined text-[16px] text-primary">timeline</span>
-            Workflow tracker
+            {t("salaryAdvances.detail.workflowTracker")}
           </h3>
           <PrintButton className="text-xs" />
         </div>
         <StatusTimeline
           steps={[
-            { key: "draft", label: "Draft", icon: "edit_note", completedAt: advance.submitted_at ? advance.created_at : undefined },
-            { key: "submitted", label: "Finance certify", icon: "verified", completedAt: advance.finance_certified_at ?? (["finance_certified", "approved", "approved_for_payment", "paid", "recovery_scheduled", "recovered", "closed", "reconciliation_required"].includes(advance.status) ? advance.submitted_at : null) },
-            { key: "finance_certified", label: "Principal / SG", icon: "fact_check", completedAt: advance.approved_at },
-            { key: "approved_for_payment", label: "Payment", icon: "payments", completedAt: advance.paid_at },
-            { key: "paid", label: "Recovery", icon: "event_repeat", completedAt: advance.closed_at ?? (advance.status === "recovered" ? advance.updated_at : null) },
-            { key: "closed", label: "Closed", icon: "lock", completedAt: advance.closed_at },
+            { key: "draft", label: t("salaryAdvances.detail.status.draft"), icon: "edit_note", completedAt: advance.submitted_at ? advance.created_at : undefined },
+            { key: "submitted", label: t("salaryAdvances.detail.step.financeCertify"), icon: "verified", completedAt: advance.finance_certified_at ?? (["finance_certified", "approved", "approved_for_payment", "paid", "recovery_scheduled", "recovered", "closed", "reconciliation_required"].includes(advance.status) ? advance.submitted_at : null) },
+            { key: "finance_certified", label: t("salaryAdvances.detail.step.principalSg"), icon: "fact_check", completedAt: advance.approved_at },
+            { key: "approved_for_payment", label: t("salaryAdvances.detail.step.payment"), icon: "payments", completedAt: advance.paid_at },
+            { key: "paid", label: t("salaryAdvances.detail.step.recovery"), icon: "event_repeat", completedAt: advance.closed_at ?? (advance.status === "recovered" ? advance.updated_at : null) },
+            { key: "closed", label: t("salaryAdvances.detail.status.closed"), icon: "lock", completedAt: advance.closed_at },
           ]}
           currentStatus={timelineStatus}
           rejectedAt={advance.status === "rejected" || advance.status === "not_eligible" ? (advance.approved_at ?? advance.updated_at) : null}
@@ -570,17 +580,17 @@ export default function AdvanceDetailPage() {
         />
         <div className="mt-4 grid sm:grid-cols-3 gap-3 text-xs">
           <div className="rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2">
-            <p className="text-neutral-500">Current stage</p>
+            <p className="text-neutral-500">{t("salaryAdvances.detail.currentStage")}</p>
             <p className="font-semibold text-neutral-900 mt-0.5">{sc.label}</p>
           </div>
           <div className="rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2">
-            <p className="text-neutral-500">Current holder</p>
+            <p className="text-neutral-500">{t("salaryAdvances.detail.currentHolder")}</p>
             <p className="font-semibold text-neutral-900 mt-0.5">
-              {currentStep?.role_name ?? currentStep?.name ?? (["draft", "finance_returned", "returned_for_correction"].includes(advance.status) ? "Requester" : "—")}
+              {currentStep?.role_name ?? currentStep?.name ?? (["draft", "finance_returned", "returned_for_correction"].includes(advance.status) ? t("salaryAdvances.detail.requester") : "—")}
             </p>
           </div>
           <div className="rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2">
-            <p className="text-neutral-500">Payment / recovery</p>
+            <p className="text-neutral-500">{t("salaryAdvances.detail.paymentRecovery")}</p>
             <p className="font-semibold text-neutral-900 mt-0.5">
               {(advance.payment_status ?? "not_prepared").replaceAll("_", " ")}
               {" · "}
@@ -598,11 +608,11 @@ export default function AdvanceDetailPage() {
           <div className="flex items-start gap-3">
             <span className="material-symbols-outlined text-primary">folder_shared</span>
             <div>
-              <h3 className="text-sm font-semibold text-neutral-900">Personnel file reference</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("salaryAdvances.detail.personnelFile")}</h3>
               <p className="text-xs text-neutral-500 mt-1">
                 {advance.personnel_file_document_id
-                  ? "FORM-002 PDF has been filed to the employee’s confidential personnel documents."
-                  : "FORM-002 PDF is available for filing. Personnel file link appears after automatic filing on closure."}
+                  ? t("salaryAdvances.detail.personnelFiled")
+                  : t("salaryAdvances.detail.personnelAvailable")}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
@@ -618,11 +628,11 @@ export default function AdvanceDetailPage() {
                       a.click();
                       URL.revokeObjectURL(url);
                     } catch {
-                      setError("Could not download FORM-002 PDF.");
+                      setError(t("salaryAdvances.detail.err.downloadPdfAlt"));
                     }
                   }}
                 >
-                  Download FORM-002 PDF
+                  {t("salaryAdvances.detail.downloadPdf")}
                 </button>
                 {advance.personnel_file_url ? (
                   <Link
@@ -630,10 +640,10 @@ export default function AdvanceDetailPage() {
                     className="btn-primary py-1.5 px-3 text-xs"
                     data-testid="personnel-file-link"
                   >
-                    Open personnel file
+                    {t("salaryAdvances.detail.openPersonnelFile")}
                   </Link>
                 ) : (
-                  <span className="badge badge-muted text-xs self-center">Awaiting personnel file filing</span>
+                  <span className="badge badge-muted text-xs self-center">{t("salaryAdvances.detail.awaitingFiling")}</span>
                 )}
               </div>
             </div>
@@ -647,37 +657,39 @@ export default function AdvanceDetailPage() {
           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <span className="material-symbols-outlined text-[18px] text-primary">payments</span>
           </div>
-          <h2 className="text-sm font-semibold text-neutral-900">Request Details</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">{t("salaryAdvances.detail.requestDetails")}</h2>
         </div>
 
         <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
           <div>
-            <p className="text-xs text-neutral-400 mb-0.5">Advance type</p>
-            <p className="font-semibold text-neutral-900">{TYPE_LABELS[advance.advance_type] ?? advance.advance_type}</p>
+            <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.advanceType")}</p>
+            <p className="font-semibold text-neutral-900">{typeLabel}</p>
           </div>
           <div>
-            <p className="text-xs text-neutral-400 mb-0.5">Amount requested</p>
+            <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.amountRequested")}</p>
             <p className="font-semibold text-neutral-900 text-lg">{formatCurrency(advance.amount, advance.currency)}</p>
           </div>
           <div>
-            <p className="text-xs text-neutral-400 mb-0.5">Recovery</p>
+            <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.step.recovery")}</p>
             <p className="font-semibold text-neutral-900">
-              {advance.repayment_months <= 1 ? "Full amount — one payroll month" : `${advance.repayment_months} months`}
+              {advance.repayment_months <= 1
+                ? t("salaryAdvances.detail.fullAmountOneMonth")
+                : t("salaryAdvances.detail.months", { count: advance.repayment_months })}
             </p>
           </div>
           <div>
             <p className="text-xs text-neutral-400 mb-0.5">
-              {advance.repayment_months <= 1 ? "Payroll deduction" : "Monthly deduction"}
+              {advance.repayment_months <= 1 ? t("salaryAdvances.detail.payrollDeduction") : t("salaryAdvances.detail.monthlyDeduction")}
             </p>
             <p className="font-semibold text-neutral-900">{monthlyRepayment}</p>
           </div>
           <div className="col-span-2">
-            <p className="text-xs text-neutral-400 mb-0.5">Purpose</p>
+            <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.purpose")}</p>
             <p className="font-medium text-neutral-800">{advance.purpose}</p>
           </div>
           {advance.justification && (
             <div className="col-span-2">
-              <p className="text-xs text-neutral-400 mb-0.5">Justification</p>
+              <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.justification")}</p>
               <p className="text-neutral-700 whitespace-pre-wrap">{advance.justification}</p>
             </div>
           )}
@@ -685,19 +697,19 @@ export default function AdvanceDetailPage() {
 
         <div className="border-t border-neutral-100 pt-4 grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div>
-            <p className="text-xs text-neutral-400 mb-0.5">Requested by</p>
+            <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.requestedBy")}</p>
             <p className="font-medium text-neutral-900">{advance.requester?.name ?? "—"}</p>
           </div>
           <div>
-            <p className="text-xs text-neutral-400 mb-0.5">Approved by</p>
+            <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.approvedBy")}</p>
             <p className="font-medium text-neutral-900">{advance.approver?.name ?? "—"}</p>
           </div>
           <div>
-            <p className="text-xs text-neutral-400 mb-0.5">Submitted on</p>
+            <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.submittedOn")}</p>
             <p className="font-medium text-neutral-900">{advance.submitted_at ? formatDate(advance.submitted_at) : "—"}</p>
           </div>
           <div>
-            <p className="text-xs text-neutral-400 mb-0.5">Approved on</p>
+            <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.approvedOn")}</p>
             <p className="font-medium text-neutral-900">{advance.approved_at ? formatDate(advance.approved_at) : "—"}</p>
           </div>
         </div>
@@ -710,38 +722,40 @@ export default function AdvanceDetailPage() {
             <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
               <span className="material-symbols-outlined text-blue-600 text-[16px]">verified</span>
             </div>
-            <h2 className="text-sm font-semibold text-neutral-900">Salary Eligibility Snapshot</h2>
-            <span className="ml-auto text-[11px] text-neutral-400">Frozen at time of submission</span>
+            <h2 className="text-sm font-semibold text-neutral-900">{t("salaryAdvances.detail.snapshot.title")}</h2>
+            <span className="ml-auto text-[11px] text-neutral-400">{t("salaryAdvances.detail.snapshot.frozen")}</span>
           </div>
           <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
             <div>
-              <p className="text-xs text-neutral-400 mb-0.5">Confirmed Net Salary</p>
+              <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.snapshot.net")}</p>
               <p className="font-semibold text-neutral-900">
                 {advance.net_salary_at_request != null ? formatCurrency(advance.net_salary_at_request, advance.currency) : "—"}
               </p>
             </div>
             <div>
-              <p className="text-xs text-neutral-400 mb-0.5">Gross Salary</p>
+              <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.snapshot.gross")}</p>
               <p className="font-medium text-neutral-800">
                 {advance.gross_salary_at_request != null ? formatCurrency(advance.gross_salary_at_request, advance.currency) : "—"}
               </p>
             </div>
             <div>
-              <p className="text-xs text-neutral-400 mb-0.5">Maximum Eligible (50% of net)</p>
+              <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.snapshot.maxEligible")}</p>
               <p className="font-semibold text-neutral-900">
                 {advance.max_eligible_amount != null ? formatCurrency(advance.max_eligible_amount, advance.currency) : "—"}
               </p>
             </div>
             <div>
-              <p className="text-xs text-neutral-400 mb-0.5">Payslip Period</p>
+              <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.snapshot.payslipPeriod")}</p>
               <p className="font-medium text-neutral-800">
                 {advance.payslip
-                  ? `${["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][advance.payslip.period_month] ?? advance.payslip.period_month} ${advance.payslip.period_year}`
+                  ? advance.payslip.period_month >= 1 && advance.payslip.period_month <= 12
+                    ? new Date(advance.payslip.period_year, advance.payslip.period_month - 1, 1).toLocaleDateString(localeTag, { month: "short", year: "numeric" })
+                    : `${advance.payslip.period_month} ${advance.payslip.period_year}`
                   : "—"}
               </p>
             </div>
             <div>
-              <p className="text-xs text-neutral-400 mb-0.5">Eligibility Status</p>
+              <p className="text-xs text-neutral-400 mb-0.5">{t("salaryAdvances.detail.snapshot.eligibility")}</p>
               <span className={`badge ${advance.eligibility_status === "eligible" ? "badge-success" : "badge-warning"}`}>
                 {advance.eligibility_status ?? "—"}
               </span>
@@ -765,7 +779,7 @@ export default function AdvanceDetailPage() {
             className="btn-primary flex items-center gap-2 py-2 px-4 text-sm disabled:opacity-60"
           >
             <span className="material-symbols-outlined text-[18px]">send</span>
-            Submit for approval
+            {t("salaryAdvances.detail.submitForApproval")}
           </button>
         )}
         {isAdmin && (advance.status === "submitted" || advance.status === "resubmitted") && (
@@ -778,7 +792,7 @@ export default function AdvanceDetailPage() {
               data-testid="finance-certify-open"
             >
               <span className="material-symbols-outlined text-[18px]">verified</span>
-              Finance Certify (Part B)
+              {t("salaryAdvances.detail.financeCertifyPartB")}
             </button>
             <button
               type="button"
@@ -787,7 +801,7 @@ export default function AdvanceDetailPage() {
               className="flex items-center gap-2 py-2 px-4 text-sm font-semibold rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60"
             >
               <span className="material-symbols-outlined text-[18px]">cancel</span>
-              Reject
+              {t("common.reject")}
             </button>
           </>
         )}
@@ -800,7 +814,7 @@ export default function AdvanceDetailPage() {
               className="btn-primary flex items-center gap-2 py-2 px-4 text-sm disabled:opacity-60"
             >
               <span className="material-symbols-outlined text-[18px]">check_circle</span>
-              Approve
+              {t("common.approve")}
             </button>
             {canReturn && (
               <button
@@ -810,7 +824,7 @@ export default function AdvanceDetailPage() {
                 className="flex items-center gap-2 py-2 px-4 text-sm font-semibold rounded-lg border-2 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-60"
               >
                 <span className="material-symbols-outlined text-[18px]">undo</span>
-                Return
+                {t("common.return")}
               </button>
             )}
             <button
@@ -820,7 +834,7 @@ export default function AdvanceDetailPage() {
               className="flex items-center gap-2 py-2 px-4 text-sm font-semibold rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60"
             >
               <span className="material-symbols-outlined text-[18px]">cancel</span>
-              Reject
+              {t("common.reject")}
             </button>
           </>
         )}
@@ -840,7 +854,7 @@ export default function AdvanceDetailPage() {
             data-testid="record-payment-open"
           >
             <span className="material-symbols-outlined text-[18px]">payments</span>
-            Record Payment
+            {t("salaryAdvances.detail.recordPaymentBtn")}
           </button>
         )}
         {isAdmin && (advance.status === "paid" || advance.status === "recovery_scheduled" || advance.status === "reconciliation_required") && (
@@ -859,11 +873,11 @@ export default function AdvanceDetailPage() {
             data-testid="record-recovery-open"
           >
             <span className="material-symbols-outlined text-[18px]">account_balance</span>
-            Record Recovery
+            {t("salaryAdvances.detail.recordRecoveryBtn")}
           </button>
         )}
         <Link href="/salary-advances" className="btn-secondary flex items-center gap-2 py-2 px-4 text-sm">
-          Back to list
+          {t("salaryAdvances.detail.backToList")}
         </Link>
       </div>
 
@@ -880,11 +894,11 @@ export default function AdvanceDetailPage() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h3 className="text-base font-semibold text-neutral-900 mb-1">Reject advance request</h3>
-              <p className="text-sm text-neutral-500 mb-4">Please provide a reason for rejecting this request.</p>
+              <h3 className="text-base font-semibold text-neutral-900 mb-1">{t("salaryAdvances.detail.reject.title")}</h3>
+              <p className="text-sm text-neutral-500 mb-4">{t("salaryAdvances.detail.reject.body")}</p>
               <textarea
                 className="form-input w-full h-28 resize-none"
-                placeholder="Reason for rejection…"
+                placeholder={t("salaryAdvances.detail.reject.placeholder")}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
               />
@@ -895,7 +909,7 @@ export default function AdvanceDetailPage() {
                 onClick={() => setShowRejectDialog(false)}
                 className="btn-secondary py-2 px-4 text-sm"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -903,7 +917,7 @@ export default function AdvanceDetailPage() {
                 onClick={handleReject}
                 className="flex items-center gap-2 py-2 px-4 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
               >
-                Confirm rejection
+                {t("salaryAdvances.detail.reject.confirm")}
               </button>
             </div>
           </div>
@@ -916,17 +930,17 @@ export default function AdvanceDetailPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" data-testid="finance-certify-modal">
             <div className="p-6 space-y-4">
               <div>
-                <h3 className="text-base font-semibold text-neutral-900">FORM-002 Part B — Finance Certification</h3>
+                <h3 className="text-base font-semibold text-neutral-900">{t("salaryAdvances.detail.certify.title")}</h3>
                 <p className="text-sm text-neutral-500 mt-1">
-                  Confirm salary basis, eligibility, recommended amount, and recovery payroll month.
+                  {t("salaryAdvances.detail.certify.subtitle")}
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 {([
-                  { key: "certify", label: "Certify" },
-                  { key: "return", label: "Return" },
-                  { key: "not_eligible", label: "Not eligible" },
+                  { key: "certify", label: "salaryAdvances.detail.certify.modeCertify" },
+                  { key: "return", label: "common.return" },
+                  { key: "not_eligible", label: "salaryAdvances.detail.certify.modeNotEligible" },
                 ] as const).map((m) => (
                   <button
                     key={m.key}
@@ -934,7 +948,7 @@ export default function AdvanceDetailPage() {
                     onClick={() => setCertifyMode(m.key)}
                     className={`filter-tab${certifyMode === m.key ? " active" : ""}`}
                   >
-                    {m.label}
+                    {t(m.label)}
                   </button>
                 ))}
               </div>
@@ -943,7 +957,7 @@ export default function AdvanceDetailPage() {
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label htmlFor="salary-advances-detail-confirmed-net-salary-setcertifyform-f-data-testi" className="block text-xs font-semibold text-neutral-700">
-                      Confirmed net salary <span className="text-red-500">*</span>
+                      {t("salaryAdvances.detail.certify.net")} <span className="text-red-500">*</span>
                       <input id="salary-advances-detail-confirmed-net-salary-setcertifyform-f-data-testi"
                         type="number"
                         min={0}
@@ -955,7 +969,7 @@ export default function AdvanceDetailPage() {
                       />
                     </label>
                     <label htmlFor="salary-advances-detail-confirmed-gross-optional-setcertifyform-f" className="block text-xs font-semibold text-neutral-700">
-                      Confirmed gross (optional)
+                      {t("salaryAdvances.detail.certify.gross")}
                       <input id="salary-advances-detail-confirmed-gross-optional-setcertifyform-f"
                         type="number"
                         min={0}
@@ -966,7 +980,7 @@ export default function AdvanceDetailPage() {
                       />
                     </label>
                     <label htmlFor="salary-advances-detail-recommended-amount-setcertifyform-f-data-testid-" className="block text-xs font-semibold text-neutral-700">
-                      Recommended amount <span className="text-red-500">*</span>
+                      {t("salaryAdvances.detail.certify.recommended")} <span className="text-red-500">*</span>
                       <input id="salary-advances-detail-recommended-amount-setcertifyform-f-data-testid-"
                         type="number"
                         min={1}
@@ -978,7 +992,7 @@ export default function AdvanceDetailPage() {
                       />
                     </label>
                     <label htmlFor="salary-advances-detail-recovery-payroll-date-setcertifyform-f-data-test" className="block text-xs font-semibold text-neutral-700">
-                      Recovery payroll date <span className="text-red-500">*</span>
+                      {t("salaryAdvances.detail.certify.recoveryDate")} <span className="text-red-500">*</span>
                       <input id="salary-advances-detail-recovery-payroll-date-setcertifyform-f-data-test"
                         type="date"
                         className="form-input mt-1 w-full"
@@ -989,33 +1003,35 @@ export default function AdvanceDetailPage() {
                     </label>
                   </div>
                   <p className="text-[11px] text-neutral-500">
-                    Salary basis for v1: <span className="font-semibold">confirmed net</span>. Max eligible is recalculated as 50% of confirmed net on certify.
+                    {t("salaryAdvances.detail.certify.basisPrefix")}{" "}
+                    <span className="font-semibold">{t("salaryAdvances.detail.certify.basisValue")}</span>
+                    .{" "}{t("salaryAdvances.detail.certify.basisSuffix")}
                   </p>
                   <label htmlFor="salary-advances-detail-comments-setcertifyform-f-placeholder-certificat" className="block text-xs font-semibold text-neutral-700">
-                    Comments
+                    {t("salaryAdvances.detail.certify.comments")}
                     <textarea id="salary-advances-detail-comments-setcertifyform-f-placeholder-certificat"
                       className="form-input mt-1 w-full h-20 resize-none"
                       value={certifyForm.comments}
                       onChange={(e) => setCertifyForm((f) => ({ ...f, comments: e.target.value }))}
-                      placeholder="Certification notes…"
+                      placeholder={t("salaryAdvances.detail.certify.notesPlaceholder")}
                     />
                   </label>
                 </div>
               ) : (
                 <label htmlFor="salary-advances-detail-setactionreason-e-target-value-placeholder" className="block text-xs font-semibold text-neutral-700">
-                  {certifyMode === "return" ? "Return reason" : "Not-eligible reason"} <span className="text-red-500">*</span>
+                  {certifyMode === "return" ? t("salaryAdvances.detail.certify.returnReason") : t("salaryAdvances.detail.certify.notEligibleReason")} <span className="text-red-500">*</span>
                   <textarea id="salary-advances-detail-setactionreason-e-target-value-placeholder"
                     className="form-input mt-1 w-full h-28 resize-none"
                     value={actionReason}
                     onChange={(e) => setActionReason(e.target.value)}
-                    placeholder={certifyMode === "return" ? "Why is this being returned?" : "Why is the applicant not eligible?"}
+                    placeholder={certifyMode === "return" ? t("salaryAdvances.detail.certify.returnPlaceholder") : t("salaryAdvances.detail.certify.notEligiblePlaceholder")}
                   />
                 </label>
               )}
             </div>
             <div className="flex justify-end gap-3 px-6 pb-5">
               <button type="button" onClick={() => setShowCertifyModal(false)} className="btn-secondary py-2 px-4 text-sm">
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -1024,7 +1040,11 @@ export default function AdvanceDetailPage() {
                 className="btn-primary py-2 px-4 text-sm disabled:opacity-60"
                 data-testid="finance-certify-submit"
               >
-                {certifyMode === "certify" ? "Certify" : certifyMode === "return" ? "Return to requester" : "Mark not eligible"}
+                {certifyMode === "certify"
+                  ? t("salaryAdvances.detail.certify.modeCertify")
+                  : certifyMode === "return"
+                    ? t("salaryAdvances.detail.certify.returnToRequester")
+                    : t("salaryAdvances.detail.certify.markNotEligible")}
               </button>
             </div>
           </div>
@@ -1036,10 +1056,10 @@ export default function AdvanceDetailPage() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" data-testid="payment-modal">
             <div className="p-6 space-y-3">
-              <h3 className="text-base font-semibold text-neutral-900">Record payment</h3>
-              <p className="text-sm text-neutral-500">Creates the BCRE liability register on disbursement.</p>
+              <h3 className="text-base font-semibold text-neutral-900">{t("salaryAdvances.detail.payment.title")}</h3>
+              <p className="text-sm text-neutral-500">{t("salaryAdvances.detail.payment.subtitle")}</p>
               <label htmlFor="salary-advances-detail-payment-reference-setpaymentform-f-data-testid-p" className="block text-xs font-semibold text-neutral-700">
-                Payment reference <span className="text-red-500">*</span>
+                {t("salaryAdvances.detail.payment.reference")} <span className="text-red-500">*</span>
                 <input id="salary-advances-detail-payment-reference-setpaymentform-f-data-testid-p"
                   type="text"
                   className="form-input mt-1 w-full"
@@ -1049,20 +1069,20 @@ export default function AdvanceDetailPage() {
                 />
               </label>
               <label htmlFor="salary-advances-detail-method-setpaymentform-f-bank-transfer-cash-chequ" className="block text-xs font-semibold text-neutral-700">
-                Method
+                {t("salaryAdvances.detail.payment.method")}
                 <select id="salary-advances-detail-method-setpaymentform-f-bank-transfer-cash-chequ"
                   className="form-input mt-1 w-full"
                   value={paymentForm.payment_method}
                   onChange={(e) => setPaymentForm((f) => ({ ...f, payment_method: e.target.value }))}
                 >
-                  <option value="bank_transfer">Bank transfer</option>
-                  <option value="cash">Cash</option>
-                  <option value="cheque">Cheque</option>
-                  <option value="other">Other</option>
+                  <option value="bank_transfer">{t("salaryAdvances.detail.payment.bankTransfer")}</option>
+                  <option value="cash">{t("salaryAdvances.detail.payment.cash")}</option>
+                  <option value="cheque">{t("salaryAdvances.detail.payment.cheque")}</option>
+                  <option value="other">{t("salaryAdvances.type.other")}</option>
                 </select>
               </label>
               <label htmlFor="salary-advances-detail-payment-date-setpaymentform-f" className="block text-xs font-semibold text-neutral-700">
-                Payment date
+                {t("salaryAdvances.detail.payment.date")}
                 <input id="salary-advances-detail-payment-date-setpaymentform-f"
                   type="date"
                   className="form-input mt-1 w-full"
@@ -1072,14 +1092,14 @@ export default function AdvanceDetailPage() {
               </label>
             </div>
             <div className="flex justify-end gap-3 px-6 pb-5">
-              <button type="button" onClick={() => setShowPaymentModal(false)} className="btn-secondary py-2 px-4 text-sm">Cancel</button>
+              <button type="button" onClick={() => setShowPaymentModal(false)} className="btn-secondary py-2 px-4 text-sm">{t("common.cancel")}</button>
               <button
                 type="button"
                 disabled={actionLoading || !paymentForm.payment_reference.trim()}
                 onClick={handleRecordPaymentSubmit}
                 className="btn-primary py-2 px-4 text-sm disabled:opacity-60"
               >
-                Record payment
+                {t("salaryAdvances.detail.payment.title")}
               </button>
             </div>
           </div>
@@ -1091,10 +1111,10 @@ export default function AdvanceDetailPage() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" data-testid="recovery-modal">
             <div className="p-6 space-y-3">
-              <h3 className="text-base font-semibold text-neutral-900">Record payroll recovery</h3>
-              <p className="text-sm text-neutral-500">Posts a BCRE recovery transaction. Full EOM is the v1 policy default.</p>
+              <h3 className="text-base font-semibold text-neutral-900">{t("salaryAdvances.detail.recovery.title")}</h3>
+              <p className="text-sm text-neutral-500">{t("salaryAdvances.detail.recovery.subtitle")}</p>
               <label htmlFor="salary-advances-detail-amount-setrecoveryform-f-data-testid-recovery-am" className="block text-xs font-semibold text-neutral-700">
-                Amount <span className="text-red-500">*</span>
+                {t("salaryAdvances.detail.recovery.amount")} <span className="text-red-500">*</span>
                 <input id="salary-advances-detail-amount-setrecoveryform-f-data-testid-recovery-am"
                   type="number"
                   min={0.01}
@@ -1106,19 +1126,19 @@ export default function AdvanceDetailPage() {
                 />
               </label>
               <label htmlFor="salary-advances-detail-payroll-transaction-reference-setrecoveryform-f-" className="block text-xs font-semibold text-neutral-700">
-                Payroll transaction reference <span className="text-red-500">*</span>
+                {t("salaryAdvances.detail.recovery.reference")} <span className="text-red-500">*</span>
                 <input id="salary-advances-detail-payroll-transaction-reference-setrecoveryform-f-"
                   type="text"
                   required
                   className="form-input mt-1 w-full"
-                  placeholder="e.g. PAYROLL-JUL-2026-001"
+                  placeholder={t("salaryAdvances.detail.recovery.referencePlaceholder")}
                   value={recoveryForm.reference_doc}
                   onChange={(e) => setRecoveryForm((f) => ({ ...f, reference_doc: e.target.value }))}
                   data-testid="recovery-reference"
                 />
               </label>
               <label htmlFor="salary-advances-detail-notes-setrecoveryform-f" className="block text-xs font-semibold text-neutral-700">
-                Notes
+                {t("salaryAdvances.detail.recovery.notes")}
                 <textarea id="salary-advances-detail-notes-setrecoveryform-f"
                   className="form-input mt-1 w-full h-20 resize-none"
                   value={recoveryForm.notes}
@@ -1127,14 +1147,14 @@ export default function AdvanceDetailPage() {
               </label>
             </div>
             <div className="flex justify-end gap-3 px-6 pb-5">
-              <button type="button" onClick={() => setShowRecoveryModal(false)} className="btn-secondary py-2 px-4 text-sm">Cancel</button>
+              <button type="button" onClick={() => setShowRecoveryModal(false)} className="btn-secondary py-2 px-4 text-sm">{t("common.cancel")}</button>
               <button
                 type="button"
                 disabled={actionLoading || !recoveryForm.amount || !recoveryForm.reference_doc.trim()}
                 onClick={handleRecordRecoverySubmit}
                 className="btn-primary py-2 px-4 text-sm disabled:opacity-60"
               >
-                Record recovery
+                {t("salaryAdvances.detail.recovery.submit")}
               </button>
             </div>
           </div>

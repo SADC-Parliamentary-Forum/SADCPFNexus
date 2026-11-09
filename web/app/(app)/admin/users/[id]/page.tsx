@@ -27,6 +27,7 @@ import { cn, formatDateShort } from "@/lib/utils";
 import { apiErrorMessage } from "@/lib/apiError";
 import { invitationState, type InvitationFields } from "@/lib/userInvitation";
 import DocumentsPanel from "@/components/ui/DocumentsPanel";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const CLASSIFICATIONS = ["UNCLASSIFIED", "RESTRICTED", "CONFIDENTIAL", "SECRET"];
 
@@ -71,6 +72,7 @@ const DEFAULT_FORM: FormState = {
 
 function ChangePasswordSection({ userId }: { userId: number }) {
   const { success, error: toastError } = useToast();
+  const { t } = useI18n();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -86,22 +88,23 @@ function ChangePasswordSection({ userId }: { userId: number }) {
     return s;
   };
   const score = strength(newPassword);
-  const strengthLabel = ["", "Weak", "Fair", "Good", "Strong"][score];
+  const strengthKey = ["", "weak", "fair", "good", "strong"][score];
+  const strengthLabel = strengthKey ? t(`admin.users.detail.pw.strength.${strengthKey}`) : "";
   const strengthColor = ["", "bg-red-500", "bg-amber-400", "bg-blue-400", "bg-green-500"][score];
 
   const handleSubmit = async () => {
     if (!newPassword || newPassword !== confirmPassword) {
-      toastError("Passwords do not match.");
+      toastError(t("admin.users.detail.pw.mismatchToast"));
       return;
     }
     if (newPassword.length < 8) {
-      toastError("Password must be at least 8 characters.");
+      toastError(t("admin.users.detail.pw.tooShort"));
       return;
     }
     setSaving(true);
     try {
       await adminApi.changeUserPassword(userId, newPassword, confirmPassword);
-      success("Password changed successfully.");
+      success(t("admin.users.detail.pw.changed"));
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: unknown) {
@@ -110,7 +113,7 @@ function ChangePasswordSection({ userId }: { userId: number }) {
       const msg = ax.response?.data?.message
         ?? (ax.response?.data?.errors && Object.values(ax.response.data.errors).flat()[0])
         ?? ax.message
-        ?? "Failed to change password.";
+        ?? t("admin.users.detail.pw.changeFailed");
       toastError(msg);
     } finally {
       setSaving(false);
@@ -121,21 +124,21 @@ function ChangePasswordSection({ userId }: { userId: number }) {
     <section className="pt-8 border-t border-neutral-100">
       <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
         <span className="material-symbols-outlined text-primary">key</span>
-        Change Password
+        {t("admin.users.detail.pw.title")}
       </h3>
       <div className="p-6 rounded-2xl bg-neutral-50 border border-neutral-200 space-y-5">
         <p className="text-sm text-neutral-500">
-          Set a new password for this user. They will be required to use this password on their next login.
+          {t("admin.users.detail.pw.intro")}
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="admin-users-detail-new-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
+            <label htmlFor="admin-users-detail-new-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("admin.users.detail.pw.new")}</label>
             <div className="relative">
               <input
                 id="admin-users-detail-new-password"
                 type={showNew ? "text" : "password"}
                 className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                placeholder="Min. 8 characters"
+                placeholder={t("admin.users.detail.pw.newPlaceholder")}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
@@ -158,13 +161,13 @@ function ChangePasswordSection({ userId }: { userId: number }) {
             )}
           </div>
           <div>
-            <label htmlFor="admin-users-detail-confirm-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm New Password</label>
+            <label htmlFor="admin-users-detail-confirm-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("admin.users.detail.pw.confirm")}</label>
             <div className="relative">
               <input
                 id="admin-users-detail-confirm-password"
                 type={showConfirm ? "text" : "password"}
                 className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                placeholder="Repeat password"
+                placeholder={t("admin.users.detail.pw.confirmPlaceholder")}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
@@ -176,13 +179,13 @@ function ChangePasswordSection({ userId }: { userId: number }) {
             {confirmPassword && newPassword !== confirmPassword && (
               <p className="text-[11px] text-red-500 mt-1.5 flex items-center gap-1">
                 <span className="material-symbols-outlined text-[12px]">error</span>
-                Passwords do not match
+                {t("admin.users.detail.pw.mismatch")}
               </p>
             )}
             {confirmPassword && newPassword === confirmPassword && newPassword.length >= 8 && (
               <p className="text-[11px] text-green-600 mt-1.5 flex items-center gap-1">
                 <span className="material-symbols-outlined text-[12px]">check_circle</span>
-                Passwords match
+                {t("admin.users.detail.pw.match")}
               </p>
             )}
           </div>
@@ -195,12 +198,12 @@ function ChangePasswordSection({ userId }: { userId: number }) {
             className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined text-[16px]">{saving ? "hourglass_empty" : "lock_reset"}</span>
-            {saving ? "Saving…" : "Set New Password"}
+            {saving ? t("admin.users.detail.saving") : t("admin.users.detail.pw.submit")}
           </button>
           {(newPassword || confirmPassword) && (
             <button type="button" onClick={() => { setNewPassword(""); setConfirmPassword(""); }}
               className="text-sm text-neutral-400 hover:text-neutral-600">
-              Clear
+              {t("admin.users.detail.pw.clear")}
             </button>
           )}
         </div>
@@ -214,6 +217,7 @@ export default function UserEditPage() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
   const { confirm } = useConfirm();
+  const { t } = useI18n();
 
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
@@ -267,7 +271,7 @@ export default function UserEditPage() {
           if (status === 403 || status === 401) {
             setAccessDenied(true);
           } else {
-            toastError("Error", "Failed to load user information.");
+            toastError(t("admin.users.detail.error"), t("admin.users.detail.loadFailed"));
           }
           return;
         }
@@ -339,7 +343,7 @@ export default function UserEditPage() {
         });
       } catch (err) {
         console.error("Failed to fetch user data:", err);
-        toastError("Error", "Failed to load user information.");
+        toastError(t("admin.users.detail.error"), t("admin.users.detail.loadFailed"));
       } finally {
         setLoading(false);
       }
@@ -389,7 +393,7 @@ export default function UserEditPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (assignedRoles.length === 0) {
-      toastError("Role Required", "Assign at least one governed role before saving access changes.");
+      toastError(t("admin.users.detail.roleRequired"), t("admin.users.detail.roleRequiredDesc"));
       setActiveTab("security");
       return;
     }
@@ -425,17 +429,17 @@ export default function UserEditPage() {
         const roleRes = await adminApi.updateUserRoles(Number(id), assignedRoles);
         setInitialRoles([...assignedRoles]);
         if (roleRes.status === 202) {
-          success("Pending approval", "Built-in role change is waiting for a second administrator.");
+          success(t("admin.users.detail.pendingApproval"), t("admin.users.detail.roleChangePending"));
           const profile = await accessApi.userProfile(Number(id));
           setPendingRoleSyncs(profile.data.data.pending_role_sync_requests ?? []);
           setSaving(false);
           return;
         }
       }
-      success("Success", "User updated successfully.");
+      success(t("admin.users.detail.success"), t("admin.users.detail.updated"));
       router.refresh();
     } catch {
-      toastError("Update Failed", "Could not update user details.");
+      toastError(t("admin.users.detail.updateFailed"), t("admin.users.detail.updateFailedDesc"));
     } finally {
       setSaving(false);
     }
@@ -459,7 +463,7 @@ export default function UserEditPage() {
   const handleAssignCatalogue = async (role: AccessCatalogueRole) => {
     const versionId = role.current_version?.id;
     if (!versionId) {
-      toastError("Unavailable", `${role.name} has no published version to assign.`);
+      toastError(t("admin.users.detail.unavailable"), t("admin.users.detail.noPublishedVersion", { name: role.name }));
       return;
     }
     setCatalogueBusy(true);
@@ -467,10 +471,10 @@ export default function UserEditPage() {
       await accessApi.assignRoleVersion(Number(id), versionId, {
         reason: catalogueReason.trim() || "Assigned from user security tab",
       });
-      success("Assigned", `${role.name} was submitted. High-risk roles stay pending until a second administrator approves.`);
+      success(t("admin.users.detail.assigned"), t("admin.users.detail.assignSubmitted", { name: role.name }));
       await reloadAccessProfile();
     } catch (err) {
-      toastError("Assignment failed", catalogueError(err, "Could not assign this catalogue role."));
+      toastError(t("admin.users.detail.assignFailed"), catalogueError(err, t("admin.users.detail.assignFailedDesc")));
     } finally {
       setCatalogueBusy(false);
     }
@@ -480,10 +484,10 @@ export default function UserEditPage() {
     setCatalogueBusy(true);
     try {
       await accessApi.approveRoleAssignment(assignmentId);
-      success("Approved", "Catalogue role assignment is now active.");
+      success(t("admin.users.detail.approved"), t("admin.users.detail.catalogueApproved"));
       await reloadAccessProfile();
     } catch (err) {
-      toastError("Approval failed", catalogueError(err, "A different administrator must approve this assignment."));
+      toastError(t("admin.users.detail.approvalFailed"), catalogueError(err, t("admin.users.detail.approveAssignmentFailed")));
     } finally {
       setCatalogueBusy(false);
     }
@@ -493,10 +497,10 @@ export default function UserEditPage() {
     setCatalogueBusy(true);
     try {
       await adminApi.approveRoleSync(syncId);
-      success("Approved", "Built-in role change is now active.");
+      success(t("admin.users.detail.approved"), t("admin.users.detail.roleChangeApproved"));
       await reloadAccessProfile();
     } catch (err) {
-      toastError("Approval failed", catalogueError(err, "A different administrator must approve this role change."));
+      toastError(t("admin.users.detail.approvalFailed"), catalogueError(err, t("admin.users.detail.approveRoleChangeFailed")));
     } finally {
       setCatalogueBusy(false);
     }
@@ -509,9 +513,9 @@ export default function UserEditPage() {
     try {
       const res = await adminApi.resendUserInvitation(Number(id));
       setInvitation({ ...invitation, latest_account_invitation: res.data.user.latest_account_invitation });
-      success(resend ? "Invitation resent" : "Invitation sent", `${form.email} can now complete registration.`);
+      success(resend ? t("admin.users.inv.resentToast") : t("admin.users.inv.sent"), t("admin.users.inv.canRegister", { email: form.email }));
     } catch (err) {
-      toastError("Invitation not sent", apiErrorMessage(err, "Could not send the invitation."));
+      toastError(t("admin.users.inv.notSent"), apiErrorMessage(err, t("admin.users.inv.sendFailed")));
     } finally {
       setInviting(false);
     }
@@ -519,17 +523,17 @@ export default function UserEditPage() {
 
   const handleDelete = async () => {
     if (await confirm({
-      title: "Deactivate User",
-      message: "Deactivate this user? They will lose access until reactivated. System Admin accounts cannot be deactivated here.",
-      confirmText: "Deactivate",
+      title: t("admin.users.detail.deactivateUser"),
+      message: t("admin.users.detail.deactivateMessage"),
+      confirmText: t("admin.users.deactivate"),
       variant: "danger",
     })) {
       try {
         await adminApi.deactivateUser(Number(id));
-        success("Deactivated", "User has been deactivated.");
+        success(t("admin.users.detail.deactivated"), t("admin.users.detail.deactivatedDesc"));
         router.push("/admin/users");
       } catch {
-        toastError("Error", "Failed to deactivate user. You cannot deactivate yourself or a System Admin.");
+        toastError(t("admin.users.detail.error"), t("admin.users.detail.deactivateFailed"));
       }
     }
   };
@@ -540,7 +544,7 @@ export default function UserEditPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <span className="material-symbols-outlined animate-spin text-primary text-4xl mb-4">progress_activity</span>
-        <p className="text-neutral-500 font-medium">Loading user details...</p>
+        <p className="text-neutral-500 font-medium">{t("admin.users.detail.loading")}</p>
       </div>
     );
   }
@@ -549,9 +553,9 @@ export default function UserEditPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <span className="material-symbols-outlined text-5xl text-red-300">lock</span>
-        <h2 className="text-xl font-bold text-neutral-800">Access Denied</h2>
-        <p className="text-sm text-neutral-500">You don't have permission to view this user's profile.</p>
-        <Link href="/admin/users" className="btn-secondary mt-2">Back to Users</Link>
+        <h2 className="text-xl font-bold text-neutral-800">{t("admin.users.detail.accessDenied")}</h2>
+        <p className="text-sm text-neutral-500">{t("admin.users.detail.accessDeniedDesc")}</p>
+        <Link href="/admin/users" className="btn-secondary mt-2">{t("admin.users.detail.backToUsers")}</Link>
       </div>
     );
   }
@@ -563,13 +567,14 @@ export default function UserEditPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/admin/users"
+            aria-label={t("admin.users.detail.backToUsers")}
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-neutral-200 text-neutral-500 hover:text-primary hover:border-primary transition-all shadow-sm"
           >
             <span className="material-symbols-outlined">arrow_back</span>
           </Link>
           <ModulePageHeader
-        title="Edit Staff Member"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Edit Staff Member" }]} />}
+        title={t("admin.users.detail.title")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.users.detail.title") }]} />}
       />
         </div>
         <div className="flex items-center gap-3">
@@ -579,7 +584,7 @@ export default function UserEditPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 bg-white text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors shadow-sm"
           >
             <span className="material-symbols-outlined text-[18px]">person_off</span>
-            Deactivate User
+            {t("admin.users.detail.deactivateUser")}
           </button>
           <button
             type="submit"
@@ -592,7 +597,7 @@ export default function UserEditPage() {
             ) : (
               <span className="material-symbols-outlined text-[18px]">save</span>
             )}
-            Save Changes
+            {t("admin.users.detail.saveChanges")}
           </button>
         </div>
       </div>
@@ -612,7 +617,7 @@ export default function UserEditPage() {
                 "inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
                 form.is_active ? "bg-green-100 text-green-700" : "bg-neutral-100 text-neutral-500"
               )}>
-                {form.is_active ? "Active" : "Inactive"}
+                {form.is_active ? t("admin.common.active") : t("admin.common.inactive")}
               </span>
               <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-center gap-2">
                 <span className="badge badge-primary">{form.role}</span>
@@ -622,16 +627,22 @@ export default function UserEditPage() {
 
           {invitation && invitationState(invitation).action && (() => {
             const inv = invitationState(invitation);
+            const invLabel = inv.kind === "expired"
+              ? t("admin.users.inv.expired")
+              : inv.kind === "sent"
+                ? t("admin.users.inv.sent")
+                : t("admin.users.inv.notInvited");
+            const invAction = t(inv.kind === "not_invited" ? "admin.users.inv.send" : "admin.users.inv.resend");
             return (
               <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm space-y-3" data-testid="user-invitation-panel">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-neutral-900">Registration invitation</h3>
-                  <span className={`badge ${inv.badge}`}>{inv.label}</span>
+                  <h3 className="text-sm font-semibold text-neutral-900">{t("admin.users.detail.inv.title")}</h3>
+                  <span className={`badge ${inv.badge}`}>{invLabel}</span>
                 </div>
                 <p className="text-xs text-neutral-500">
-                  {inv.kind === "not_invited" && "This account was created without an invitation. Send one so the user can set a password and complete registration."}
-                  {inv.kind === "sent" && `The user has not completed registration yet. The link expires ${formatDateShort(inv.expiresAt)}.`}
-                  {inv.kind === "expired" && "The invitation link has expired. Resend it to give the user a new link."}
+                  {inv.kind === "not_invited" && t("admin.users.detail.inv.notInvitedDesc")}
+                  {inv.kind === "sent" && t("admin.users.detail.inv.sentDesc", { date: formatDateShort(inv.expiresAt) })}
+                  {inv.kind === "expired" && t("admin.users.detail.inv.expiredDesc")}
                 </p>
                 <button
                   type="button"
@@ -641,7 +652,7 @@ export default function UserEditPage() {
                   data-testid="user-invite-button"
                 >
                   <span className="material-symbols-outlined text-[18px]">forward_to_inbox</span>
-                  {inviting ? "Sendingâ€¦" : inv.action}
+                  {inviting ? t("admin.users.detail.inv.sending") : invAction}
                 </button>
               </div>
             );
@@ -649,11 +660,11 @@ export default function UserEditPage() {
 
           <div className="bg-white rounded-2xl border border-neutral-200 p-2 shadow-sm">
             {[
-              { id: "profile", label: "Staff Profile", icon: "person" },
-              { id: "security", label: "Role & Security", icon: "admin_panel_settings" },
-              { id: "permissions", label: "Module Access", icon: "key" },
-              { id: "documents", label: "Documents", icon: "folder_open" },
-              { id: "activity", label: "System Activity", icon: "history" },
+              { id: "profile", label: "admin.users.detail.tab.profile", icon: "person" },
+              { id: "security", label: "admin.users.detail.tab.security", icon: "admin_panel_settings" },
+              { id: "permissions", label: "admin.users.detail.tab.permissions", icon: "key" },
+              { id: "documents", label: "admin.users.detail.tab.documents", icon: "folder_open" },
+              { id: "activity", label: "admin.users.detail.tab.activity", icon: "history" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -666,7 +677,7 @@ export default function UserEditPage() {
                 )}
               >
                 <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
-                {tab.label}
+                {t(tab.label)}
                 {activeTab === tab.id && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
               </button>
             ))}
@@ -685,50 +696,50 @@ export default function UserEditPage() {
                 <section>
                   <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">contact_page</span>
-                    General Information
+                    {t("admin.users.detail.generalInfo")}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-full-name" className="text-sm font-bold text-neutral-700 ml-1">Full Name <span className="text-red-500">*</span></label>
+                      <label htmlFor="admin-users-detail-full-name" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.fullName")} <span className="text-red-500">*</span></label>
                       <input id="admin-users-detail-full-name" type="text" value={form.name} onChange={(e) => set("name", e.target.value)} className={inputCls} required />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-email-address" className="text-sm font-bold text-neutral-700 ml-1">Email Address <span className="text-red-500">*</span></label>
+                      <label htmlFor="admin-users-detail-email-address" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.email")} <span className="text-red-500">*</span></label>
                       <input id="admin-users-detail-email-address" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={inputCls} required />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-employee-number" className="text-sm font-bold text-neutral-700 ml-1">Employee Number</label>
-                      <input id="admin-users-detail-employee-number" type="text" placeholder="e.g. EMP-001" value={form.employee_number} onChange={(e) => set("employee_number", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-employee-number" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.employeeNumber")}</label>
+                      <input id="admin-users-detail-employee-number" type="text" placeholder={t("admin.users.detail.employeeNumberPlaceholder")} value={form.employee_number} onChange={(e) => set("employee_number", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-primary-phone" className="text-sm font-bold text-neutral-700 ml-1">Primary Phone</label>
+                      <label htmlFor="admin-users-detail-primary-phone" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.primaryPhone")}</label>
                       <input id="admin-users-detail-primary-phone" type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-date-of-birth" className="text-sm font-bold text-neutral-700 ml-1">Date of Birth</label>
+                      <label htmlFor="admin-users-detail-date-of-birth" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.dateOfBirth")}</label>
                       <input id="admin-users-detail-date-of-birth" type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-gender" className="text-sm font-bold text-neutral-700 ml-1">Gender</label>
+                      <label htmlFor="admin-users-detail-gender" className="text-sm font-bold text-neutral-700 ml-1">{t("profile.field.gender")}</label>
                       <select id="admin-users-detail-gender" value={form.gender} onChange={(e) => set("gender", e.target.value)} className={inputCls}>
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
+                        <option value="">{t("admin.users.detail.selectGender")}</option>
+                        <option value="Male">{t("profile.gender.male")}</option>
+                        <option value="Female">{t("profile.gender.female")}</option>
+                        <option value="Other">{t("profile.gender.other")}</option>
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-nationality" className="text-sm font-bold text-neutral-700 ml-1">Nationality</label>
-                      <input id="admin-users-detail-nationality" type="text" placeholder="e.g. Namibian" value={form.nationality} onChange={(e) => set("nationality", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-nationality" className="text-sm font-bold text-neutral-700 ml-1">{t("profile.field.nationality")}</label>
+                      <input id="admin-users-detail-nationality" type="text" placeholder={t("admin.users.detail.nationalityPlaceholder")} value={form.nationality} onChange={(e) => set("nationality", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-marital-status" className="text-sm font-bold text-neutral-700 ml-1">Marital Status</label>
+                      <label htmlFor="admin-users-detail-marital-status" className="text-sm font-bold text-neutral-700 ml-1">{t("profile.field.maritalStatus")}</label>
                       <select id="admin-users-detail-marital-status" value={form.marital_status} onChange={(e) => set("marital_status", e.target.value)} className={inputCls}>
-                        <option value="">Select…</option>
-                        <option value="Single">Single</option>
-                        <option value="Married">Married</option>
-                        <option value="Divorced">Divorced</option>
-                        <option value="Widowed">Widowed</option>
+                        <option value="">{t("admin.users.detail.selectPlaceholder")}</option>
+                        <option value="Single">{t("profile.marital.single")}</option>
+                        <option value="Married">{t("profile.marital.married")}</option>
+                        <option value="Divorced">{t("profile.marital.divorced")}</option>
+                        <option value="Widowed">{t("profile.marital.widowed")}</option>
                       </select>
                     </div>
                   </div>
@@ -738,20 +749,20 @@ export default function UserEditPage() {
                 <section className="pt-8 border-t border-neutral-100">
                   <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">business_center</span>
-                    Professional Details
+                    {t("admin.users.detail.professionalDetails")}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-department" className="text-sm font-bold text-neutral-700 ml-1">Department</label>
+                      <label htmlFor="admin-users-detail-department" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.department")}</label>
                       <select id="admin-users-detail-department" value={form.department_id} onChange={(e) => set("department_id", e.target.value)} className={inputCls}>
-                        <option value="">Select Department</option>
+                        <option value="">{t("admin.users.detail.selectDepartment")}</option>
                         {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-establishment-position" className="text-sm font-bold text-neutral-700 ml-1">Establishment Position</label>
+                      <label htmlFor="admin-users-detail-establishment-position" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.position")}</label>
                       <select id="admin-users-detail-establishment-position" value={form.position_id} onChange={(e) => set("position_id", e.target.value)} className={inputCls}>
-                        <option value="">No position assigned</option>
+                        <option value="">{t("admin.users.detail.noPosition")}</option>
                         {positions
                           .filter((p) => !form.department_id || String(p.department_id) === form.department_id)
                           .map((p) => (
@@ -763,21 +774,21 @@ export default function UserEditPage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-official-job-title" className="text-sm font-bold text-neutral-700 ml-1">Official Job Title</label>
-                      <input id="admin-users-detail-official-job-title" type="text" placeholder="e.g. Senior Specialist" value={form.job_title} onChange={(e) => set("job_title", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-official-job-title" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.jobTitle")}</label>
+                      <input id="admin-users-detail-official-job-title" type="text" placeholder={t("admin.users.detail.jobTitlePlaceholder")} value={form.job_title} onChange={(e) => set("job_title", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-join-date" className="text-sm font-bold text-neutral-700 ml-1">Join Date</label>
+                      <label htmlFor="admin-users-detail-join-date" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.joinDate")}</label>
                       <input id="admin-users-detail-join-date" type="date" value={form.join_date} onChange={(e) => set("join_date", e.target.value)} className={inputCls} />
                     </div>
                   </div>
 
                   {/* Portfolios */}
                   <div className="mt-6 space-y-2">
-                    <p className="text-sm font-bold text-neutral-700 ml-1">Portfolios & Committees</p>
+                    <p className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.portfolios")}</p>
                     <div className="flex flex-wrap gap-2 pt-1">
                       {portfolios.length === 0 && (
-                        <p className="text-xs text-neutral-400 italic py-2">No portfolios defined.</p>
+                        <p className="text-xs text-neutral-400 italic py-2">{t("admin.users.detail.noPortfolios")}</p>
                       )}
                       {portfolios.map((p) => {
                         const selected = form.portfolio_ids.includes(p.id);
@@ -807,20 +818,20 @@ export default function UserEditPage() {
                 <section className="pt-8 border-t border-neutral-100">
                   <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">home</span>
-                    Residential Address
+                    {t("admin.users.detail.address")}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2 space-y-2">
-                      <label htmlFor="admin-users-detail-address-line-1" className="text-sm font-bold text-neutral-700 ml-1">Address Line 1</label>
-                      <input id="admin-users-detail-address-line-1" type="text" placeholder="Street name and number" value={form.address_line1} onChange={(e) => set("address_line1", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-address-line-1" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.addressLine1")}</label>
+                      <input id="admin-users-detail-address-line-1" type="text" placeholder={t("admin.users.detail.addressPlaceholder")} value={form.address_line1} onChange={(e) => set("address_line1", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-city" className="text-sm font-bold text-neutral-700 ml-1">City</label>
-                      <input id="admin-users-detail-city" type="text" placeholder="Windhoek" value={form.city} onChange={(e) => set("city", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-city" className="text-sm font-bold text-neutral-700 ml-1">{t("profile.field.city")}</label>
+                      <input id="admin-users-detail-city" type="text" placeholder={t("admin.users.detail.cityPlaceholder")} value={form.city} onChange={(e) => set("city", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-country" className="text-sm font-bold text-neutral-700 ml-1">Country</label>
-                      <input id="admin-users-detail-country" type="text" placeholder="Namibia" value={form.country} onChange={(e) => set("country", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-country" className="text-sm font-bold text-neutral-700 ml-1">{t("profile.field.country")}</label>
+                      <input id="admin-users-detail-country" type="text" placeholder={t("admin.users.detail.countryPlaceholder")} value={form.country} onChange={(e) => set("country", e.target.value)} className={inputCls} />
                     </div>
                   </div>
                 </section>
@@ -829,19 +840,19 @@ export default function UserEditPage() {
                 <section className="pt-8 border-t border-neutral-100">
                   <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">contact_emergency</span>
-                    Emergency Contact
+                    {t("admin.users.detail.emergencyContact")}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-contact-name" className="text-sm font-bold text-neutral-700 ml-1">Contact Name</label>
-                      <input id="admin-users-detail-contact-name" type="text" placeholder="Full Name" value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-contact-name" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.contactName")}</label>
+                      <input id="admin-users-detail-contact-name" type="text" placeholder={t("admin.users.detail.fullNamePlaceholder")} value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-relationship" className="text-sm font-bold text-neutral-700 ml-1">Relationship</label>
-                      <input id="admin-users-detail-relationship" type="text" placeholder="e.g. Spouse" value={form.emergency_contact_relationship} onChange={(e) => set("emergency_contact_relationship", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-relationship" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.relationship")}</label>
+                      <input id="admin-users-detail-relationship" type="text" placeholder={t("admin.users.detail.relationshipPlaceholder")} value={form.emergency_contact_relationship} onChange={(e) => set("emergency_contact_relationship", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-contact-phone" className="text-sm font-bold text-neutral-700 ml-1">Contact Phone</label>
+                      <label htmlFor="admin-users-detail-contact-phone" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.contactPhone")}</label>
                       <input id="admin-users-detail-contact-phone" type="tel" placeholder="+264..." value={form.emergency_contact_phone} onChange={(e) => set("emergency_contact_phone", e.target.value)} className={inputCls} />
                     </div>
                   </div>
@@ -851,13 +862,13 @@ export default function UserEditPage() {
                 <section className="pt-8 border-t border-neutral-100">
                   <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">description</span>
-                    Professional Summary
+                    {t("profile.field.bio")}
                   </h3>
                   <textarea
                     rows={4}
                     value={form.bio}
                     onChange={(e) => set("bio", e.target.value)}
-                    placeholder="Brief overview of staff background, expertise..."
+                    placeholder={t("admin.users.detail.bioPlaceholder")}
                     className={`${inputCls} resize-none`}
                   />
                 </section>
@@ -872,11 +883,11 @@ export default function UserEditPage() {
                 <section>
                   <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">badge</span>
-                    System Role
+                    {t("admin.users.detail.systemRole")}
                   </h3>
                   <div className="p-6 rounded-2xl bg-neutral-50 border border-neutral-200 space-y-4">
                     <p className="text-sm text-neutral-600 leading-relaxed">
-                      Roles are composable bundles of feature permissions. Assign only the roles required for this person; each role can grant different actions and scopes.
+                      {t("admin.users.detail.systemRoleIntro")}
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {availableRoles.map((role) => (
@@ -895,10 +906,10 @@ export default function UserEditPage() {
                     </div>
                     {otherRoles.length > 0 && (
                       <p className="text-xs text-neutral-600" data-testid="user-other-roles">
-                        Also holds {otherRoles.join(", ")}, which {otherRoles.length === 1 ? "is" : "are"} not in the role list. Saving keeps {otherRoles.length === 1 ? "it" : "them"}.
+                        {t(otherRoles.length === 1 ? "admin.users.detail.otherRolesOne" : "admin.users.detail.otherRolesMany", { roles: otherRoles.join(", ") })}
                       </p>
                     )}
-                    <p className="text-xs text-neutral-500">Selected roles: {assignedRoles.length}. Save Changes applies the role set and revokes stale sessions so access changes take effect on the next login.</p>
+                    <p className="text-xs text-neutral-500">{t("admin.users.detail.selectedRoles", { count: assignedRoles.length })}</p>
                   </div>
                 </section>
 
@@ -906,15 +917,15 @@ export default function UserEditPage() {
                 <section className="pt-8 border-t border-neutral-100">
                   <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">workspace_premium</span>
-                    Published catalogue roles
+                    {t("admin.users.detail.catalogueRoles")}
                   </h3>
                   <div className="p-6 rounded-2xl bg-neutral-50 border border-neutral-200 space-y-4">
                     <p className="text-sm text-neutral-600 leading-relaxed">
-                      Tenant catalogue roles such as Unaro live here, not in the system role list above. Medium-risk versions apply immediately; high-risk versions wait for a second administrator.
+                      {t("admin.users.detail.catalogueIntro")}
                     </p>
                     <div className="space-y-2">
                       <label htmlFor="user-catalogue-role-reason" className="text-sm font-bold text-neutral-700 ml-1">
-                        Assignment reason
+                        {t("admin.users.detail.assignmentReason")}
                       </label>
                       <input
                         id="user-catalogue-role-reason"
@@ -948,8 +959,8 @@ export default function UserEditPage() {
                                 <p className="text-sm font-bold text-neutral-900">{role.name}</p>
                                 <p className="text-xs text-neutral-500">
                                   {assignment
-                                    ? `Status: ${assignment.status.replaceAll("_", " ")}`
-                                    : `Version ${version.version} · ${role.risk_level ?? "medium"} risk`}
+                                    ? t("admin.users.detail.statusLine", { status: assignment.status.replaceAll("_", " ") })
+                                    : t("admin.users.detail.versionLine", { version: version.version, risk: role.risk_level ?? "medium" })}
                                 </p>
                               </div>
                               {!assignment ? (
@@ -959,11 +970,11 @@ export default function UserEditPage() {
                                   onClick={() => handleAssignCatalogue(role)}
                                   className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50"
                                 >
-                                  {catalogueBusy ? "Assigning…" : "Assign"}
+                                  {catalogueBusy ? t("admin.users.detail.assigning") : t("admin.users.detail.assign")}
                                 </button>
                               ) : (
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                                  {assignment.status === "active" ? "Assigned" : "Pending approval"}
+                                  {assignment.status === "active" ? t("admin.users.detail.assigned") : t("admin.users.detail.pendingApproval")}
                                 </span>
                               )}
                             </div>
@@ -973,7 +984,7 @@ export default function UserEditPage() {
                     {(roleAssignments.some((item) => item.status === "pending_approval") ||
                       pendingRoleSyncs.length > 0) && (
                       <div className="space-y-3 pt-2">
-                        <h4 className="text-sm font-bold text-neutral-900">Pending second-administrator approval</h4>
+                        <h4 className="text-sm font-bold text-neutral-900">{t("admin.users.detail.pendingSecondAdmin")}</h4>
                         {roleAssignments
                           .filter((item) => item.status === "pending_approval")
                           .map((item) => {
@@ -985,9 +996,9 @@ export default function UserEditPage() {
                               >
                                 <div>
                                   <p className="text-sm font-bold text-neutral-900">
-                                    {item.role_version?.catalogue?.name ?? "Catalogue role"}
+                                    {item.role_version?.catalogue?.name ?? t("admin.users.detail.catalogueRole")}
                                   </p>
-                                  <p className="text-xs text-neutral-500">Requested by user #{item.requested_by}</p>
+                                  <p className="text-xs text-neutral-500">{t("admin.users.detail.requestedBy", { id: item.requested_by ?? "" })}</p>
                                 </div>
                                 {canApprove ? (
                                   <button
@@ -996,10 +1007,10 @@ export default function UserEditPage() {
                                     onClick={() => handleApproveCatalogue(item.id)}
                                     className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50"
                                   >
-                                    {catalogueBusy ? "Approving…" : "Approve"}
+                                    {catalogueBusy ? t("admin.users.detail.approving") : t("common.approve")}
                                   </button>
                                 ) : (
-                                  <p className="text-sm text-neutral-500">Waiting for second administrator</p>
+                                  <p className="text-sm text-neutral-500">{t("admin.users.detail.waitingSecondAdmin")}</p>
                                 )}
                               </div>
                             );
@@ -1013,9 +1024,11 @@ export default function UserEditPage() {
                             >
                               <div>
                                 <p className="text-sm font-bold text-neutral-900">
-                                  System role change{item.roles?.length ? `: ${item.roles.join(", ")}` : ""}
+                                  {item.roles?.length
+                                    ? t("admin.users.detail.roleChangeWithRoles", { roles: item.roles.join(", ") })
+                                    : t("admin.users.detail.roleChange")}
                                 </p>
-                                <p className="text-xs text-neutral-500">Requested by user #{item.requested_by}</p>
+                                <p className="text-xs text-neutral-500">{t("admin.users.detail.requestedBy", { id: item.requested_by ?? "" })}</p>
                               </div>
                               {canApprove ? (
                                 <button
@@ -1024,10 +1037,10 @@ export default function UserEditPage() {
                                   onClick={() => handleApproveRoleSync(item.id)}
                                   className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50"
                                 >
-                                  {catalogueBusy ? "Approving…" : "Approve"}
+                                  {catalogueBusy ? t("admin.users.detail.approving") : t("common.approve")}
                                 </button>
                               ) : (
-                                <p className="text-sm text-neutral-500">Waiting for second administrator</p>
+                                <p className="text-sm text-neutral-500">{t("admin.users.detail.waitingSecondAdmin")}</p>
                               )}
                             </div>
                           );
@@ -1041,7 +1054,7 @@ export default function UserEditPage() {
                 <section className="pt-8 border-t border-neutral-100">
                   <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">verified_user</span>
-                    Account Status
+                    {t("admin.users.detail.accountStatus")}
                   </h3>
                   <div className="flex items-center gap-6">
                     <label htmlFor="admin-users-detail-set-is-active-true-classname-w-4-h-4-text-primar" className="flex items-center gap-3 cursor-pointer group">
@@ -1052,8 +1065,8 @@ export default function UserEditPage() {
                         className="w-4 h-4 text-primary focus:ring-primary"
                       />
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-neutral-900 group-hover:text-primary transition-colors">Active</span>
-                        <span className="text-xs text-neutral-400">Can log in and access modules</span>
+                        <span className="text-sm font-bold text-neutral-900 group-hover:text-primary transition-colors">{t("admin.common.active")}</span>
+                        <span className="text-xs text-neutral-400">{t("admin.users.detail.activeDesc")}</span>
                       </div>
                     </label>
                     <label htmlFor="admin-users-detail-set-is-active-false-classname-w-4-h-4-text-red-6" className="flex items-center gap-3 cursor-pointer group">
@@ -1064,8 +1077,8 @@ export default function UserEditPage() {
                         className="w-4 h-4 text-red-600 focus:ring-red-500"
                       />
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-neutral-900 group-hover:text-red-600 transition-colors">Inactive</span>
-                        <span className="text-xs text-neutral-400">Access temporarily revoked</span>
+                        <span className="text-sm font-bold text-neutral-900 group-hover:text-red-600 transition-colors">{t("admin.common.inactive")}</span>
+                        <span className="text-xs text-neutral-400">{t("admin.users.detail.inactiveDesc")}</span>
                       </div>
                     </label>
                   </div>
@@ -1078,24 +1091,27 @@ export default function UserEditPage() {
                 <section className="pt-8 border-t border-neutral-100">
                   <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">security</span>
-                    Security Settings
+                    {t("admin.users.detail.securitySettings")}
                   </h3>
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <label htmlFor="admin-users-detail-data-classification-level" className="text-sm font-bold text-neutral-700 ml-1">Data Classification Level</label>
+                      <label htmlFor="admin-users-detail-data-classification-level" className="text-sm font-bold text-neutral-700 ml-1">{t("admin.users.detail.classificationLevel")}</label>
                       <select id="admin-users-detail-data-classification-level" value={form.classification} onChange={(e) => set("classification", e.target.value)} className={inputCls}>
                         {CLASSIFICATIONS.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
-                      <p className="text-xs text-neutral-400 ml-1">Controls the sensitivity tier of data this user can access.</p>
+                      <p className="text-xs text-neutral-400 ml-1">{t("admin.users.detail.classificationHint")}</p>
                     </div>
                     <div className="flex items-center justify-between rounded-xl bg-neutral-50 border border-neutral-200 p-4">
                       <div>
-                        <p className="text-sm font-semibold text-neutral-900">Multi-Factor Authentication</p>
-                        <p className="text-xs text-neutral-500 mt-0.5">Require MFA on every login</p>
+                        <p className="text-sm font-semibold text-neutral-900">{t("admin.users.detail.mfa")}</p>
+                        <p className="text-xs text-neutral-500 mt-0.5">{t("admin.users.detail.mfaDesc")}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => set("mfa_enabled", !form.mfa_enabled)}
+                        role="switch"
+                        aria-checked={form.mfa_enabled}
+                        aria-label={t("admin.users.detail.mfa")}
                         className={cn(
                           "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
                           form.mfa_enabled ? "bg-primary" : "bg-neutral-200"
@@ -1115,9 +1131,9 @@ export default function UserEditPage() {
             {/* ── Permissions Tab ─────────────────────────────────────────── */}
             {activeTab === "permissions" && (
               <div className="p-8 space-y-5">
-                <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold text-neutral-900 flex items-center gap-2"><span className="material-symbols-outlined text-primary">lock_open</span>Effective feature access</h3><p className="mt-1 text-sm text-neutral-500">Read, create, edit, delete, approve, export, and other actions are evaluated independently.</p></div><Link href="/admin/access/roles" className="btn-secondary text-xs">Manage roles</Link></div>
-                {effectivePermissions.length === 0 ? <p className="rounded-xl border border-neutral-200 bg-neutral-50 p-5 text-sm text-neutral-500">No effective permissions were returned for this user.</p> : <div className="grid gap-3 md:grid-cols-2">{Object.entries(effectivePermissions.reduce<Record<string, string[]>>((groups, permission) => { const meta = permissionRegistry[permission]; const group = meta ? `${meta.module} / ${meta.feature}` : permission.split(".").slice(0, 2).join(" / "); (groups[group] ??= []).push(meta?.display_name || permission); return groups; }, {})).sort(([a], [b]) => a.localeCompare(b)).map(([group, items]) => <div key={group} className="rounded-xl border border-neutral-200 p-4"><p className="text-xs font-bold uppercase tracking-wide text-neutral-500">{group}</p><div className="mt-2 flex flex-wrap gap-1.5">{items.map((item) => <span key={item} className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{item}</span>)}</div></div>)}</div>}
-                <p className="text-xs text-neutral-500">Change permissions by changing the assigned role set. Direct grants and denials remain governed by Access Governance.</p>
+                <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold text-neutral-900 flex items-center gap-2"><span className="material-symbols-outlined text-primary">lock_open</span>{t("admin.users.detail.effectiveAccess")}</h3><p className="mt-1 text-sm text-neutral-500">{t("admin.users.detail.effectiveAccessDesc")}</p></div><Link href="/admin/access/roles" className="btn-secondary text-xs">{t("admin.users.detail.manageRoles")}</Link></div>
+                {effectivePermissions.length === 0 ? <p className="rounded-xl border border-neutral-200 bg-neutral-50 p-5 text-sm text-neutral-500">{t("admin.users.detail.noPermissions")}</p> : <div className="grid gap-3 md:grid-cols-2">{Object.entries(effectivePermissions.reduce<Record<string, string[]>>((groups, permission) => { const meta = permissionRegistry[permission]; const group = meta ? `${meta.module} / ${meta.feature}` : permission.split(".").slice(0, 2).join(" / "); (groups[group] ??= []).push(meta?.display_name || permission); return groups; }, {})).sort(([a], [b]) => a.localeCompare(b)).map(([group, items]) => <div key={group} className="rounded-xl border border-neutral-200 p-4"><p className="text-xs font-bold uppercase tracking-wide text-neutral-500">{group}</p><div className="mt-2 flex flex-wrap gap-1.5">{items.map((item) => <span key={item} className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{item}</span>)}</div></div>)}</div>}
+                <p className="text-xs text-neutral-500">{t("admin.users.detail.permissionsFooter")}</p>
               </div>
             )}
 
@@ -1126,7 +1142,7 @@ export default function UserEditPage() {
               <div className="p-8 animate-in fade-in duration-300">
                 <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary">folder_open</span>
-                  Staff Documents
+                  {t("admin.users.detail.staffDocuments")}
                 </h3>
                 <DocumentsPanel
                   documents={documents}
@@ -1137,9 +1153,9 @@ export default function UserEditPage() {
                     try {
                       const res = await adminUserDocumentsApi.upload(Number(id), file, type, title);
                       setDocuments(prev => [(res.data as any).data, ...prev]);
-                      success("Uploaded", "Document uploaded successfully.");
+                      success(t("admin.users.detail.uploaded"), t("admin.users.detail.uploadedDesc"));
                     } catch {
-                      toastError("Upload Failed", "Could not upload document.");
+                      toastError(t("admin.users.detail.uploadFailed"), t("admin.users.detail.uploadFailedDesc"));
                     } finally {
                       setDocsUploading(false);
                     }
@@ -1147,7 +1163,7 @@ export default function UserEditPage() {
                   onDelete={async (docId) => {
                     await adminUserDocumentsApi.delete(Number(id), docId);
                     setDocuments(prev => prev.filter(d => d.id !== docId));
-                    success("Deleted", "Document removed.");
+                    success(t("admin.users.detail.deleted"), t("admin.users.detail.deletedDesc"));
                   }}
                   getDownloadUrl={(docId) => adminUserDocumentsApi.downloadUrl(Number(id), docId)}
                 />
@@ -1159,19 +1175,19 @@ export default function UserEditPage() {
               <div className="p-8">
                 <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary">history</span>
-                  User Engagement Trail
+                  {t("admin.users.detail.activityTitle")}
                 </h3>
 
                 {auditLoading && (
                   <div className="flex items-center justify-center py-12">
                     <span className="material-symbols-outlined animate-spin text-primary text-2xl mr-3">progress_activity</span>
-                    <span className="text-sm text-neutral-500">Loading activity...</span>
+                    <span className="text-sm text-neutral-500">{t("admin.users.detail.loadingActivity")}</span>
                   </div>
                 )}
 
                 {!auditLoading && auditLogs.length === 0 && (
                   <div className="py-12 text-center text-sm text-neutral-400 italic">
-                    No audit activity found for this user.
+                    {t("admin.users.detail.noActivity")}
                   </div>
                 )}
 
@@ -1198,10 +1214,10 @@ export default function UserEditPage() {
                             <span className="material-symbols-outlined text-primary text-[20px]">{icon}</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-neutral-900">{label || "System Action"}</p>
+                            <p className="text-sm font-semibold text-neutral-900">{label || t("admin.users.detail.systemAction")}</p>
                             <div className="flex items-center gap-3 mt-1">
                               {log.ip_address && (
-                                <span className="text-xs text-neutral-400">IP: {log.ip_address}</span>
+                                <span className="text-xs text-neutral-400">{t("admin.users.detail.ip", { ip: log.ip_address })}</span>
                               )}
                               {log.tags && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-500 text-[10px] font-bold uppercase tracking-wide">{log.tags}</span>

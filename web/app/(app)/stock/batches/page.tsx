@@ -6,8 +6,10 @@ import { stockBatchesApi, stockItemsApi, type StockItem } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function StockBatchesPage() {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
   const [items, setItems] = useState<StockItem[]>([]);
@@ -20,8 +22,8 @@ export default function StockBatchesPage() {
   const load = useCallback(() => {
     stockBatchesApi.list({ per_page: 100 })
       .then((res) => setRows((res.data as { data?: Array<Record<string, unknown>> }).data ?? []))
-      .catch(() => toast("error", "Failed to load batches"));
-  }, [toast]);
+      .catch(() => toast("error", t("stock.batches.loadFailed")));
+  }, [toast, t]);
 
   useEffect(() => {
     setCanIssue(canIssueStock(getStoredUser()));
@@ -32,17 +34,17 @@ export default function StockBatchesPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Batches / Expiry"
-        subtitle="Optional lot tracking. Expired batches are not issuable."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Batches / Expiry" }]} />}
+        title={t("stock.batches.title")}
+        subtitle={t("stock.batches.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("stock.batches.title") }]} />}
       />
       {canIssue && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
           <select className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value)}>
-            <option value="">Item…</option>
+            <option value="">{t("stock.batches.itemPlaceholder")}</option>
             {items.map((i) => <option key={i.id} value={i.id}>{i.item_code}</option>)}
           </select>
-          <input className="form-input" placeholder="Batch #" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} />
+          <input className="form-input" placeholder={t("stock.batches.batchPlaceholder")} value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} />
           <input type="date" className="form-input" value={expiry} onChange={(e) => setExpiry(e.target.value)} />
           <input type="number" min={0} className="form-input w-24" value={qty} onChange={(e) => setQty(e.target.value)} />
           <button type="button" className="btn-primary" onClick={async () => {
@@ -53,22 +55,22 @@ export default function StockBatchesPage() {
                 expiry_date: expiry || null,
                 quantity: Number(qty),
               });
-              toast("success", "Batch registered");
+              toast("success", t("stock.batches.registered"));
               load();
             } catch {
-              toast("error", "Could not register batch");
+              toast("error", t("stock.batches.registerFailed"));
             }
-          }}>Add batch</button>
+          }}>{t("stock.batches.add")}</button>
         </div>
       )}
       <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
           <tr>
-            <th className="px-4 py-2">Item</th>
-            <th className="px-4 py-2">Batch</th>
-            <th className="px-4 py-2">Expiry</th>
-            <th className="px-4 py-2">Qty</th>
-            <th className="px-4 py-2">Status</th>
+            <th className="px-4 py-2">{t("stock.common.item")}</th>
+            <th className="px-4 py-2">{t("stock.common.batch")}</th>
+            <th className="px-4 py-2">{t("stock.common.expiry")}</th>
+            <th className="px-4 py-2">{t("stock.common.qty")}</th>
+            <th className="px-4 py-2">{t("stock.common.status")}</th>
           </tr>
         </thead>
         <tbody>

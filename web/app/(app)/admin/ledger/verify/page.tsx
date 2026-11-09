@@ -6,6 +6,7 @@ import Link from "next/link";
 import { auditLogsApi, ledgerVerificationsApi, type LedgerVerification } from "@/lib/api";
 import { cn, formatDateRelative } from "@/lib/utils";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATIC_MANIFEST = "e3b0c44298fc1c149afbf4c8996fb924";
 
@@ -22,6 +23,7 @@ function hashDisplay(hash: string | null): string {
 }
 
 export default function LedgerVerifyPage() {
+  const { t } = useI18n();
   const [verifications, setVerifications] = useState<LedgerVerification[]>([]);
   const [loading, setLoading]             = useState(true);
   const [verifying, setVerifying]         = useState(false);
@@ -44,9 +46,9 @@ export default function LedgerVerifyPage() {
         const first = res.data.data?.[0];
         if (first?.manifest_hash) setLatestManifest(first.manifest_hash);
       })
-      .catch(() => setError("Failed to load verification history."))
+      .catch(() => setError(t("admin.ledgerVerify.loadFailed")))
       .finally(() => setLoading(false));
-  }, [page]);
+  }, [page, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -68,7 +70,7 @@ export default function LedgerVerifyPage() {
       // Reload history
       load();
     } catch {
-      setError("Verification failed. Please try again.");
+      setError(t("admin.ledgerVerify.failed"));
     } finally {
       setVerifying(false);
     }
@@ -81,23 +83,23 @@ export default function LedgerVerifyPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 text-sm text-neutral-500">
-        <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
+        <Link href="/admin" className="hover:text-primary transition-colors">{t("admin.homeLabel")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <Link href="/admin/ledger" className="hover:text-primary transition-colors">Audit Ledger</Link>
+        <Link href="/admin/ledger" className="hover:text-primary transition-colors">{t("admin.ledger.crumb")}</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">Verify</span>
+        <span className="text-neutral-900 font-medium">{t("admin.ledgerVerify.crumb")}</span>
       </div>
 
       {/* Page title */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <ModulePageHeader
-        title="Ledger Verification"
-        subtitle="Trigger manual integrity checks and review verification history."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Ledger Verification" }]} />}
+        title={t("admin.home.ledgerVerification")}
+        subtitle={t("admin.ledgerVerify.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.home.ledgerVerification") }]} />}
       />
         <Link href="/admin/ledger" className="btn-secondary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">receipt_long</span>
-          View Audit Ledger
+          {t("admin.ledgerVerify.viewLedger")}
         </Link>
       </div>
 
@@ -122,21 +124,23 @@ export default function LedgerVerifyPage() {
           </div>
           <div>
             <p className="text-sm font-bold text-neutral-900 flex items-center gap-2">
-              Ledger Health: {failCount > 0 ? "Action Required" : "Verified"}
+              {failCount > 0 ? t("admin.ledgerVerify.healthAction") : t("admin.ledger.health")}
               <span className={cn(
                 "inline-flex items-center gap-1 text-[11px] font-semibold rounded-full px-2 py-0.5",
                 failCount > 0 ? "text-red-700 bg-red-100" : "text-green-700 bg-green-100"
               )}>
-                {failCount > 0 ? `${failCount} failed check${failCount !== 1 ? "s" : ""}` : "Chain intact"}
+                {failCount > 0
+                  ? t(failCount !== 1 ? "admin.ledgerVerify.failedChecksMany" : "admin.ledgerVerify.failedChecksOne", { count: failCount })
+                  : t("admin.ledger.chainIntact")}
               </span>
             </p>
             <p className="text-xs text-neutral-600 mt-0.5 max-w-xl">
               {auditTotal !== null
-                ? `Cryptographic integrity across ${auditTotal.toLocaleString()} immutable records. `
+                ? `${t("admin.ledgerVerify.integrityAcross", { count: auditTotal.toLocaleString() })} `
                 : ""}
               {total > 0
-                ? `${total.toLocaleString()} verification${total !== 1 ? "s" : ""} on record.`
-                : "No verifications run yet — trigger the first check below."}
+                ? t(total !== 1 ? "admin.ledgerVerify.onRecordMany" : "admin.ledgerVerify.onRecordOne", { count: total.toLocaleString() })
+                : t("admin.ledgerVerify.noneYet")}
             </p>
           </div>
         </div>
@@ -147,7 +151,7 @@ export default function LedgerVerifyPage() {
           className="btn-primary flex items-center gap-2 disabled:opacity-60 whitespace-nowrap shrink-0"
         >
           <span className={cn("material-symbols-outlined text-[18px]", verifying ? "animate-spin" : "")}>sync</span>
-          {verifying ? "Verifying…" : "Verify Ledger Integrity"}
+          {verifying ? t("admin.ledger.verifyingEllipsis") : t("admin.ledger.verifyLedger")}
         </button>
       </div>
 
@@ -164,37 +168,37 @@ export default function LedgerVerifyPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-neutral-500 font-medium">Latest Manifest Hash</p>
+            <p className="text-xs text-neutral-500 font-medium">{t("admin.ledger.latestHash")}</p>
             <span className="material-symbols-outlined text-neutral-300 text-[18px]">fingerprint</span>
           </div>
           <p className="font-mono text-sm font-bold text-neutral-900 truncate" title={latestManifest ?? STATIC_MANIFEST}>
             {hashDisplay(latestManifest ?? STATIC_MANIFEST)}
           </p>
-          <p className="mt-1 text-xs text-neutral-400">SHA-256 Algorithm</p>
+          <p className="mt-1 text-xs text-neutral-400">{t("admin.ledger.algorithm")}</p>
         </div>
 
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-neutral-500 font-medium">Signature Status</p>
+            <p className="text-xs text-neutral-500 font-medium">{t("admin.ledgerVerify.signatureStatus")}</p>
             <span className="material-symbols-outlined text-neutral-300 text-[18px]">verified</span>
           </div>
           <div className="flex items-center gap-2">
-            <p className="text-sm font-bold text-neutral-900">Valid</p>
-            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-mono">RSA-4096</span>
+            <p className="text-sm font-bold text-neutral-900">{t("admin.ledgerVerify.valid")}</p>
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-mono">{"RSA-4096"}</span>
           </div>
-          <p className="mt-1 text-xs text-neutral-400">Certificate Authority: GovRoot CA G2</p>
+          <p className="mt-1 text-xs text-neutral-400">{t("admin.ledgerVerify.ca", { ca: "GovRoot CA G2" })}</p>
         </div>
 
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-neutral-500 font-medium">Object Lock Status</p>
+            <p className="text-xs text-neutral-500 font-medium">{t("admin.ledgerVerify.objectLockStatus")}</p>
             <span className="material-symbols-outlined text-neutral-300 text-[18px]">lock</span>
           </div>
           <div className="flex items-center gap-2">
-            <p className="text-sm font-bold text-neutral-900">Locked</p>
-            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">COMPLIANCE</span>
+            <p className="text-sm font-bold text-neutral-900">{t("admin.ledger.locked")}</p>
+            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">{t("admin.ledger.compliance")}</span>
           </div>
-          <p className="mt-1 text-xs text-neutral-400">Retention Period: 7 Years</p>
+          <p className="mt-1 text-xs text-neutral-400">{t("admin.ledgerVerify.retention7")}</p>
         </div>
       </div>
 
@@ -203,20 +207,20 @@ export default function LedgerVerifyPage() {
         <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-neutral-50">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">history</span>
-            <span className="text-sm font-semibold text-neutral-700">Verification History</span>
+            <span className="text-sm font-semibold text-neutral-700">{t("admin.ledgerVerify.history")}</span>
             {!loading && (
               <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full font-medium">
-                {total.toLocaleString()} check{total !== 1 ? "s" : ""}
+                {t(total !== 1 ? "admin.ledgerVerify.checksMany" : "admin.ledgerVerify.checksOne", { count: total.toLocaleString() })}
               </span>
             )}
             {failCount > 0 && (
               <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                 <span className="material-symbols-outlined text-[12px]">warning</span>
-                {failCount} failed
+                {t("admin.ledgerVerify.failedN", { count: failCount })}
               </span>
             )}
           </div>
-          <p className="text-xs text-neutral-400">Recent automated and manual integrity checks</p>
+          <p className="text-xs text-neutral-400">{t("admin.ledgerVerify.historyDesc")}</p>
         </div>
 
         {loading ? (
@@ -235,20 +239,20 @@ export default function LedgerVerifyPage() {
         ) : verifications.length === 0 ? (
           <EmptyState
             icon="verified_user"
-            title="No verifications yet"
-            description={'Click "Verify Ledger Integrity" to run the first check.'}
+            title={t("admin.ledgerVerify.empty")}
+            description={t("admin.ledgerVerify.emptyDesc")}
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Initiator</th>
-                  <th>Manifest Hash</th>
-                  <th>Entries Checked</th>
-                  <th>Type</th>
-                  <th>Status</th>
+                  <th>{t("admin.governance.colTimestamp")}</th>
+                  <th>{t("admin.ledgerVerify.initiator")}</th>
+                  <th>{t("admin.ledger.manifestHash")}</th>
+                  <th>{t("admin.ledger.entriesChecked")}</th>
+                  <th>{t("admin.common.type")}</th>
+                  <th>{t("admin.common.status")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -271,7 +275,7 @@ export default function LedgerVerifyPage() {
                       ) : (
                         <span className="text-xs text-neutral-400 flex items-center gap-1">
                           <span className="material-symbols-outlined text-[14px]">computer</span>
-                          System (Auto)
+                          {t("admin.ledgerVerify.systemAuto")}
                         </span>
                       )}
                     </td>
@@ -290,12 +294,12 @@ export default function LedgerVerifyPage() {
                       {v.status === "pass" ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                          Pass
+                          {t("admin.ledger.pass")}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-100 rounded-full px-2.5 py-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                          Fail
+                          {t("admin.ledger.fail")}
                         </span>
                       )}
                     </td>
@@ -304,7 +308,7 @@ export default function LedgerVerifyPage() {
                         href={`/admin/ledger/${v.id}`}
                         className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-0.5"
                       >
-                        View
+                        {t("admin.common.view")}
                         <span className="material-symbols-outlined text-[13px]">chevron_right</span>
                       </Link>
                     </td>
@@ -318,7 +322,7 @@ export default function LedgerVerifyPage() {
         {/* Pagination */}
         {lastPage > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-100">
-            <span className="text-xs text-neutral-400">Page {page} of {lastPage} · {total.toLocaleString()} checks</span>
+            <span className="text-xs text-neutral-400">{t("common.pageOf", { page, total: lastPage })} · {t("admin.ledgerVerify.checksMany", { count: total.toLocaleString() })}</span>
             <div className="flex gap-1">
               <button
                 type="button"
@@ -361,9 +365,9 @@ export default function LedgerVerifyPage() {
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-5 py-3 flex items-center justify-between gap-4 text-xs text-neutral-500">
         <span className="flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[14px] text-neutral-400">shield</span>
-          End-to-end encrypted · SHA-256 hash chain · off-platform WORM pending
+          {t("admin.ledgerVerify.footer")}
         </span>
-        <span className="font-mono text-neutral-300">SHA-256 · RSA-4096 · GovRoot CA G2</span>
+        <span className="font-mono text-neutral-300">{"SHA-256 · RSA-4096 · GovRoot CA G2"}</span>
       </div>
     </div>
   );

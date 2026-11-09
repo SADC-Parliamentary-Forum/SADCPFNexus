@@ -17,6 +17,7 @@ import { formatDateShort } from "@/lib/utils";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -30,6 +31,7 @@ function getListData<T>(payload: unknown): T[] {
 export default function ProcurementBudgetPage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const user = getStoredUser();
   const canFinance =
     isSystemAdmin(user) ||
@@ -93,12 +95,12 @@ export default function ProcurementBudgetPage() {
       setReservedAmount("");
       setNotes("");
       setFormError(null);
-      toast.success("Budget reserved");
+      toast.success(t("procurement.budget.reserved"));
     },
     onError: (err: unknown) => {
-      const message = apiErrorMessage(err, "Failed to reserve budget.");
+      const message = apiErrorMessage(err, t("procurement.budget.reserveFailed"));
       setFormError(message);
-      toast.error("Budget not reserved", message);
+      toast.error(t("procurement.budget.notReserved"), message);
     },
   });
 
@@ -106,10 +108,10 @@ export default function ProcurementBudgetPage() {
     mutationFn: (id: number) => procurementApi.approve(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["procurement", "budget"] });
-      toast.success("Procurement request approved");
+      toast.success(t("procurement.budget.approved"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not approve request", apiErrorMessage(err, "Failed to approve the request."));
+      toast.error(t("procurement.budget.approveFailedTitle"), apiErrorMessage(err, t("procurement.budget.approveFailed")));
     },
   });
 
@@ -128,7 +130,7 @@ export default function ProcurementBudgetPage() {
   if (!canFinance) {
     return (
       <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 max-w-xl">
-        Finance access is required to confirm budget reservations.
+        {t("procurement.budget.noAccess")}
       </div>
     );
   }
@@ -136,36 +138,36 @@ export default function ProcurementBudgetPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Budget Confirmation"
-        subtitle="Finance queue: reserve budget for HOD-approved requests, including catch-up confirmation on approved requests that still need a reservation before RFQ."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget Confirmation" }]} />}
+        title={t("procurement.budget.title")}
+        subtitle={t("procurement.budget.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("procurement.budget.title") }]} />}
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="card p-4">
-          <p className="text-xs text-neutral-500">Needs reservation</p>
+          <p className="text-xs text-neutral-500">{t("procurement.budget.needsReservation")}</p>
           <p className="text-2xl font-bold text-neutral-900">{needsReservation.length}</p>
         </div>
         <div className="card p-4">
-          <p className="text-xs text-neutral-500">Awaiting procurement approval</p>
+          <p className="text-xs text-neutral-500">{t("procurement.budget.awaitingApproval")}</p>
           <p className="text-2xl font-bold text-neutral-900">{awaitingApproval.length}</p>
         </div>
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-neutral-800">Awaiting budget confirmation</h2>
+        <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.budget.awaitingConfirmation")}</h2>
         <div className="card overflow-x-auto">
           {needsReservation.length === 0 ? (
-            <EmptyState icon="account_balance" title="No requests awaiting budget reservation." className="py-8 min-h-0" />
+            <EmptyState icon="account_balance" title={t("procurement.budget.emptyReservation")} className="py-8 min-h-0" />
           ) : (
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Title</th>
-                  <th>Est. value</th>
-                  <th>Status</th>
-                  <th>HOD reviewed</th>
+                  <th>{t("procurement.col.reference")}</th>
+                  <th>{t("procurement.col.title")}</th>
+                  <th>{t("procurement.budget.estValue")}</th>
+                  <th>{t("procurement.col.status")}</th>
+                  <th>{t("procurement.budget.hodReviewed")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -178,14 +180,14 @@ export default function ProcurementBudgetPage() {
                       {req.currency} {Number(req.estimated_value).toLocaleString()}
                     </td>
                     <td className="text-xs capitalize text-neutral-600">
-                      {req.status === "approved" ? "Approved — catch-up" : "HOD approved"}
+                      {req.status === "approved" ? t("procurement.budget.approvedCatchUp") : t("procurement.budget.hodApproved")}
                     </td>
                     <td className="text-xs text-neutral-500">
                       {req.hod_reviewed_at ? formatDateShort(req.hod_reviewed_at) : "—"}
                     </td>
                     <td className="whitespace-nowrap">
                       <button type="button" className="btn-primary text-xs py-1.5 px-3" onClick={() => openReserve(req)}>
-                        Reserve
+                        {t("procurement.budget.reserve")}
                       </button>
                     </td>
                   </tr>
@@ -197,17 +199,17 @@ export default function ProcurementBudgetPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-neutral-800">Budget reserved — approve request</h2>
+        <h2 className="text-sm font-semibold text-neutral-800">{t("procurement.budget.reservedApprove")}</h2>
         <div className="card overflow-x-auto">
           {awaitingApproval.length === 0 ? (
-            <EmptyState icon="gavel" title="No budget-reserved requests awaiting approval." className="py-8 min-h-0" />
+            <EmptyState icon="gavel" title={t("procurement.budget.emptyApproval")} className="py-8 min-h-0" />
           ) : (
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Title</th>
-                  <th>Reserved</th>
+                  <th>{t("procurement.col.reference")}</th>
+                  <th>{t("procurement.col.title")}</th>
+                  <th>{t("procurement.budget.reservedCol")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -227,7 +229,7 @@ export default function ProcurementBudgetPage() {
                       </td>
                       <td className="whitespace-nowrap flex gap-2">
                         <Link href={`/procurement/${req.id}`} className="btn-secondary text-xs py-1 px-2">
-                          View
+                          {t("procurement.view")}
                         </Link>
                         <button
                           type="button"
@@ -235,7 +237,7 @@ export default function ProcurementBudgetPage() {
                           disabled={approveMut.isPending}
                           onClick={() => approveMut.mutate(req.id)}
                         >
-                          Approve
+                          {t("common.approve")}
                         </button>
                       </td>
                     </tr>
@@ -250,7 +252,7 @@ export default function ProcurementBudgetPage() {
       {reserveFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setReserveFor(null)}>
           <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-base font-bold">Reserve Budget</h2>
+            <h2 className="text-base font-bold">{t("procurement.budget.modalTitle")}</h2>
             <p className="text-xs text-neutral-500">{reserveFor.reference_number} — {reserveFor.title}</p>
             {formError && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
@@ -264,7 +266,7 @@ export default function ProcurementBudgetPage() {
               />
             </div>
             <div>
-              <label htmlFor="procurement-budget-reserved-amount" className="block text-xs font-semibold text-neutral-700 mb-1">Reserved amount</label>
+              <label htmlFor="procurement-budget-reserved-amount" className="block text-xs font-semibold text-neutral-700 mb-1">{t("procurement.budget.reservedAmount")}</label>
               <input id="procurement-budget-reserved-amount"
                 type="number"
                 min={0}
@@ -275,12 +277,12 @@ export default function ProcurementBudgetPage() {
               />
             </div>
             <div>
-              <label htmlFor="procurement-budget-notes-optional" className="block text-xs font-semibold text-neutral-700 mb-1">Notes (optional)</label>
+              <label htmlFor="procurement-budget-notes-optional" className="block text-xs font-semibold text-neutral-700 mb-1">{t("procurement.notesOptional")}</label>
               <textarea id="procurement-budget-notes-optional" className="form-input h-20 resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
             <div className="flex gap-2">
               <button type="button" className="btn-secondary flex-1" onClick={() => setReserveFor(null)}>
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -295,7 +297,7 @@ export default function ProcurementBudgetPage() {
                   })
                 }
               >
-                {reserveMut.isPending ? "Saving…" : "Confirm reservation"}
+                {reserveMut.isPending ? t("procurement.saving") : t("procurement.budget.confirmReservation")}
               </button>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type ModalSize = "sm" | "md" | "lg" | "xl";
 
@@ -38,6 +39,7 @@ export function Modal({
   bodyClassName,
   closeOnBackdrop = true,
 }: ModalProps) {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
   const titleId = useId();
   const descriptionId = useId();
@@ -139,7 +141,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             className="rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-primary/40 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-            aria-label="Close dialog"
+            aria-label={t("ui.modal.close")}
           >
             <span className="material-symbols-outlined text-[22px]">close</span>
           </button>

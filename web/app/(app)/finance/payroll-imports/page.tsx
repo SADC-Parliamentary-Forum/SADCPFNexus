@@ -7,20 +7,24 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormSection } from "@/components/ui/FormSection";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { TranslateVars } from "@/lib/i18n/messages";
+
+type Translate = (key: string, vars?: TranslateVars) => string;
 
 const REQUIRED_HEADERS = ["employee_number", "gross", "deductions", "net"];
 const NUMERIC_HEADERS = ["gross", "deductions", "net"];
 
 type ParsedRow = { line: PayrollImportLineInput; errors: string[] };
 
-function parseCsv(text: string): { rows: ParsedRow[]; headerError: string | null } {
+function parseCsv(text: string, t: Translate): { rows: ParsedRow[]; headerError: string | null } {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
-  if (lines.length === 0) return { rows: [], headerError: "The file is empty." };
+  if (lines.length === 0) return { rows: [], headerError: t("finance.payrollImports.fileEmpty") };
 
   const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
   const missing = REQUIRED_HEADERS.filter((h) => !headers.includes(h));
   if (missing.length > 0) {
-    return { rows: [], headerError: `Missing required column(s): ${missing.join(", ")}. Expected header: employee_number,period,gross,deductions,net,external_ref` };
+    return { rows: [], headerError: t("finance.payrollImports.missingColumns", { columns: missing.join(", ") }) };
   }
 
   const rows: ParsedRow[] = lines.slice(1).map((raw) => {
@@ -31,13 +35,13 @@ function parseCsv(text: string): { rows: ParsedRow[]; headerError: string | null
     };
     const errors: string[] = [];
     const employeeNumber = get("employee_number") || "";
-    if (!employeeNumber) errors.push("employee_number is required");
+    if (!employeeNumber) errors.push(t("finance.payrollImports.employeeRequired"));
 
     const numeric: Record<string, number | undefined> = {};
     for (const key of NUMERIC_HEADERS) {
       const raw = get(key);
       const n = raw ? Number(raw) : NaN;
-      if (raw && Number.isNaN(n)) errors.push(`${key} must be a number`);
+      if (raw && Number.isNaN(n)) errors.push(t("finance.payrollImports.mustBeNumber", { key }));
       numeric[key] = Number.isNaN(n) ? undefined : n;
     }
 
@@ -58,14 +62,15 @@ function parseCsv(text: string): { rows: ParsedRow[]; headerError: string | null
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  draft: "Draft — not yet confirmed",
-  staged: "Staged — ready for payroll processing",
-  exported: "Exported",
+  draft: "finance.payrollImports.status.draft",
+  staged: "finance.payrollImports.status.staged",
+  exported: "finance.payrollImports.status.exported",
 };
 
 export default function PayrollImportsPage() {
   const qc = useQueryClient();
   const { success, error } = useToast();
+  const { t } = useI18n();
   const [period, setPeriod] = useState("");
   const [parsed, setParsed] = useState<ParsedRow[] | null>(null);
   const [headerError, setHeaderError] = useState<string | null>(null);
@@ -81,27 +86,27 @@ export default function PayrollImportsPage() {
     mutationFn: (lines: PayrollImportLineInput[]) =>
       payrollImportApi.create({ period: period || undefined, lines }),
     onSuccess: () => {
-      success("Draft batch created. Review it below, then confirm to stage it.");
+      success(t("finance.payrollImports.created"));
       setParsed(null);
       setFileName(null);
       qc.invalidateQueries({ queryKey: ["payroll-imports"] });
     },
-    onError: (err: unknown) => error(apiErrorMessage(err, "Could not create the draft batch.")),
+    onError: (err: unknown) => error(apiErrorMessage(err, t("finance.payrollImports.createFailed"))),
   });
 
   const stageMut = useMutation({
     mutationFn: (id: number) => payrollImportApi.stage(id),
     onSuccess: () => {
-      success("Batch confirmed and staged.");
+      success(t("finance.payrollImports.staged"));
       qc.invalidateQueries({ queryKey: ["payroll-imports"] });
     },
-    onError: (err: unknown) => error(apiErrorMessage(err, "Could not confirm this batch.")),
+    onError: (err: unknown) => error(apiErrorMessage(err, t("finance.payrollImports.stageFailed"))),
   });
 
   const onFile = (file: File) => {
     setFileName(file.name);
     file.text().then((text) => {
-      const { rows, headerError } = parseCsv(text);
+      const { rows, headerError } = parseCsv(text, t);
       setHeaderError(headerError);
       setParsed(headerError ? null : rows);
     });
@@ -113,20 +118,20 @@ export default function PayrollImportsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Payroll import"
-        subtitle="Upload a payslip CSV export to stage a draft payroll batch. Amounts and rates always come from the file — nothing here is calculated or invented."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Finance", href: "/finance" }, { label: "Payroll import" }]} />}
+        title="finance.payrollImports.title"
+        subtitle="finance.payrollImports.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "finance.payrollImports.title" }]} />}
       />
 
       <FormSection
-        title="1. Upload payslip CSV"
-        description="Header row required: employee_number,period,gross,deductions,net,external_ref (period and external_ref optional)."
+        title="finance.payrollImports.step1"
+        description="finance.payrollImports.step1Hint"
         icon="upload_file"
       >
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <div>
-              <label htmlFor="payroll-import-period" className="block text-xs font-semibold text-neutral-700 mb-1">Period (optional, e.g. 2026-08)</label>
+              <label htmlFor="payroll-import-period" className="block text-xs font-semibold text-neutral-700 mb-1">{t("finance.payrollImports.periodLabel")}</label>
               <input
                 id="payroll-import-period"
                 className="form-input"
@@ -136,7 +141,7 @@ export default function PayrollImportsPage() {
               />
             </div>
             <div>
-              <label htmlFor="payroll-import-file" className="block text-xs font-semibold text-neutral-700 mb-1">CSV file</label>
+              <label htmlFor="payroll-import-file" className="block text-xs font-semibold text-neutral-700 mb-1">{t("finance.payrollImports.csvFile")}</label>
               <input
                 id="payroll-import-file"
                 type="file"
@@ -160,17 +165,17 @@ export default function PayrollImportsPage() {
 
       {parsed ? (
         <FormSection
-          title={`2. Review ${fileName ?? "upload"}`}
-          description={`${validRows.length} valid line(s)${invalidRows.length ? `, ${invalidRows.length} with errors` : ""}.`}
+          title={t("finance.payrollImports.step2", { name: fileName ?? t("finance.payrollImports.upload") })}
+          description={invalidRows.length ? t("finance.payrollImports.validWithErrors", { valid: validRows.length, invalid: invalidRows.length }) : t("finance.payrollImports.validOnly", { valid: validRows.length })}
           icon="fact_check"
         >
           {invalidRows.length > 0 ? (
             <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-              <p className="mb-2 font-medium">{invalidRows.length} row(s) will be skipped:</p>
+              <p className="mb-2 font-medium">{t("finance.payrollImports.skipped", { count: invalidRows.length })}</p>
               <ul className="list-disc space-y-1 pl-5">
                 {invalidRows.slice(0, 10).map((r, i) => (
                   <li key={i}>
-                    <span className="font-mono">{r.line.employee_number || "(missing)"}</span> — {r.errors.join(", ")}
+                    <span className="font-mono">{r.line.employee_number || t("finance.payrollImports.missing")}</span> — {r.errors.join(", ")}
                   </li>
                 ))}
               </ul>
@@ -181,12 +186,12 @@ export default function PayrollImportsPage() {
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th>Employee</th>
-                  <th>Period</th>
-                  <th>Gross</th>
-                  <th>Deductions</th>
-                  <th>Net</th>
-                  <th>External ref</th>
+                  <th>{t("finance.payrollImports.col.employee")}</th>
+                  <th>{t("finance.payslips.col.period")}</th>
+                  <th>{t("finance.payslips.col.gross")}</th>
+                  <th>{t("finance.payslips.detail.deductions")}</th>
+                  <th>{t("finance.payrollImports.col.net")}</th>
+                  <th>{t("finance.payrollImports.col.externalRef")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -203,7 +208,7 @@ export default function PayrollImportsPage() {
               </tbody>
             </table>
             {validRows.length > 50 ? (
-              <p className="px-3 py-2 text-xs text-neutral-500">Showing first 50 of {validRows.length} rows.</p>
+              <p className="px-3 py-2 text-xs text-neutral-500">{t("finance.payrollImports.showingFirst", { total: validRows.length })}</p>
             ) : null}
           </div>
 
@@ -214,31 +219,31 @@ export default function PayrollImportsPage() {
               disabled={validRows.length === 0 || createMut.isPending}
               onClick={() => createMut.mutate(validRows.map((r) => r.line))}
             >
-              {createMut.isPending ? "Creating draft…" : `Create draft batch (${validRows.length} lines)`}
+              {createMut.isPending ? t("finance.payrollImports.creating") : t("finance.payrollImports.createBatch", { count: validRows.length })}
             </button>
             <button type="button" className="btn-secondary text-sm" onClick={() => { setParsed(null); setFileName(null); }}>
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </FormSection>
       ) : null}
 
-      <FormSection title="3. Batches" icon="folder" description="Draft batches are not yet applied to payroll — confirm to stage them.">
+      <FormSection title="finance.payrollImports.step3" icon="folder" description="finance.payrollImports.step3Hint">
         {isLoading ? (
-          <p className="text-sm text-neutral-500">Loading…</p>
+          <p className="text-sm text-neutral-500">{t("common.loading")}</p>
         ) : batches.length === 0 ? (
-          <p className="text-sm text-neutral-500">No payroll import batches yet.</p>
+          <p className="text-sm text-neutral-500">{t("finance.payrollImports.empty")}</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-neutral-200">
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Period</th>
-                  <th>Driver</th>
-                  <th>Status</th>
-                  <th>Lines</th>
-                  <th></th>
+                  <th>{t("decisions.col.reference")}</th>
+                  <th>{t("finance.payslips.col.period")}</th>
+                  <th>{t("finance.payrollImports.col.driver")}</th>
+                  <th>{t("finance.budget.col.status")}</th>
+                  <th>{t("finance.payrollImports.col.lines")}</th>
+                  <th><span className="sr-only">{t("finance.budget.col.actions")}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -247,7 +252,7 @@ export default function PayrollImportsPage() {
                     <td className="font-mono text-xs">{b.reference}</td>
                     <td>{b.period ?? "—"}</td>
                     <td>{b.driver}</td>
-                    <td>{STATUS_LABEL[b.status] ?? b.status}</td>
+                    <td>{STATUS_LABEL[b.status] ? t(STATUS_LABEL[b.status]) : b.status}</td>
                     <td>{b.line_count ?? b.lines_count ?? 0}</td>
                     <td>
                       {b.status === "draft" ? (
@@ -257,7 +262,7 @@ export default function PayrollImportsPage() {
                           disabled={stageMut.isPending}
                           onClick={() => stageMut.mutate(b.id)}
                         >
-                          Confirm & stage
+                          {t("finance.payrollImports.confirmStage")}
                         </button>
                       ) : null}
                     </td>

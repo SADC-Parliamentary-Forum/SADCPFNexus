@@ -8,8 +8,10 @@ import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function CreateDecisionPageInner() {
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const searchParams = useSearchParams();
@@ -60,12 +62,12 @@ function CreateDecisionPageInner() {
         });
         await decisionsApi.linkAgendaDecision(agenda.data.data.id, decisionId);
       }
-      toast.success("Decision created");
+      toast.success(t("decisions.create.created"));
       router.push(`/decisions/${decisionId}`);
     } catch (err) {
-      const message = apiErrorMessage(err, "Could not create the decision. Check required fields and try again.");
+      const message = apiErrorMessage(err, t("decisions.create.failed"));
       setError(message);
-      toast.error("Decision not created", message);
+      toast.error(t("decisions.create.notCreated"), message);
       setSaving(false);
     }
   }
@@ -73,14 +75,14 @@ function CreateDecisionPageInner() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="New decision"
-        subtitle="Capture a meeting resolution or management decision as a draft."
+        title="decisions.new"
+        subtitle="decisions.create.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Governance", href: "/governance" },
-              { label: "Decision Register", href: "/decisions" },
-              { label: "New decision" },
+              { label: "decisions.crumb.governance", href: "/governance" },
+              { label: "decisions.register.title", href: "/decisions" },
+              { label: "decisions.new" },
             ]}
           />
         }
@@ -91,20 +93,20 @@ function CreateDecisionPageInner() {
       ) : null}
 
       <form onSubmit={onSubmit} className="space-y-5">
-        <FormSection title="Decision" icon="gavel" description="Type and wording of the decision.">
+        <FormSection title="decisions.detail.title" icon="gavel" description="decisions.create.decisionHint">
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Type" htmlFor="decision-type" required>
+            <FormField label="decisions.col.type" htmlFor="decision-type" required>
               <select
                 id="decision-type"
                 className="form-input"
                 value={decisionType}
                 onChange={(e) => setDecisionType(e.target.value as typeof decisionType)}
               >
-                <option value="resolution">Resolution</option>
-                <option value="management_decision">Management decision</option>
+                <option value="resolution">{t("decisions.type.resolution")}</option>
+                <option value="management_decision">{t("decisions.type.management_decision")}</option>
               </select>
             </FormField>
-            <FormField label="Due date" htmlFor="decision-due">
+            <FormField label="decisions.create.dueDate" htmlFor="decision-due">
               <input
                 id="decision-due"
                 type="date"
@@ -113,38 +115,38 @@ function CreateDecisionPageInner() {
                 onChange={(e) => setDueDate(e.target.value)}
               />
             </FormField>
-            <FormField label="Title" htmlFor="decision-title" required className="sm:col-span-2">
+            <FormField label="decisions.col.title" htmlFor="decision-title" required className="sm:col-span-2">
               <input
                 id="decision-title"
                 className="form-input"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Short decision title"
+                placeholder={t("decisions.create.titlePlaceholder")}
               />
             </FormField>
-            <FormField label="Decision text" htmlFor="decision-body" className="sm:col-span-2">
+            <FormField label="decisions.detail.text" htmlFor="decision-body" className="sm:col-span-2">
               <textarea
                 id="decision-body"
                 className="form-input min-h-32 resize-y"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="Full wording of the resolution or decision"
+                placeholder={t("decisions.create.bodyPlaceholder")}
               />
             </FormField>
           </div>
         </FormSection>
 
-        <FormSection title="Ownership and meeting" icon="groups" description="Who owns follow-up, and which minutes this belongs to.">
+        <FormSection title="decisions.create.ownership" icon="groups" description="decisions.create.ownershipHint">
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Owner" htmlFor="decision-owner">
+            <FormField label="decisions.col.owner" htmlFor="decision-owner">
               <select
                 id="decision-owner"
                 className="form-input"
                 value={ownerId}
                 onChange={(e) => setOwnerId(e.target.value)}
               >
-                <option value="">Select owner…</option>
+                <option value="">{t("decisions.create.selectOwner")}</option>
                 {owners.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.name}
@@ -152,14 +154,14 @@ function CreateDecisionPageInner() {
                 ))}
               </select>
             </FormField>
-            <FormField label="Meeting minutes" htmlFor="decision-minutes">
+            <FormField label="decisions.create.minutes" htmlFor="decision-minutes">
               <select
                 id="decision-minutes"
                 className="form-input"
                 value={minutesId}
                 onChange={(e) => setMinutesId(e.target.value)}
               >
-                <option value="">Optional minutes link…</option>
+                <option value="">{t("decisions.create.minutesOptional")}</option>
                 {minutes.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.title}
@@ -169,15 +171,15 @@ function CreateDecisionPageInner() {
               </select>
             </FormField>
             <FormField
-              label="Agenda item (optional)"
+              label="decisions.create.agenda"
               htmlFor="decision-agenda"
-              hint="Creates and links an agenda item on the selected minutes."
+              hint="decisions.create.agendaHint"
               className="sm:col-span-2"
             >
               <input
                 id="decision-agenda"
                 className="form-input"
-                placeholder="Agenda item title"
+                placeholder={t("decisions.create.agendaPlaceholder")}
                 value={agendaTitle}
                 onChange={(e) => setAgendaTitle(e.target.value)}
               />
@@ -190,17 +192,17 @@ function CreateDecisionPageInner() {
                 checked={confidential}
                 onChange={(e) => setConfidential(e.target.checked)}
               />
-              Mark confidential
+              {t("decisions.create.markConfidential")}
             </label>
           </div>
         </FormSection>
 
         <div className="flex flex-wrap gap-2 border-t border-neutral-200 pt-4">
           <button type="submit" className="btn-primary" disabled={saving || !title.trim()}>
-            {saving ? "Saving…" : "Create draft"}
+            {saving ? t("decisions.create.saving") : t("decisions.create.submit")}
           </button>
           <Link href="/decisions" className="btn-secondary">
-            Cancel
+            {t("common.cancel")}
           </Link>
         </div>
       </form>

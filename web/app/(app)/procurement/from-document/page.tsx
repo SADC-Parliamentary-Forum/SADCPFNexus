@@ -14,6 +14,7 @@ import {
   type PurchaseOrder,
 } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Step = "upload" | "review" | "supplier" | "project" | "request" | "preview";
 
@@ -26,13 +27,14 @@ function needsNewSupplier(intake: ProcurementIntake | null | undefined) {
 
 function confidenceLabel(score: number | null | undefined) {
   const n = score ?? 0;
-  if (n >= 90) return { text: `${n}% ✓`, cls: "text-emerald-700 bg-emerald-50 border-emerald-200" };
-  if (n >= 70) return { text: `${n}% Review`, cls: "text-amber-800 bg-amber-50 border-amber-200" };
-  return { text: `${n}% Attention required`, cls: "text-rose-800 bg-rose-50 border-rose-200" };
+  if (n >= 90) return { key: "procurement.fromDoc.confidence.high", n, cls: "text-emerald-700 bg-emerald-50 border-emerald-200" };
+  if (n >= 70) return { key: "procurement.fromDoc.confidence.review", n, cls: "text-amber-800 bg-amber-50 border-amber-200" };
+  return { key: "procurement.fromDoc.confidence.attention", n, cls: "text-rose-800 bg-rose-50 border-rose-200" };
 }
 
 export default function CreateFromDocumentPage() {
   const toast = useToast();
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>("upload");
   const [file, setFile] = useState<File | null>(null);
   const [drag, setDrag] = useState(false);
@@ -118,12 +120,12 @@ export default function CreateFromDocumentPage() {
       setIntake(res.data.data);
       setError(null);
       setStep("review");
-      toast.success("Document uploaded");
+      toast.success(t("procurement.doc.uploaded"));
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
-      const message = e.response?.data?.message ?? "Upload failed.";
+      const message = e.response?.data?.message ?? t("procurement.fromDoc.uploadFailed");
       setError(message);
-      toast.error("Document not uploaded", message);
+      toast.error(t("procurement.doc.notUploaded"), message);
     },
   });
 
@@ -139,13 +141,13 @@ export default function CreateFromDocumentPage() {
     onSuccess: (res) => {
       setIntake(res.data.data);
       setStep("request");
-      toast.success("Document details confirmed");
+      toast.success(t("procurement.fromDoc.confirmed"));
     },
     onError: (e: { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }) => {
       const errors = e.response?.data?.errors;
-      const message = errors ? Object.values(errors).flat().join(" ") : e.response?.data?.message ?? "Confirm failed.";
+      const message = errors ? Object.values(errors).flat().join(" ") : e.response?.data?.message ?? t("procurement.fromDoc.confirmFailed");
       setError(message);
-      toast.error("Could not confirm document details", message);
+      toast.error(t("procurement.fromDoc.confirmFailedTitle"), message);
     },
   });
 
@@ -159,12 +161,12 @@ export default function CreateFromDocumentPage() {
       const lpo = await procurementIntakeApi.generateLpo(intake!.id);
       setPo(lpo.data.data);
       setStep("preview");
-      toast.success("Procurement request created");
+      toast.success(t("procurement.fromDoc.requestCreated"));
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
-      const message = e.response?.data?.message ?? "Could not create the procurement request.";
+      const message = e.response?.data?.message ?? t("procurement.fromDoc.requestCreateFailed");
       setError(message);
-      toast.error("Procurement request not created", message);
+      toast.error(t("procurement.fromDoc.requestNotCreated"), message);
     },
   });
 
@@ -174,12 +176,12 @@ export default function CreateFromDocumentPage() {
       const lpo = await procurementIntakeApi.generateLpo(intake!.id);
       setPo(lpo.data.data);
       setStep("preview");
-      toast.success("Procurement request linked");
+      toast.success(t("procurement.fromDoc.requestLinked"));
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
-      const message = e.response?.data?.message ?? "Could not link the procurement request.";
+      const message = e.response?.data?.message ?? t("procurement.fromDoc.requestLinkFailed");
       setError(message);
-      toast.error("Procurement request not linked", message);
+      toast.error(t("procurement.fromDoc.requestNotLinked"), message);
     },
   });
 
@@ -191,19 +193,19 @@ export default function CreateFromDocumentPage() {
       const invitation = res.data.invitation;
       if (invitation?.sent) {
         setInviteNotice(
-          `Invitation sent to ${invitation.email}. They activate at /activate-account, then sign in at ${invitation.login_url}. Nexus never emails a password.`
+          t("procurement.fromDoc.invitationSent", { email: invitation.email ?? "", url: invitation.login_url ?? "" })
         );
       } else {
-        setInviteNotice("Supplier saved on this document. You can invite them to the portal later from Supplier Master.");
+        setInviteNotice(t("procurement.fromDoc.supplierSavedNotice"));
       }
       setStep("project");
-      toast.success("Supplier saved");
+      toast.success(t("procurement.fromDoc.supplierSaved"));
     },
     onError: (e: { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }) => {
       const errors = e.response?.data?.errors;
-      const message = errors ? Object.values(errors).flat().join(" ") : e.response?.data?.message ?? "Could not save the supplier.";
+      const message = errors ? Object.values(errors).flat().join(" ") : e.response?.data?.message ?? t("procurement.fromDoc.supplierSaveFailed");
       setError(message);
-      toast.error("Supplier not saved", message);
+      toast.error(t("procurement.fromDoc.supplierNotSaved"), message);
     },
   });
 
@@ -211,12 +213,12 @@ export default function CreateFromDocumentPage() {
     mutationFn: () => purchaseOrdersApi.submit(po!.id),
     onSuccess: (res) => {
       setPo(res.data.data);
-      toast.success("LPO sent for approval");
+      toast.success(t("procurement.fromDoc.lpoSent"));
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
-      const message = e.response?.data?.message ?? "Could not send for approval.";
+      const message = e.response?.data?.message ?? t("procurement.fromDoc.lpoSendFailed");
       setError(message);
-      toast.error("LPO not sent for approval", message);
+      toast.error(t("procurement.fromDoc.lpoNotSent"), message);
     },
   });
 
@@ -230,24 +232,24 @@ export default function CreateFromDocumentPage() {
   const band = confidenceLabel(intake?.extraction_confidence);
 
   const invoiceFirstNote = useMemo(() => {
-    if (intake?.invoice_first_case === "existing_lpo") return "Existing LPO found — match this invoice instead of creating another LPO.";
-    if (intake?.invoice_first_case === "no_po_payment") return "Routed as a configured no-PO payment. An LPO will not be manufactured.";
-    if (intake?.invoice_first_case === "retrospective") return "Invoice-first transaction. Official LPO date will be today, not the supplier invoice date.";
+    if (intake?.invoice_first_case === "existing_lpo") return t("procurement.fromDoc.note.existingLpo");
+    if (intake?.invoice_first_case === "no_po_payment") return t("procurement.fromDoc.note.noPo");
+    if (intake?.invoice_first_case === "retrospective") return t("procurement.fromDoc.note.retrospective");
     return null;
-  }, [intake?.invoice_first_case]);
+  }, [intake?.invoice_first_case, t]);
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Create from Invoice / Quote"
-        subtitle="Upload a supplier document. Nexus extracts, matches and prepares the LPO. Unmatched suppliers are created here and sent login instructions — Nexus never emails a password."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement", href: "/procurement" }, { label: "From document" }]} />}
+        title={t("procurement.index.fromDocument")}
+        subtitle={t("procurement.fromDoc.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("nav.procurement"), href: "/procurement" }, { label: t("procurement.fromDoc.crumb") }]} />}
       />
 
       <ol className="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
         {STEPS.map((s) => (
           <li key={s} className={`rounded-full border px-3 py-1 ${step === s ? "border-primary bg-primary/10 text-primary" : "border-neutral-200"}`}>
-            {s}
+            {t(`procurement.fromDoc.step.${s}`)}
           </li>
         ))}
       </ol>
@@ -278,8 +280,8 @@ export default function CreateFromDocumentPage() {
           className={`rounded-xl border-2 border-dashed p-10 text-center ${drag ? "border-primary bg-primary/5" : "border-neutral-300 bg-white"}`}
         >
           <span className="material-symbols-outlined text-4xl text-primary">upload_file</span>
-          <p className="mt-3 text-lg font-semibold text-neutral-800">Drop supplier document here</p>
-          <p className="text-sm text-neutral-500">PDF or Word (DOCX) with selectable text extracts first. Image-only PDFs and scans are read with OCR when Tesseract is installed on the API. Review extracted fields before confirming.</p>
+          <p className="mt-3 text-lg font-semibold text-neutral-800">{t("procurement.fromDoc.dropHere")}</p>
+          <p className="text-sm text-neutral-500">{t("procurement.fromDoc.dropHint")}</p>
           {file && <p className="mt-4 text-sm text-neutral-700">{file.name}</p>}
           <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap">
             <label htmlFor="intake-file" className="btn-secondary cursor-pointer">
@@ -290,7 +292,7 @@ export default function CreateFromDocumentPage() {
                 accept=".pdf,.docx,.jpg,.jpeg,.png,application/pdf"
                 onChange={(e) => onDrop(e.target.files)}
               />
-              Browse files
+              {t("procurement.fromDoc.browse")}
             </label>
             <button
               type="button"
@@ -298,7 +300,7 @@ export default function CreateFromDocumentPage() {
               disabled={!file || upload.isPending}
               onClick={() => file && upload.mutate(file)}
             >
-              {upload.isPending ? "Extracting…" : "Upload Invoice / Quote"}
+              {upload.isPending ? t("procurement.fromDoc.extracting") : t("procurement.fromDoc.upload")}
             </button>
           </div>
         </div>
@@ -308,45 +310,46 @@ export default function CreateFromDocumentPage() {
         <div className="grid gap-6 lg:grid-cols-5">
           <div className="lg:col-span-2 rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
             <p className="font-semibold text-neutral-800">{intake.original_filename}</p>
-            <p className="mt-2 text-neutral-600">Original document remains the evidence. Corrections are stored separately.</p>
-            <span className={`mt-3 inline-block rounded border px-2 py-0.5 text-xs ${band.cls}`}>{band.text}</span>
+            <p className="mt-2 text-neutral-600">{t("procurement.fromDoc.evidence")}</p>
+            <span className={`mt-3 inline-block rounded border px-2 py-0.5 text-xs ${band.cls}`}>{t(band.key, { n: band.n })}</span>
             {intake.needs_manual_classification && (
-              <p className="mt-3 text-amber-800">Needs manual classification — confidence is too low to guess silently.</p>
+              <p className="mt-3 text-amber-800">{t("procurement.fromDoc.manualClassification")}</p>
             )}
             {intake.document_type === "purchase_order" && (
               <p className="mt-3 rounded border border-sky-200 bg-sky-50 px-3 py-2 text-sky-900">
-                This file is an official purchase order (LPO {intake.document_number ?? "number not read"}), not a supplier quote.
-                If that LPO already exists in Nexus, continue to open it — a second LPO will not be created.
-                If it is not in Nexus yet, continue to regularise; the next official number is allocated on submit and will not reuse {intake.document_number ?? "the number on this file"}.
+                {t("procurement.fromDoc.poFile", {
+                  number: intake.document_number ?? t("procurement.fromDoc.numberNotRead"),
+                  reuse: intake.document_number ?? t("procurement.fromDoc.numberOnFile"),
+                })}
               </p>
             )}
             {(intake.text_method === "ocr_unconfigured" || intake.text_method === "pdf_no_text") && (
-              <p className="mt-3 text-amber-900">{intake.extraction_message ?? "No selectable text was found. Upload a PDF or DOCX with selectable text, or enter fields manually."}</p>
+              <p className="mt-3 text-amber-900">{intake.extraction_message ?? t("procurement.fromDoc.noText")}</p>
             )}
           </div>
           <div className="lg:col-span-3 space-y-4">
             <div className="rounded-xl border border-neutral-200 bg-white p-4">
-              <h2 className="font-semibold">Supplier</h2>
-              <p>{intake.vendor?.name ?? intake.supplier_name_raw ?? "Unmatched"}</p>
+              <h2 className="font-semibold">{t("procurement.rfqDetail.supplier")}</h2>
+              <p>{intake.vendor?.name ?? intake.supplier_name_raw ?? t("procurement.fromDoc.unmatched")}</p>
               <p className="text-sm text-neutral-500">{intake.supplier_match_status}</p>
               {needsNewSupplier(intake) && (
                 <p className="mt-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                  This supplier is not on Supplier Master. Next you will create their record and send portal login instructions. Nexus never emails a password.
+                  {t("procurement.fromDoc.notOnMaster")}
                 </p>
               )}
               {(intake.supplier_differences ?? []).map((d) => (
                 <p key={d.field} className="mt-2 text-sm text-amber-800">
-                  {d.field}: Master {d.master} vs document {d.document}
+                  {t("procurement.fromDoc.difference", { field: d.field, master: d.master ?? "", document: d.document ?? "" })}
                 </p>
               ))}
               {intake.extraction_status === "duplicate_blocked" && (
               <p className="rounded border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">
-                Possible duplicate invoice {(intake.duplicate_matches ?? [])[0]?.document_number ?? intake.document_number}. Open the existing record instead of creating another case.
+                {t("procurement.fromDoc.duplicate", { number: (intake.duplicate_matches ?? [])[0]?.document_number ?? intake.document_number ?? "" })}
               </p>
             )}
             {intake.bank_mismatch && (
                 <p className="mt-2 rounded border border-rose-300 bg-rose-50 p-2 text-sm text-rose-900">
-                  HIGH-RISK SUPPLIER CHANGE — bank details differ from Supplier Master. Transaction is on HOLD.
+                  {t("procurement.fromDoc.bankMismatch")}
                 </p>
               )}
             </div>
@@ -354,10 +357,10 @@ export default function CreateFromDocumentPage() {
               <table className="min-w-full text-sm">
                 <thead className="bg-neutral-50 text-left">
                   <tr>
-                    <th className="px-3 py-2">Qty</th>
-                    <th className="px-3 py-2">Source</th>
-                    <th className="px-3 py-2">LPO text</th>
-                    <th className="px-3 py-2 text-right">Total</th>
+                    <th className="px-3 py-2">{t("procurement.po.qty")}</th>
+                    <th className="px-3 py-2">{t("procurement.fromDoc.source")}</th>
+                    <th className="px-3 py-2">{t("procurement.fromDoc.lpoText")}</th>
+                    <th className="px-3 py-2 text-right">{t("procurement.invoices.kpi.total")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -373,20 +376,20 @@ export default function CreateFromDocumentPage() {
               </table>
             </div>
             <p className="text-sm">
-              Subtotal {intake.subtotal} · {intake.vat_warning ?? "VAT recorded"} · Total <strong>{intake.currency === "NAD" ? "N$" : intake.currency} {intake.grand_total}</strong>
+              {t("procurement.fromDoc.subtotal", { subtotal: intake.subtotal ?? "", vat: intake.vat_warning ?? t("procurement.fromDoc.vatRecorded") })} <strong>{intake.currency === "NAD" ? "N$" : intake.currency} {intake.grand_total}</strong>
             </p>
             {intake.arithmetic && !intake.arithmetic.ok && (
-              <p className="text-sm text-amber-800">Arithmetic does not reconcile: {intake.arithmetic.issues.join(" ")}</p>
+              <p className="text-sm text-amber-800">{t("procurement.fromDoc.arithmetic", { issues: intake.arithmetic.issues.join(" ") })}</p>
             )}
             <div className="flex flex-wrap items-center gap-3">
-              <button type="button" className="btn-secondary" onClick={() => setStep("upload")}>Reject / start over</button>
+              <button type="button" className="btn-secondary" onClick={() => setStep("upload")}>{t("procurement.fromDoc.startOver")}</button>
               <button
                 type="button"
                 className="btn-primary"
                 disabled={intake.extraction_status === "duplicate_blocked"}
                 onClick={() => setStep(needsNewSupplier(intake) ? "supplier" : "project")}
               >
-                {needsNewSupplier(intake) ? "Create supplier & continue" : "Confirm & Continue"}
+                {needsNewSupplier(intake) ? t("procurement.fromDoc.createSupplierContinue") : t("procurement.fromDoc.confirmContinue")}
               </button>
             </div>
           </div>
@@ -397,22 +400,22 @@ export default function CreateFromDocumentPage() {
         <div className="grid gap-6 lg:grid-cols-5">
           <div className="lg:col-span-2 space-y-4">
             <div className="rounded-xl border border-neutral-200 bg-white p-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-primary">New supplier</p>
-              <h2 className="mt-1 text-lg font-semibold text-neutral-900">Create supplier details</h2>
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">{t("procurement.fromDoc.newSupplier")}</p>
+              <h2 className="mt-1 text-lg font-semibold text-neutral-900">{t("procurement.fromDoc.createSupplierDetails")}</h2>
               <p className="mt-2 text-sm text-neutral-600">
-                Fields are prefilled from the document. Confirm them before they become Supplier Master. The vendor stays pending approval — this does not auto-approve or auto-pay.
+                {t("procurement.fromDoc.prefilledHint")}
               </p>
             </div>
             {(intake.supplier_candidates ?? []).length > 0 && (
               <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm">
-                <p className="font-semibold text-sky-950">Possible existing suppliers</p>
-                <p className="mt-1 text-sky-900">Link one of these instead of creating a duplicate.</p>
+                <p className="font-semibold text-sky-950">{t("procurement.fromDoc.possibleSuppliers")}</p>
+                <p className="mt-1 text-sky-900">{t("procurement.fromDoc.linkInstead")}</p>
                 <ul className="mt-3 space-y-2">
                   {(intake.supplier_candidates ?? []).map((row) => (
                     <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200 bg-white px-3 py-2">
                       <span>
                         <strong>{row.name}</strong>
-                        <span className="block text-xs text-neutral-500">{row.contact_email ?? "No email"} · score {row.score}</span>
+                        <span className="block text-xs text-neutral-500">{t("procurement.fromDoc.candidateMeta", { email: row.contact_email ?? t("procurement.fromDoc.noEmail"), score: row.score ?? "" })}</span>
                       </span>
                       <button
                         type="button"
@@ -420,7 +423,7 @@ export default function CreateFromDocumentPage() {
                         disabled={saveSupplier.isPending}
                         onClick={() => saveSupplier.mutate({ vendor_id: row.id, send_invitation: false })}
                       >
-                        Use this supplier
+                        {t("procurement.fromDoc.useSupplier")}
                       </button>
                     </li>
                   ))}
@@ -433,15 +436,15 @@ export default function CreateFromDocumentPage() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!supplierForm.name.trim()) {
-                setError("Supplier name is required.");
+                setError(t("procurement.fromDoc.err.name"));
                 return;
               }
               if (supplierForm.category_ids.length < 1) {
-                setError("Select at least one supplier category.");
+                setError(t("procurement.fromDoc.err.category"));
                 return;
               }
               if (sendInvitation && !supplierForm.contact_email.trim()) {
-                setError("An email is required to send login instructions.");
+                setError(t("procurement.fromDoc.err.email"));
                 return;
               }
               saveSupplier.mutate({
@@ -462,7 +465,7 @@ export default function CreateFromDocumentPage() {
           >
             <div>
               <label htmlFor="intake-supplier-name" className="block text-sm font-medium text-neutral-800">
-                Supplier / company name
+                {t("procurement.fromDoc.field.name")}
               </label>
               <input
                 id="intake-supplier-name"
@@ -475,7 +478,7 @@ export default function CreateFromDocumentPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="intake-supplier-contact" className="block text-sm font-medium text-neutral-800">
-                  Primary contact
+                  {t("procurement.fromDoc.field.contact")}
                 </label>
                 <input
                   id="intake-supplier-contact"
@@ -486,7 +489,7 @@ export default function CreateFromDocumentPage() {
               </div>
               <div>
                 <label htmlFor="intake-supplier-phone" className="block text-sm font-medium text-neutral-800">
-                  Phone
+                  {t("procurement.fromDoc.field.phone")}
                 </label>
                 <input
                   id="intake-supplier-phone"
@@ -498,7 +501,7 @@ export default function CreateFromDocumentPage() {
             </div>
             <div>
               <label htmlFor="intake-supplier-email" className="block text-sm font-medium text-neutral-800">
-                Portal login email
+                {t("procurement.fromDoc.field.email")}
               </label>
               <input
                 id="intake-supplier-email"
@@ -507,12 +510,12 @@ export default function CreateFromDocumentPage() {
                 value={supplierForm.contact_email}
                 onChange={(e) => setSupplierForm((f) => ({ ...f, contact_email: e.target.value }))}
               />
-              <p className="mt-1 text-xs text-neutral-500">This is the email they will use to sign in after activating the account.</p>
+              <p className="mt-1 text-xs text-neutral-500">{t("procurement.fromDoc.field.emailHint")}</p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="intake-supplier-reg" className="block text-sm font-medium text-neutral-800">
-                  Registration number
+                  {t("procurement.fromDoc.field.registration")}
                 </label>
                 <input
                   id="intake-supplier-reg"
@@ -523,7 +526,7 @@ export default function CreateFromDocumentPage() {
               </div>
               <div>
                 <label htmlFor="intake-supplier-tax" className="block text-sm font-medium text-neutral-800">
-                  Tax / VAT number
+                  {t("procurement.fromDoc.field.tax")}
                 </label>
                 <input
                   id="intake-supplier-tax"
@@ -535,7 +538,7 @@ export default function CreateFromDocumentPage() {
             </div>
             <div>
               <label htmlFor="intake-supplier-address" className="block text-sm font-medium text-neutral-800">
-                Address
+                {t("procurement.fromDoc.field.address")}
               </label>
               <textarea
                 id="intake-supplier-address"
@@ -547,7 +550,7 @@ export default function CreateFromDocumentPage() {
             </div>
             <div>
               <label htmlFor="intake-supplier-country" className="block text-sm font-medium text-neutral-800">
-                Country
+                {t("procurement.fromDoc.field.country")}
               </label>
               <input
                 id="intake-supplier-country"
@@ -559,7 +562,7 @@ export default function CreateFromDocumentPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="intake-supplier-bank" className="block text-sm font-medium text-neutral-800">
-                  Bank name (from document)
+                  {t("procurement.fromDoc.field.bankName")}
                 </label>
                 <input
                   id="intake-supplier-bank"
@@ -570,7 +573,7 @@ export default function CreateFromDocumentPage() {
               </div>
               <div>
                 <label htmlFor="intake-supplier-account" className="block text-sm font-medium text-neutral-800">
-                  Bank account (from document)
+                  {t("procurement.fromDoc.field.bankAccount")}
                 </label>
                 <input
                   id="intake-supplier-account"
@@ -581,7 +584,7 @@ export default function CreateFromDocumentPage() {
               </div>
             </div>
             <fieldset>
-              <legend className="text-sm font-medium text-neutral-800">Supplier categories</legend>
+              <legend className="text-sm font-medium text-neutral-800">{t("procurement.fromDoc.field.categories")}</legend>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {(categories.data ?? []).map((category) => {
                   const id = `intake-supplier-cat-${category.id}`;
@@ -619,14 +622,14 @@ export default function CreateFromDocumentPage() {
                 onChange={(e) => setSendInvitation(e.target.checked)}
               />
               <span>
-                Send portal login instructions to this email. The supplier activates the account and chooses their own password.
-                <strong className="block font-semibold">Nexus never emails a password.</strong>
+                {t("procurement.fromDoc.inviteLabel")}
+                <strong className="block font-semibold">{t("procurement.fromDoc.neverEmailsPassword")}</strong>
               </span>
             </label>
             <div className="flex flex-wrap items-center gap-3 pt-1">
-              <button type="button" className="btn-secondary" onClick={() => setStep("review")}>Back</button>
+              <button type="button" className="btn-secondary" onClick={() => setStep("review")}>{t("common.back")}</button>
               <button type="submit" className="btn-primary" disabled={saveSupplier.isPending}>
-                {saveSupplier.isPending ? "Saving supplier…" : sendInvitation ? "Create supplier & send login details" : "Create supplier without invite"}
+                {saveSupplier.isPending ? t("procurement.fromDoc.savingSupplier") : sendInvitation ? t("procurement.fromDoc.createAndInvite") : t("procurement.fromDoc.createWithoutInvite")}
               </button>
             </div>
           </form>
@@ -637,7 +640,7 @@ export default function CreateFromDocumentPage() {
         <div className="max-w-xl space-y-4 rounded-xl border border-neutral-200 bg-white p-6">
           <div>
             <label htmlFor="intake-project" className="block text-sm font-medium text-neutral-800">
-              Project
+              {t("procurement.fromDoc.project")}
             </label>
             <select
               id="intake-project"
@@ -645,7 +648,7 @@ export default function CreateFromDocumentPage() {
               value={projectId}
               onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : "")}
             >
-              <option value="">Select project</option>
+              <option value="">{t("procurement.fromDoc.selectProject")}</option>
               {(projects.data ?? []).map((p) => (
                 <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
               ))}
@@ -653,35 +656,35 @@ export default function CreateFromDocumentPage() {
           </div>
           {intake.document_type === "invoice" && (
             <div className="space-y-3 rounded border border-amber-200 bg-amber-50 p-4 text-sm">
-              <p className="font-semibold">Invoice-first control</p>
-              <p>The official LPO date will be today. The supplier invoice date {intake.document_date} is stored as source evidence only.</p>
+              <p className="font-semibold">{t("procurement.fromDoc.invoiceFirst")}</p>
+              <p>{t("procurement.fromDoc.invoiceFirstHint", { date: intake.document_date ?? "" })}</p>
               <div>
                 <label htmlFor="intake-exception-reason" className="block text-sm font-medium text-neutral-800">
-                  Why did procurement precede the LPO?
+                  {t("procurement.fromDoc.exception.reason")}
                 </label>
                 <input id="intake-exception-reason" className="form-input mt-1" value={exception.reason} onChange={(e) => setException({ ...exception, reason: e.target.value })} />
               </div>
               <div>
                 <label htmlFor="intake-exception-officer" className="block text-sm font-medium text-neutral-800">
-                  Requesting officer
+                  {t("procurement.fromDoc.exception.officer")}
                 </label>
                 <input id="intake-exception-officer" className="form-input mt-1" value={exception.requesting_officer} onChange={(e) => setException({ ...exception, requesting_officer: e.target.value })} />
               </div>
               <div>
                 <label htmlFor="intake-exception-request-date" className="block text-sm font-medium text-neutral-800">
-                  Request date
+                  {t("procurement.fromDoc.exception.requestDate")}
                 </label>
                 <input id="intake-exception-request-date" className="form-input mt-1" type="date" value={exception.request_date} onChange={(e) => setException({ ...exception, request_date: e.target.value })} />
               </div>
               <div>
                 <label htmlFor="intake-exception-service-date" className="block text-sm font-medium text-neutral-800">
-                  Service or goods date
+                  {t("procurement.fromDoc.exception.serviceDate")}
                 </label>
                 <input id="intake-exception-service-date" className="form-input mt-1" type="date" value={exception.service_or_goods_date} onChange={(e) => setException({ ...exception, service_or_goods_date: e.target.value })} />
               </div>
               <div>
                 <label htmlFor="intake-exception-justification" className="block text-sm font-medium text-neutral-800">
-                  Supplier justification
+                  {t("procurement.fromDoc.exception.justification")}
                 </label>
                 <textarea id="intake-exception-justification" className="form-input mt-1" rows={3} value={exception.justification} onChange={(e) => setException({ ...exception, justification: e.target.value })} />
               </div>
@@ -690,13 +693,13 @@ export default function CreateFromDocumentPage() {
           {intake.bank_mismatch && (
             <label htmlFor="intake-ack-bank" className="flex items-start gap-2 text-sm">
               <input id="intake-ack-bank" type="checkbox" className="mt-1" checked={acknowledgeBank} onChange={(e) => setAcknowledgeBank(e.target.checked)} />
-              I acknowledge the bank-detail hold. Supplier Master will not be overwritten from this invoice.
+              {t("procurement.fromDoc.ackBank")}
             </label>
           )}
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            <button type="button" className="btn-secondary" onClick={() => setStep("review")}>Back</button>
+            <button type="button" className="btn-secondary" onClick={() => setStep("review")}>{t("common.back")}</button>
             <button type="button" className="btn-primary" disabled={!projectId || confirm.isPending || (intake.bank_mismatch && !acknowledgeBank)} onClick={() => confirm.mutate()}>
-              {confirm.isPending ? "Checking policy…" : "Apply project & policy"}
+              {confirm.isPending ? t("procurement.fromDoc.checkingPolicy") : t("procurement.fromDoc.applyPolicy")}
             </button>
           </div>
         </div>
@@ -707,27 +710,27 @@ export default function CreateFromDocumentPage() {
           {invoiceFirstNote && <p className="rounded border border-sky-200 bg-sky-50 p-3 text-sm">{invoiceFirstNote}</p>}
           {intake.policy_result && (
             <div className="text-sm">
-              <p><strong>Route:</strong> {String(intake.policy_result.procurement_method ?? "")}</p>
-              <p>Minimum quotations: {String(intake.policy_result.minimum_quotations ?? "")}</p>
+              <p><strong>{t("procurement.fromDoc.route")}</strong> {String(intake.policy_result.procurement_method ?? "")}</p>
+              <p>{t("procurement.fromDoc.minQuotations", { count: String(intake.policy_result.minimum_quotations ?? "") })}</p>
             </div>
           )}
           {intake.invoice_first_case === "existing_lpo" ? (
-            <Link href={`/procurement/purchase-orders/${intake.purchase_order_id}`} className="btn-primary inline-flex">Open existing LPO</Link>
+            <Link href={`/procurement/purchase-orders/${intake.purchase_order_id}`} className="btn-primary inline-flex">{t("procurement.fromDoc.openExistingLpo")}</Link>
           ) : (
             <>
               {(matches.data ?? []).length > 0 && (
                 <div className="rounded border border-sky-200 bg-sky-50 p-3 text-sm">
-                  <p className="font-semibold">Possible procurement request found</p>
+                  <p className="font-semibold">{t("procurement.fromDoc.possibleRequest")}</p>
                   {(matches.data ?? []).slice(0, 3).map((row) => (
                     <div key={row.id} className="mt-2 flex flex-wrap items-center justify-between gap-3">
                       <span>{row.reference_number} · {row.title} · {row.estimated_value}</span>
-                      <button type="button" className="btn-secondary text-xs" disabled={linkRequest.isPending} onClick={() => linkRequest.mutate(row.id)}>Link</button>
+                      <button type="button" className="btn-secondary text-xs" disabled={linkRequest.isPending} onClick={() => linkRequest.mutate(row.id)}>{t("procurement.fromDoc.link")}</button>
                     </div>
                   ))}
                 </div>
               )}
               <button type="button" className="btn-primary" disabled={createRequest.isPending} onClick={() => createRequest.mutate()}>
-                {createRequest.isPending ? "Preparing LPO…" : "Create Procurement Request from Document"}
+                {createRequest.isPending ? t("procurement.fromDoc.preparingLpo") : t("procurement.fromDoc.createRequest")}
               </button>
             </>
           )}
@@ -736,13 +739,13 @@ export default function CreateFromDocumentPage() {
 
       {step === "preview" && po && (
         <div className="space-y-4 rounded-xl border border-neutral-200 bg-white p-6">
-          <h2 className="text-lg font-semibold">LPO PREVIEW</h2>
-          <p>No. {po.lpo_number ?? po.reference_number} (official number is allocated when you send for approval)</p>
-          <p>Project: {po.project?.name ?? "Forum"}</p>
-          <p>Supplier: {po.vendor?.name}</p>
-          <p>Total: {po.currency === "NAD" ? "N$" : po.currency} {po.total_amount}</p>
-          {po.retrospective && <p className="text-amber-800">Retrospective invoice path — not backdated.</p>}
-          {submitLpo.isSuccess && <p className="text-emerald-800">Sent for sequential approval. Official number: {po.lpo_number}</p>}
+          <h2 className="text-lg font-semibold">{t("procurement.fromDoc.lpoPreview")}</h2>
+          <p>{t("procurement.fromDoc.previewNumber", { number: po.lpo_number ?? po.reference_number ?? "" })}</p>
+          <p>{t("procurement.fromDoc.previewProject", { name: po.project?.name ?? "Forum" })}</p>
+          <p>{t("procurement.fromDoc.previewSupplier", { name: po.vendor?.name ?? "" })}</p>
+          <p>{t("procurement.po.total", { amount: `${po.currency === "NAD" ? "N$" : po.currency} ${po.total_amount}` })}</p>
+          {po.retrospective && <p className="text-amber-800">{t("procurement.fromDoc.retrospective")}</p>}
+          {submitLpo.isSuccess && <p className="text-emerald-800">{t("procurement.fromDoc.sentForApproval", { number: po.lpo_number ?? "" })}</p>}
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -750,10 +753,10 @@ export default function CreateFromDocumentPage() {
               disabled={submitLpo.isPending || po.status === "awaiting_approval"}
               onClick={() => submitLpo.mutate()}
             >
-              {submitLpo.isPending ? "Sending…" : "Send for Approval"}
+              {submitLpo.isPending ? t("procurement.fromDoc.sending") : t("procurement.fromDoc.sendForApproval")}
             </button>
-            <Link href={`/procurement/purchase-orders/${po.id}`} className="btn-secondary">Open LPO</Link>
-            <Link href="/procurement" className="btn-secondary">Workbench</Link>
+            <Link href={`/procurement/purchase-orders/${po.id}`} className="btn-secondary">{t("procurement.fromDoc.openLpo")}</Link>
+            <Link href="/procurement" className="btn-secondary">{t("procurement.fromDoc.workbench")}</Link>
           </div>
         </div>
       )}

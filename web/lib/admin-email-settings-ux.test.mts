@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 
 const webRoot = join(process.cwd());
 
 test("admin email page labels SMTP and both designated IMAP mailboxes", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/admin/email/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/admin/email/page.tsx"));
 
   assert.match(source, /settingsApi\.email\(/);
   assert.match(source, /settingsApi\.updateEmail\(/);

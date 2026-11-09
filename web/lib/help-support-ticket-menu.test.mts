@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 
 const webRoot = join(process.cwd());
 
 function readPage(rel: string): string {
-  return readFileSync(join(webRoot, rel), "utf8");
+  return readEnglishSource(join(webRoot, rel));
 }
 
 test("ticket kebab menu exposes View, Edit, Close, and Delete actions", () => {

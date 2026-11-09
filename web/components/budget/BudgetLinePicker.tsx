@@ -7,6 +7,7 @@ import {
   type OrgBudgetLine,
 } from "@/lib/api";
 import { NexusPicker } from "@/components/ui/NexusPicker";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function unwrapLines(payload: unknown): OrgBudgetLine[] {
   if (!payload || typeof payload !== "object") return [];
@@ -41,12 +42,13 @@ export default function BudgetLinePicker({
   value,
   onChange,
   amount,
-  label = "Budget line",
+  label = "budget.journal.line",
   required = false,
   disabled = false,
   className = "",
   showAvailability = true,
 }: BudgetLinePickerProps) {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<OrgBudgetLine | null>(null);
   const [availability, setAvailability] = useState<BudgetAvailability | null>(null);
 
@@ -93,7 +95,7 @@ export default function BudgetLinePicker({
     <div className={`space-y-1.5 ${className}`}>
       <NexusPicker<OrgBudgetLine>
         id="budget-line-picker"
-        label={label}
+        label={t(label)}
         required={required}
         disabled={disabled}
         value={selected}
@@ -101,7 +103,7 @@ export default function BudgetLinePicker({
           setSelected(line);
           onChange(line?.id ?? null, line);
         }}
-        placeholder="Search code, name, category…"
+        placeholder={t("budget.linePicker.searchPlaceholder")}
         fetchOptions={async (search) => {
           const res = await budgetApi.lines({ active_only: true, per_page: 50, ...(search ? { q: search } : {}) });
           return unwrapLines(res.data);
@@ -118,20 +120,20 @@ export default function BudgetLinePicker({
           }`}
         >
           <div className="font-semibold mb-1">
-            {selected ? lineLabel(selected) : "Availability"}
+            {selected ? lineLabel(selected) : t("budget.linePicker.availability")}
           </div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-            <span>Approved</span>
+            <span>{t("budget.linePicker.approved")}</span>
             <span className="text-right font-medium">{availability.approved.toLocaleString()}</span>
-            <span>Actual</span>
+            <span>{t("budget.linePicker.actual")}</span>
             <span className="text-right font-medium">{availability.actual.toLocaleString()}</span>
-            <span>Committed</span>
+            <span>{t("budget.linePicker.committed")}</span>
             <span className="text-right font-medium">{availability.commitments.toLocaleString()}</span>
-            <span>Available</span>
+            <span>{t("budget.linePicker.available")}</span>
             <span className="text-right font-bold">{availability.available.toLocaleString()}</span>
           </div>
           {availability.warnings?.includes("insufficient_funds") && (
-            <p className="mt-1 font-medium">Requested amount exceeds available budget.</p>
+            <p className="mt-1 font-medium">{t("budget.linePicker.insufficient")}</p>
           )}
         </div>
       )}
