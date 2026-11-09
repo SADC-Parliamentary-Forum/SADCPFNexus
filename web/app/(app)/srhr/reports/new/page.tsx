@@ -5,6 +5,7 @@ import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { researcherReportsApi, deploymentsApi, type StaffDeployment, type ResearcherReportActivity } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 const DOCUMENT_TYPES = [
   "Monthly Report",
@@ -31,6 +32,7 @@ function formatBytes(bytes: number): string {
 function NewReportPageInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
+  const toast        = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [deployments, setDeployments]     = useState<StaffDeployment[]>([]);
@@ -118,6 +120,7 @@ function NewReportPageInner() {
       });
 
       // Upload attachments sequentially
+      let failedUploads = 0;
       if (pendingFiles.length > 0) {
         const reportId = created.data.id;
         setUploadProgress({ done: 0, total: pendingFiles.length });
@@ -127,11 +130,16 @@ function NewReportPageInner() {
             await researcherReportsApi.uploadAttachment(reportId, pf.file, pf.document_type);
           } catch {
             // Non-fatal: continue uploading remaining files
+            failedUploads++;
           }
           setUploadProgress({ done: i + 1, total: pendingFiles.length });
         }
       }
 
+      toast.success("Report saved", form.title);
+      if (failedUploads > 0) {
+        toast.warning("Some attachments not uploaded", `${failedUploads} file(s) failed to upload. Add them from the report page.`);
+      }
       router.push("/srhr/reports");
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
@@ -139,6 +147,7 @@ function NewReportPageInner() {
         ? Object.values(e.response.data.errors).flat().join("; ")
         : (e.response?.data?.message ?? "Failed to save report.");
       setError(msgs);
+      toast.error("Report not saved", msgs);
     } finally {
       setSaving(false);
       setUploadProgress(null);

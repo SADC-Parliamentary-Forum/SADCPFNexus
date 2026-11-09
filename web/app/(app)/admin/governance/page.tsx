@@ -6,6 +6,8 @@ import { governanceConfigApi, auditLogsApi, type GovernanceConfig, type AuditLog
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -33,6 +35,7 @@ const DEFAULTS: GovernanceConfig = {
 };
 
 export default function AdminGovernanceConfigPage() {
+  const toast = useToast();
   const [config, setConfig] = useState<GovernanceConfig>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,8 +58,11 @@ export default function AdminGovernanceConfigPage() {
     try {
       await governanceConfigApi.update(config);
       setSaved(true);
+      toast.success("Governance settings saved");
       setTimeout(() => setSaved(false), 2500);
-    } catch { /* ignore */ }
+    } catch (err) {
+      toast.error("Governance settings not saved", apiErrorMessage(err, "Failed to save governance settings."));
+    }
     finally { setSaving(false); }
   };
 

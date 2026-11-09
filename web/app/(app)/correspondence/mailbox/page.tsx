@@ -6,9 +6,12 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { correspondenceApi, type CorrespondenceMailboxSuggestion } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function CorrespondenceMailboxPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [settingsForm, setSettingsForm] = useState({
     mailbox_address: "",
     enabled: true,
@@ -69,9 +72,13 @@ export default function CorrespondenceMailboxPage() {
     onSuccess: () => {
       setError(null);
       setSettingsForm((f) => ({ ...f, imap_password: "" }));
+      toast.success("Mailbox settings saved");
       qc.invalidateQueries({ queryKey: ["correspondence", "mailbox", "settings"] });
     },
-    onError: () => setError("Could not save mailbox settings."),
+    onError: (err) => {
+      setError("Could not save mailbox settings.");
+      toast.error("Mailbox settings not saved", apiErrorMessage(err, "Could not save mailbox settings."));
+    },
   });
 
   const importSuggestion = useMutation({
@@ -79,20 +86,34 @@ export default function CorrespondenceMailboxPage() {
     onSuccess: () => {
       setError(null);
       setImportForm({ message_id: "", subject: "", from_address: "", from_name: "", body_preview: "", raw_headers: "" });
+      toast.success("Message imported");
       qc.invalidateQueries({ queryKey: ["correspondence", "mailbox", "suggestions"] });
     },
-    onError: () => setError("Import failed — Message-ID may already exist."),
+    onError: (err) => {
+      setError("Import failed — Message-ID may already exist.");
+      toast.error("Message not imported", apiErrorMessage(err, "Import failed — Message-ID may already exist."));
+    },
   });
 
   const registerSuggestion = useMutation({
     mutationFn: (id: number) => correspondenceApi.registerMailboxSuggestion(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["correspondence", "mailbox"] }),
-    onError: () => setError("Could not register suggestion into the correspondence register."),
+    onSuccess: () => {
+      toast.success("Suggestion registered");
+      qc.invalidateQueries({ queryKey: ["correspondence", "mailbox"] });
+    },
+    onError: (err) => {
+      setError("Could not register suggestion into the correspondence register.");
+      toast.error("Suggestion not registered", apiErrorMessage(err, "Could not register suggestion into the correspondence register."));
+    },
   });
 
   const dismissSuggestion = useMutation({
     mutationFn: (id: number) => correspondenceApi.dismissMailboxSuggestion(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["correspondence", "mailbox", "suggestions"] }),
+    onSuccess: () => {
+      toast.success("Suggestion dismissed");
+      qc.invalidateQueries({ queryKey: ["correspondence", "mailbox", "suggestions"] });
+    },
+    onError: (err) => toast.error("Could not dismiss suggestion", apiErrorMessage(err, "Could not dismiss suggestion.")),
   });
 
   const suggestions = (suggestionsQuery.data ?? []) as CorrespondenceMailboxSuggestion[];

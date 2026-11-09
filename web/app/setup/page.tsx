@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { readStoredUser, writeStoredUser } from "@/lib/session";
 import { attachCanvasPassiveFalseTouchListeners } from "@/lib/attachCanvasPassiveFalseTouchListeners";
 import { createFilePreviewUrl } from "@/lib/filePreview";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -221,6 +223,7 @@ function SignatureCanvas({
   type: "full" | "initials";
   onSaved: () => void;
 }) {
+  const toast = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasStrokes, setHasStrokes] = useState(false);
@@ -326,9 +329,11 @@ function SignatureCanvas({
     try {
       const dataUrl = canvas.toDataURL("image/png");
       await saamApi.draw(type, dataUrl);
+      toast.success(type === "full" ? "Signature saved" : "Initials saved");
       onSaved();
     } catch (e: unknown) {
       setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to save. Please try again.");
+      toast.error(type === "full" ? "Signature not saved" : "Initials not saved", apiErrorMessage(e, "Failed to save. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -373,6 +378,7 @@ function SignatureCanvas({
 // ─── Signature Upload ─────────────────────────────────────────────────────────
 
 function SignatureUpload({ type, onSaved }: { type: "full" | "initials"; onSaved: () => void }) {
+  const toast = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -391,9 +397,11 @@ function SignatureUpload({ type, onSaved }: { type: "full" | "initials"; onSaved
     setError(null);
     try {
       await saamApi.upload(type, file);
+      toast.success(type === "full" ? "Signature uploaded" : "Initials uploaded");
       onSaved();
     } catch (e: unknown) {
       setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Upload failed.");
+      toast.error(type === "full" ? "Signature not uploaded" : "Initials not uploaded", apiErrorMessage(e, "Upload failed."));
     } finally {
       setSaving(false);
     }
@@ -690,6 +698,7 @@ function Step2Personal({
 function Step3Photo({
   state, update, onNext, onBack,
 }: { state: WizardState; update: (p: Partial<WizardState>) => void; onNext: () => void; onBack: () => void }) {
+  const toast = useToast();
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -711,8 +720,10 @@ function Step3Photo({
     try {
       await profileDocumentsApi.upload(photoFile, "photo", "Profile Photo");
       update({ photoUploaded: true });
+      toast.success("Profile photo uploaded");
     } catch (e: unknown) {
       setErr((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Upload failed. Please try again.");
+      toast.error("Profile photo not uploaded", apiErrorMessage(e, "Upload failed. Please try again."));
     } finally {
       setUploading(false);
     }
@@ -1007,6 +1018,7 @@ function Step7Review({
 // ─── Main Wizard Page ─────────────────────────────────────────────────────────
 
 export default function SetupWizardPage() {
+  const toast = useToast();
   const [step, setStep] = useState<number>(1);
   const [options, setOptions] = useState<SetupOptions | null>(null);
   const [state, setState] = useState<WizardState>(getInitialState());
@@ -1121,9 +1133,11 @@ export default function SetupWizardPage() {
       }
       setSetupCompleteCookie();
       sessionStorage.removeItem(SESSION_KEY);
+      toast.success("Setup complete", "Your profile has been saved.");
       window.location.href = "/dashboard";
     } catch (e: unknown) {
       setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to complete setup. Please try again.");
+      toast.error("Setup not completed", apiErrorMessage(e, "Failed to complete setup. Please try again."));
       setSubmitting(false);
     }
   }

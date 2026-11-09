@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useMemo } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { purchaseOrdersApi, vendorsApi, procurementApi, type PurchaseOrder, type Vendor, type ProcurementRequest } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
@@ -11,6 +11,8 @@ import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:              { label: "Draft",             cls: "badge-muted",    icon: "edit_note"      },
@@ -35,6 +37,8 @@ interface PoItemRow {
 
 function PurchaseOrdersPageInner() {
   const queryClient  = useQueryClient();
+  const router       = useRouter();
+  const toast        = useToast();
   const searchParams = useSearchParams();
   const requestParam = searchParams.get("request");
 
@@ -150,13 +154,13 @@ function PurchaseOrdersPageInner() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
       setShowModal(false);
-      window.location.href = `/procurement/purchase-orders/${res.data.data.id}`;
+      toast.success("Purchase order created");
+      router.push(`/procurement/purchase-orders/${res.data.data.id}`);
     },
     onError: (e: unknown) => {
-      setSubmitError(
-        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to create purchase order."
-      );
+      const message = apiErrorMessage(e, "Failed to create purchase order.");
+      setSubmitError(message);
+      toast.error("Purchase order not created", message);
     },
   });
 

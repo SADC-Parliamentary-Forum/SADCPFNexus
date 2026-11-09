@@ -6,6 +6,7 @@ import { assetCategoriesApi, assetsApi, type Asset, type AssetCategory } from "@
 import { apiErrorMessage } from "@/lib/apiError";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { SearchField } from "@/components/ui/SearchField";
 import { isSerialConflict } from "@/components/assets/AssetIdentifierFields";
@@ -24,6 +25,7 @@ function canCaptureSerials(): boolean {
 /** One asset with its own draft, so typing in a row never re-renders the list. */
 function SerialRow({ asset }: { asset: Asset }) {
   const { t } = useI18n();
+  const toast = useToast();
   const [saved, setSaved] = useState({
     serial_number: asset.serial_number ?? "",
     manufacturer: asset.manufacturer ?? "",
@@ -72,9 +74,12 @@ function SerialRow({ asset }: { asset: Asset }) {
       setConflict(false);
       setAllowDuplicate(false);
       setState("saved");
+      toast.success(t("assets.serials.toast.saved"), asset.tag_number || asset.asset_code);
     } catch (err) {
       setConflict(isSerialConflict(err));
-      setError(apiErrorMessage(err, t("assets.serials.saveFailed")));
+      const message = apiErrorMessage(err, t("assets.serials.saveFailed"));
+      setError(message);
+      toast.error(t("assets.serials.toast.notSaved"), message);
       setState("error");
     } finally {
       setBusy(false);

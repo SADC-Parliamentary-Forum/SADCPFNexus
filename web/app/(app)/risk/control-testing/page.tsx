@@ -8,10 +8,13 @@ import { FormEvent, useState } from "react";
 import { riskApi, type RiskControlOption, type RiskControlTestingCampaign, type RiskControlTestingItem } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export default function RiskControlTestingPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const [title, setTitle] = useState("");
   const [controlIds, setControlIds] = useState<number[]>([]);
   const [scheduledEnd, setScheduledEnd] = useState("");
@@ -46,8 +49,13 @@ export default function RiskControlTestingPage() {
       setTitle("");
       setControlIds([]);
       qc.invalidateQueries({ queryKey: ["risk", "control-testing"] });
+      toast.success("Campaign created");
     },
-    onError: () => setError("Could not create campaign."),
+    onError: (err) => {
+      const message = apiErrorMessage(err, "Could not create campaign.");
+      setError(message);
+      toast.error("Campaign not created", message);
+    },
   });
 
   const complete = useMutation({
@@ -55,13 +63,24 @@ export default function RiskControlTestingPage() {
       riskApi.completeControlTestItem(id, { result, checklist_notes: "Completed via UI" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["risk", "control-testing"] });
+      toast.success("Control test completed");
     },
-    onError: () => setError("Could not complete control test."),
+    onError: (err) => {
+      const message = apiErrorMessage(err, "Could not complete control test.");
+      setError(message);
+      toast.error("Could not complete control test", message);
+    },
   });
 
   const markOverdue = useMutation({
     mutationFn: () => riskApi.markControlTestsOverdue(),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["risk", "control-testing"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["risk", "control-testing"] });
+      toast.success("Overdue control tests marked");
+    },
+    onError: (err) => {
+      toast.error("Could not mark overdue tests", apiErrorMessage(err, "Please try again."));
+    },
   });
 
   const campaigns = (campaignsQuery.data ?? []) as RiskControlTestingCampaign[];

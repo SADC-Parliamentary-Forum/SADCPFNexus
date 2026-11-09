@@ -5,9 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { workplanApi, workplanMeetingTypesApi, workplanEventTypesApi, tenantUsersApi, type MeetingType, type WorkplanEventType, type TenantUserOption, type WorkplanEvent } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export default function NewWorkplanEventPage() {
   const router = useRouter();
+  const toast = useToast();
   const [meetingTypes, setMeetingTypes] = useState<MeetingType[]>([]);
   const [eventTypes, setEventTypes] = useState<WorkplanEventType[]>([]);
   const [userOptions, setUserOptions] = useState<TenantUserOption[]>([]);
@@ -74,9 +77,11 @@ export default function NewWorkplanEventPage() {
         meeting_type_id: type === "meeting" && meetingTypeId ? Number(meetingTypeId) : undefined,
         responsible_user_ids: responsibleUserIds.length ? responsibleUserIds : undefined,
       });
+      toast.success("Event created", title.trim());
       router.push(`/workplan/${res.data.data.id}`);
     } catch (err: unknown) {
       setError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Failed to create event.");
+      toast.error("Event not created", apiErrorMessage(err, "Failed to create event."));
     } finally {
       setLoading(false);
     }

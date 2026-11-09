@@ -5,9 +5,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { catalogueApi, vendorsApi } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export default function CataloguePage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [vendorId, setVendorId] = useState("");
   const [itemName, setItemName] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
@@ -36,6 +39,10 @@ export default function CataloguePage() {
       setItemName("");
       setUnitPrice("");
       qc.invalidateQueries({ queryKey: ["procurement", "catalogue"] });
+      toast.success("Catalogue item added");
+    },
+    onError: (err: unknown) => {
+      toast.error("Catalogue item not added", apiErrorMessage(err, "Failed to add the catalogue item."));
     },
   });
 
@@ -50,6 +57,10 @@ export default function CataloguePage() {
       setEditPrice("");
       setEditReason("");
       qc.invalidateQueries({ queryKey: ["procurement", "catalogue"] });
+      toast.success("Catalogue price updated");
+    },
+    onError: (err: unknown) => {
+      toast.error("Catalogue price not updated", apiErrorMessage(err, "Failed to update the catalogue price."));
     },
   });
 

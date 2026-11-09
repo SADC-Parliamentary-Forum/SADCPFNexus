@@ -52,7 +52,7 @@ test.describe("Assets import (admin)", () => {
     await page.getByRole("button", { name: /Approve non-blocking|Approuver les lignes non bloquantes|Aprovar linhas não bloqueantes/i }).click();
     expect((await approved).ok()).toBeTruthy();
     await page.getByRole("button", { name: /Commit to register|Valider dans le registre|Confirmar no registo/i }).click();
-    await expect(page.getByText(/Import committed|committed with incomplete/i)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/Import committed|committed with incomplete/i).first()).toBeVisible({ timeout: 30_000 });
 
     const listed = await page.evaluate(async () => {
       const res = await fetch("/api/assets?search=CE-8811", {

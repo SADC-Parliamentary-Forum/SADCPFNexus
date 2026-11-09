@@ -7,6 +7,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetCycle } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function statusLabel(status: string): string {
   return status.replaceAll("_", " ");
@@ -14,6 +16,7 @@ function statusLabel(status: string): string {
 
 export default function BudgetCyclesPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const user = getStoredUser();
   const canFinance =
     isSystemAdmin(user) || hasPermission(user, ["finance.create", "finance.approve", "finance.admin"]);
@@ -37,9 +40,13 @@ export default function BudgetCyclesPage() {
     onSuccess: () => {
       setFyId("");
       setError("");
+      toast.success("Budget cycle opened");
       qc.invalidateQueries({ queryKey: ["budget", "cycles"] });
     },
-    onError: () => setError("Could not open cycle. Check FY is unique and you have Finance rights."),
+    onError: (err) => {
+      setError("Could not open cycle. Check FY is unique and you have Finance rights.");
+      toast.error("Budget cycle not opened", apiErrorMessage(err, "Could not open cycle. Check FY is unique and you have Finance rights."));
+    },
   });
 
   const years = useMemo(() => yearsQuery.data ?? [], [yearsQuery.data]);

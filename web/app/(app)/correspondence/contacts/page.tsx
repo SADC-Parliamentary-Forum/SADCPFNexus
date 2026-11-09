@@ -6,6 +6,8 @@ import { correspondenceApi, type CorrespondenceContact, type ContactGroup } from
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { EmptyState, TableEmpty } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 type Tab = "contacts" | "groups";
 
@@ -21,6 +23,7 @@ const EMPTY_CONTACT = {
 
 export default function CorrespondenceContactsPage() {
   const { confirm } = useConfirm();
+  const toast = useToast();
   const [tab, setTab] = useState<Tab>("contacts");
   const [contacts, setContacts] = useState<CorrespondenceContact[]>([]);
   const [groups, setGroups] = useState<ContactGroup[]>([]);
@@ -90,10 +93,12 @@ export default function CorrespondenceContactsPage() {
       } else {
         await correspondenceApi.createContact(data);
       }
+      toast.success(existing?.id ? "Contact updated" : "Contact created");
       setSlideOver(null);
       loadData();
-    } catch {
+    } catch (err) {
       setError("Failed to save contact.");
+      toast.error("Contact not saved", apiErrorMessage(err, "Failed to save contact."));
     } finally {
       setSaving(false);
     }
@@ -109,8 +114,12 @@ export default function CorrespondenceContactsPage() {
     ) return;
     try {
       await correspondenceApi.deleteContact(id);
+      toast.success("Contact deleted");
       loadData();
-    } catch { setError("Failed to delete contact."); }
+    } catch (err) {
+      setError("Failed to delete contact.");
+      toast.error("Contact not deleted", apiErrorMessage(err, "Failed to delete contact."));
+    }
   }
 
   async function saveGroup() {
@@ -124,10 +133,12 @@ export default function CorrespondenceContactsPage() {
       } else {
         await correspondenceApi.createGroup(groupForm);
       }
+      toast.success(existing?.id ? "Group updated" : "Group created");
       setSlideOver(null);
       loadData();
-    } catch {
+    } catch (err) {
       setError("Failed to save group.");
+      toast.error("Group not saved", apiErrorMessage(err, "Failed to save group."));
     } finally {
       setSaving(false);
     }
@@ -143,8 +154,12 @@ export default function CorrespondenceContactsPage() {
     ) return;
     try {
       await correspondenceApi.deleteGroup(id);
+      toast.success("Group deleted");
       loadData();
-    } catch { setError("Failed to delete group."); }
+    } catch (err) {
+      setError("Failed to delete group.");
+      toast.error("Group not deleted", apiErrorMessage(err, "Failed to delete group."));
+    }
   }
 
   const currentUser = getStoredUser();

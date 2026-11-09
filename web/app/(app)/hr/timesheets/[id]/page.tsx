@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { useFormatDate } from "@/lib/useFormatDate";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 // ─── Shared UI helpers ─────────────────────────────────────────────────────
 
@@ -73,6 +75,7 @@ export default function TimesheetDetailPage() {
   const { fmt: formatDateShort, fmtRelative: formatDateRelative } = useFormatDate();
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const id = Number(params?.id);
 
   const [timesheet, setTimesheet] = useState<Timesheet | null>(null);
@@ -111,10 +114,12 @@ export default function TimesheetDetailPage() {
     setActionLoading(true);
     try {
       await hrApi.approveTimesheet(timesheet.id);
+      toast.success("Timesheet approved");
       const res = await hrApi.getTimesheet(timesheet.id);
       setTimesheet((res.data as any).data ?? res.data);
-    } catch {
+    } catch (err) {
       setError("Failed to approve timesheet.");
+      toast.error("Could not approve timesheet", apiErrorMessage(err, "Failed to approve timesheet."));
     } finally {
       setActionLoading(false);
     }
@@ -125,12 +130,14 @@ export default function TimesheetDetailPage() {
     setActionLoading(true);
     try {
       await hrApi.rejectTimesheet(timesheet.id, rejectReason.trim());
+      toast.success("Timesheet rejected");
       const res = await hrApi.getTimesheet(timesheet.id);
       setTimesheet((res.data as any).data ?? res.data);
       setShowRejectModal(false);
       setRejectReason("");
-    } catch {
+    } catch (err) {
       setError("Failed to reject timesheet.");
+      toast.error("Could not reject timesheet", apiErrorMessage(err, "Failed to reject timesheet."));
     } finally {
       setActionLoading(false);
     }

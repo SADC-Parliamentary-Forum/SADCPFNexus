@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
 
@@ -33,6 +35,7 @@ function personLabel(p: Record<string, unknown>): string {
 
 export default function Page() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
@@ -74,18 +77,31 @@ export default function Page() {
         scopes: [{ action: form.scope_action }],
       }),
     onSuccess: () => {
+      toast.success("Delegation created");
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "delegations"] });
     },
-    onError: () => setErr("Could not create the delegation. Principal, delegate, dates, and a scope action are required."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not create the delegation. Principal, delegate, dates, and a scope action are required.");
+      setErr(message);
+      toast.error("Delegation not created", message);
+    },
   });
   const approve = useMutation({
     mutationFn: (id: number) => peopleAuthorityApi.approveDelegation(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["people-authority", "delegations"] }),
+    onSuccess: () => {
+      toast.success("Delegation approved");
+      qc.invalidateQueries({ queryKey: ["people-authority", "delegations"] });
+    },
+    onError: (e) => toast.error("Could not approve delegation", apiErrorMessage(e, "Could not approve the delegation.")),
   });
   const revoke = useMutation({
     mutationFn: (id: number) => peopleAuthorityApi.revokeDelegation(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["people-authority", "delegations"] }),
+    onSuccess: () => {
+      toast.success("Delegation revoked");
+      qc.invalidateQueries({ queryKey: ["people-authority", "delegations"] });
+    },
+    onError: (e) => toast.error("Could not revoke delegation", apiErrorMessage(e, "Could not revoke the delegation.")),
   });
 
   return (

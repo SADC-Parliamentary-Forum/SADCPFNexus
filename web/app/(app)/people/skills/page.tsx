@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
 
@@ -33,6 +35,7 @@ function personLabel(p: Record<string, unknown>): string {
 
 export default function Page() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [q, setQ] = useState("");
   const [form, setForm] = useState({ code: "", name: "", category: "" });
   const [err, setErr] = useState<string | null>(null);
@@ -49,10 +52,15 @@ export default function Page() {
         level: assignForm.level,
       }),
     onSuccess: () => {
+      toast.success("Skill assigned");
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "skills"] });
     },
-    onError: () => setErr("Could not assign the skill. Person and skill are required."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not assign the skill. Person and skill are required.");
+      setErr(message);
+      toast.error("Skill not assigned", message);
+    },
   });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","skills"],
@@ -90,11 +98,16 @@ return (await peopleAuthorityApi.listSkills()).data;
         category: form.category.trim() || undefined,
       }),
     onSuccess: () => {
+      toast.success("Skill created");
       setForm({ code: "", name: "", category: "" });
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "skills"] });
     },
-    onError: () => setErr("Could not create the skill. Code and name are required."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not create the skill. Code and name are required.");
+      setErr(message);
+      toast.error("Skill not created", message);
+    },
   });
 
   return (

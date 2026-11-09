@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { decisionsApi } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 
 function CreateDecisionPageInner() {
   const router = useRouter();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const minutesFromQuery = searchParams.get("minutes") ?? "";
 
@@ -58,9 +60,12 @@ function CreateDecisionPageInner() {
         });
         await decisionsApi.linkAgendaDecision(agenda.data.data.id, decisionId);
       }
+      toast.success("Decision created");
       router.push(`/decisions/${decisionId}`);
     } catch (err) {
-      setError(apiErrorMessage(err, "Could not create the decision. Check required fields and try again."));
+      const message = apiErrorMessage(err, "Could not create the decision. Check required fields and try again.");
+      setError(message);
+      toast.error("Decision not created", message);
       setSaving(false);
     }
   }

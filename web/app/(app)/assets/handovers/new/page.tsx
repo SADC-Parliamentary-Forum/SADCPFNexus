@@ -6,12 +6,14 @@ import { assetsApi, type Asset, type TenantUserOption } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { SearchField } from "@/components/ui/SearchField";
 
 function NewHandoverForm() {
   const { t } = useI18n();
   const router = useRouter();
+  const toast = useToast();
   const params = useSearchParams();
   const [type, setType] = useState(params.get("type") || "issue");
   const [target, setTarget] = useState("person");
@@ -149,9 +151,12 @@ function NewHandoverForm() {
       });
       const id = created.data.data.id;
       await assetsApi.sendHandover(id);
+      toast.success("Handover sent", `${selected.length} asset(s) sent for acceptance.`);
       router.push(`/assets/handovers/${id}`);
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.assignFailed")));
+      const message = apiErrorMessage(err, t("assets.assignFailed"));
+      setError(message);
+      toast.error("Handover not sent", message);
     } finally {
       setBusy(false);
     }

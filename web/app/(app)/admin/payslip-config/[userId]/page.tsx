@@ -8,6 +8,8 @@ import { payslipConfigApi, tenantUsersApi, type PayslipLineConfig, type TenantUs
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { TableEmpty } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const COMPONENT_TYPES = [
   { value: "earning",              label: "Earning" },
@@ -41,6 +43,7 @@ export default function PayslipConfigPage() {
   const { userId } = useParams<{ userId: string }>();
   const uid = Number(userId);
   const { confirm } = useConfirm();
+  const toast = useToast();
 
   const [configs, setConfigs] = useState<PayslipLineConfig[]>([]);
   const [employee, setEmployee] = useState<TenantUserOption | null>(null);
@@ -94,9 +97,11 @@ export default function PayslipConfigPage() {
     try {
       const res = await payslipConfigApi.generateDefaults(uid);
       setGenMessage(res.data.message);
+      toast.success("Default payslip lines generated", res.data.message);
       load();
-    } catch {
+    } catch (err) {
       setGenMessage("Failed to generate defaults.");
+      toast.error("Could not generate defaults", apiErrorMessage(err, "Failed to generate defaults."));
     } finally {
       setGenLoading(false);
     }
@@ -117,11 +122,13 @@ export default function PayslipConfigPage() {
         is_visible: form.is_visible,
         sort_order: Number(form.sort_order),
       });
+      toast.success("Payslip line added");
       setShowAddModal(false);
       load();
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Save failed.";
       setFormError(msg);
+      toast.error("Payslip line not added", apiErrorMessage(e, "Save failed."));
     } finally {
       setSubmitting(false);
     }
@@ -134,9 +141,11 @@ export default function PayslipConfigPage() {
     try {
       await payslipConfigApi.update(id, changes);
       setEditInline((e) => { const n = { ...e }; delete n[id]; return n; });
+      toast.success("Payslip line saved");
       load();
-    } catch {
-      // keep editing, show nothing
+    } catch (err) {
+      // keep editing
+      toast.error("Payslip line not saved", apiErrorMessage(err, "Save failed."));
     } finally {
       setSaving((s) => ({ ...s, [id]: false }));
     }
@@ -150,13 +159,23 @@ export default function PayslipConfigPage() {
         variant: "danger",
       }))
     ) return;
-    await payslipConfigApi.remove(id);
-    load();
+    try {
+      await payslipConfigApi.remove(id);
+      toast.success("Payslip line removed");
+      load();
+    } catch (err) {
+      toast.error("Could not remove payslip line", apiErrorMessage(err, "Failed to remove payslip line."));
+    }
   };
 
   const toggleVisible = async (config: PayslipLineConfig) => {
-    await payslipConfigApi.update(config.id, { is_visible: !config.is_visible });
-    load();
+    try {
+      await payslipConfigApi.update(config.id, { is_visible: !config.is_visible });
+      toast.success(config.is_visible ? "Payslip line hidden" : "Payslip line shown");
+      load();
+    } catch (err) {
+      toast.error("Could not change visibility", apiErrorMessage(err, "Failed to update payslip line."));
+    }
   };
 
   return (

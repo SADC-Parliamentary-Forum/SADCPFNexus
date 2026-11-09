@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { RegisterShell } from "@/components/registers/RegisterShell";
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { FormField } from "@/components/ui/FormSection";
@@ -67,6 +69,7 @@ function numberOf(p: DirectoryPerson): string {
 export default function StaffDirectoryPage() {
   const qc = useQueryClient();
   const { confirm } = useConfirm();
+  const toast = useToast();
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [page, setPage] = useState(1);
@@ -110,12 +113,17 @@ export default function StaffDirectoryPage() {
   const create = useMutation({
     mutationFn: () => peopleAuthorityApi.createPerson(payload()),
     onSuccess: () => {
+      toast.success("Person added");
       setForm(emptyForm);
       setEditingId(null);
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
     },
-    onError: () => setErr("Could not create the person. First name and last name are required."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not create the person. First name and last name are required.");
+      setErr(message);
+      toast.error("Person not added", message);
+    },
   });
 
   const update = useMutation({
@@ -124,12 +132,17 @@ export default function StaffDirectoryPage() {
       return peopleAuthorityApi.updatePerson(editingId, payload());
     },
     onSuccess: () => {
+      toast.success("Person updated");
       setForm(emptyForm);
       setEditingId(null);
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
     },
-    onError: () => setErr("Could not update the person."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not update the person.");
+      setErr(message);
+      toast.error("Person not updated", message);
+    },
   });
 
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
@@ -137,26 +150,37 @@ export default function StaffDirectoryPage() {
     mutationFn: () => peopleAuthorityApi.syncPeopleFromUsers(),
     onSuccess: (res) => {
       const { people_created, links_created } = res.data.data;
-      setSyncMessage(`Added ${people_created} new directory entries, linked ${links_created} staff accounts.`);
+      const summary = `Added ${people_created} new directory entries, linked ${links_created} staff accounts.`;
+      setSyncMessage(summary);
+      toast.success("Directory populated", summary);
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
     },
-    onError: () => setErr("Could not populate the directory from staff accounts."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not populate the directory from staff accounts.");
+      setErr(message);
+      toast.error("Directory not populated", message);
+    },
   });
 
   const removeSuppliers = useMutation({
     mutationFn: () => peopleAuthorityApi.removeSupplierLinks(),
     onSuccess: (res) => {
       const { removed } = res.data.data;
-      setSyncMessage(
+      const summary =
         removed > 0
           ? `Removed ${removed} supplier-portal account(s) from the staff directory.`
-          : "No supplier-portal accounts were found in the staff directory.",
-      );
+          : "No supplier-portal accounts were found in the staff directory.";
+      setSyncMessage(summary);
+      toast.success("Supplier accounts removed", summary);
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
     },
-    onError: () => setErr("Could not remove supplier accounts from the directory."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not remove supplier accounts from the directory.");
+      setErr(message);
+      toast.error("Supplier accounts not removed", message);
+    },
   });
 
   async function handleRemoveSuppliers() {

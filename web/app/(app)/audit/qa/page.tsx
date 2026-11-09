@@ -6,10 +6,13 @@ import { auditApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { FormSection } from "@/components/ui/FormSection";
 import { AuditPageShell, AuditTable } from "@/components/audit/AuditChrome";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function AuditQaPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "qa"],
     queryFn: async () => (await auditApi.listQaReviews({ per_page: 50 })).data,
@@ -27,8 +30,10 @@ export default function AuditQaPage() {
       }),
     onSuccess: () => {
       setSummary("");
+      toast.success("QA review recorded");
       qc.invalidateQueries({ queryKey: ["audit", "qa"] });
     },
+    onError: (err) => toast.error("QA review not recorded", apiErrorMessage(err, "Failed to record the QA review.")),
   });
 
   return (

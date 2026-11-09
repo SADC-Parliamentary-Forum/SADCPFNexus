@@ -21,11 +21,11 @@ test.describe("PO template designer", () => {
       }
     }
     await page.getByTestId("po-designer-save").click();
-    await expect(page.getByText(/draft saved/i)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/draft saved/i).first()).toBeVisible({ timeout: 15_000 });
     const publish = page.getByTestId("po-designer-publish");
     if (await publish.isEnabled()) {
       await publish.click();
-      await expect(page.getByText(/published/i)).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText(/published/i).first()).toBeVisible({ timeout: 15_000 });
     }
   });
 

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { positionsApi, adminApi, type Department, type Position } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const GRADES = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"];
 
@@ -13,6 +15,7 @@ export default function EditPositionPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
+  const toast = useToast();
 
   const [form, setForm] = useState({
     department_id: "",
@@ -65,9 +68,11 @@ export default function EditPositionPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-positions"] });
       qc.invalidateQueries({ queryKey: ["admin-position", id] });
+      toast.success("Position updated");
       router.push("/hr/positions");
     },
     onError: (err: any) => {
+      toast.error("Position not updated", apiErrorMessage(err, "Failed to update position."));
       const data = err?.response?.data;
       if (data?.errors) {
         const mapped: Record<string, string> = {};

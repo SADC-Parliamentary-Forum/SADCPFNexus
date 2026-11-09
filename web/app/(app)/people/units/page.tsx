@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
 
@@ -29,6 +31,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 
 export default function Page() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState({ code: "", name: "", unit_type: "department" });
@@ -40,11 +43,16 @@ export default function Page() {
         unit_type: form.unit_type,
       }),
     onSuccess: () => {
+      toast.success("Unit created");
       setForm({ code: "", name: "", unit_type: "department" });
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "organisational-units"] });
     },
-    onError: () => setErr("Could not create the unit. Code and name are required."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not create the unit. Code and name are required.");
+      setErr(message);
+      toast.error("Unit not created", message);
+    },
   });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "organisational-units"],

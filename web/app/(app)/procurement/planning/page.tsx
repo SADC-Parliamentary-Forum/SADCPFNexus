@@ -5,9 +5,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { procurementPlansApi } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export default function PlanningPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [title, setTitle] = useState("");
   const [year, setYear] = useState(new Date().getFullYear());
 
@@ -21,6 +24,10 @@ export default function PlanningPage() {
     onSuccess: () => {
       setTitle("");
       qc.invalidateQueries({ queryKey: ["procurement", "plans"] });
+      toast.success("Procurement plan created");
+    },
+    onError: (err: unknown) => {
+      toast.error("Procurement plan not created", apiErrorMessage(err, "Failed to create the procurement plan."));
     },
   });
 

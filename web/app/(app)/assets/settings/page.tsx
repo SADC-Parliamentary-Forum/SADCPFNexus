@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import api, { assetLifecycleApi, assetMetaApi } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 type Policy = {
   id: number;
@@ -20,6 +22,7 @@ type Location = { id: number; code: string; name: string; building?: string | nu
 
 export default function AssetSettingsPage() {
   const { t } = useI18n();
+  const toast = useToast();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [recovery, setRecovery] = useState({
@@ -89,8 +92,10 @@ export default function AssetSettingsPage() {
             try {
               await assetLifecycleApi.updateRecoveryContact(recovery);
               setRecoveryMsg(t("assets.settings.recoverySaved"));
-            } catch {
+              toast.success("Recovery contact saved");
+            } catch (err) {
               setRecoveryErr(t("assets.settings.recoveryFailed"));
+              toast.error("Recovery contact not saved", apiErrorMessage(err, t("assets.settings.recoveryFailed")));
             } finally {
               setSaving(false);
             }
@@ -175,10 +180,16 @@ export default function AssetSettingsPage() {
             const form = e.currentTarget;
             const code = (form.elements.namedItem("code") as HTMLInputElement).value;
             const name = (form.elements.namedItem("name") as HTMLInputElement).value;
-            await assetMetaApi.createLocation({ code, name, location_type: "room", is_active: true });
-            const r = await assetMetaApi.locations();
-            setLocations(r.data.data ?? []);
-            form.reset();
+            try {
+              await assetMetaApi.createLocation({ code, name, location_type: "room", is_active: true });
+              toast.success("Location saved", `${code} — ${name}`);
+              form.reset();
+            } catch (err) {
+              toast.error("Location not saved", apiErrorMessage(err, "Failed to save location."));
+              return;
+            }
+            const r = await assetMetaApi.locations().catch(() => null);
+            if (r) setLocations(r.data.data ?? []);
           }}
         >
           <input name="code" className="form-input" placeholder="Code" required />

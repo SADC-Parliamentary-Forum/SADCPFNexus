@@ -15,6 +15,8 @@ import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { SupplierDocumentRequirementTypesCard } from "@/components/procurement/SupplierDocumentRequirementTypesCard";
 import { SupplierCategoriesHierarchyCard } from "@/components/procurement/SupplierCategoriesHierarchyCard";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const emptyProfile = {
   key: "",
@@ -32,6 +34,7 @@ const emptyProfile = {
 export default function ProcurementSettingsPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "procurement.admin");
   const [form, setForm] = useState<ProcurementSettings | null>(null);
@@ -63,6 +66,10 @@ export default function ProcurementSettingsPage() {
       setForm(res.data.data);
       setSavedMsg("Settings saved.");
       setTimeout(() => setSavedMsg(null), 2500);
+      toast.success("Procurement settings saved");
+    },
+    onError: (err: unknown) => {
+      toast.error("Settings not saved", apiErrorMessage(err, "Failed to save procurement settings."));
     },
   });
 
@@ -88,6 +95,10 @@ export default function ProcurementSettingsPage() {
       setNewProfile(emptyProfile);
       setSavedMsg("Policy profile created.");
       setTimeout(() => setSavedMsg(null), 2500);
+      toast.success("Policy profile created");
+    },
+    onError: (err: unknown) => {
+      toast.error("Policy profile not created", apiErrorMessage(err, "Failed to create the policy profile."));
     },
   });
 
@@ -104,6 +115,10 @@ export default function ProcurementSettingsPage() {
       qc.invalidateQueries({ queryKey: ["procurement", "lpo-sequence"] });
       setSavedMsg("LPO sequence activated. Subsequent edits require a privileged reason.");
       setTimeout(() => setSavedMsg(null), 2500);
+      toast.success("LPO sequence activated");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not activate LPO sequence", apiErrorMessage(err, "Failed to activate the LPO sequence."));
     },
   });
 
@@ -115,6 +130,10 @@ export default function ProcurementSettingsPage() {
       qc.invalidateQueries({ queryKey: ["procurement", "policy-profiles"] });
       setSavedMsg("Policy profile activated.");
       setTimeout(() => setSavedMsg(null), 2500);
+      toast.success("Policy profile activated");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not activate policy profile", apiErrorMessage(err, "Failed to activate the policy profile."));
     },
   });
 

@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
 
@@ -64,6 +66,7 @@ const AUTHORITY_ACTIONS = [
 
 export default function Page() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
@@ -100,11 +103,16 @@ export default function Page() {
       });
     },
     onSuccess: () => {
+      toast.success("Authority created");
       setCreateForm({ module: "", action: "" });
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "authority-register"] });
     },
-    onError: () => setErr("Could not create the authority. Select a module and an action."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not create the authority. Select a module and an action.");
+      setErr(message);
+      toast.error("Authority not created", message);
+    },
   });
   const assign = useMutation({
     mutationFn: () =>
@@ -115,10 +123,15 @@ export default function Page() {
         effective_from: assignForm.effective_from,
       }),
     onSuccess: () => {
+      toast.success("Authority assigned");
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "authority-register"] });
     },
-    onError: () => setErr("Could not assign authority. Definition, assignee, and start date are required."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not assign authority. Definition, assignee, and start date are required.");
+      setErr(message);
+      toast.error("Authority not assigned", message);
+    },
   });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "authority-register"],

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { hrVipImportApi, type HrVipImportBatch } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
+import { useToast } from "@/components/ui/Toast";
 import { AccessDenied } from "@/components/ui/AccessDenied";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
 
@@ -29,6 +30,7 @@ function apiErrorMessage(err: unknown): string {
 }
 
 export default function HistoricalLeavePayrollImportPage() {
+  const toast = useToast();
   const [files, setFiles] = useState<File[]>([]);
   const [batch, setBatch] = useState<HrVipImportBatch | null>(null);
   const [busy, setBusy] = useState<"stage" | "commit" | null>(null);
@@ -53,8 +55,11 @@ export default function HistoricalLeavePayrollImportPage() {
       files.forEach((f) => form.append("files[]", f));
       const res = await hrVipImportApi.upload(form);
       setBatch(res.data.data);
+      toast.success("Files staged for import");
     } catch (err) {
-      setError(apiErrorMessage(err));
+      const message = apiErrorMessage(err);
+      setError(message);
+      toast.error("Files not staged", message);
     } finally {
       setBusy(null);
     }
@@ -67,8 +72,11 @@ export default function HistoricalLeavePayrollImportPage() {
     try {
       const res = await hrVipImportApi.commit(batch.id);
       setBatch(res.data.data);
+      toast.success("Import committed");
     } catch (err) {
-      setError(apiErrorMessage(err));
+      const message = apiErrorMessage(err);
+      setError(message);
+      toast.error("Import not committed", message);
     } finally {
       setBusy(null);
     }

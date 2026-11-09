@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { correspondenceApi } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const TOKEN = /\{\{([a-z0-9_]+)\}\}/gi;
 
@@ -26,6 +28,7 @@ function labelFor(token: string): string {
 export default function CorrespondenceMailMergePage() {
   const router = useRouter();
   const qc = useQueryClient();
+  const toast = useToast();
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["correspondence-templates"],
     queryFn: () => correspondenceApi.listTemplates().then((r) => r.data.data),
@@ -81,9 +84,13 @@ export default function CorrespondenceMailMergePage() {
     },
     onSuccess: (letter) => {
       void qc.invalidateQueries({ queryKey: ["correspondence"] });
+      toast.success("Letter created");
       router.push(`/correspondence/${letter.id}`);
     },
-    onError: (e: Error) => setError(e.message || "Create failed"),
+    onError: (e: Error) => {
+      setError(e.message || "Create failed");
+      toast.error("Letter not created", apiErrorMessage(e, "Create failed"));
+    },
   });
 
   const createTemplateMutation = useMutation({
@@ -95,7 +102,11 @@ export default function CorrespondenceMailMergePage() {
         body_template:
           "Dear {{recipient_name}},\n\nWe acknowledge receipt of {{subject_matter}} dated {{letter_date}}.\n\nYours sincerely,\n{{signatory_name}}",
       }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["correspondence-templates"] }),
+    onSuccess: () => {
+      toast.success("Template created");
+      void qc.invalidateQueries({ queryKey: ["correspondence-templates"] });
+    },
+    onError: (e) => toast.error("Template not created", apiErrorMessage(e, "Failed to create the template.")),
   });
 
   return (

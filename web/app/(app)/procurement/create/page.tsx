@@ -11,6 +11,8 @@ import {
 } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useFormDraft } from "@/lib/useFormDraft";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const STEPS = ["Requisition Details", "Review & Submit"];
 
@@ -49,6 +51,7 @@ function getListData<T>(payload: unknown): T[] {
 
 export default function ProcurementCreatePage() {
   const router = useRouter();
+  const toast = useToast();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<FormData>({
@@ -177,6 +180,7 @@ export default function ProcurementCreatePage() {
           if (splitMsg) {
             setSplitWarning(splitMsg);
             setSubmitError("Split purchase detected — provide justification below and submit again from the request detail page, or resubmit here.");
+            toast.warning("Procurement request saved but not submitted", splitMsg);
             router.push(`/procurement/${created.id}`);
             return;
           }
@@ -184,9 +188,12 @@ export default function ProcurementCreatePage() {
         }
       }
 
+      toast.success(asDraft ? "Procurement request saved as draft" : "Procurement request submitted");
       router.push(created?.id ? `/procurement/${created.id}` : "/procurement");
-    } catch {
-      setSubmitError("Failed to create procurement request.");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Failed to create procurement request.");
+      setSubmitError(message);
+      toast.error(asDraft ? "Procurement request not saved" : "Procurement request not submitted", message);
     } finally {
       setSubmitting(false);
     }

@@ -5,10 +5,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { auditApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { AuditPageShell, AuditTable } from "@/components/audit/AuditChrome";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function AuditUniversePage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const [name, setName] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "universe"],
@@ -20,8 +23,10 @@ export default function AuditUniversePage() {
     mutationFn: (entityName: string) => auditApi.createUniverse({ name: entityName, entity_type: "process" }),
     onSuccess: () => {
       setName("");
+      toast.success("Auditable entity added");
       qc.invalidateQueries({ queryKey: ["audit", "universe"] });
     },
+    onError: (err) => toast.error("Auditable entity not added", apiErrorMessage(err, "Failed to add the auditable entity.")),
   });
 
   return (

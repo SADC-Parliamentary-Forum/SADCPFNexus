@@ -8,6 +8,8 @@ import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   received: { label: "Received", cls: "text-amber-700 bg-amber-50 border-amber-200",    icon: "inbox"        },
@@ -34,6 +36,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const { id }      = use(params);
   const invId       = Number(id);
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason]       = useState("");
@@ -54,7 +57,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
   const approveMutation = useMutation({
     mutationFn: () => invoicesApi.approve(invId),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ["invoice", invId] }),
+    onSuccess:  () => {
+      queryClient.invalidateQueries({ queryKey: ["invoice", invId] });
+      toast.success("Invoice approved");
+    },
+    onError: (e: unknown) => {
+      toast.error("Could not approve invoice", apiErrorMessage(e, "Failed to approve the invoice."));
+    },
   });
 
   const rejectMutation = useMutation({
@@ -62,15 +71,24 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoice", invId] });
       setShowRejectModal(false);
+      toast.success("Invoice rejected");
     },
     onError: (e: unknown) => {
-      setRejectError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to reject.");
+      const message = apiErrorMessage(e, "Failed to reject.");
+      setRejectError(message);
+      toast.error("Could not reject invoice", message);
     },
   });
 
   const markPaidMutation = useMutation({
     mutationFn: () => invoicesApi.markPaid(invId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["invoice", invId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoice", invId] });
+      toast.success("Invoice marked as paid");
+    },
+    onError: (e: unknown) => {
+      toast.error("Could not mark invoice as paid", apiErrorMessage(e, "Failed to mark the invoice as paid."));
+    },
   });
 
   if (isLoading) return (
@@ -124,10 +142,23 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
             uploading={uploading}
             onUpload={async (file, type) => {
               setUploading(true);
-              try { const r = await invoiceAttachmentsApi.upload(invId, file, type); setAttachments((p) => [r.data.data, ...p]); }
-              finally { setUploading(false); }
+              try {
+                const r = await invoiceAttachmentsApi.upload(invId, file, type);
+                setAttachments((p) => [r.data.data, ...p]);
+                toast.success("Document uploaded");
+              } catch (err) {
+                toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload the document."));
+              } finally { setUploading(false); }
             }}
-            onDelete={async (id) => { await invoiceAttachmentsApi.delete(invId, id); setAttachments((p) => p.filter((a) => a.id !== id)); }}
+            onDelete={async (id) => {
+              try {
+                await invoiceAttachmentsApi.delete(invId, id);
+                setAttachments((p) => p.filter((a) => a.id !== id));
+                toast.success("Document deleted");
+              } catch (err) {
+                toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete the document."));
+              }
+            }}
             downloadUrl={(id) => invoiceAttachmentsApi.downloadUrl(invId, id)}
           />
         </div>

@@ -7,6 +7,8 @@ import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 import { LabelledRecord, labelledObjectCell } from "@/components/ui/LabelledRecord";
 
 type PeriodRow = {
@@ -77,6 +79,7 @@ function sourceReportId(row: Record<string, unknown>): number | null {
 }
 
 export default function WeeklyInstitutionalPage() {
+  const toast = useToast();
   const [periods, setPeriods] = useState<PeriodRow[]>([]);
   const [periodId, setPeriodId] = useState("");
   const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([]);
@@ -195,8 +198,10 @@ export default function WeeklyInstitutionalPage() {
     try {
       const { data } = await weeklyReportsApi.publish(report.id);
       setReport(data.data);
+      toast.success("Institutional summary published");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to publish institutional summary");
+      toast.error("Institutional summary not published", apiErrorMessage(e, "Failed to publish institutional summary"));
     } finally {
       setPublishing(false);
     }

@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
 
@@ -29,6 +31,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 
 export default function Page() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
@@ -51,10 +54,15 @@ export default function Page() {
         effective_from: form.effective_from,
       }),
     onSuccess: () => {
+      toast.success("Reporting line created");
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "reporting-relationships"] });
     },
-    onError: () => setErr("Could not create the reporting line. Both positions and a start date are required."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not create the reporting line. Both positions and a start date are required.");
+      setErr(message);
+      toast.error("Reporting line not created", message);
+    },
   });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "reporting-relationships"],

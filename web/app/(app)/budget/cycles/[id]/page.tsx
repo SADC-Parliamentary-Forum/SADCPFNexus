@@ -8,6 +8,8 @@ import { budgetApi, type BudgetCycle, type BudgetSubmissionPack } from "@/lib/ap
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function statusLabel(status: string): string {
   return status.replaceAll("_", " ");
@@ -17,6 +19,7 @@ export default function BudgetCycleDetailPage() {
   const params = useParams();
   const id = Number(params.id);
   const qc = useQueryClient();
+  const toast = useToast();
   const user = getStoredUser();
   const canFinance =
     isSystemAdmin(user) || hasPermission(user, ["finance.create", "finance.approve", "finance.admin"]);
@@ -62,49 +65,69 @@ export default function BudgetCycleDetailPage() {
       }),
     onSuccess: () => {
       setMessage("Guidelines published.");
+      toast.success("Guidelines published");
       setError("");
       invalidate();
     },
-    onError: () => setError("Failed to publish guidelines."),
+    onError: (err) => {
+      setError("Failed to publish guidelines.");
+      toast.error("Guidelines not published", apiErrorMessage(err, "Failed to publish guidelines."));
+    },
   });
 
   const advanceMut = useMutation({
     mutationFn: () => budgetApi.advanceCycle(id),
     onSuccess: () => {
       setMessage("Cycle advanced.");
+      toast.success("Budget cycle advanced");
       setError("");
       invalidate();
     },
-    onError: () => setError("Could not advance (check open packs / stage)."),
+    onError: (err) => {
+      setError("Could not advance (check open packs / stage).");
+      toast.error("Could not advance budget cycle", apiErrorMessage(err, "Could not advance (check open packs / stage)."));
+    },
   });
 
   const returnMut = useMutation({
     mutationFn: () => budgetApi.returnCycle(id, { reason: returnReason.trim() }),
     onSuccess: () => {
       setMessage("Returned to departments.");
+      toast.success("Budget cycle returned to departments");
       setReturnReason("");
       invalidate();
     },
-    onError: () => setError("Return failed."),
+    onError: (err) => {
+      setError("Return failed.");
+      toast.error("Could not return budget cycle", apiErrorMessage(err, "Return failed."));
+    },
   });
 
   const sgMut = useMutation({
     mutationFn: () => budgetApi.sgApproveCycle(id, { comments: "SG approved" }),
     onSuccess: () => {
       setMessage("SG approved.");
+      toast.success("Budget cycle approved");
       invalidate();
     },
-    onError: () => setError("SG approve failed."),
+    onError: (err) => {
+      setError("SG approve failed.");
+      toast.error("Could not approve budget cycle", apiErrorMessage(err, "SG approve failed."));
+    },
   });
 
   const lockMut = useMutation({
     mutationFn: () => budgetApi.lockCycle(id),
     onSuccess: () => {
       setMessage("Cycle locked — institutional lines activated.");
+      toast.success("Budget cycle locked");
       invalidate();
       qc.invalidateQueries({ queryKey: ["budget", "lines"] });
     },
-    onError: () => setError("Lock failed."),
+    onError: (err) => {
+      setError("Lock failed.");
+      toast.error("Could not lock budget cycle", apiErrorMessage(err, "Lock failed."));
+    },
   });
 
   const decisionMut = useMutation({
@@ -120,13 +143,17 @@ export default function BudgetCycleDetailPage() {
     },
     onSuccess: () => {
       setMessage("Institutional decision recorded.");
+      toast.success("Institutional decision recorded");
       setError("");
       setDecisionComments("");
       setMinuteRef("");
       setDecisionFile(null);
       invalidate();
     },
-    onError: () => setError("Could not record decision (check body matches current stage)."),
+    onError: (err) => {
+      setError("Could not record decision (check body matches current stage).");
+      toast.error("Decision not recorded", apiErrorMessage(err, "Could not record decision (check body matches current stage)."));
+    },
   });
 
   const createPackMut = useMutation({
@@ -148,9 +175,13 @@ export default function BudgetCycleDetailPage() {
       setItemName("");
       setItemAmount("");
       setMessage("Submission pack created.");
+      toast.success("Submission pack created");
       invalidate();
     },
-    onError: () => setError("Could not create submission pack."),
+    onError: (err) => {
+      setError("Could not create submission pack.");
+      toast.error("Submission pack not created", apiErrorMessage(err, "Could not create submission pack."));
+    },
   });
 
   const cycle = cycleQuery.data;

@@ -5,10 +5,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { auditApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { AuditPageShell, AuditRowActions, AuditTable } from "@/components/audit/AuditChrome";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function AuditExternalPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const [title, setTitle] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "external"],
@@ -24,9 +27,19 @@ export default function AuditExternalPage() {
     }),
     onSuccess: () => {
       setTitle("");
+      toast.success("External audit created");
       qc.invalidateQueries({ queryKey: ["audit", "external"] });
     },
+    onError: (err) => toast.error("External audit not created", apiErrorMessage(err, "Failed to create the external audit.")),
   });
+
+  const runAction = (call: () => Promise<unknown>, successTitle: string, errorTitle: string) =>
+    call()
+      .then(() => {
+        toast.success(successTitle);
+        return qc.invalidateQueries({ queryKey: ["audit", "external"] });
+      })
+      .catch((err) => toast.error(errorTitle, apiErrorMessage(err, "Action failed. Please try again.")));
 
   return (
     <AuditPageShell
@@ -72,10 +85,10 @@ export default function AuditExternalPage() {
             <td className="px-3 py-2.5">{r.access_active ? t("audit.access.active") : t("audit.access.closed")}</td>
             <td className="px-3 py-2.5">
               <AuditRowActions>
-                <button type="button" className="btn-secondary text-xs" onClick={() => auditApi.activateExternal(Number(r.id)).then(() => qc.invalidateQueries({ queryKey: ["audit", "external"] }))}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.activateExternal(Number(r.id)), "Auditor access activated", "Could not activate auditor access")}>
                   {t("audit.external.activate")}
                 </button>
-                <button type="button" className="btn-secondary text-xs" onClick={() => auditApi.revokeExternal(Number(r.id)).then(() => qc.invalidateQueries({ queryKey: ["audit", "external"] }))}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.revokeExternal(Number(r.id)), "Auditor access revoked", "Could not revoke auditor access")}>
                   {t("audit.external.revoke")}
                 </button>
               </AuditRowActions>

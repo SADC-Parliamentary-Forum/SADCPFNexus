@@ -10,10 +10,20 @@ import { apiErrorMessage } from "@/lib/apiError";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
 
 const TYPE_LABEL: Record<string, string> = {
   resolution: "Resolution",
   management_decision: "Management decision",
+};
+
+const OP_LABEL: Record<string, { success: string; error: string }> = {
+  adopt: { success: "Decision adopted", error: "Could not adopt decision" },
+  start: { success: "Decision marked in progress", error: "Could not start decision" },
+  implemented: { success: "Decision marked implemented", error: "Could not mark decision implemented" },
+  close: { success: "Decision closed", error: "Could not close decision" },
+  assignment: { success: "Assignment created", error: "Assignment not created" },
+  action: { success: "Action added", error: "Action not added" },
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -29,6 +39,7 @@ export default function DecisionDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const qc = useQueryClient();
+  const toast = useToast();
   const [actionDesc, setActionDesc] = useState("");
   const [actionPriority, setActionPriority] = useState<"medium" | "critical">("medium");
   const [notes, setNotes] = useState("");
@@ -74,10 +85,13 @@ export default function DecisionDetailPage() {
     onSuccess: (_res, op) => {
       setMsg(op === "action" ? "Action added." : "Updated.");
       if (op === "action") setActionDesc("");
+      toast.success(OP_LABEL[op]?.success ?? "Decision updated");
       refresh();
     },
-    onError: (e: unknown) => {
-      setErr(apiErrorMessage(e, "Action failed."));
+    onError: (e: unknown, op) => {
+      const message = apiErrorMessage(e, "Action failed.");
+      setErr(message);
+      toast.error(OP_LABEL[op]?.error ?? "Could not update decision", message);
     },
   });
 

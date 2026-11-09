@@ -8,6 +8,7 @@ import { lookupAssetFromQrRaw, type AssetScanHit } from "@/lib/assetQrLookup";
 import { assetsApi, type AssetScanBasket, type TenantUserOption } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 
 const BASKET_KEY = "asset_scan_basket_id";
@@ -15,6 +16,7 @@ const BASKET_KEY = "asset_scan_basket_id";
 export default function AssetScanPage() {
   const { t } = useI18n();
   const router = useRouter();
+  const toast = useToast();
   const lookupSeq = useRef(0);
   const busyRef = useRef(false);
   const [raw, setRaw] = useState("");
@@ -51,8 +53,11 @@ export default function AssetScanPage() {
       const id = await ensureBasket();
       const updated = await assetsApi.addScanBasketItem(id, payload);
       setBasket(updated.data.data);
+      toast.success("Added to scan basket");
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.scan.notFound")));
+      const message = apiErrorMessage(err, t("assets.scan.notFound"));
+      setError(message);
+      toast.error("Not added to scan basket", message);
     }
   }
 
@@ -111,9 +116,12 @@ export default function AssetScanPage() {
         to_user_id: toUser.id,
       });
       sessionStorage.removeItem(BASKET_KEY);
+      toast.success("Handover started", toUser.name);
       router.push(`/assets/handovers/${started.data.data.id}`);
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.assignFailed")));
+      const message = apiErrorMessage(err, t("assets.assignFailed"));
+      setError(message);
+      toast.error("Handover not started", message);
     }
   }
 

@@ -13,6 +13,8 @@ import {
 import { getStoredUser } from "@/lib/auth";
 import { safeExternalUrl } from "@/lib/safeExternalUrl";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -329,6 +331,7 @@ function SupervisorRatingRow({
 export default function AppraisalDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const id = params?.id != null ? Number(params.id) : NaN;
 
   const [appraisal, setAppraisal] = useState<Appraisal | null>(null);
@@ -474,8 +477,10 @@ export default function AppraisalDetailPage() {
         self_overall_rating: overallRating,
         evidence_links: evidenceLinks.length ? evidenceLinks : undefined,
       });
+      toast.success("Self-assessment submitted");
       load();
     } catch (err: unknown) {
+      toast.error("Self-assessment not submitted", apiErrorMessage(err, "Failed to submit self-assessment."));
       setError(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
@@ -512,8 +517,10 @@ export default function AppraisalDetailPage() {
         supervisor_comments: JSON.stringify(svData),
         supervisor_rating: svOverallRating,
       });
+      toast.success("Supervisor review submitted");
       load();
     } catch (err: unknown) {
+      toast.error("Supervisor review not submitted", apiErrorMessage(err, "Failed to submit supervisor review."));
       setError(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
@@ -534,8 +541,12 @@ export default function AppraisalDetailPage() {
         self_assessment: JSON.stringify(saData),
         evidence_links: Array.isArray(appraisal.evidence_links) ? appraisal.evidence_links : [],
       });
+      toast.success("Comments saved");
       load();
-    } catch { setError("Failed to save comments."); }
+    } catch (err) {
+      setError("Failed to save comments.");
+      toast.error("Comments not saved", apiErrorMessage(err, "Failed to save comments."));
+    }
     finally { setSection4Saving(false); }
   };
 
@@ -551,8 +562,10 @@ export default function AppraisalDetailPage() {
         hod_comments: JSON.stringify(hodData),
         hod_rating: hodRating,
       });
+      toast.success("HOD review submitted");
       load();
     } catch (err: unknown) {
+      toast.error("HOD review not submitted", apiErrorMessage(err, "Failed to submit HOD review."));
       setError(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
@@ -573,8 +586,12 @@ export default function AppraisalDetailPage() {
         self_assessment: JSON.stringify(saData),
         evidence_links: Array.isArray(appraisal.evidence_links) ? appraisal.evidence_links : [],
       });
+      toast.success("Comments saved");
       load();
-    } catch { setError("Failed to save comments."); }
+    } catch (err) {
+      setError("Failed to save comments.");
+      toast.error("Comments not saved", apiErrorMessage(err, "Failed to save comments."));
+    }
     finally { setSection6Saving(false); }
   };
 
@@ -594,8 +611,10 @@ export default function AppraisalDetailPage() {
         development_plan: developmentPlan || undefined,
         sg_decision: sgDecision || undefined,
       });
+      toast.success("Appraisal finalised");
       load();
     } catch (err: unknown) {
+      toast.error("Appraisal not finalised", apiErrorMessage(err, "Failed to finalize appraisal."));
       setError(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)
@@ -619,8 +638,12 @@ export default function AppraisalDetailPage() {
         });
       }
       await appraisalApi.acknowledge(appraisal.id);
+      toast.success("Appraisal acknowledged");
       load();
-    } catch { setError("Failed to acknowledge appraisal."); }
+    } catch (err) {
+      setError("Failed to acknowledge appraisal.");
+      toast.error("Appraisal not acknowledged", apiErrorMessage(err, "Failed to acknowledge appraisal."));
+    }
     finally { setAcknowledging(false); }
   };
 
@@ -633,7 +656,11 @@ export default function AppraisalDetailPage() {
       }
       const listRes = await appraisalAttachmentsApi.list(appraisal.id);
       setAttachments(listRes.data?.data ?? []);
-    } catch { setError("Failed to upload file(s)."); }
+      toast.success("File(s) uploaded");
+    } catch (err) {
+      setError("Failed to upload file(s).");
+      toast.error("Upload failed", apiErrorMessage(err, "Failed to upload file(s)."));
+    }
     finally { setUploading(false); e.target.value = ""; }
   };
 
@@ -642,7 +669,11 @@ export default function AppraisalDetailPage() {
     try {
       await appraisalAttachmentsApi.delete(appraisal.id, attachmentId);
       setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
-    } catch { setError("Failed to delete attachment."); }
+      toast.success("Attachment deleted");
+    } catch (err) {
+      setError("Failed to delete attachment.");
+      toast.error("Attachment not deleted", apiErrorMessage(err, "Failed to delete attachment."));
+    }
   };
 
   const handleDownloadAttachment = async (a: AppraisalAttachment) => {

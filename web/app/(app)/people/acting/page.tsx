@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
 
@@ -33,6 +35,7 @@ function personLabel(p: Record<string, unknown>): string {
 
 export default function Page() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -73,14 +76,23 @@ export default function Page() {
         reason: form.reason || undefined,
       }),
     onSuccess: () => {
+      toast.success("Acting appointment created");
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "acting-appointments"] });
     },
-    onError: () => setErr("Could not create the acting appointment. Position, person, and start date are required."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not create the acting appointment. Position, person, and start date are required.");
+      setErr(message);
+      toast.error("Acting appointment not created", message);
+    },
   });
   const approve = useMutation({
     mutationFn: (id: number) => peopleAuthorityApi.approveActing(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["people-authority", "acting-appointments"] }),
+    onSuccess: () => {
+      toast.success("Acting appointment approved");
+      qc.invalidateQueries({ queryKey: ["people-authority", "acting-appointments"] });
+    },
+    onError: (e) => toast.error("Could not approve acting appointment", apiErrorMessage(e, "Could not approve the acting appointment.")),
   });
 
   return (

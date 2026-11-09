@@ -11,6 +11,8 @@ import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageH
 import { TableEmpty } from "@/components/ui/EmptyState";
 import { hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:              { label: "Draft",          cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"   },
@@ -47,6 +49,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
   const { id } = use(params);
   const poId = Number(id);
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason]       = useState("");
@@ -77,7 +80,13 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
 
   const issueMutation = useMutation({
     mutationFn: () => purchaseOrdersApi.issue(poId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
+      toast.success("Purchase order issued");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not issue purchase order", apiErrorMessage(err, "Failed to issue the purchase order."));
+    },
   });
   const submitMutation = useMutation({
     mutationFn: () => purchaseOrdersApi.submit(poId, customMode ? {
@@ -86,19 +95,43 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
       custom_reason: customReason,
       continue_sequence: continueSequence,
     } : { reference_mode: "auto" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
+      toast.success("Purchase order submitted for approval");
+    },
+    onError: (err: unknown) => {
+      toast.error("Purchase order not submitted", apiErrorMessage(err, "Failed to submit the purchase order."));
+    },
   });
   const emailMutation = useMutation({
     mutationFn: () => purchaseOrdersApi.emailSupplier(poId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
+      toast.success("Purchase order emailed to supplier");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not email supplier", apiErrorMessage(err, "Failed to email the purchase order to the supplier."));
+    },
   });
   const financeMutation = useMutation({
     mutationFn: () => purchaseOrdersApi.financeHandover(poId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
+      toast.success("Handed over to Finance");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not hand over to Finance", apiErrorMessage(err, "Failed to hand the purchase order over to Finance."));
+    },
   });
   const serviceMutation = useMutation({
     mutationFn: () => purchaseOrdersApi.confirmService(poId, { delivered: "yes", satisfactory: true }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
+      toast.success("Service delivery confirmed");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not confirm service delivery", apiErrorMessage(err, "Failed to confirm service delivery."));
+    },
   });
 
   const cancelMutation = useMutation({
@@ -106,9 +139,12 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
       setShowCancelModal(false);
+      toast.success("Purchase order cancelled");
     },
     onError: (e: unknown) => {
-      setCancelError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to cancel.");
+      const message = apiErrorMessage(e, "Failed to cancel.");
+      setCancelError(message);
+      toast.error("Purchase order not cancelled", message);
     },
   });
 
@@ -152,10 +188,23 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
             uploading={uploading}
             onUpload={async (file, type) => {
               setUploading(true);
-              try { const r = await purchaseOrderAttachmentsApi.upload(poId, file, type); setAttachments((p) => [r.data.data, ...p]); }
-              finally { setUploading(false); }
+              try {
+                const r = await purchaseOrderAttachmentsApi.upload(poId, file, type);
+                setAttachments((p) => [r.data.data, ...p]);
+                toast.success("Document uploaded");
+              } catch (err) {
+                toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload the document."));
+              } finally { setUploading(false); }
             }}
-            onDelete={async (id) => { await purchaseOrderAttachmentsApi.delete(poId, id); setAttachments((p) => p.filter((a) => a.id !== id)); }}
+            onDelete={async (id) => {
+              try {
+                await purchaseOrderAttachmentsApi.delete(poId, id);
+                setAttachments((p) => p.filter((a) => a.id !== id));
+                toast.success("Document deleted");
+              } catch (err) {
+                toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete the document."));
+              }
+            }}
             downloadUrl={(id) => purchaseOrderAttachmentsApi.downloadUrl(poId, id)}
           />
         </div>

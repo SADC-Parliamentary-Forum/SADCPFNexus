@@ -4,9 +4,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { vendorsApi, type SupplierDocumentRecord } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: number; canManage: boolean }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectRemarks, setRejectRemarks] = useState("");
 
@@ -20,6 +23,10 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor-register-docs", vendorId] });
       queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
+      toast.success("Document verified");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not verify document", apiErrorMessage(err, "Failed to verify the document."));
     },
   });
 
@@ -31,6 +38,10 @@ export function SupplierRegisterPanel({ vendorId, canManage }: { vendorId: numbe
       setRejectRemarks("");
       queryClient.invalidateQueries({ queryKey: ["vendor-register-docs", vendorId] });
       queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
+      toast.success("Document rejected");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not reject document", apiErrorMessage(err, "Failed to reject the document."));
     },
   });
 
@@ -125,6 +136,7 @@ type ActivityTab = "rfqs" | "quotes" | "pos" | "invoices" | string;
 
 export function SupplierChangeRequestsPanel({ vendorId, canManage }: { vendorId: number; canManage: boolean }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const listQuery = useQuery({
     queryKey: ["vendor-change-requests", vendorId],
     queryFn: () => vendorsApi.changeRequests(vendorId).then((r) => r.data.data),
@@ -134,11 +146,21 @@ export function SupplierChangeRequestsPanel({ vendorId, canManage }: { vendorId:
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor-change-requests", vendorId] });
       queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
+      toast.success("Change request approved");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not approve change request", apiErrorMessage(err, "Failed to approve the change request."));
     },
   });
   const rejectMutation = useMutation({
     mutationFn: (id: number) => vendorsApi.rejectChangeRequest(vendorId, id, "Rejected from Supplier 360"),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vendor-change-requests", vendorId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendor-change-requests", vendorId] });
+      toast.success("Change request rejected");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not reject change request", apiErrorMessage(err, "Failed to reject the change request."));
+    },
   });
 
   const rows = listQuery.data ?? [];

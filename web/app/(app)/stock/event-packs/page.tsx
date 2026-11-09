@@ -4,11 +4,14 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { stockEventPacksApi, stockItemsApi } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 type PackLine = { stock_item_id: string; quantity: string };
 
 export default function StockEventPacksPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [name, setName] = useState("Plenary welcome pack");
   const [lines, setLines] = useState<PackLine[]>([{ stock_item_id: "", quantity: "10" }]);
   const [barcode, setBarcode] = useState("");
@@ -35,6 +38,10 @@ export default function StockEventPacksPage() {
     onSuccess: () => {
       setMsg("Pack saved. Instantiate creates a draft request only.");
       qc.invalidateQueries({ queryKey: ["stock", "event-packs"] });
+      toast.success("Event pack saved");
+    },
+    onError: (err: unknown) => {
+      toast.error("Event pack not saved", apiErrorMessage(err, "Failed to save the event pack."));
     },
   });
 
@@ -43,6 +50,10 @@ export default function StockEventPacksPage() {
     onSuccess: () => {
       setMsg("Draft stock request created. Nothing was issued.");
       qc.invalidateQueries({ queryKey: ["stock"] });
+      toast.success("Draft stock request created");
+    },
+    onError: (err: unknown) => {
+      toast.error("Stock request not created", apiErrorMessage(err, "Failed to create a draft stock request from the pack."));
     },
   });
 
@@ -51,6 +62,10 @@ export default function StockEventPacksPage() {
     onSuccess: () => {
       setMsg("Pack copied. Instantiate still drafts a request only.");
       qc.invalidateQueries({ queryKey: ["stock", "event-packs"] });
+      toast.success("Event pack copied");
+    },
+    onError: (err: unknown) => {
+      toast.error("Event pack not copied", apiErrorMessage(err, "Failed to copy the event pack."));
     },
   });
 

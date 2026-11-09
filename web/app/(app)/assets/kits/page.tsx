@@ -8,8 +8,10 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchField } from "@/components/ui/SearchField";
 import { AssetMultiPicker } from "@/components/assets/AssetMultiPicker";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 
 export default function AssetKitsPage() {
+  const toast = useToast();
   const { t } = useI18n();
   const [kits, setKits] = useState<AssetKit[]>([]);
   const [kitSearch, setKitSearch] = useState("");
@@ -43,12 +45,15 @@ export default function AssetKitsPage() {
     setError("");
     try {
       await assetsApi.createKit({ name: name.trim(), asset_ids: [...selected.keys()] });
+      toast.success(t("assets.kits.toast.created"), t("assets.kits.toast.createdDetail", { name: name.trim(), count: selected.size }));
       setName("");
       setSelected(new Map());
       await loadKits();
       setReloadKey((n) => n + 1);
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.assignFailed")));
+      const message = apiErrorMessage(err, t("assets.assignFailed"));
+      setError(message);
+      toast.error(t("assets.kits.toast.notCreated"), message);
     } finally {
       setBusy(false);
     }

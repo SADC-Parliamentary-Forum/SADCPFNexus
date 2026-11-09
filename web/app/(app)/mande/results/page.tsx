@@ -1,6 +1,8 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,6 +26,7 @@ const EMPTY: Partial<ResultsFramework> = {
 export default function ResultsFrameworksPage() {
   const qc = useQueryClient();
   const { confirm } = useConfirm();
+  const toast = useToast();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "mande.admin");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -45,14 +48,20 @@ export default function ResultsFrameworksPage() {
         ? mandeApi.updateFramework(payload.id, payload)
         : mandeApi.createFramework(payload),
     onSuccess: () => {
+      toast.success("Framework saved");
       qc.invalidateQueries({ queryKey: ["mande", "results-frameworks"] });
       setModal(null);
     },
+    onError: (err) => toast.error("Framework not saved", apiErrorMessage(err, "Could not save the results framework.")),
   });
 
   const delMut = useMutation({
     mutationFn: (id: number) => mandeApi.deleteFramework(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["mande", "results-frameworks"] }),
+    onSuccess: () => {
+      toast.success("Framework deleted");
+      qc.invalidateQueries({ queryKey: ["mande", "results-frameworks"] });
+    },
+    onError: (err) => toast.error("Framework not deleted", apiErrorMessage(err, "Could not delete the results framework.")),
   });
 
   const frameworks = data ?? [];

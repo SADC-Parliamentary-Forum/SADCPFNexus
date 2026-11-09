@@ -1,6 +1,8 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,6 +13,7 @@ type Tab = "vehicles" | "drivers" | "calendar";
 
 export default function FleetListPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [tab, setTab] = useState<Tab>("vehicles");
   const [error, setError] = useState<string | null>(null);
 
@@ -55,8 +58,12 @@ export default function FleetListPage() {
       setDriverUserId("");
       setLicence("");
       qc.invalidateQueries({ queryKey: ["fleet", "drivers"] });
+      toast.success("Driver added");
     },
-    onError: () => setError("Could not add driver."),
+    onError: (err: unknown) => {
+      setError("Could not add driver.");
+      toast.error("Driver not added", apiErrorMessage(err, "Could not add driver."));
+    },
   });
 
   const createBooking = useMutation({
@@ -71,10 +78,12 @@ export default function FleetListPage() {
       setError(null);
       setBookingPurpose("");
       qc.invalidateQueries({ queryKey: ["fleet", "bookings"] });
+      toast.success("Booking created");
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.errors?.starts_at?.[0] ?? "Could not create booking (check conflicts).";
       setError(msg);
+      toast.error("Booking not created", msg);
     },
   });
 

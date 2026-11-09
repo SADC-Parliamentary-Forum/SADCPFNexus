@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { adminApi, lookupsApi, positionsApi, type Department, type Role, type Portfolio, type Position } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 // ─── Module Permission Matrix ────────────────────────────────────────────────
 export interface ModulePermission {
@@ -160,6 +162,7 @@ export default function AdminUserCreatePage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [classifications] = useState(["UNCLASSIFIED", "RESTRICTED", "CONFIDENTIAL", "SECRET"]);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const [permissions, setPermissions] = useState<ModulePermission[]>(buildDefaultPermissions());
   const [form, setForm] = useState<FormData>({
     name: "", email: "", employee_number: "", job_title: "",
@@ -297,9 +300,14 @@ export default function AdminUserCreatePage() {
         country: form.country || undefined,
         portfolio_ids: form.portfolio_ids.length > 0 ? form.portfolio_ids : undefined,
       });
+      toast.success("User created", `${form.name} (${form.email}) has been added.`);
       router.push("/admin/users");
-    } catch {
-      setError("Failed to create user. Ensure email is unique.");
+    } catch (err) {
+      // The banner sits above the form, out of view of the Create button, so also toast and scroll up.
+      const message = apiErrorMessage(err, "Failed to create user. Ensure email is unique.");
+      setError(message);
+      toast.error("User not created", message);
+      window.scrollTo({ top: 0, behavior: "smooth" });
       setSubmitting(false);
     }
   };

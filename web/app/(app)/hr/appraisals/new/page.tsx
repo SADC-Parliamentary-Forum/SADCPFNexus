@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { appraisalApi, hrFilesApi, tenantUsersApi, type AppraisalCycle, type HrPersonalFile, type TenantUserOption, type AuthUser } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 interface DepartmentInfo {
   id: number;
@@ -121,6 +123,7 @@ function UserAutocomplete({
 
 export default function NewAppraisalPage() {
   const router = useRouter();
+  const toast = useToast();
   const [me, setMe] = useState<AuthUser | null>(null);
   const [cycles, setCycles] = useState<AppraisalCycle[]>([]);
   const [myFile, setMyFile] = useState<HrPersonalFile | null>(null);
@@ -227,8 +230,10 @@ export default function NewAppraisalPage() {
         status: "draft",
         kras: kras.length ? kras : undefined,
       });
+      toast.success("Appraisal created");
       router.push(`/hr/appraisals/${(res.data as { id: number }).id}`);
     } catch (err: unknown) {
+      toast.error("Appraisal not created", apiErrorMessage(err, "Failed to create appraisal."));
       setError(
         err && typeof err === "object" && "message" in err
           ? String((err as { message: string }).message)

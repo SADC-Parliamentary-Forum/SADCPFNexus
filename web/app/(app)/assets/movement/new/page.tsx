@@ -7,6 +7,7 @@ import Link from "next/link";
 import { assetsApi, assetMovementsApi, type Asset, type TenantUserOption } from "@/lib/api";
 import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 
 const MOVEMENT_TYPES = [
   { id: "assign", labelKey: "assets.movement.type.assign", descKey: "assets.movement.desc.assign", icon: "person_add", color: "text-blue-700 bg-blue-50 border-blue-200", activeColor: "bg-blue-600 text-white border-blue-600" },
@@ -77,6 +78,7 @@ function AssetSearch({ value, onSelect }: { value: Asset | null; onSelect: (a: A
 function NewAssetMovementPageContent() {
   const { t } = useI18n();
   const router = useRouter();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const preloadAssetId = searchParams.get("asset_id");
 
@@ -114,11 +116,13 @@ function NewAssetMovementPageContent() {
         notes: notes || undefined,
         movement_date: movementDate,
       });
+      toast.success("Asset movement recorded", asset.tag_number || asset.name);
       router.push("/assets");
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string };
       const msg = Object.values(ax.response?.data?.errors ?? {}).flat()[0] ?? ax.response?.data?.message ?? t("common.error");
       setError(msg);
+      toast.error("Asset movement not recorded", msg);
     } finally {
       setSubmitting(false);
     }
