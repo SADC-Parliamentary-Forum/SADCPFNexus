@@ -6,8 +6,10 @@ import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { StockMovementModal } from "@/components/stock/StockMovementModal";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function LowStockPage() {
+  const { t } = useI18n();
   const [items, setItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,9 +22,9 @@ export default function LowStockPage() {
     stockItemsApi
       .list({ low_stock: 1, per_page: 100 })
       .then((res) => setItems(res.data.data ?? []))
-      .catch(() => setError("Failed to load low-stock items."))
+      .catch(() => setError(t("stock.lowStock.loadFailed")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     setCanIssue(canIssueStock(getStoredUser()));
@@ -32,9 +34,9 @@ export default function LowStockPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Low Stock / Reorder"
-        subtitle="Items at or below their reorder level — replenish to avoid stock-outs."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Low Stock / Reorder" }]} />}
+        title={t("stock.lowStock.title")}
+        subtitle={t("stock.lowStock.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("stock.common.stock"), href: "/stock" }, { label: t("stock.lowStock.title") }]} />}
       />
 
       {error && (
@@ -47,7 +49,7 @@ export default function LowStockPage() {
         <div className="card p-12 text-center">
           <div className="flex items-center justify-center gap-2 text-neutral-400">
             <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-            <span className="text-sm">Loading…</span>
+            <span className="text-sm">{t("common.loading")}</span>
           </div>
         </div>
       ) : items.length > 0 ? (
@@ -55,20 +57,20 @@ export default function LowStockPage() {
           <div className="card-header">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-amber-500 text-[18px]">production_quantity_limits</span>
-              <h3 className="text-sm font-semibold text-neutral-900">Items needing reorder</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("stock.lowStock.needingReorder")}</h3>
             </div>
-            <span className="badge badge-warning">{items.length} item(s)</span>
+            <span className="badge badge-warning">{t("stock.categories.itemCount", { count: items.length })}</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-100 text-left text-xs font-semibold text-neutral-500">
-                  <th className="px-4 py-3">Item</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3 text-right">Balance</th>
-                  <th className="px-4 py-3 text-right">Reorder Level</th>
-                  <th className="px-4 py-3">Location</th>
-                  {canIssue && <th className="px-4 py-3 text-right">Actions</th>}
+                  <th className="px-4 py-3">{t("stock.common.item")}</th>
+                  <th className="px-4 py-3">{t("stock.common.category")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.balance")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.reorderLevel")}</th>
+                  <th className="px-4 py-3">{t("stock.common.location")}</th>
+                  {canIssue && <th className="px-4 py-3 text-right">{t("stock.common.actions")}</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50">
@@ -86,7 +88,7 @@ export default function LowStockPage() {
                       <td className="px-4 py-3 text-right">
                         <button type="button" onClick={() => setMovementItem(i)} className="btn-secondary px-3 py-1.5 text-xs inline-flex">
                           <span className="material-symbols-outlined text-[16px]">add</span>
-                          Replenish
+                          {t("stock.lowStock.replenish")}
                         </button>
                       </td>
                     )}
@@ -100,8 +102,8 @@ export default function LowStockPage() {
         <div className="card">
           <EmptyState
             icon="check_circle"
-            title="All stock levels are healthy"
-            description="No items are at or below their reorder level."
+            title={t("stock.lowStock.healthyTitle")}
+            description={t("stock.lowStock.healthyHint")}
           />
         </div>
       )}

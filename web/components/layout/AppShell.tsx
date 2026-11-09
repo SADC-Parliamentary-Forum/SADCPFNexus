@@ -10,12 +10,14 @@ import { IdleTimeoutGuard } from "@/components/auth/IdleTimeoutGuard";
 import { canAccessRouteWithEffective, getStoredUser } from "@/lib/auth";
 import { type AccessEffectivePayload } from "@/lib/api";
 import { fetchEffectiveAccess, getCachedEffectiveAccess } from "@/lib/effectiveAccessCache";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const SIDEBAR_OPEN_KEY = "sadcpf_sidebar_open";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   // Seed synchronously from the shared cache: if another AppShell mount (or
@@ -102,7 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[300] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-lg"
       >
-        Skip to main content
+        {t("layout.appShell.skip")}
       </a>
       <Header onMenuClick={toggleSidebar} sidebarOpen={sidebarOpen} />
       <IdleTimeoutGuard />
@@ -123,8 +125,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <AccessDenied
               path={pathname ?? undefined}
               reason={accessLoadFailed
-                ? "Access permissions could not be verified. The page is unavailable until the authorization service responds."
-                : "Your account does not include permission for this route. Contact an administrator if you need access."}
+                ? t("layout.appShell.accessUnverified")
+                : t("layout.appShell.noPermission")}
             />
           ) : (
             children

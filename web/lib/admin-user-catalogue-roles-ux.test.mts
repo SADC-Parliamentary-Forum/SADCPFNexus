@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
 test("user security tab assigns published catalogue roles with dual-control approve", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/admin/users/[id]/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/admin/users/[id]/page.tsx"));
   const api = readApiSource(webRoot);
 
   assert.match(source, /Published catalogue roles/);

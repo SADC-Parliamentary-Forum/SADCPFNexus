@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { hrApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -16,6 +17,7 @@ function mondayOf(d: Date): Date {
 }
 
 export default function TimesheetCapacityPage() {
+  const { t } = useI18n();
   const defaultStart = mondayOf(new Date());
   const defaultEnd = new Date(defaultStart);
   defaultEnd.setDate(defaultStart.getDate() + 4);
@@ -41,9 +43,9 @@ export default function TimesheetCapacityPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Timesheet capacity"
-        subtitle="Recorded hours versus expected hours for a selected week. Not a performance score and not invented overtime rates."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Timesheets", href: "/hr/timesheets" }, { label: "Capacity" }]} />}
+        title="hr.timesheets.capacity.title"
+        subtitle="hr.timesheets.capacity.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.timesheets", href: "/hr/timesheets" }, { label: "hr.timesheets.capacity.crumb" }]} />}
       />
       <form
         className="card flex flex-wrap items-end gap-3 p-4"
@@ -51,11 +53,11 @@ export default function TimesheetCapacityPage() {
         onSubmit={(e) => e.preventDefault()}
       >
         <label htmlFor="hr-timesheets-capacity-week-start-setweekstart-e-target-value" className="text-sm">
-          Week start
+          {t("hr.timesheets.capacity.weekStart")}
           <input id="hr-timesheets-capacity-week-start-setweekstart-e-target-value" className="form-input mt-1" type="date" value={weekStart} onChange={(e) => setWeekStart(e.target.value)} />
         </label>
         <label htmlFor="hr-timesheets-capacity-week-end-setweekend-e-target-value" className="text-sm">
-          Week end
+          {t("hr.timesheets.capacity.weekEnd")}
           <input id="hr-timesheets-capacity-week-end-setweekend-e-target-value" className="form-input mt-1" type="date" value={weekEnd} onChange={(e) => setWeekEnd(e.target.value)} />
         </label>
         <button
@@ -72,22 +74,22 @@ export default function TimesheetCapacityPage() {
             URL.revokeObjectURL(url);
           }}
         >
-          Download recorded/expected CSV
+          {t("hr.timesheets.capacity.downloadCsv")}
         </button>
       </form>
-      {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
-      {isError && <p className="text-sm text-red-700">Failed to load capacity analytics.</p>}
+      {isLoading && <p className="text-sm text-neutral-500">{t("common.loading")}</p>}
+      {isError && <p className="text-sm text-red-700">{t("hr.timesheets.capacity.loadFailed")}</p>}
       <p className="text-sm text-neutral-600" data-testid="timesheet-capacity-disclaimer">
-        Overtime rates are not calculated here. Device-attested biometric clock events may appear as a flag. Not a performance score.
+        {t("hr.timesheets.capacity.disclaimer")}
       </p>
       <div className="card overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="text-left text-neutral-500">
-              <th className="p-2">Person</th>
-              <th className="p-2">Recorded</th>
-              <th className="p-2">Expected</th>
-              <th className="p-2">Util %</th>
+              <th className="p-2">{t("hr.timesheets.capacity.person")}</th>
+              <th className="p-2">{t("hr.timesheets.capacity.recorded")}</th>
+              <th className="p-2">{t("hr.timesheets.capacity.expected")}</th>
+              <th className="p-2">{t("hr.timesheets.capacity.util")}</th>
             </tr>
           </thead>
           <tbody>

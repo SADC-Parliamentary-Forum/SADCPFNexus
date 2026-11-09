@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 
 const webRoot = join(process.cwd());
 
 test("procurement notices expose newspaper templates and a human checklist", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/procurement/notices/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/procurement/notices/page.tsx"));
   assert.match(source, /newspaper-notice-templates/);
   assert.match(source, /newspaper-notice-checklist/);
   assert.match(source, /saveNewspaperChecklist/);
@@ -15,7 +16,7 @@ test("procurement notices expose newspaper templates and a human checklist", () 
 });
 
 test("stock event packs instantiate draft requests only", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/stock/event-packs/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/stock/event-packs/page.tsx"));
   assert.match(source, /stockEventPacksApi\.instantiate/);
   assert.match(source, /never auto-issues/);
   assert.match(source, /stockEventPacksApi\.duplicate/);
@@ -30,7 +31,7 @@ test("barcode scan has bulk lookup plus event-pack link", () => {
 });
 
 test("timesheet capacity page refuses invented OT rates", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/hr/timesheets/capacity/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/hr/timesheets/capacity/page.tsx"));
   assert.match(source, /timesheet-capacity-disclaimer/);
   assert.match(source, /capacityAnalytics/);
   assert.match(source, /Not a performance score/);
@@ -40,14 +41,14 @@ test("timesheet capacity page refuses invented OT rates", () => {
 });
 
 test("weekly summary detail offers a management pack without auto-send", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/[id]/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/weekly-summaries/[id]/page.tsx"));
   assert.match(source, /management-pack/);
   assert.match(source, /assignment feed/);
   assert.doesNotMatch(source, /auto-send|autoSend/);
 });
 
 test("assignment handover pack suggests filters only", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/assignments/handover/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/assignments/handover/page.tsx"));
   assert.match(source, /handoverPack/);
   assert.match(source, /nlSearch/);
   assert.match(source, /Filter suggest only|filter_suggest_only|Suggest filters/);
@@ -58,7 +59,7 @@ test("assignment handover pack suggests filters only", () => {
 });
 
 test("assignment detail couples timesheet hours without auto-complete", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/assignments/[id]/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/assignments/[id]/page.tsx"));
   assert.match(source, /timesheetHours/);
   assert.match(source, /does not complete the assignment/);
 });
@@ -72,7 +73,7 @@ test("audit AI includes investigation pack that never auto-closes", () => {
 });
 
 test("decisions dashboard can promote risk drafts and a meeting pack", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/decisions/dashboard/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/decisions/dashboard/page.tsx"));
   assert.match(source, /promoteRisks/);
   assert.match(source, /Promote risk drafts/);
   assert.match(source, /promoteMeetingPack/);
@@ -97,7 +98,7 @@ test("correspondence detail shows a labelled registry pack without live courier 
 });
 
 test("assignment workload forecast is not a ranking", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/assignments/workload/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/assignments/workload/page.tsx"));
   assert.match(source, /workloadForecast/);
   assert.match(source, /Not a surveillance ranking/);
   assert.match(source, /workload-weeks/);

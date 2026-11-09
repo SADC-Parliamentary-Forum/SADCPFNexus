@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function Page() {
+  const { t } = useI18n();
   const [name, setName] = useState("Privileged role recertification");
   const [dueDate, setDueDate] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -19,26 +21,26 @@ export default function Page() {
         auto_populate_roles: true,
       }),
     onSuccess: () => {
-      setMsg("Recertification campaign opened. Reviewers still decide each item.");
+      setMsg(t("people.recertification.opened"));
       setErr(null);
     },
-    onError: () => setErr("Could not open a recertification campaign."),
+    onError: () => setErr(t("people.recertification.openFailed")),
   });
 
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Recertification"
-        subtitle="Open a campaign on demand. This page does not create campaigns just by loading."
+        title={t("people.recertification.title")}
+        subtitle={t("people.recertification.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "Recertification" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.recertification.title") },
             ]}
           />
         }
-        actions={<Link href="/people" className="btn-secondary text-sm">Hub</Link>}
+        actions={<Link href="/people" className="btn-secondary text-sm">{t("people.common.hub")}</Link>}
       />
       <form
         className="card space-y-3 p-4 max-w-xl"
@@ -48,15 +50,15 @@ export default function Page() {
         }}
       >
         <label htmlFor="people-recertification-campaign-name-setname-e-target-value" className="block text-xs font-medium text-neutral-600">
-          Campaign name
+          {t("people.common.campaignName")}
           <input id="people-recertification-campaign-name-setname-e-target-value" className="form-input mt-1" value={name} onChange={(e) => setName(e.target.value)} />
         </label>
         <label htmlFor="people-recertification-due-date-setduedate-e-target-value" className="block text-xs font-medium text-neutral-600">
-          Due date
+          {t("people.common.dueDate")}
           <input id="people-recertification-due-date-setduedate-e-target-value" type="date" className="form-input mt-1" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </label>
         <button type="submit" className="btn-primary text-sm" disabled={open.isPending}>
-          {open.isPending ? "Opening…" : "Open recertification campaign"}
+          {open.isPending ? t("people.recertification.opening") : t("people.recertification.open")}
         </button>
         {msg && <p className="text-sm text-green-700">{msg}</p>}
         {err && <p className="text-sm text-red-700">{err}</p>}

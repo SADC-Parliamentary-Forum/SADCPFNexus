@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,13 +29,14 @@ type FilterTab = "all" | DocumentSource;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+/** Tab labels are catalog keys, translated where they render. */
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
-  { key: "all",       label: "All" },
-  { key: "travel",    label: "Travel" },
-  { key: "leave",     label: "Leave" },
-  { key: "imprest",   label: "Imprest" },
-  { key: "appraisal", label: "Appraisals" },
-  { key: "other",     label: "Other" },
+  { key: "all",       label: "hr.documents.tab.all" },
+  { key: "travel",    label: "nav.travel" },
+  { key: "leave",     label: "nav.leave" },
+  { key: "imprest",   label: "nav.imprest" },
+  { key: "appraisal", label: "hr.documents.tab.appraisals" },
+  { key: "other",     label: "hr.documents.tab.other" },
 ];
 
 const SOURCE_ICON: Record<DocumentSource, string> = {
@@ -62,43 +64,44 @@ interface ModuleSection {
   iconColor: string;
 }
 
+/** `title` and `description` are catalog keys, translated where they render. */
 const MODULE_SECTIONS: ModuleSection[] = [
   {
     source:      "travel",
-    title:       "Travel Attachments",
-    description: "Tickets, itineraries, hotel bookings and mission receipts attached to your travel requests.",
+    title:       "hr.documents.section.travel.title",
+    description: "hr.documents.section.travel.description",
     href:        "/travel",
     icon:        "flight",
     iconColor:   "bg-blue-50 text-blue-600",
   },
   {
     source:      "leave",
-    title:       "Leave Documents",
-    description: "Medical certificates and supporting documents submitted with your leave applications.",
+    title:       "hr.documents.section.leave.title",
+    description: "hr.documents.section.leave.description",
     href:        "/leave",
     icon:        "beach_access",
     iconColor:   "bg-green-50 text-green-600",
   },
   {
     source:      "imprest",
-    title:       "Imprest Receipts",
-    description: "Receipts, invoices and liquidation documents attached to your imprest requests.",
+    title:       "hr.documents.section.imprest.title",
+    description: "hr.documents.section.imprest.description",
     href:        "/imprest",
     icon:        "payments",
     iconColor:   "bg-amber-50 text-amber-600",
   },
   {
     source:      "other",
-    title:       "HR Personal File",
-    description: "Contracts, appointment letters, qualifications and other HR-managed documents.",
+    title:       "hr.documents.section.hrFile.title",
+    description: "hr.documents.section.hrFile.description",
     href:        "/hr/files",
     icon:        "folder_shared",
     iconColor:   "bg-rose-50 text-rose-600",
   },
   {
     source:      "appraisal",
-    title:       "Appraisal Records",
-    description: "Evidence files, KRA documents and supporting materials from your performance appraisals.",
+    title:       "hr.documents.section.appraisal.title",
+    description: "hr.documents.section.appraisal.description",
     href:        "/hr/appraisals",
     icon:        "assessment",
     iconColor:   "bg-primary/10 text-primary",
@@ -127,6 +130,7 @@ function getMimeIcon(mime: string | null): string {
 // ─── Fallback UI ─────────────────────────────────────────────────────────────
 
 function ModuleFallback() {
+  const { t } = useI18n();
   return (
     <div className="space-y-5">
       {/* Info banner */}
@@ -135,10 +139,9 @@ function ModuleFallback() {
           <span className="material-symbols-outlined text-[20px] text-blue-600">info</span>
         </div>
         <div>
-          <p className="text-sm font-medium text-neutral-800">Documents are stored per module</p>
+          <p className="text-sm font-medium text-neutral-800">{t("hr.documents.fallback.title")}</p>
           <p className="text-sm text-neutral-500 mt-0.5">
-            There is no single aggregated document endpoint yet. Your files are accessible directly
-            from each module. Use the shortcuts below to navigate there.
+            {t("hr.documents.fallback.body")}
           </p>
         </div>
       </div>
@@ -152,8 +155,8 @@ function ModuleFallback() {
                 <span className="material-symbols-outlined text-[22px]">{section.icon}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-neutral-800 text-sm leading-snug">{section.title}</h3>
-                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{section.description}</p>
+                <h3 className="font-semibold text-neutral-800 text-sm leading-snug">{t(section.title)}</h3>
+                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{t(section.description)}</p>
               </div>
             </div>
             <div className="mt-auto pt-2 border-t border-neutral-100">
@@ -162,7 +165,7 @@ function ModuleFallback() {
                 className="btn-secondary text-xs py-1.5 px-3 inline-flex items-center gap-1.5 w-full justify-center"
               >
                 <span className="material-symbols-outlined text-[15px]">open_in_new</span>
-                View {section.title}
+                {t("hr.documents.fallback.view", { title: t(section.title) })}
               </Link>
             </div>
           </div>
@@ -175,6 +178,7 @@ function ModuleFallback() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function HrDocumentsPage() {
+  const { t } = useI18n();
   const [documents, setDocuments] = useState<AggregatedDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
@@ -257,21 +261,21 @@ export default function HrDocumentsPage() {
     <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-neutral-400">
-        <Link href="/hr" className="hover:text-neutral-600">HR</Link>
+        <Link href="/hr" className="hover:text-neutral-600">{t("nav.hr")}</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-700 font-medium">Documents</span>
+        <span className="text-neutral-700 font-medium">{t("hr.documents.crumb")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <ModulePageHeader
-        title="My Documents"
-        subtitle="All files and attachments across your requests and records"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "My Documents" }]} />}
+        title={t("hr.documents.title")}
+        subtitle={t("hr.documents.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("hr.documents.title") }]} />}
       />
         {apiAvailable && documents.length > 0 && (
           <span className="badge badge-muted self-start mt-1">
-            {documents.length} file{documents.length !== 1 ? "s" : ""}
+            {documents.length === 1 ? t("hr.documents.fileOne") : t("hr.documents.fileMany", { count: documents.length })}
           </span>
         )}
       </div>
@@ -282,14 +286,14 @@ export default function HrDocumentsPage() {
           <div className="h-14 w-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
             <span className="material-symbols-outlined text-[28px] text-red-500">error_outline</span>
           </div>
-          <p className="font-medium text-neutral-700">Failed to load documents</p>
-          <p className="text-sm mt-1">There was a problem reaching the documents API. Please try again later.</p>
+          <p className="font-medium text-neutral-700">{t("hr.documents.error.title")}</p>
+          <p className="text-sm mt-1">{t("hr.documents.error.body")}</p>
           <button
             className="btn-secondary mt-4 inline-flex items-center gap-2"
             onClick={() => window.location.reload()}
           >
             <span className="material-symbols-outlined text-[17px]">refresh</span>
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       )}
@@ -310,7 +314,7 @@ export default function HrDocumentsPage() {
               <input
                 type="text"
                 className="form-input pl-9"
-                placeholder="Search by filename…"
+                placeholder={t("hr.documents.searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -318,7 +322,7 @@ export default function HrDocumentsPage() {
                 <button
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
                   onClick={() => setSearch("")}
-                  aria-label="Clear document search"
+                  aria-label={t("hr.documents.clearSearchAria")}
                 >
                   <span className="material-symbols-outlined text-[17px]">close</span>
                 </button>
@@ -334,7 +338,7 @@ export default function HrDocumentsPage() {
                 className={cn("filter-tab", activeTab === tab.key && "active")}
                 onClick={() => setActiveTab(tab.key)}
               >
-                {tab.label}
+                {t(tab.label)}
                 {(tabCounts[tab.key] ?? 0) > 0 && (
                   <span
                     className={cn(
@@ -356,11 +360,11 @@ export default function HrDocumentsPage() {
             {filtered.length === 0 ? (
               <EmptyState
                 icon="search_off"
-                title="No documents found"
-                description={search ? "Try a different search term or clear the filter." : "No documents in this category."}
+                title={t("hr.documents.empty")}
+                description={search ? t("hr.documents.emptySearch") : t("hr.documents.emptyCategory")}
                 action={search ? (
                   <button type="button" className="btn-secondary" onClick={() => setSearch("")}>
-                    Clear search
+                    {t("hr.documents.clearSearch")}
                   </button>
                 ) : undefined}
               />
@@ -369,12 +373,12 @@ export default function HrDocumentsPage() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>File</th>
-                      <th>Source</th>
-                      <th>Reference</th>
-                      <th>Uploaded</th>
-                      <th>Size</th>
-                      <th className="text-right">Action</th>
+                      <th>{t("hr.documents.col.file")}</th>
+                      <th>{t("hr.documents.col.source")}</th>
+                      <th>{t("hr.documents.col.reference")}</th>
+                      <th>{t("hr.documents.col.uploaded")}</th>
+                      <th>{t("hr.documents.col.size")}</th>
+                      <th className="text-right">{t("hr.documents.col.action")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -439,13 +443,13 @@ export default function HrDocumentsPage() {
                             <button
                               className="btn-secondary text-xs py-1 px-2.5 inline-flex items-center gap-1.5"
                               onClick={() => window.open(doc.download_url!, "_blank")}
-                              title={`Download ${doc.filename}`}
+                              title={t("hr.documents.downloadTitle", { name: doc.filename })}
                             >
                               <span className="material-symbols-outlined text-[15px]">download</span>
-                              Download
+                              {t("common.download")}
                             </button>
                           ) : (
-                            <span className="text-xs text-neutral-300">N/A</span>
+                            <span className="text-xs text-neutral-300">{t("hr.documents.na")}</span>
                           )}
                         </td>
                       </tr>
@@ -459,7 +463,7 @@ export default function HrDocumentsPage() {
           {/* Result count footer */}
           {filtered.length > 0 && (
             <p className="text-xs text-neutral-400 text-right">
-              Showing {filtered.length} of {documents.length} document{documents.length !== 1 ? "s" : ""}
+              {t(documents.length === 1 ? "hr.documents.showingOne" : "hr.documents.showingMany", { shown: filtered.length, total: documents.length })}
             </p>
           )}
         </>

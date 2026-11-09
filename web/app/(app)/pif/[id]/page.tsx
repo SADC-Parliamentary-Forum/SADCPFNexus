@@ -32,10 +32,12 @@ import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { useToast } from "@/components/ui/Toast";
 import { personLabel } from "@/lib/pifForm";
 import { TableEmpty, EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function PifDetailPage() {
   const { success, error: showErrorToast, info } = useToast();
+  const { t } = useI18n();
   const { fmt: formatDateShort } = useFormatDate();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -82,7 +84,7 @@ export default function PifDetailPage() {
         const entity = unwrapEntity<Programme>(r.data);
         if (!entity) {
           setProgramme(null);
-          setError("Programme not found or returned unexpected data.");
+          setError(t("pif.detail.notFoundUnexpected"));
           return;
         }
         setProgramme(entity);
@@ -90,10 +92,10 @@ export default function PifDetailPage() {
       })
       .catch(() => {
         setProgramme(null);
-        setError("Failed to load programme. Please try again.");
+        setError(t("pif.detail.loadFailed"));
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -133,24 +135,24 @@ export default function PifDetailPage() {
     try {
       if (actModal.editing) {
         await programmeApi.updateActivity(programme.id, actModal.editing.id, payload);
-        success("Activity updated.");
+        success(t("pif.detail.toast.activityUpdated"));
       } else {
         await programmeApi.addActivity(programme.id, payload);
-        success("Activity added.");
+        success(t("pif.detail.toast.activityAdded"));
       }
       setActModal({ open: false });
       load();
-    } catch { showErrorToast("Failed to save activity."); }
+    } catch { showErrorToast(t("pif.detail.toast.activitySaveFailed")); }
     finally { setSubmitting(false); }
   };
 
   const handleDeleteActivity = async (actId: number) => {
-    if (!programme || !(await confirm({ title: "Delete Activity", message: "Delete this activity?", variant: "danger" }))) return;
+    if (!programme || !(await confirm({ title: "pif.detail.deleteActivityTitle", message: "pif.detail.deleteActivityMessage", variant: "danger" }))) return;
     try {
       await programmeApi.deleteActivity(programme.id, actId);
-      success("Activity deleted.");
+      success(t("pif.detail.toast.activityDeleted"));
       load();
-    } catch { showErrorToast("Failed to delete activity."); }
+    } catch { showErrorToast(t("pif.detail.toast.activityDeleteFailed")); }
   };
 
   // ── Milestone form ─────────────────────────────────────────────────────────
@@ -172,14 +174,14 @@ export default function PifDetailPage() {
     try {
       if (msModal.editing) {
         await programmeApi.updateMilestone(programme.id, msModal.editing.id, payload);
-        success("Milestone updated.");
+        success(t("pif.detail.toast.milestoneUpdated"));
       } else {
         await programmeApi.addMilestone(programme.id, payload);
-        success("Milestone added.");
+        success(t("pif.detail.toast.milestoneAdded"));
       }
       setMsModal({ open: false });
       load();
-    } catch { showErrorToast("Failed to save milestone."); }
+    } catch { showErrorToast(t("pif.detail.toast.milestoneSaveFailed")); }
     finally { setSubmitting(false); }
   };
 
@@ -199,14 +201,14 @@ export default function PifDetailPage() {
     try {
       if (delModal.editing) {
         await programmeApi.updateDeliverable(programme.id, delModal.editing.id, delForm as Partial<ProgrammeDeliverable>);
-        success("Deliverable updated.");
+        success(t("pif.detail.toast.deliverableUpdated"));
       } else {
         await programmeApi.addDeliverable(programme.id, delForm as Partial<ProgrammeDeliverable>);
-        success("Deliverable added.");
+        success(t("pif.detail.toast.deliverableAdded"));
       }
       setDelModal({ open: false });
       load();
-    } catch { showErrorToast("Failed to save deliverable."); }
+    } catch { showErrorToast(t("pif.detail.toast.deliverableSaveFailed")); }
     finally { setSubmitting(false); }
   };
 
@@ -216,11 +218,11 @@ export default function PifDetailPage() {
     setSubmitting(true);
     try {
       await programmeApi.submit(programme.id, { declaration_confirmed: declarationConfirmed });
-      success("Programme submitted for approval.");
+      success(t("pif.detail.toast.submitted"));
       setDeclarationConfirmed(false);
       load();
     } catch (err) {
-      showErrorToast(apiErrorMessage(err, "Failed to submit."));
+      showErrorToast(apiErrorMessage(err, t("pif.detail.toast.submitFailed")));
     }
     finally { setSubmitting(false); }
   };
@@ -230,7 +232,7 @@ export default function PifDetailPage() {
     setSubmitting(true);
     try {
       await programmeApi.approve(programme.id, undefined, confirmPassword);
-      success(confirmPassword ? "Programme signed and approved." : "Programme approved.");
+      success(confirmPassword ? t("pif.detail.toast.signedApproved") : t("pif.detail.toast.approved"));
       setSignModal(false);
       load();
     } catch (err) {
@@ -239,7 +241,7 @@ export default function PifDetailPage() {
         setSignModal(true);
         return;
       }
-      showErrorToast(apiErrorMessage(err, "Failed to approve."));
+      showErrorToast(apiErrorMessage(err, t("pif.detail.toast.approveFailed")));
     }
     finally { setSubmitting(false); }
   };
@@ -247,16 +249,16 @@ export default function PifDetailPage() {
   const handleAmendProgramme = async () => {
     if (!programme) return;
     if (!(await confirm({
-      title: "Create Amendment",
-      message: "Create a draft amendment of this PIF? You'll be taken to the amendment's edit page to make changes before resubmitting for approval.",
+      title: "pif.detail.amendTitle",
+      message: "pif.detail.amendMessage",
     }))) return;
     setAmending(true);
     try {
       const res = await programmeApi.amend(programme.id);
-      success("Amendment created.");
+      success(t("pif.detail.toast.amendmentCreated"));
       router.push(`/pif/${res.data.data.id}/edit`);
     } catch (err) {
-      showErrorToast(apiErrorMessage(err, "Failed to create amendment."));
+      showErrorToast(apiErrorMessage(err, t("pif.detail.toast.amendmentFailed")));
     } finally {
       setAmending(false);
     }
@@ -267,12 +269,12 @@ export default function PifDetailPage() {
     setSubmitting(true);
     try {
       await programmeApi.reject(programme.id, rejectReason);
-      success("Programme rejected.");
+      success(t("pif.detail.toast.rejected"));
       setRejectModal(false);
       setRejectReason("");
       load();
     } catch (err) {
-      showErrorToast(apiErrorMessage(err, "Failed to reject."));
+      showErrorToast(apiErrorMessage(err, t("pif.detail.toast.rejectFailed")));
     }
     finally { setSubmitting(false); }
   };
@@ -282,7 +284,7 @@ export default function PifDetailPage() {
     return (
       <div className="flex items-center justify-center py-20 text-neutral-400">
         <span className="material-symbols-outlined animate-spin text-[24px] mr-2">progress_activity</span>
-        <span className="text-sm">Loading programme…</span>
+        <span className="text-sm">{t("pif.detail.loading")}</span>
       </div>
     );
   }
@@ -291,14 +293,14 @@ export default function PifDetailPage() {
       <div className="w-full min-w-0 space-y-4">
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
-          {error ?? "Programme not found."}
+          {error ?? t("pif.detail.notFound")}
         </div>
         <button type="button" className="btn-secondary text-sm" onClick={() => load()}>
-          Retry
+          {t("common.retry")}
         </button>
         <Link href="/pif" className="btn-secondary inline-flex items-center gap-1 px-4 py-2 text-sm">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Programmes
+          {t("pif.detail.backToList")}
         </Link>
       </div>
     );
@@ -315,34 +317,34 @@ export default function PifDetailPage() {
   const budgetPct = totalBudgeted > 0 ? Math.round((totalSpent / totalBudgeted) * 100) : 0;
 
   const TABS: { key: DetailTab; label: string; icon: string }[] = [
-    { key: "overview", label: "Overview", icon: "dashboard" },
-    { key: "logistics", label: "Logistics & Compliance", icon: "fact_check" },
-    { key: "activities", label: "Activities", icon: "checklist" },
-    { key: "milestones", label: "Milestones & Del.", icon: "flag" },
-    { key: "budget", label: "Budget", icon: "payments" },
-    { key: "procurement", label: "Procurement", icon: "shopping_cart" },
-    { key: "attachments", label: "Attachments", icon: "attach_file" },
-    { key: "timeline", label: "Timeline", icon: "timeline" },
-    { key: "approval", label: "Approval", icon: "approval" },
+    { key: "overview", label: "pif.detail.tab.overview", icon: "dashboard" },
+    { key: "logistics", label: "pif.detail.tab.logistics", icon: "fact_check" },
+    { key: "activities", label: "pif.detail.tab.activities", icon: "checklist" },
+    { key: "milestones", label: "pif.detail.tab.milestones", icon: "flag" },
+    { key: "budget", label: "pif.detail.tab.budget", icon: "payments" },
+    { key: "procurement", label: "pif.detail.tab.procurement", icon: "shopping_cart" },
+    { key: "attachments", label: "pif.detail.tab.attachments", icon: "attach_file" },
+    { key: "timeline", label: "pif.detail.tab.timeline", icon: "timeline" },
+    { key: "approval", label: "pif.detail.tab.approval", icon: "approval" },
   ];
 
   return (
     <div className="w-full min-w-0 space-y-6">
 
       <ModulePageHeader
-        title={programme.title || "Untitled programme"}
+        title={programme.title || t("pif.detail.untitled")}
         subtitle={
           programme.background ? (
             <span className="line-clamp-2">{programme.background}</span>
           ) : (
-            "Programme Implementation Framework detail"
+            t("pif.detail.subtitle")
           )
         }
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Programmes", href: "/pif" },
-              { label: programme.reference_number ?? `PIF #${programme.id}` },
+              { label: "pif.common.programmes", href: "/pif" },
+              { label: programme.reference_number ?? t("pif.detail.pifNumber", { id: programme.id }) },
             ]}
           />
         }
@@ -350,13 +352,13 @@ export default function PifDetailPage() {
           <>
             <span className="font-mono text-xs text-neutral-400">{programme.reference_number}</span>
             <span className={`badge ${STATUS_BADGE[programme.status] ?? "badge-muted"}`}>
-              {STATUS_LABEL[programme.status] ?? programme.status}
+              {STATUS_LABEL[programme.status] ? t(STATUS_LABEL[programme.status]) : programme.status}
             </span>
             <span
               className={`badge ${ME_STATUS_BADGE[programme.me_status] ?? "badge-muted"}`}
-              title="Monitoring & Evaluation status"
+              title={t("pif.detail.meStatusTitle")}
             >
-              M&amp;E: {ME_STATUS_LABEL[programme.me_status] ?? programme.me_status}
+              {t("pif.detail.meBadge", { status: ME_STATUS_LABEL[programme.me_status] ? t(ME_STATUS_LABEL[programme.me_status]) : programme.me_status })}
             </span>
           </>
         }
@@ -369,17 +371,17 @@ export default function PifDetailPage() {
               className="btn-secondary px-3 py-1.5 text-xs"
             >
               <span className="material-symbols-outlined text-[15px]">picture_as_pdf</span>
-              <span className="hidden sm:inline">Download PDF</span>
+              <span className="hidden sm:inline">{t("pif.detail.downloadPdf")}</span>
             </a>
             {["approved", "active", "on_hold", "completed", "amended"].includes(programme.status) && (
               <button
                 type="button"
                 onClick={() => setShowAssignModal(true)}
                 className="btn-secondary px-3 py-1.5 text-xs"
-                title="Create tracked follow-up / M&E assignment from this PIF"
+                title={t("pif.detail.createAssignmentTitle")}
               >
                 <span className="material-symbols-outlined text-[15px]">assignment_ind</span>
-                <span className="hidden sm:inline">Create Assignment</span>
+                <span className="hidden sm:inline">{t("pif.detail.createAssignment")}</span>
               </button>
             )}
             <button
@@ -388,29 +390,29 @@ export default function PifDetailPage() {
               className="btn-primary px-3 py-1.5 text-xs"
             >
               <span className="material-symbols-outlined text-[15px]">upload_file</span>
-              <span className="hidden sm:inline">Submit evidence</span>
+              <span className="hidden sm:inline">{t("pif.detail.submitEvidence")}</span>
             </button>
             {programme.status === "draft" && (
               <>
                 <Link href={`/pif/${programme.id}/edit`} className="btn-secondary px-3 py-1.5 text-xs">
                   <span className="material-symbols-outlined text-[15px]">edit</span>
-                  Edit
+                  {t("common.edit")}
                 </Link>
                 <button
                   type="button"
                   onClick={async () => {
-                    if (!(await confirm({ title: "Delete Draft", message: "Delete this draft programme? This cannot be undone.", variant: "danger" }))) return;
+                    if (!(await confirm({ title: "pif.detail.deleteDraftTitle", message: "pif.detail.deleteDraftMessage", variant: "danger" }))) return;
                     try {
                       await programmeApi.delete(programme.id);
                       router.push("/pif");
                     } catch {
-                      showErrorToast("Failed to delete programme.");
+                      showErrorToast(t("pif.detail.toast.deleteFailed"));
                     }
                   }}
                   className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
                 >
                   <span className="material-symbols-outlined text-[15px]">delete</span>
-                  Delete
+                  {t("common.delete")}
                 </button>
               </>
             )}
@@ -420,17 +422,17 @@ export default function PifDetailPage() {
 
       <WorkflowStatusBanner
         status={programme.status}
-        currentStage={STATUS_LABEL[programme.status] ?? programme.status}
-        currentHolder={personLabel(programme.responsible_officer, "Responsible officer")}
+        currentStage={STATUS_LABEL[programme.status] ? t(STATUS_LABEL[programme.status]) : programme.status}
+        currentHolder={personLabel(programme.responsible_officer, t("pif.detail.responsibleOfficerFallback"))}
         extras={[
-          { label: "M&E", value: ME_STATUS_LABEL[programme.me_status] ?? programme.me_status ?? "—" },
+          { label: t("pif.detail.meShort"), value: ME_STATUS_LABEL[programme.me_status] ? t(ME_STATUS_LABEL[programme.me_status]) : programme.me_status ?? "—" },
         ]}
       />
 
       <div className="card p-6">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
-            <p className="text-xs text-neutral-400">Funding Source{programme.funding_sources && programme.funding_sources.length > 1 ? "s" : ""}</p>
+            <p className="text-xs text-neutral-400">{programme.funding_sources && programme.funding_sources.length > 1 ? t("pif.detail.fundingSources") : t("pif.list.fundingSource")}</p>
             <div className="mt-0.5 text-sm font-semibold text-neutral-800">
               {programme.funding_sources && programme.funding_sources.length > 0
                 ? programme.funding_sources.map((fs, i) => (
@@ -440,13 +442,13 @@ export default function PifDetailPage() {
             </div>
           </div>
           <div>
-            <p className="text-xs text-neutral-400">Total Budget</p>
+            <p className="text-xs text-neutral-400">{t("pif.detail.totalBudget")}</p>
             <p className="mt-0.5 text-sm font-semibold text-neutral-800">
               {programme.primary_currency} {Number(programme.total_budget).toLocaleString()}
             </p>
           </div>
           <div>
-            <p className="text-xs text-neutral-400">Responsible Officer{programme.responsible_officer_ids && programme.responsible_officer_ids.length > 1 ? "s" : ""}</p>
+            <p className="text-xs text-neutral-400">{programme.responsible_officer_ids && programme.responsible_officer_ids.length > 1 ? t("pif.detail.responsibleOfficers") : t("pif.detail.responsibleOfficer")}</p>
             <p className="text-sm font-semibold text-neutral-800 mt-0.5">
               {(() => {
                 const ids = programme.responsible_officer_ids;
@@ -455,14 +457,14 @@ export default function PifDetailPage() {
                   ""
                 );
                 if (ids && ids.length > 1) {
-                  return named ? `${named}, +${ids.length - 1} more` : `${ids.length} assigned`;
+                  return named ? t("pif.detail.namedMore", { name: named, count: ids.length - 1 }) : t("pif.detail.assignedCount", { count: ids.length });
                 }
                 return named || "—";
               })()}
             </p>
           </div>
           <div>
-            <p className="text-xs text-neutral-400">Duration</p>
+            <p className="text-xs text-neutral-400">{t("pif.detail.duration")}</p>
             <p className="text-sm font-semibold text-neutral-800 mt-0.5">
               {formatDateShort(programme.start_date)} → {formatDateShort(programme.end_date)}
             </p>
@@ -472,18 +474,18 @@ export default function PifDetailPage() {
 
       {/* Tab navigation */}
       <div className="flex gap-1 border-b border-neutral-200 overflow-x-auto">
-        {TABS.map((t) => (
+        {TABS.map((tb) => (
           <button
-            key={t.key}
+            key={tb.key}
             type="button"
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap flex-shrink-0 ${tab === t.key
+            onClick={() => setTab(tb.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap flex-shrink-0 ${tab === tb.key
               ? "border-primary text-primary"
               : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"
               }`}
           >
-            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 0" }}>{t.icon}</span>
-            {t.label}
+            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 0" }}>{tb.icon}</span>
+            {t(tb.label)}
           </button>
         ))}
       </div>
@@ -493,20 +495,20 @@ export default function PifDetailPage() {
         <div className="space-y-6">
           {programme.background && (
             <div className="card p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">Background</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">{t("pif.detail.background")}</h3>
               <p className="text-sm text-neutral-700 leading-relaxed">{programme.background}</p>
             </div>
           )}
           <div className="grid gap-4 sm:grid-cols-2">
             {programme.overall_objective && (
               <div className="card p-5">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">Overall Objective</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">{t("pif.detail.overallObjective")}</h3>
                 <p className="text-sm text-neutral-700">{programme.overall_objective}</p>
               </div>
             )}
             {(programme.specific_objectives ?? []).length > 0 && (
               <div className="card p-5">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">Specific Objectives</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">{t("pif.detail.specificObjectives")}</h3>
                 <ul className="space-y-2">
                   {(programme.specific_objectives ?? []).map((o, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
@@ -520,7 +522,7 @@ export default function PifDetailPage() {
           </div>
           {(programme.target_beneficiaries ?? []).length > 0 && (
             <div className="card p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">Target Beneficiaries</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">{t("pif.detail.targetBeneficiaries")}</h3>
               <div className="flex flex-wrap gap-2">
                 {(programme.target_beneficiaries ?? []).map((b, i) => (
                   <span key={i} className="inline-flex items-center rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{b}</span>
@@ -530,7 +532,7 @@ export default function PifDetailPage() {
           )}
           {((programme.strategic_alignment ?? []).length > 0 || (programme.strategic_pillars ?? []).length > 0 || programme.strategic_pillar) && (
             <div className="card p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">Strategic Alignment</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">{t("pif.detail.strategicAlignment")}</h3>
               {(programme.strategic_alignment ?? []).length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {(programme.strategic_alignment ?? []).map((a, i) => (
@@ -545,13 +547,13 @@ export default function PifDetailPage() {
                   ))}
                 </div>
               ) : programme.strategic_pillar ? (
-                <p className="text-xs text-neutral-500 mt-2">Pillar: <span className="font-semibold text-neutral-700">{programme.strategic_pillar}</span></p>
+                <p className="text-xs text-neutral-500 mt-2">{t("pif.detail.pillar")} <span className="font-semibold text-neutral-700">{programme.strategic_pillar}</span></p>
               ) : null}
             </div>
           )}
           {((programme.implementing_departments ?? []).length > 0 || programme.implementing_department) && (
             <div className="card p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">Implementing Department(s)</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">{t("pif.detail.implementingDepartments")}</h3>
               <div className="flex flex-wrap gap-2">
                 {(programme.implementing_departments ?? []).length > 0
                   ? (programme.implementing_departments ?? []).map((d, i) => (
@@ -565,7 +567,7 @@ export default function PifDetailPage() {
           )}
           {(programme.funding_sources ?? []).length > 0 && (
             <div className="card p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">Funding Sources</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">{t("pif.detail.fundingSourcesTitle")}</h3>
               <div className="space-y-2">
                 {(programme.funding_sources ?? []).map((fs, i) => (
                   <div key={i} className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -595,21 +597,21 @@ export default function PifDetailPage() {
       {tab === "activities" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-neutral-500">{activities.length} activit{activities.length === 1 ? "y" : "ies"} registered</p>
+            <p className="text-sm text-neutral-500">{t(activities.length === 1 ? "pif.detail.activitiesOne" : "pif.detail.activitiesOther", { count: activities.length })}</p>
             <button type="button" onClick={() => openActModal()} className="btn-primary py-1.5 px-3 text-xs flex items-center gap-1">
               <span className="material-symbols-outlined text-[15px]">add</span>
-              Add Activity
+              {t("pif.detail.addActivity")}
             </button>
           </div>
           <div className="card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
-                  <tr><th>Name</th><th>Responsible</th><th>Budget</th><th>Dates</th><th>Status</th><th></th></tr>
+                  <tr><th>{t("pif.detail.name")}</th><th>{t("pif.list.responsible")}</th><th>{t("pif.list.budget")}</th><th>{t("pif.detail.dates")}</th><th>{t("pif.list.status")}</th><th></th></tr>
                 </thead>
                 <tbody>
                   {activities.length === 0 ? (
-                    <TableEmpty colSpan={6} title="No activities yet." />
+                    <TableEmpty colSpan={6} title="pif.detail.noActivities" />
                   ) : activities.map((a) => (
                     <tr key={a.id}>
                       <td>
@@ -621,13 +623,13 @@ export default function PifDetailPage() {
                         {programme.primary_currency} {Number(a.budget_allocation).toLocaleString()}
                       </td>
                       <td className="text-xs text-neutral-500 whitespace-nowrap">{formatDateShort(a.start_date)} → {formatDateShort(a.end_date)}</td>
-                      <td><span className={`badge ${ACT_BADGE[a.status] ?? "badge-muted"} capitalize`}>{a.status.replace(/_/g, " ")}</span></td>
+                      <td><span className={`badge ${ACT_BADGE[a.status] ?? "badge-muted"} capitalize`}>{a.status in ACT_BADGE ? t(`pif.detail.actStatus.${a.status}`) : a.status.replace(/_/g, " ")}</span></td>
                       <td>
                         <div className="flex items-center gap-2">
-                          <button type="button" onClick={() => openActModal(a)} className="text-xs text-neutral-400 hover:text-primary">
+                          <button type="button" onClick={() => openActModal(a)} aria-label={t("common.edit")} className="text-xs text-neutral-400 hover:text-primary">
                             <span className="material-symbols-outlined text-[16px]">edit</span>
                           </button>
-                          <button type="button" onClick={() => handleDeleteActivity(a.id)} className="text-xs text-neutral-400 hover:text-red-500">
+                          <button type="button" onClick={() => handleDeleteActivity(a.id)} aria-label={t("common.delete")} className="text-xs text-neutral-400 hover:text-red-500">
                             <span className="material-symbols-outlined text-[16px]">delete</span>
                           </button>
                         </div>
@@ -647,26 +649,26 @@ export default function PifDetailPage() {
           {/* Milestones */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-neutral-900">Milestones</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("pif.detail.milestones")}</h3>
               <button type="button" onClick={() => openMsModal()} className="btn-secondary py-1 px-2.5 text-xs flex items-center gap-1">
                 <span className="material-symbols-outlined text-[14px]">add</span>
-                Add
+                {t("common.add")}
               </button>
             </div>
             {milestones.length === 0 ? (
               <div className="card">
-                <EmptyState icon="flag" title="No milestones yet." />
+                <EmptyState icon="flag" title="pif.detail.noMilestones" />
               </div>
             ) : milestones.map((m) => (
               <div key={m.id} className="card p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-neutral-900">{m.name}</p>
-                    <p className="text-xs text-neutral-400 mt-0.5">Target: {formatDateShort(m.target_date)}{m.achieved_date ? ` · Achieved: ${formatDateShort(m.achieved_date)}` : ""}</p>
+                    <p className="text-xs text-neutral-400 mt-0.5">{t("pif.detail.target", { date: formatDateShort(m.target_date) })}{m.achieved_date ? ` · ${t("pif.detail.achieved", { date: formatDateShort(m.achieved_date) })}` : ""}</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className={`badge ${MS_BADGE[m.status] ?? "badge-muted"} capitalize`}>{m.status}</span>
-                    <button type="button" onClick={() => openMsModal(m)} className="text-neutral-300 hover:text-primary ml-1">
+                    <span className={`badge ${MS_BADGE[m.status] ?? "badge-muted"} capitalize`}>{m.status in MS_BADGE ? t(`pif.detail.itemStatus.${m.status}`) : m.status}</span>
+                    <button type="button" onClick={() => openMsModal(m)} aria-label={t("common.edit")} className="text-neutral-300 hover:text-primary ml-1">
                       <span className="material-symbols-outlined text-[16px]">edit</span>
                     </button>
                   </div>
@@ -677,7 +679,7 @@ export default function PifDetailPage() {
                     style={{ width: `${Math.min(m.completion_pct, 100)}%` }}
                   />
                 </div>
-                <p className="text-[11px] text-neutral-400 mt-1">{m.completion_pct}% complete</p>
+                <p className="text-[11px] text-neutral-400 mt-1">{t("pif.detail.percentComplete", { pct: m.completion_pct })}</p>
               </div>
             ))}
           </div>
@@ -685,15 +687,15 @@ export default function PifDetailPage() {
           {/* Deliverables */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-neutral-900">Deliverables</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("pif.detail.deliverables")}</h3>
               <button type="button" onClick={() => openDelModal()} className="btn-secondary py-1 px-2.5 text-xs flex items-center gap-1">
                 <span className="material-symbols-outlined text-[14px]">add</span>
-                Add
+                {t("common.add")}
               </button>
             </div>
             {deliverables.length === 0 ? (
               <div className="card">
-                <EmptyState icon="inventory_2" title="No deliverables yet." />
+                <EmptyState icon="inventory_2" title="pif.detail.noDeliverables" />
               </div>
             ) : deliverables.map((d) => (
               <div key={d.id} className="card p-4">
@@ -701,11 +703,11 @@ export default function PifDetailPage() {
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-neutral-900">{d.name}</p>
                     {d.description && <p className="text-xs text-neutral-400 mt-0.5">{d.description}</p>}
-                    <p className="text-xs text-neutral-400 mt-1">Due: {formatDateShort(d.due_date)}</p>
+                    <p className="text-xs text-neutral-400 mt-1">{t("pif.detail.dueOn", { date: formatDateShort(d.due_date) })}</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className={`badge ${DEL_BADGE[d.status] ?? "badge-muted"} capitalize`}>{d.status}</span>
-                    <button type="button" onClick={() => openDelModal(d)} className="text-neutral-300 hover:text-primary ml-1">
+                    <span className={`badge ${DEL_BADGE[d.status] ?? "badge-muted"} capitalize`}>{d.status in DEL_BADGE ? t(`pif.detail.itemStatus.${d.status}`) : d.status}</span>
+                    <button type="button" onClick={() => openDelModal(d)} aria-label={t("common.edit")} className="text-neutral-300 hover:text-primary ml-1">
                       <span className="material-symbols-outlined text-[16px]">edit</span>
                     </button>
                   </div>
@@ -722,7 +724,7 @@ export default function PifDetailPage() {
           {/* Utilisation summary */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-neutral-900">Budget Utilisation</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("pif.detail.budgetUtilisation")}</h3>
               <span className="text-sm font-bold text-neutral-700">{budgetPct}%</span>
             </div>
             <div className="h-2.5 bg-neutral-100 rounded-full overflow-hidden">
@@ -732,8 +734,8 @@ export default function PifDetailPage() {
               />
             </div>
             <div className="flex items-center justify-between mt-2 text-xs text-neutral-500">
-              <span>{programme.primary_currency} {totalSpent.toLocaleString()} spent</span>
-              <span>{programme.primary_currency} {totalBudgeted.toLocaleString()} total</span>
+              <span>{t("pif.detail.spentAmount", { amount: `${programme.primary_currency} ${totalSpent.toLocaleString()}` })}</span>
+              <span>{t("pif.detail.totalAmount", { amount: `${programme.primary_currency} ${totalBudgeted.toLocaleString()}` })}</span>
             </div>
           </div>
 
@@ -742,17 +744,17 @@ export default function PifDetailPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th>Funding Source</th>
-                    <th className="text-right">Budgeted</th>
-                    <th className="text-right">Actual Spent</th>
-                    <th className="text-right">Variance</th>
+                    <th>{t("pif.detail.category")}</th>
+                    <th>{t("pif.detail.description")}</th>
+                    <th>{t("pif.list.fundingSource")}</th>
+                    <th className="text-right">{t("pif.detail.budgeted")}</th>
+                    <th className="text-right">{t("pif.detail.actualSpent")}</th>
+                    <th className="text-right">{t("pif.detail.variance")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {budgetLines.length === 0 ? (
-                    <TableEmpty colSpan={6} title="No budget lines." />
+                    <TableEmpty colSpan={6} title="pif.detail.noBudgetLines" />
                   ) : budgetLines.map((b) => {
                     const variance = Number(b.amount) - Number(b.actual_spent);
                     return (
@@ -772,7 +774,7 @@ export default function PifDetailPage() {
                 {budgetLines.length > 0 && (
                   <tfoot>
                     <tr className="bg-neutral-50 font-semibold">
-                      <td colSpan={3} className="text-sm text-neutral-700">Totals</td>
+                      <td colSpan={3} className="text-sm text-neutral-700">{t("pif.detail.totals")}</td>
                       <td className="text-right font-mono text-sm">{programme.primary_currency} {totalBudgeted.toLocaleString()}</td>
                       <td className="text-right font-mono text-sm">{programme.primary_currency} {totalSpent.toLocaleString()}</td>
                       <td className={`text-right font-mono text-sm font-bold ${totalBudgeted - totalSpent >= 0 ? "text-green-600" : "text-red-500"}`}>
@@ -793,25 +795,25 @@ export default function PifDetailPage() {
           {!programme.procurement_required ? (
             <div className="p-8 text-center">
               <span className="material-symbols-outlined text-4xl text-neutral-200">shopping_cart_off</span>
-              <p className="mt-3 text-sm text-neutral-400">No procurement requirements for this programme.</p>
+              <p className="mt-3 text-sm text-neutral-400">{t("pif.detail.noProcurement")}</p>
             </div>
           ) : (
             <>
               {["approved", "amended"].includes(programme.status) && procItems.some((p) => !p.procurement_request_id) && (
                 <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-5 py-3 bg-neutral-50/60">
                   <p className="text-xs text-neutral-500">
-                    Select items to batch into one procurement request.
+                    {t("pif.detail.selectProcItems")}
                   </p>
                   <button
                     type="button"
                     className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50"
                     disabled={selectedProcIds.length === 0}
                     onClick={() => {
-                      setSendProcTitle(`${programme.title} — procurement package`);
+                      setSendProcTitle(t("pif.detail.procPackageTitle", { title: programme.title }));
                       setSendProcModal(true);
                     }}
                   >
-                    Send to Procurement ({selectedProcIds.length})
+                    {t("pif.detail.sendToProcurementCount", { count: selectedProcIds.length })}
                   </button>
                 </div>
               )}
@@ -820,18 +822,18 @@ export default function PifDetailPage() {
                   <thead>
                     <tr>
                       {["approved", "amended"].includes(programme.status) && <th className="w-10"></th>}
-                      <th>Description</th>
-                      <th>Method</th>
-                      <th>Estimated Cost</th>
-                      <th>Vendor</th>
-                      <th>Delivery Date</th>
-                      <th>Status</th>
-                      <th>Linked</th>
+                      <th>{t("pif.detail.description")}</th>
+                      <th>{t("pif.detail.method")}</th>
+                      <th>{t("pif.detail.estimatedCost")}</th>
+                      <th>{t("pif.detail.vendor")}</th>
+                      <th>{t("pif.detail.deliveryDate")}</th>
+                      <th>{t("pif.list.status")}</th>
+                      <th>{t("pif.detail.linked")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {procItems.length === 0 ? (
-                      <TableEmpty colSpan={8} title="No procurement items." />
+                      <TableEmpty colSpan={8} title="pif.detail.noProcItems" />
                     ) : procItems.map((p) => {
                       const linked = !!p.procurement_request_id;
                       const selectable = ["approved", "amended"].includes(programme.status) && !linked;
@@ -852,7 +854,7 @@ export default function PifDetailPage() {
                             </td>
                           )}
                           <td className="font-medium text-neutral-900">{p.description}</td>
-                          <td><span className="badge badge-muted">{METHOD_LABEL[p.method] ?? p.method}</span></td>
+                          <td><span className="badge badge-muted">{METHOD_LABEL[p.method] ? t(METHOD_LABEL[p.method]) : p.method}</span></td>
                           <td className="font-mono text-sm">{programme.primary_currency} {Number(p.estimated_cost).toLocaleString()}</td>
                           <td className="text-neutral-600">{p.vendor ?? "—"}</td>
                           <td className="text-xs text-neutral-500">{p.delivery_date ?? "—"}</td>
@@ -860,7 +862,7 @@ export default function PifDetailPage() {
                           <td className="text-xs">
                             {linked ? (
                               <Link href={`/procurement/${p.procurement_request_id}`} className="btn-secondary text-xs py-1 px-2">
-                                PRQ linked
+                                {t("pif.detail.prqLinked")}
                               </Link>
                             ) : (
                               <span className="text-neutral-400">—</span>
@@ -878,13 +880,13 @@ export default function PifDetailPage() {
       )}
 
       {sendProcModal && programme && (
-        <Modal title="Send to Procurement" onClose={() => setSendProcModal(false)}>
+        <Modal title="pif.detail.sendToProcurement" onClose={() => setSendProcModal(false)}>
           <p className="text-sm text-neutral-600 mb-4">
-            Creates one draft procurement request for {selectedProcIds.length} selected item(s).
+            {t("pif.detail.sendProcHint", { count: selectedProcIds.length })}
           </p>
           <div className="space-y-3">
             <div>
-              <label htmlFor="pif-detail-request-title" className="block text-xs font-semibold text-neutral-700 mb-1">Request title</label>
+              <label htmlFor="pif-detail-request-title" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.requestTitle")}</label>
               <input id="pif-detail-request-title"
                 className="form-input w-full"
                 value={sendProcTitle}
@@ -892,17 +894,17 @@ export default function PifDetailPage() {
               />
             </div>
             <div>
-              <label htmlFor="pif-detail-category" className="block text-xs font-semibold text-neutral-700 mb-1">Category</label>
+              <label htmlFor="pif-detail-category" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.category")}</label>
               <select id="pif-detail-category" className="form-input w-full" value={sendProcCategory} onChange={(e) => setSendProcCategory(e.target.value)}>
-                <option value="goods">Goods</option>
-                <option value="services">Services</option>
-                <option value="works">Works</option>
+                <option value="goods">{t("pif.detail.procCategory.goods")}</option>
+                <option value="services">{t("pif.detail.procCategory.services")}</option>
+                <option value="works">{t("pif.detail.procCategory.works")}</option>
               </select>
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-5">
             <button type="button" className="btn-secondary py-2 px-4 text-sm" onClick={() => setSendProcModal(false)}>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="button"
@@ -916,35 +918,35 @@ export default function PifDetailPage() {
                     request_title: sendProcTitle.trim(),
                     category: sendProcCategory,
                   });
-                  success(res.data.message ?? "Sent to procurement.");
+                  success(res.data.message ?? t("pif.detail.toast.sentToProcurement"));
                   setSendProcModal(false);
                   setSelectedProcIds([]);
                   load();
                 } catch {
-                  showErrorToast("Failed to send to procurement.");
+                  showErrorToast(t("pif.detail.toast.sendProcFailed"));
                 } finally {
                   setSendProcSubmitting(false);
                 }
               }}
             >
-              {sendProcSubmitting ? "Sending…" : "Send to Procurement"}
+              {sendProcSubmitting ? t("pif.detail.sending") : t("pif.detail.sendToProcurement")}
             </button>
           </div>
         </Modal>
       )}
 
       {sendTravelModal && programme && (
-        <Modal title="Send to Travel" onClose={() => setSendTravelModal(false)}>
+        <Modal title="pif.detail.sendToTravel" onClose={() => setSendTravelModal(false)}>
           <p className="text-sm text-neutral-600 mb-4">
-            Creates one draft travel requisition per selected traveller (PIF does not replace Travel).
+            {t("pif.detail.sendTravelHint")}
           </p>
           <div className="space-y-3">
             <div>
-              <label htmlFor="pif-detail-mission-title-optional-light-group" className="block text-xs font-semibold text-neutral-700 mb-1">Mission title (optional light group)</label>
+              <label htmlFor="pif-detail-mission-title-optional-light-group" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.missionTitle")}</label>
               <input id="pif-detail-mission-title-optional-light-group" className="form-input w-full" value={missionTitle} onChange={(e) => setMissionTitle(e.target.value)} />
             </div>
             <div>
-              <p className="block text-xs font-semibold text-neutral-700 mb-1">Travellers</p>
+              <p className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.travellers")}</p>
               <div className="max-h-48 overflow-y-auto border rounded-lg p-2 space-y-1">
                 {tenantUsers.map((u) => (
                   <label htmlFor={`pif-detail-traveller-${u.id}`} key={u.id} className="flex items-center gap-2 text-sm py-1 px-1 hover:bg-neutral-50 rounded">
@@ -965,7 +967,7 @@ export default function PifDetailPage() {
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-5">
-            <button type="button" className="btn-secondary py-2 px-4 text-sm" onClick={() => setSendTravelModal(false)}>Cancel</button>
+            <button type="button" className="btn-secondary py-2 px-4 text-sm" onClick={() => setSendTravelModal(false)}>{t("common.cancel")}</button>
             <button
               type="button"
               disabled={sendTravelSubmitting || selectedTravellerIds.length === 0}
@@ -978,16 +980,16 @@ export default function PifDetailPage() {
                     mission_title: missionTitle.trim() || undefined,
                     purpose: programme.title,
                   });
-                  success(res.data.message ?? "Sent to travel.");
+                  success(res.data.message ?? t("pif.detail.toast.sentToTravel"));
                   setSendTravelModal(false);
                 } catch {
-                  showErrorToast("Failed to send to travel.");
+                  showErrorToast(t("pif.detail.toast.sendTravelFailed"));
                 } finally {
                   setSendTravelSubmitting(false);
                 }
               }}
             >
-              {sendTravelSubmitting ? "Sending…" : `Create ${selectedTravellerIds.length || ""} requisition(s)`}
+              {sendTravelSubmitting ? t("pif.detail.sending") : t("pif.detail.createRequisitions", { count: selectedTravellerIds.length || "" })}
             </button>
           </div>
         </Modal>
@@ -996,16 +998,16 @@ export default function PifDetailPage() {
       {/* ── ATTACHMENTS TAB ──────────────────────────────────────────────────── */}
       {chosenQuoteModal.open && chosenQuoteModal.attachment && (
         <Modal
-          title="Set as chosen quote"
+          title="pif.detail.setChosenQuote"
           onClose={() => setChosenQuoteModal({ open: false, attachment: null })}
         >
           <p className="text-sm text-neutral-600 mb-3">
-            Record why this quote was selected: <strong>{chosenQuoteModal.attachment.original_filename}</strong>
+            {t("pif.detail.chosenQuoteHint")} <strong>{chosenQuoteModal.attachment.original_filename}</strong>
           </p>
           <textarea
             value={chosenReason}
             onChange={(e) => setChosenReason(e.target.value)}
-            placeholder="Reason for selecting this quote…"
+            placeholder={t("pif.detail.chosenQuotePlaceholder")}
             rows={4}
             className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary"
           />
@@ -1015,7 +1017,7 @@ export default function PifDetailPage() {
               onClick={() => setChosenQuoteModal({ open: false, attachment: null })}
               className="btn-secondary py-2 px-4 text-sm"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="button"
@@ -1028,18 +1030,18 @@ export default function PifDetailPage() {
                     is_chosen_quote: true,
                     selection_reason: chosenReason.trim() || null,
                   });
-                  success("Chosen quote updated.");
+                  success(t("pif.detail.toast.chosenQuoteUpdated"));
                   loadAttachments();
                   setChosenQuoteModal({ open: false, attachment: null });
                 } catch {
-                  showErrorToast("Failed to update.");
+                  showErrorToast(t("pif.detail.toast.updateFailed"));
                 } finally {
                   setChosenQuoteSubmitting(false);
                 }
               }}
               className="btn-primary py-2 px-4 text-sm disabled:opacity-50"
             >
-              {chosenQuoteSubmitting ? "Saving…" : "Save"}
+              {chosenQuoteSubmitting ? t("hr.positions.form.saving") : t("common.save")}
             </button>
           </div>
         </Modal>
@@ -1048,8 +1050,8 @@ export default function PifDetailPage() {
       {tab === "attachments" && (
         <div className="space-y-4">
           <div className="card p-4">
-            <h3 className="text-sm font-semibold text-neutral-900 mb-3">Upload attachment</h3>
-            <p className="text-xs text-neutral-500 mb-3">Upload all quotes used for services (hotel, transport, other), one or more memos, or concept notes.</p>
+            <h3 className="text-sm font-semibold text-neutral-900 mb-3">{t("pif.detail.uploadAttachment")}</h3>
+            <p className="text-xs text-neutral-500 mb-3">{t("pif.detail.uploadHint")}</p>
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -1062,12 +1064,12 @@ export default function PifDetailPage() {
                 setUploadSubmitting(true);
                 try {
                   await programmeApi.uploadAttachment(programme.id, file, docType);
-                  success("Attachment uploaded.");
+                  success(t("pif.detail.toast.attachmentUploaded"));
                   loadAttachments();
                   form.reset();
                   fileInput.value = "";
                 } catch {
-                  showErrorToast("Upload failed.");
+                  showErrorToast(t("pif.detail.toast.uploadFailed"));
                 } finally {
                   setUploadSubmitting(false);
                 }
@@ -1075,20 +1077,20 @@ export default function PifDetailPage() {
               className="flex flex-wrap items-end gap-3"
             >
               <div className="flex-1 min-w-[140px]">
-                <label htmlFor="pif-detail-type" className="block text-xs font-medium text-neutral-500 mb-1">Type</label>
+                <label htmlFor="pif-detail-type" className="block text-xs font-medium text-neutral-500 mb-1">{t("pif.detail.type")}</label>
                 <select id="pif-detail-type"
                   name="attachment_type"
                   required
                   className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary"
                 >
-                  <option value="">Select type…</option>
-                  {(Object.keys(ATTACHMENT_TYPE_LABEL) as ProgrammeAttachmentType[]).map((t) => (
-                    <option key={t} value={t}>{ATTACHMENT_TYPE_LABEL[t]}</option>
+                  <option value="">{t("pif.detail.selectType")}</option>
+                  {(Object.keys(ATTACHMENT_TYPE_LABEL) as ProgrammeAttachmentType[]).map((at) => (
+                    <option key={at} value={at}>{t(ATTACHMENT_TYPE_LABEL[at])}</option>
                   ))}
                 </select>
               </div>
               <div className="flex-1 min-w-[180px]">
-                <label htmlFor="pif-detail-file" className="block text-xs font-medium text-neutral-500 mb-1">File</label>
+                <label htmlFor="pif-detail-file" className="block text-xs font-medium text-neutral-500 mb-1">{t("pif.detail.file")}</label>
                 <input id="pif-detail-file"
                   name="attachment_file"
                   type="file"
@@ -1106,35 +1108,35 @@ export default function PifDetailPage() {
                 ) : (
                   <span className="material-symbols-outlined text-[18px]">upload_file</span>
                 )}
-                Upload
+                {t("common.upload")}
               </button>
             </form>
           </div>
           <div className="card overflow-hidden">
             <div className="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-neutral-900">Attachments</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("pif.detail.tab.attachments")}</h3>
               <button type="button" onClick={loadAttachments} className="text-xs text-neutral-500 hover:text-primary flex items-center gap-1">
                 <span className="material-symbols-outlined text-[16px]">refresh</span>
-                Refresh
+                {t("pif.detail.refresh")}
               </button>
             </div>
             {attachmentsLoading ? (
               <div className="flex items-center justify-center py-12 text-neutral-400">
                 <span className="material-symbols-outlined animate-spin text-[22px] mr-2">progress_activity</span>
-                <span className="text-sm">Loading attachments…</span>
+                <span className="text-sm">{t("pif.detail.loadingAttachments")}</span>
               </div>
             ) : attachments.length === 0 ? (
-              <div className="py-10 text-center text-sm text-neutral-400">No attachments yet. Upload a concept note, memo, or quote above.</div>
+              <div className="py-10 text-center text-sm text-neutral-400">{t("pif.detail.noAttachments")}</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Type</th>
-                      <th>File name</th>
-                      <th>Size</th>
-                      <th>Uploaded by</th>
-                      <th>Date</th>
+                      <th>{t("pif.detail.type")}</th>
+                      <th>{t("pif.detail.fileName")}</th>
+                      <th>{t("pif.detail.size")}</th>
+                      <th>{t("pif.detail.uploadedBy")}</th>
+                      <th>{t("pif.detail.date")}</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -1147,11 +1149,11 @@ export default function PifDetailPage() {
                           <td>
                             <div className="flex flex-col gap-1">
                               <span className="badge badge-muted">
-                                {a.document_type ? ATTACHMENT_TYPE_LABEL[a.document_type] ?? a.document_type : "—"}
+                                {a.document_type ? (ATTACHMENT_TYPE_LABEL[a.document_type] ? t(ATTACHMENT_TYPE_LABEL[a.document_type]) : a.document_type) : "—"}
                               </span>
                               {isChosen && (
                                 <>
-                                  <span className="badge bg-green-100 text-green-800 text-xs">Chosen quote</span>
+                                  <span className="badge bg-green-100 text-green-800 text-xs">{t("pif.detail.chosenQuote")}</span>
                                   {a.selection_reason && (
                                     <p className="text-xs text-neutral-600 mt-0.5 max-w-[200px]" title={a.selection_reason}>
                                       {a.selection_reason}
@@ -1177,16 +1179,16 @@ export default function PifDetailPage() {
                                       if (!programme) return;
                                       try {
                                         await programmeApi.updateAttachment(programme.id, a.id, { is_chosen_quote: false, selection_reason: null });
-                                        success("Chosen quote cleared.");
+                                        success(t("pif.detail.toast.chosenQuoteCleared"));
                                         loadAttachments();
                                       } catch {
-                                        showErrorToast("Failed to update.");
+                                        showErrorToast(t("pif.detail.toast.updateFailed"));
                                       }
                                     }}
                                     className="text-neutral-400 hover:text-amber-600 text-xs"
-                                    title="Clear chosen"
+                                    title={t("pif.detail.clearChosen")}
                                   >
-                                    Clear chosen
+                                    {t("pif.detail.clearChosen")}
                                   </button>
                                 ) : (
                                   <button
@@ -1196,9 +1198,9 @@ export default function PifDetailPage() {
                                       setChosenReason(a.selection_reason ?? "");
                                     }}
                                     className="btn-secondary text-xs py-1 px-2"
-                                    title="Mark as chosen quote"
+                                    title={t("pif.detail.markChosenTitle")}
                                   >
-                                    Mark as chosen
+                                    {t("pif.detail.markChosen")}
                                   </button>
                                 )
                               )}
@@ -1206,24 +1208,26 @@ export default function PifDetailPage() {
                                 type="button"
                                 onClick={() => programmeApi.downloadAttachment(programme!.id, a.id, a.original_filename)}
                                 className="text-neutral-400 hover:text-primary"
-                                title="Download"
+                                title={t("common.download")}
+                                aria-label={t("common.download")}
                               >
                                 <span className="material-symbols-outlined text-[18px]">download</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  if (!programme || !(await confirm({ title: "Delete attachment", message: `Remove "${a.original_filename}"?`, variant: "danger" }))) return;
+                                  if (!programme || !(await confirm({ title: "pif.detail.deleteAttachmentTitle", message: t("pif.detail.deleteAttachmentMessage", { name: a.original_filename }), variant: "danger" }))) return;
                                   try {
                                     await programmeApi.deleteAttachment(programme.id, a.id);
-                                    success("Attachment removed.");
+                                    success(t("pif.detail.toast.attachmentRemoved"));
                                     loadAttachments();
                                   } catch {
-                                    showErrorToast("Failed to delete.");
+                                    showErrorToast(t("pif.detail.toast.deleteAttachmentFailed"));
                                   }
                                 }}
                                 className="text-neutral-400 hover:text-red-500"
-                                title="Delete"
+                                title={t("common.delete")}
+                                aria-label={t("common.delete")}
                               >
                                 <span className="material-symbols-outlined text-[18px]">delete</span>
                               </button>
@@ -1247,14 +1251,14 @@ export default function PifDetailPage() {
         <div className="space-y-6">
           {/* Workflow timeline */}
           <div className="card p-6">
-            <h3 className="text-sm font-semibold text-neutral-900 mb-6">Approval Workflow</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 mb-6">{t("pif.detail.approvalWorkflow")}</h3>
             <div className="relative">
               {/* Vertical line */}
               <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-neutral-100" />
               <div className="space-y-6">
                 {[
                   {
-                    step: "Drafted",
+                    step: t("pif.detail.step.drafted"),
                     icon: "edit_note",
                     done: true,
                     active: programme.status === "draft",
@@ -1262,7 +1266,7 @@ export default function PifDetailPage() {
                     by: programme.creator?.name,
                   },
                   {
-                    step: "Submitted for Approval",
+                    step: t("pif.detail.step.submitted"),
                     icon: "send",
                     done: programme.status !== "draft",
                     active: programme.status === "submitted",
@@ -1270,7 +1274,7 @@ export default function PifDetailPage() {
                     by: null,
                   },
                   {
-                    step: programme.status === "rejected" ? "Rejected" : "Approved",
+                    step: programme.status === "rejected" ? t("pif.status.rejected") : t("pif.status.approved"),
                     icon: programme.status === "rejected" ? "cancel" : "check_circle",
                     done: ["approved", "active", "completed", "rejected"].includes(programme.status),
                     active: ["approved", "active", "rejected"].includes(programme.status),
@@ -1279,7 +1283,7 @@ export default function PifDetailPage() {
                     isReject: programme.status === "rejected",
                   },
                   {
-                    step: "Active Implementation",
+                    step: t("pif.detail.step.active"),
                     icon: "play_circle",
                     done: ["active", "completed"].includes(programme.status),
                     active: programme.status === "active",
@@ -1317,24 +1321,24 @@ export default function PifDetailPage() {
           <AuditTimeline
             subjectType="Programme"
             subjectId={programme.id}
-            title="Platform Audit Trail"
+            title={t("pif.detail.auditTrail")}
           />
 
           {/* Rejection reason if rejected */}
           {programme.status === "rejected" && programme.rejection_reason && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-red-500 mb-1">Rejection Reason</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-red-500 mb-1">{t("pif.detail.rejectionReason")}</p>
               <p className="text-sm text-red-800">{programme.rejection_reason}</p>
             </div>
           )}
 
           {/* Action buttons */}
           <div className="card p-5">
-            <h3 className="text-sm font-semibold text-neutral-900 mb-4">Actions</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 mb-4">{t("pif.detail.actions")}</h3>
             {programme.status === "draft" && (
               <div className="mb-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Declaration</p>
-                <p className="text-sm text-neutral-700 mb-3">{DECLARATION_TEXT}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">{t("pif.detail.declarationTitle")}</p>
+                <p className="text-sm text-neutral-700 mb-3">{t(DECLARATION_TEXT)}</p>
                 <label htmlFor="pif-detail-setdeclarationconfirmed-e-target-checked-classna" className="flex items-start gap-2 cursor-pointer">
                   <input id="pif-detail-setdeclarationconfirmed-e-target-checked-classna"
                     type="checkbox"
@@ -1342,7 +1346,7 @@ export default function PifDetailPage() {
                     onChange={(e) => setDeclarationConfirmed(e.target.checked)}
                     className="mt-0.5 rounded border-neutral-300"
                   />
-                  <span className="text-sm font-medium text-neutral-800">I confirm the declaration above.</span>
+                  <span className="text-sm font-medium text-neutral-800">{t("pif.detail.confirmDeclaration")}</span>
                 </label>
               </div>
             )}
@@ -1355,7 +1359,7 @@ export default function PifDetailPage() {
                   className="btn-primary px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-60"
                 >
                   <span className="material-symbols-outlined text-[16px]">send</span>
-                  Submit for Approval
+                  {t("pif.detail.submitForApproval")}
                 </button>
               )}
               {programme.status === "submitted" && (
@@ -1367,7 +1371,7 @@ export default function PifDetailPage() {
                     className="btn-primary px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-60 bg-green-600 hover:bg-green-700"
                   >
                     <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                    Approve
+                    {t("common.approve")}
                   </button>
                   <button
                     type="button"
@@ -1376,7 +1380,7 @@ export default function PifDetailPage() {
                     className="btn-secondary px-4 py-2 text-sm flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 disabled:opacity-60"
                   >
                     <span className="material-symbols-outlined text-[16px]">cancel</span>
-                    Reject
+                    {t("common.reject")}
                   </button>
                 </>
               )}
@@ -1390,14 +1394,14 @@ export default function PifDetailPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setMissionTitle(`${programme.title} — travel mission`);
+                    setMissionTitle(t("pif.detail.travelMissionTitle", { title: programme.title }));
                     setSelectedTravellerIds([]);
                     setSendTravelModal(true);
                   }}
                   className="btn-secondary px-4 py-2 text-sm flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-[16px]">flight_takeoff</span>
-                  Send to Travel
+                  {t("pif.detail.sendToTravel")}
                 </button>
               )}
               {["approved", "amended"].includes(programme.status) && (
@@ -1408,11 +1412,11 @@ export default function PifDetailPage() {
                   className="btn-secondary px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-60"
                 >
                   <span className="material-symbols-outlined text-[16px]">edit_document</span>
-                  {amending ? "Creating amendment…" : "Amend"}
+                  {amending ? t("pif.detail.creatingAmendment") : t("pif.detail.amend")}
                 </button>
               )}
               {!["draft", "submitted", "approved", "amended"].includes(programme.status) && (
-                <p className="text-sm text-neutral-400">No actions available for status: {STATUS_LABEL[programme.status] ?? programme.status}</p>
+                <p className="text-sm text-neutral-400">{t("pif.detail.noActions", { status: STATUS_LABEL[programme.status] ? t(STATUS_LABEL[programme.status]) : programme.status })}</p>
               )}
             </div>
           </div>
@@ -1421,46 +1425,46 @@ export default function PifDetailPage() {
 
       {/* ── ACTIVITY MODAL ───────────────────────────────────────────────────── */}
       {actModal.open && (
-        <Modal title={actModal.editing ? "Edit Activity" : "Add Activity"} onClose={() => setActModal({ open: false })}>
+        <Modal title={actModal.editing ? "pif.detail.editActivity" : "pif.detail.addActivity"} onClose={() => setActModal({ open: false })}>
           <form onSubmit={handleSaveActivity} className="space-y-3">
             <div>
-              <label htmlFor="pif-detail-name" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+              <label htmlFor="pif-detail-name" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.nameRequired")}</label>
               <input id="pif-detail-name" required className="form-input" value={actForm.name} onChange={(e) => setActForm({ ...actForm, name: e.target.value })} />
             </div>
             <div>
-              <label htmlFor="pif-detail-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+              <label htmlFor="pif-detail-description" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.description")}</label>
               <textarea id="pif-detail-description" rows={2} className="form-input resize-none" value={actForm.description} onChange={(e) => setActForm({ ...actForm, description: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="pif-detail-budget" className="block text-xs font-semibold text-neutral-700 mb-1">Budget ({programme.primary_currency})</label>
+                <label htmlFor="pif-detail-budget" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.budgetIn", { currency: programme.primary_currency ?? "" })}</label>
                 <input id="pif-detail-budget" type="number" min="0" className="form-input" value={actForm.budget_allocation} onChange={(e) => setActForm({ ...actForm, budget_allocation: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="pif-detail-responsible" className="block text-xs font-semibold text-neutral-700 mb-1">Responsible</label>
+                <label htmlFor="pif-detail-responsible" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.list.responsible")}</label>
                 <input id="pif-detail-responsible" className="form-input" value={actForm.responsible} onChange={(e) => setActForm({ ...actForm, responsible: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="pif-detail-start-date" className="block text-xs font-semibold text-neutral-700 mb-1">Start Date</label>
+                <label htmlFor="pif-detail-start-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.startDate")}</label>
                 <input id="pif-detail-start-date" type="date" className="form-input" value={actForm.start_date} onChange={(e) => setActForm({ ...actForm, start_date: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="pif-detail-end-date" className="block text-xs font-semibold text-neutral-700 mb-1">End Date</label>
+                <label htmlFor="pif-detail-end-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.list.endDate")}</label>
                 <input id="pif-detail-end-date" type="date" className="form-input" value={actForm.end_date} onChange={(e) => setActForm({ ...actForm, end_date: e.target.value })} />
               </div>
             </div>
             <div>
-              <label htmlFor="pif-detail-status" className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
+              <label htmlFor="pif-detail-status" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.list.status")}</label>
               <select id="pif-detail-status" className="form-input" value={actForm.status} onChange={(e) => setActForm({ ...actForm, status: e.target.value })}>
                 {["draft", "approved", "in_progress", "completed", "postponed", "cancelled"].map((s) => (
-                  <option key={s} value={s}>{s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>
+                  <option key={s} value={s}>{t(`pif.detail.actStatus.${s}`)}</option>
                 ))}
               </select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setActModal({ open: false })} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+              <button type="button" onClick={() => setActModal({ open: false })} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
               <button type="submit" disabled={submitting} className="btn-primary px-4 py-2 text-sm disabled:opacity-60">
-                {submitting ? "Saving…" : "Save"}
+                {submitting ? t("hr.positions.form.saving") : t("common.save")}
               </button>
             </div>
           </form>
@@ -1469,34 +1473,34 @@ export default function PifDetailPage() {
 
       {/* ── MILESTONE MODAL ──────────────────────────────────────────────────── */}
       {msModal.open && (
-        <Modal title={msModal.editing ? "Edit Milestone" : "Add Milestone"} onClose={() => setMsModal({ open: false })}>
+        <Modal title={msModal.editing ? "pif.detail.editMilestone" : "pif.detail.addMilestone"} onClose={() => setMsModal({ open: false })}>
           <form onSubmit={handleSaveMilestone} className="space-y-3">
             <div>
-              <label htmlFor="pif-detail-name-2" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+              <label htmlFor="pif-detail-name-2" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.nameRequired")}</label>
               <input id="pif-detail-name-2" required className="form-input" value={msForm.name} onChange={(e) => setMsForm({ ...msForm, name: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="pif-detail-target-date" className="block text-xs font-semibold text-neutral-700 mb-1">Target Date</label>
+                <label htmlFor="pif-detail-target-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.targetDate")}</label>
                 <input id="pif-detail-target-date" type="date" className="form-input" value={msForm.target_date} onChange={(e) => setMsForm({ ...msForm, target_date: e.target.value })} />
               </div>
               <div>
-                <label htmlFor="pif-detail-completion" className="block text-xs font-semibold text-neutral-700 mb-1">Completion %</label>
+                <label htmlFor="pif-detail-completion" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.completion")}</label>
                 <input id="pif-detail-completion" type="number" min="0" max="100" className="form-input" value={msForm.completion_pct} onChange={(e) => setMsForm({ ...msForm, completion_pct: e.target.value })} />
               </div>
             </div>
             <div>
-              <label htmlFor="pif-detail-status-2" className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
+              <label htmlFor="pif-detail-status-2" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.list.status")}</label>
               <select id="pif-detail-status-2" className="form-input" value={msForm.status} onChange={(e) => setMsForm({ ...msForm, status: e.target.value })}>
                 {["pending", "achieved", "missed"].map((s) => (
-                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                  <option key={s} value={s}>{t(`pif.detail.itemStatus.${s}`)}</option>
                 ))}
               </select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setMsModal({ open: false })} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+              <button type="button" onClick={() => setMsModal({ open: false })} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
               <button type="submit" disabled={submitting} className="btn-primary px-4 py-2 text-sm disabled:opacity-60">
-                {submitting ? "Saving…" : "Save"}
+                {submitting ? t("hr.positions.form.saving") : t("common.save")}
               </button>
             </div>
           </form>
@@ -1505,32 +1509,32 @@ export default function PifDetailPage() {
 
       {/* ── DELIVERABLE MODAL ────────────────────────────────────────────────── */}
       {delModal.open && (
-        <Modal title={delModal.editing ? "Edit Deliverable" : "Add Deliverable"} onClose={() => setDelModal({ open: false })}>
+        <Modal title={delModal.editing ? "pif.detail.editDeliverable" : "pif.detail.addDeliverable"} onClose={() => setDelModal({ open: false })}>
           <form onSubmit={handleSaveDeliverable} className="space-y-3">
             <div>
-              <label htmlFor="pif-detail-name-3" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+              <label htmlFor="pif-detail-name-3" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.nameRequired")}</label>
               <input id="pif-detail-name-3" required className="form-input" value={delForm.name} onChange={(e) => setDelForm({ ...delForm, name: e.target.value })} />
             </div>
             <div>
-              <label htmlFor="pif-detail-description-2" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+              <label htmlFor="pif-detail-description-2" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.description")}</label>
               <textarea id="pif-detail-description-2" rows={2} className="form-input resize-none" value={delForm.description} onChange={(e) => setDelForm({ ...delForm, description: e.target.value })} />
             </div>
             <div>
-              <label htmlFor="pif-detail-due-date" className="block text-xs font-semibold text-neutral-700 mb-1">Due Date</label>
+              <label htmlFor="pif-detail-due-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.dueDate")}</label>
               <input id="pif-detail-due-date" type="date" className="form-input" value={delForm.due_date} onChange={(e) => setDelForm({ ...delForm, due_date: e.target.value })} />
             </div>
             <div>
-              <label htmlFor="pif-detail-status-3" className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
+              <label htmlFor="pif-detail-status-3" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.list.status")}</label>
               <select id="pif-detail-status-3" className="form-input" value={delForm.status} onChange={(e) => setDelForm({ ...delForm, status: e.target.value })}>
                 {["pending", "submitted", "accepted"].map((s) => (
-                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                  <option key={s} value={s}>{t(`pif.detail.itemStatus.${s}`)}</option>
                 ))}
               </select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setDelModal({ open: false })} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+              <button type="button" onClick={() => setDelModal({ open: false })} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
               <button type="submit" disabled={submitting} className="btn-primary px-4 py-2 text-sm disabled:opacity-60">
-                {submitting ? "Saving…" : "Save"}
+                {submitting ? t("hr.positions.form.saving") : t("common.save")}
               </button>
             </div>
           </form>
@@ -1539,27 +1543,27 @@ export default function PifDetailPage() {
 
       {/* ── REJECT MODAL ─────────────────────────────────────────────────────── */}
       {rejectModal && (
-        <Modal title="Reject Programme" onClose={() => setRejectModal(false)}>
+        <Modal title="pif.detail.rejectProgramme" onClose={() => setRejectModal(false)}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="pif-detail-reason-for-rejection" className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for rejection <span className="text-red-500">*</span></label>
+              <label htmlFor="pif-detail-reason-for-rejection" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("pif.detail.rejectReason")} <span className="text-red-500">*</span></label>
               <textarea id="pif-detail-reason-for-rejection"
                 rows={3}
                 className="form-input resize-none"
-                placeholder="Provide a clear reason…"
+                placeholder={t("pif.detail.rejectPlaceholder")}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
               />
             </div>
             <div className="flex justify-end gap-3">
-              <button type="button" onClick={() => setRejectModal(false)} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+              <button type="button" onClick={() => setRejectModal(false)} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
               <button
                 type="button"
                 onClick={handleRejectProgramme}
                 disabled={!rejectReason.trim() || submitting}
                 className="btn-primary px-5 py-2 text-sm bg-red-600 hover:bg-red-700 disabled:opacity-50"
               >
-                Reject Programme
+                {t("pif.detail.rejectProgramme")}
               </button>
             </div>
           </div>
@@ -1572,8 +1576,8 @@ export default function PifDetailPage() {
         sourceType="pif"
         sourceId={programme.id}
         sourcePurpose={programme.me_status && programme.me_status !== "not_yet_linked" ? "me_follow_up" : "programme_action"}
-        defaultTitle={`PIF follow-up: ${programme.title}`}
-        defaultDescription={programme.background || `Follow-up / M&E action for PIF ${programme.reference_number ?? programme.id}`}
+        defaultTitle={t("pif.detail.followUpTitle", { title: programme.title })}
+        defaultDescription={programme.background || t("pif.detail.followUpDescription", { ref: programme.reference_number ?? programme.id })}
         defaultDueDate={programme.end_date ?? null}
         defaultAssigneeId={programme.responsible_officer_id ?? programme.responsible_officer_ids?.[0] ?? null}
         sourceReference={programme.reference_number}
@@ -1586,7 +1590,7 @@ export default function PifDetailPage() {
           signableType="programmes"
           signableId={programme.id}
           action="approve"
-          title="Sign & approve"
+          title={t("pif.detail.signApprove")}
           onWorkflowApprove={async ({ password }) => {
             await handleApproveProgramme(password);
           }}

@@ -12,22 +12,23 @@ import {
   type BudgetUtilisationRow,
 } from "@/lib/api";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type TabId = "utilisation" | "ageing" | "changes" | "cycles";
 type GroupBy = "line" | "department" | "funding_source";
 
 const TABS: Array<{ id: TabId; label: string }> = [
-  { id: "utilisation", label: "Utilisation" },
-  { id: "ageing", label: "Commitment ageing" },
-  { id: "changes", label: "Change register" },
-  { id: "cycles", label: "Cycle status" },
+  { id: "utilisation", label: "budget.reports.tab.utilisation" },
+  { id: "ageing", label: "budget.reports.tab.ageing" },
+  { id: "changes", label: "budget.reports.tab.changes" },
+  { id: "cycles", label: "budget.reports.tab.cycles" },
 ];
 
 const BUCKET_LABELS: Record<string, string> = {
-  "0_30": "0–30 days",
-  "31_60": "31–60 days",
-  "61_90": "61–90 days",
-  "90_plus": "90+ days",
+  "0_30": "budget.reports.bucket.0_30",
+  "31_60": "budget.reports.bucket.31_60",
+  "61_90": "budget.reports.bucket.61_90",
+  "90_plus": "budget.reports.bucket.90_plus",
 };
 
 function money(n: number): string {
@@ -44,6 +45,7 @@ function fmtPct(n: number): string {
 }
 
 export default function BudgetReportsPage() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<TabId>("utilisation");
   const [groupBy, setGroupBy] = useState<GroupBy>("line");
   const [financialYearId, setFinancialYearId] = useState<string>("");
@@ -92,19 +94,19 @@ export default function BudgetReportsPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
-        title="Budget reports"
-        subtitle="Read-only utilisation, commitment ageing, change-request register, and cycle status"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget reports" }]} />}
+        title="budget.reports.title"
+        subtitle="budget.reports.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "budget.reports.title" }]} />}
       />
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/budget" className="btn-secondary text-sm">
-            Budget control
+            {t("budget.variance.budgetControl")}
           </Link>
           <Link href="/budget/cashflow" className="btn-secondary text-sm">
-            Cashflow
+            {t("budget.reports.cashflow")}
           </Link>
           <Link href="/budget/variance" className="btn-secondary text-sm">
-            Variance
+            {t("budget.variance.crumb")}
           </Link>
           <a
             className="btn-secondary text-sm"
@@ -114,7 +116,7 @@ export default function BudgetReportsPage() {
               { ...filterParams, ...(tab === "utilisation" ? { group_by: groupBy } : {}) },
             )}
           >
-            Export XLSX
+            {t("budget.reports.exportXlsx")}
           </a>
           <a
             className="btn-secondary text-sm"
@@ -124,19 +126,19 @@ export default function BudgetReportsPage() {
               { ...filterParams, ...(tab === "utilisation" ? { group_by: groupBy } : {}) },
             )}
           >
-            Export PDF
+            {t("assets.register.exportPdf")}
           </a>
         </div>
       </div>
 
       <div className="card p-4">
-        <label htmlFor="budget-reports-financial-year" className="block text-sm font-medium text-neutral-700 mb-1">Financial year</label>
+        <label htmlFor="budget-reports-financial-year" className="block text-sm font-medium text-neutral-700 mb-1">{t("budget.cycles.financialYear")}</label>
         <select id="budget-reports-financial-year"
           className="form-input max-w-sm"
           value={financialYearId}
           onChange={(e) => setFinancialYearId(e.target.value)}
         >
-          <option value="">All years</option>
+          <option value="">{t("budget.reports.allYears")}</option>
           {years.map((y) => (
             <option key={y.id} value={y.id}>
               {y.label || y.code}
@@ -146,18 +148,18 @@ export default function BudgetReportsPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 border-b border-[var(--border)] pb-2">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.id}
+            key={tabItem.id}
             type="button"
             className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
-              tab === t.id
+              tab === tabItem.id
                 ? "bg-[var(--primary)] text-white"
                 : "bg-[var(--surface-muted)] text-neutral-700 hover:bg-neutral-200"
             }`}
-            onClick={() => setTab(t.id)}
+            onClick={() => setTab(tabItem.id)}
           >
-            {t.label}
+            {t(tabItem.label)}
           </button>
         ))}
       </div>
@@ -217,10 +219,11 @@ function UtilisationPanel({
   rows: BudgetUtilisationRow[];
   totals?: { approved: number; actual: number; committed: number; available: number; line_count: number };
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-neutral-600">Group by</span>
+        <span className="text-sm text-neutral-600">{t("budget.reports.groupBy")}</span>
         {(["line", "department", "funding_source"] as GroupBy[]).map((g) => (
           <button
             key={g}
@@ -230,7 +233,7 @@ function UtilisationPanel({
             }`}
             onClick={() => onGroupBy(g)}
           >
-            {g === "funding_source" ? "Funding source" : g.charAt(0).toUpperCase() + g.slice(1)}
+            {t(`budget.reports.group.${g}`)}
           </button>
         ))}
       </div>
@@ -238,14 +241,14 @@ function UtilisationPanel({
       {totals && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           {[
-            { label: "Approved", value: totals.approved },
-            { label: "Actual", value: totals.actual },
-            { label: "Committed", value: totals.committed },
-            { label: "Available", value: totals.available },
+            { label: t("budget.reports.col.approved"), value: totals.approved },
+            { label: t("budget.variance.actual"), value: totals.actual },
+            { label: t("budget.reports.col.committed"), value: totals.committed },
+            { label: t("budget.reports.col.available"), value: totals.available },
           ].map((card) => (
             <div key={card.label} className="card p-4">
               <div className="text-sm text-neutral-500 mb-1">{card.label}</div>
-              <div className="text-lg font-semibold">NAD {money(card.value)}</div>
+              <div className="text-lg font-semibold">NAD {money(card.value)}</div>{/* i18n-ignore */}
             </div>
           ))}
         </div>
@@ -254,15 +257,15 @@ function UtilisationPanel({
       <ReportTable
         loading={loading}
         error={error}
-        empty="No utilisation rows for the selected filters."
+        empty={t("budget.reports.emptyUtilisation")}
         rowCount={rows.length}
-        headers={
+        headers={(
           groupBy === "line"
-            ? ["Code", "Name", "Department", "Funding", "Approved", "Committed", "Actual", "Available", "% utilised"]
+            ? ["budget.reports.col.code", "budget.reports.col.name", "budget.reports.col.department", "budget.reports.col.funding", "budget.reports.col.approved", "budget.reports.col.committed", "budget.variance.actual", "budget.reports.col.available", "budget.reports.col.pctUtilised"]
             : groupBy === "department"
-              ? ["Department", "Lines", "Approved", "Committed", "Actual", "Available", "% utilised"]
-              : ["Funding source", "Lines", "Approved", "Committed", "Actual", "Available", "% utilised"]
-        }
+              ? ["budget.reports.col.department", "budget.reports.col.lines", "budget.reports.col.approved", "budget.reports.col.committed", "budget.variance.actual", "budget.reports.col.available", "budget.reports.col.pctUtilised"]
+              : ["budget.reports.group.funding_source", "budget.reports.col.lines", "budget.reports.col.approved", "budget.reports.col.committed", "budget.variance.actual", "budget.reports.col.available", "budget.reports.col.pctUtilised"]
+        ).map((key) => t(key))}
       >
         {rows.map((row, idx) => (
           <tr key={row.budget_line_id ?? `${row.department_id}-${row.funding_source_id}-${idx}`} className="border-b border-[var(--border)] last:border-0">
@@ -276,7 +279,7 @@ function UtilisationPanel({
             ) : (
               <>
                 <td className="px-4 py-3">
-                  {groupBy === "department" ? row.department_name ?? "Unassigned" : row.funding_source_name ?? "Unassigned"}
+                  {groupBy === "department" ? row.department_name ?? t("budget.reports.unassigned") : row.funding_source_name ?? t("budget.reports.unassigned")}
                 </td>
                 <td className="px-4 py-3">{row.line_count ?? "—"}</td>
               </>
@@ -308,17 +311,18 @@ function AgeingPanel({
   items: BudgetCommitmentAgeingItem[];
   asOf?: string;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-4">
-      {asOf && <p className="text-sm text-neutral-500">As of {fmtDate(asOf)}</p>}
+      {asOf && <p className="text-sm text-neutral-500">{t("budget.reports.asOf", { date: fmtDate(asOf) })}</p>}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         {Object.entries(BUCKET_LABELS).map(([key, label]) => {
           const bucket = buckets[key] ?? { count: 0, amount: 0 };
           return (
             <div key={key} className="card p-4">
-              <div className="text-sm text-neutral-500 mb-1">{label}</div>
-              <div className="text-lg font-semibold">NAD {money(bucket.amount)}</div>
-              <div className="text-xs text-neutral-500 mt-1">{bucket.count} commitment{bucket.count === 1 ? "" : "s"}</div>
+              <div className="text-sm text-neutral-500 mb-1">{t(label)}</div>
+              <div className="text-lg font-semibold">NAD {money(bucket.amount)}</div>{/* i18n-ignore */}
+              <div className="text-xs text-neutral-500 mt-1">{t(bucket.count === 1 ? "budget.reports.commitmentOne" : "budget.reports.commitmentMany", { count: bucket.count })}</div>
             </div>
           );
         })}
@@ -327,9 +331,17 @@ function AgeingPanel({
       <ReportTable
         loading={loading}
         error={error}
-        empty="No open commitments."
+        empty={t("budget.reports.emptyAgeing")}
         rowCount={items.length}
-        headers={["Line", "Source", "Ref", "Amount", "Age", "Bucket", "Status"]}
+        headers={[
+          t("budget.changeCreate.line"),
+          t("budget.fx.source"),
+          t("budget.reports.col.ref"),
+          t("budget.amount"),
+          t("budget.reports.col.age"),
+          t("budget.reports.col.bucket"),
+          t("budget.reports.col.status"),
+        ]}
       >
         {items.map((item) => (
           <tr key={item.id} className="border-b border-[var(--border)] last:border-0">
@@ -340,8 +352,8 @@ function AgeingPanel({
             <td className="px-4 py-3 capitalize">{item.source_type ?? "—"}</td>
             <td className="px-4 py-3 font-mono text-sm">{item.source_key ?? "—"}</td>
             <td className="px-4 py-3 text-right">{money(item.amount)}</td>
-            <td className="px-4 py-3 text-right">{item.age_days}d</td>
-            <td className="px-4 py-3">{BUCKET_LABELS[item.age_bucket] ?? item.age_bucket}</td>
+            <td className="px-4 py-3 text-right">{t("budget.reports.ageDays", { days: item.age_days })}</td>
+            <td className="px-4 py-3">{BUCKET_LABELS[item.age_bucket] ? t(BUCKET_LABELS[item.age_bucket]) : item.age_bucket}</td>
             <td className="px-4 py-3 capitalize">{item.status.replaceAll("_", " ")}</td>
           </tr>
         ))}
@@ -359,13 +371,22 @@ function ChangesPanel({
   error: boolean;
   rows: BudgetChangeRegisterRow[];
 }) {
+  const { t } = useI18n();
   return (
     <ReportTable
       loading={loading}
       error={error}
-      empty="No change requests in the register."
+      empty={t("budget.reports.emptyChanges")}
       rowCount={rows.length}
-      headers={["Title", "Type", "Status", "Amount", "Submitted", "Approver path", ""]}
+      headers={[
+        t("budget.reports.col.title"),
+        t("budget.reports.col.type"),
+        t("budget.reports.col.status"),
+        t("budget.amount"),
+        t("budget.reports.col.submitted"),
+        t("budget.reports.col.approverPath"),
+        "",
+      ]}
     >
       {rows.map((row) => (
         <tr key={row.id} className="border-b border-[var(--border)] last:border-0">
@@ -382,7 +403,7 @@ function ChangesPanel({
           </td>
           <td className="px-4 py-3 text-right">
             <Link href={`/budget/changes/${row.id}`} className="font-medium text-[var(--primary)]">
-              Open
+              {t("common.open")}
             </Link>
           </td>
         </tr>
@@ -400,13 +421,23 @@ function CyclesPanel({
   error: boolean;
   rows: BudgetCycleStatusRow[];
 }) {
+  const { t } = useI18n();
   return (
     <ReportTable
       loading={loading}
       error={error}
-      empty="No budget cycles found."
+      empty={t("budget.reports.emptyCycles")}
       rowCount={rows.length}
-      headers={["FY", "Status", "Opens", "Dept deadline", "SG approved", "Locked", "Submissions", ""]}
+      headers={[
+        t("budget.reports.col.fy"),
+        t("budget.reports.col.status"),
+        t("budget.reports.col.opens"),
+        t("budget.reports.col.deptDeadline"),
+        t("budget.reports.col.sgApproved"),
+        t("budget.reports.col.locked"),
+        t("budget.reports.col.submissions"),
+        "",
+      ]}
     >
       {rows.map((row) => (
         <tr key={row.id} className="border-b border-[var(--border)] last:border-0">
@@ -428,7 +459,7 @@ function CyclesPanel({
           </td>
           <td className="px-4 py-3 text-right">
             <Link href={`/budget/cycles/${row.id}`} className="font-medium text-[var(--primary)]">
-              Open
+              {t("common.open")}
             </Link>
           </td>
         </tr>
@@ -452,11 +483,12 @@ function ReportTable({
   rowCount: number;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   if (loading) {
-    return <p className="text-sm text-[var(--muted)]">Loading…</p>;
+    return <p className="text-sm text-[var(--muted)]">{t("common.loading")}</p>;
   }
   if (error) {
-    return <ErrorBanner message="Failed to load report." />;
+    return <ErrorBanner message={t("budget.reports.loadFailed")} />;
   }
   if (rowCount === 0) {
     return (

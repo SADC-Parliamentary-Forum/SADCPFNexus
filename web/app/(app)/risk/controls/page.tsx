@@ -27,11 +27,11 @@ export default function RiskControlsPage() {
       await riskApi.createControl({ title: controlTitle, control_type: "preventive", effectiveness: "partial" });
       setTitle("");
       setOk(t("risk.controls.created"));
-      toast.success("Control created", controlTitle);
+      toast.success(t("risk.controls.toastCreated"), controlTitle);
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(message ?? t("risk.controls.createFailed"));
-      toast.error("Control not created", message ?? t("risk.controls.createFailed"));
+      toast.error(t("risk.controls.toastNotCreated"), message ?? t("risk.controls.createFailed"));
     } finally {
       setCreating(false);
     }
@@ -57,7 +57,7 @@ export default function RiskControlsPage() {
           />
         </div>
         <button type="submit" className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed" disabled={creating || !title.trim()}>
-          {creating ? "Adding..." : t("risk.controls.add")}
+          {creating ? t("risk.controls.adding") : t("risk.controls.add")}
         </button>
       </form>
       {error && <p className="text-sm text-red-600">{error}</p>}

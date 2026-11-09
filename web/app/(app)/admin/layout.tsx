@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 /**
  * Admin layout: only render children if the current user is a system admin.
@@ -10,6 +11,7 @@ import { getStoredUser, isSystemAdmin } from "@/lib/auth";
  */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [allowAccess, setAllowAccess] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex min-h-[200px] items-center justify-center">
         <div className="flex items-center gap-2 text-sm text-neutral-500">
           <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-          Checking access…
+          {t("admin.layout.checkingAccess")}
         </div>
       </div>
     );

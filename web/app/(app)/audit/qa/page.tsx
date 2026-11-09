@@ -30,10 +30,10 @@ export default function AuditQaPage() {
       }),
     onSuccess: () => {
       setSummary("");
-      toast.success("QA review recorded");
+      toast.success(t("audit.toast.qaRecorded"));
       qc.invalidateQueries({ queryKey: ["audit", "qa"] });
     },
-    onError: (err) => toast.error("QA review not recorded", apiErrorMessage(err, "Failed to record the QA review.")),
+    onError: (err) => toast.error(t("audit.toast.qaNotRecorded"), apiErrorMessage(err, t("audit.toast.qaFailed"))),
   });
 
   return (

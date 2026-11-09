@@ -5,8 +5,10 @@ import { useState, useEffect } from "react";
 import { adminApi, type Portfolio } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function AdminPortfoliosPage() {
+    const { t } = useI18n();
     const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -19,7 +21,7 @@ export default function AdminPortfoliosPage() {
     useEffect(() => {
         adminApi.listPortfolios()
             .then(res => setPortfolios(res.data))
-            .catch(() => toast("error", "Failed to load portfolios"))
+            .catch(() => toast("error", t("admin.portfolios.loadFailed")))
             .finally(() => setLoading(false));
     }, []);
 
@@ -30,17 +32,17 @@ export default function AdminPortfoliosPage() {
             if (editId) {
                 const res = await adminApi.updatePortfolio(editId, form);
                 setPortfolios(prev => prev.map(p => p.id === editId ? res.data : p));
-                toast("success", "Portfolio updated");
+                toast("success", t("admin.portfolios.updated"));
             } else {
                 const res = await adminApi.createPortfolio(form);
                 setPortfolios(prev => [...prev, res.data]);
-                toast("success", "Portfolio created");
+                toast("success", t("admin.portfolios.created"));
             }
             setForm({ name: "", description: "", color: "#3b82f6" });
             setShowForm(false);
             setEditId(null);
         } catch {
-            toast("error", "Failed to save portfolio");
+            toast("error", t("admin.portfolios.saveFailed"));
         } finally {
             setSaving(false);
         }
@@ -53,13 +55,13 @@ export default function AdminPortfoliosPage() {
     };
 
     const handleDelete = async (id: number, name: string) => {
-        if (!(await confirm({ title: "Delete Portfolio", message: `Delete "${name}"? This cannot be undone.`, variant: "danger" }))) return; // ship-safe-ignore: confirm dialog string, not SQL
+        if (!(await confirm({ title: t("admin.portfolios.deleteTitle"), message: t("admin.portfolios.deleteMessage", { name }), variant: "danger" }))) return; // ship-safe-ignore: confirm dialog string, not SQL
         try {
             await adminApi.deletePortfolio(id);
             setPortfolios(prev => prev.filter(p => p.id !== id));
-            toast("success", "Portfolio deleted");
+            toast("success", t("admin.portfolios.deleted"));
         } catch {
-            toast("error", "Failed to delete portfolio");
+            toast("error", t("admin.portfolios.deleteFailed"));
         }
     };
 
@@ -67,13 +69,13 @@ export default function AdminPortfoliosPage() {
         <div className="w-full min-w-0 space-y-6">
             <div className="flex items-start justify-between">
                 <ModulePageHeader
-        title="Portfolios"
-        subtitle="Manage organisational thematic areas and committees."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Portfolios" }]} />}
+        title={t("admin.portfolios.title")}
+        subtitle={t("admin.portfolios.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.portfolios.title") }]} />}
       />
                 <button onClick={() => { setShowForm(!showForm); setEditId(null); }} className="btn-primary">
                     <span className="material-symbols-outlined text-[18px]">{showForm ? "close" : "add"}</span>
-                    {showForm ? "Cancel" : "New Portfolio"}
+                    {showForm ? t("common.cancel") : t("admin.portfolios.new")}
                 </button>
             </div>
 
@@ -81,21 +83,21 @@ export default function AdminPortfoliosPage() {
                 <div className="card p-5 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label htmlFor="admin-portfolios-portfolio-name" className="text-xs font-semibold">Portfolio Name</label>
+                            <label htmlFor="admin-portfolios-portfolio-name" className="text-xs font-semibold">{t("admin.portfolios.name")}</label>
                             <input id="admin-portfolios-portfolio-name" className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                         </div>
                         <div className="space-y-1.5">
-                            <label htmlFor="admin-portfolios-label-color" className="text-xs font-semibold">Label Color</label>
+                            <label htmlFor="admin-portfolios-label-color" className="text-xs font-semibold">{t("admin.portfolios.color")}</label>
                             <input id="admin-portfolios-label-color" type="color" className="h-10 w-full rounded border cursor-pointer" value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} />
                         </div>
                     </div>
                     <div className="space-y-1.5">
-                        <label htmlFor="admin-portfolios-description" className="text-xs font-semibold">Description</label>
+                        <label htmlFor="admin-portfolios-description" className="text-xs font-semibold">{t("admin.common.description")}</label>
                         <textarea id="admin-portfolios-description" className="form-input min-h-[80px]" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
                     </div>
                     <div className="flex justify-end gap-2">
                         <button onClick={handleSave} disabled={saving} className="btn-primary">
-                            {saving ? "Saving..." : editId ? "Update" : "Create"}
+                            {saving ? t("admin.common.savingDots") : editId ? t("admin.auditTrail.governance.update") : t("common.create")}
                         </button>
                     </div>
                 </div>
@@ -105,10 +107,10 @@ export default function AdminPortfoliosPage() {
                 <table className="data-table">
                     <thead>
                         <tr>
-                            <th>Portfolio</th>
-                            <th>Description</th>
-                            <th>Staff</th>
-                            <th className="text-right">Actions</th>
+                            <th>{t("admin.portfolios.colPortfolio")}</th>
+                            <th>{t("admin.common.description")}</th>
+                            <th>{t("admin.portfolios.colStaff")}</th>
+                            <th className="text-right">{t("admin.common.actions")}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,10 +123,10 @@ export default function AdminPortfoliosPage() {
                                     </div>
                                 </td>
                                 <td className="text-sm text-neutral-500 max-w-xs truncate">{p.description}</td>
-                                <td>{p.users_count ?? 0} staff</td>
+                                <td>{t("admin.portfolios.staffCount", { count: p.users_count ?? 0 })}</td>
                                 <td className="text-right space-x-2">
-                                    <button onClick={() => startEdit(p)} className="btn-secondary text-xs py-1 px-2">Edit</button>
-                                    <button onClick={() => handleDelete(p.id, p.name)} className="btn-secondary text-xs py-1 px-2 text-red-600">Delete</button>
+                                    <button onClick={() => startEdit(p)} className="btn-secondary text-xs py-1 px-2">{t("common.edit")}</button>
+                                    <button onClick={() => handleDelete(p.id, p.name)} className="btn-secondary text-xs py-1 px-2 text-red-600">{t("common.delete")}</button>
                                 </td>
                             </tr>
                         ))}

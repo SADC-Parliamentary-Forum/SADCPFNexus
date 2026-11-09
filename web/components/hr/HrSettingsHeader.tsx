@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 /** Shared chrome for /settings/hr/* master-data pages. */
 export function HrSettingsHeader({
@@ -17,9 +18,10 @@ export function HrSettingsHeader({
   crumbs?: { label: string; href?: string }[];
   meta?: ReactNode;
 }) {
+  const { t } = useI18n();
   const items = crumbs ?? [
     { label: "nav.admin", href: "/admin" },
-    { label: "HR Administration", href: "/settings/hr" },
+    { label: t("ui.hrSettingsHeader.hrAdministration"), href: "/settings/hr" },
     { label: title },
   ];
   return (

@@ -7,9 +7,11 @@ import { parliamentsApi, type Parliament } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { safeExternalUrl } from "@/lib/safeExternalUrl";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function ParliamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { t } = useI18n();
   const [parliament, setParliament] = useState<Parliament | null>(null);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
@@ -18,7 +20,7 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
     parliamentsApi
       .get(Number(id))
       .then((res) => setParliament(res.data.data))
-      .catch(() => setError("Parliament not found."))
+      .catch(() => setError(t("srhr.parliament.notFound")))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -38,7 +40,7 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
   if (error || !parliament) {
     return (
       <div className="card p-8 text-center text-sm text-red-600">
-        {error ?? "Parliament not found."}
+        {error ?? t("srhr.parliament.notFound")}
       </div>
     );
   }
@@ -51,15 +53,15 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "SRHR", href: "/srhr" },
-              { label: "Parliaments", href: "/srhr/parliaments" },
+              { label: "srhr.crumb", href: "/srhr" },
+              { label: "srhr.parliaments", href: "/srhr/parliaments" },
               { label: parliament.name },
             ]}
           />
         }
         meta={
           <span className={`badge ${parliament.is_active ? "badge-success" : "badge-muted"}`}>
-            {parliament.is_active ? "Active" : "Inactive"}
+            {parliament.is_active ? t("hr.timesheets.templates.active") : t("hr.timesheets.templates.inactive")}
           </span>
         }
       />
@@ -68,16 +70,16 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
       <div className="card p-6">
         <h3 className="text-sm font-semibold text-neutral-700 mb-4 flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] text-neutral-400">info</span>
-          Contact Details
+          {t("srhr.parliament.contactDetails")}
         </h3>
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
           {[
-            { label: "Country Code", value: parliament.country_code },
-            { label: "City",         value: parliament.city ?? "—" },
-            { label: "Contact",      value: parliament.contact_name ?? "—" },
-            { label: "Email",        value: parliament.contact_email ?? "—" },
-            { label: "Phone",        value: parliament.contact_phone ?? "—" },
-            { label: "Website",      value: parliament.website_url
+            { label: t("srhr.parliament.countryCode"), value: parliament.country_code },
+            { label: t("profile.field.city"), value: parliament.city ?? "—" },
+            { label: t("srhr.parliament.contact"), value: parliament.contact_name ?? "—" },
+            { label: t("srhr.deployment.email"), value: parliament.contact_email ?? "—" },
+            { label: t("srhr.deployment.phone"), value: parliament.contact_phone ?? "—" },
+            { label: t("srhr.parliament.website"), value: parliament.website_url
               ? safeExternalUrl(parliament.website_url)
                 ? <a href={safeExternalUrl(parliament.website_url)!} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs">{parliament.website_url}</a>
                 : parliament.website_url
@@ -91,7 +93,7 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
         </dl>
         {parliament.notes && (
           <div className="mt-4 pt-4 border-t border-neutral-100">
-            <p className="text-xs text-neutral-500 mb-1">Notes</p>
+            <p className="text-xs text-neutral-500 mb-1">{t("hr.timesheets.col.notes")}</p>
             <p className="text-sm text-neutral-700">{parliament.notes}</p>
           </div>
         )}
@@ -103,18 +105,18 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">transfer_within_a_station</span>
             <h3 className="text-sm font-semibold text-neutral-900">
-              Active Deployments
+              {t("srhr.activeDeployments")}
               {(parliament.active_deployments_count ?? 0) > 0 && (
                 <span className="ml-2 badge badge-primary">{parliament.active_deployments_count}</span>
               )}
             </h3>
           </div>
           <Link href={`/srhr/deployments/new?parliament_id=${parliament.id}`} className="btn-primary text-xs px-3 py-1.5">
-            + New Deployment
+            {t("srhr.parliament.newDeployment")}
           </Link>
         </div>
         {!parliament.active_deployments || parliament.active_deployments.length === 0 ? (
-          <EmptyState icon="transfer_within_a_station" title="No active deployments at this parliament." className="py-8 min-h-0" />
+          <EmptyState icon="transfer_within_a_station" title={t("srhr.parliament.noDeployments")} className="py-8 min-h-0" />
         ) : (
           <div className="divide-y divide-neutral-100">
             {parliament.active_deployments.map((dep) => (
@@ -126,10 +128,10 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-neutral-900">{dep.employee?.name}</p>
-                  <p className="text-xs text-neutral-500">{dep.employee?.job_title ?? "SRHR Researcher"}</p>
+                  <p className="text-xs text-neutral-500">{dep.employee?.job_title ?? t("srhr.parliament.researcher")}</p>
                 </div>
                 <Link href={`/srhr/deployments/${dep.id}`} className="btn-secondary text-xs flex-shrink-0">
-                  View
+                  {t("hr.timesheets.team.view")}
                 </Link>
               </div>
             ))}

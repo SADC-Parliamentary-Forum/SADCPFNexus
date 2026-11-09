@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -30,6 +31,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 }
 
 export default function Page() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
   const [q, setQ] = useState("");
@@ -42,15 +44,15 @@ export default function Page() {
         description: form.description.trim() || undefined,
       }),
     onSuccess: () => {
-      toast.success("Scenario created");
+      toast.success(t("people.scenarios.created"));
       setForm({ name: "", description: "" });
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "org-scenarios"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not create the scenario. Name is required.");
+      const message = apiErrorMessage(e, t("people.scenarios.createFailed"));
       setErr(message);
-      toast.error("Scenario not created", message);
+      toast.error(t("people.scenarios.notCreated"), message);
     },
   });
   const { data, isLoading, isError, refetch } = useQuery({
@@ -84,19 +86,19 @@ return (await peopleAuthorityApi.listOrgScenarios()).data;
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Org Scenarios"
-        subtitle="People & Org Scenarios"
+        title={t("people.scenarios.title")}
+        subtitle={t("people.scenarios.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "Org Scenarios" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.scenarios.title") },
             ]}
           />
         }
         actions={
           <Link href="/people" className="btn-secondary text-sm">
-            Hub
+            {t("people.common.hub")}
           </Link>
         }
       />
@@ -109,16 +111,16 @@ return (await peopleAuthorityApi.listOrgScenarios()).data;
         }}
       >
         <label htmlFor="people-scenarios-name-setform-f-required" className="block text-xs font-medium text-neutral-600">
-          Name
+          {t("people.common.name")}
           <input id="people-scenarios-name-setform-f-required" className="form-input mt-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
         </label>
         <label htmlFor="people-scenarios-description-setform-f" className="block text-xs font-medium text-neutral-600">
-          Description
+          {t("people.common.description")}
           <input id="people-scenarios-description-setform-f" className="form-input mt-1" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </label>
         <div className="sm:col-span-2 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
-            {create.isPending ? "Saving…" : "Add scenario"}
+            {create.isPending ? t("people.common.saving") : t("people.scenarios.add")}
           </button>
           {err && <p className="text-sm text-red-700">{err}</p>}
         </div>
@@ -126,12 +128,12 @@ return (await peopleAuthorityApi.listOrgScenarios()).data;
 
       <div className="card p-3">
         <label htmlFor="people-scenarios-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
+          {t("common.search")}
           <input id="people-scenarios-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
+            placeholder={t("people.common.filterRows")}
           />
         </label>
       </div>
@@ -146,24 +148,24 @@ return (await peopleAuthorityApi.listOrgScenarios()).data;
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
             action={
               <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
+                {t("common.retry")}
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">Org Scenarios</caption>
+              <caption className="sr-only">{t("people.scenarios.title")}</caption>
               <thead>
                 <tr>
                   {columns.map((c) => (

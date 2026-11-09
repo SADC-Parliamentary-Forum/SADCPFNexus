@@ -4,14 +4,16 @@
 // contract-detail links to /contracts/{id}.
 import { use, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function LegacyProcurementContractDetailRedirect({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { t } = useI18n();
 
   useEffect(() => {
     router.replace(`/contracts/${id}`);
   }, [router, id]);
 
-  return <div className="p-8 text-sm text-neutral-500">Redirecting to the contract…</div>;
+  return <div className="p-8 text-sm text-neutral-500">{t("procurement.contracts.redirectingDetail")}</div>;
 }

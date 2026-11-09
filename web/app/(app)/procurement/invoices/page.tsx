@@ -13,25 +13,37 @@ import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageH
 import { EmptyState } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  received: { label: "Received", cls: "badge-warning",  icon: "inbox"         },
-  matched:  { label: "Matched",  cls: "badge-primary",  icon: "link"          },
-  approved: { label: "Approved", cls: "badge-success",  icon: "check_circle"  },
-  approved_for_payment: { label: "Approved", cls: "badge-success", icon: "check_circle" },
-  proforma_submitted: { label: "Proforma Submitted", cls: "badge-primary", icon: "receipt_long" },
-  final_invoice_submitted: { label: "Final Submitted", cls: "badge-success", icon: "task_alt" },
-  rejected: { label: "Rejected", cls: "badge-danger",   icon: "cancel"        },
-  paid:     { label: "Paid",     cls: "badge-muted",    icon: "payments"      },
+  received: { label: "procurement.invoiceStatus.received", cls: "badge-warning",  icon: "inbox"         },
+  matched:  { label: "procurement.invoiceStatus.matched", cls: "badge-primary",  icon: "link"          },
+  approved: { label: "status.approved", cls: "badge-success",  icon: "check_circle"  },
+  approved_for_payment: { label: "status.approved", cls: "badge-success", icon: "check_circle" },
+  proforma_submitted: { label: "procurement.invoiceStatus.proformaSubmitted", cls: "badge-primary", icon: "receipt_long" },
+  final_invoice_submitted: { label: "procurement.invoiceStatus.finalSubmitted", cls: "badge-success", icon: "task_alt" },
+  rejected: { label: "status.rejected", cls: "badge-danger",   icon: "cancel"        },
+  paid:     { label: "procurement.invoiceStatus.paid", cls: "badge-muted",    icon: "payments"      },
 };
 
 const matchConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  pending:  { label: "Pending",  cls: "text-neutral-400", icon: "hourglass_empty" },
-  matched:  { label: "Matched",  cls: "text-green-600",   icon: "check_circle"    },
-  variance: { label: "Variance", cls: "text-amber-600",   icon: "warning"         },
+  pending:  { label: "status.pending", cls: "text-neutral-400", icon: "hourglass_empty" },
+  matched:  { label: "procurement.invoiceStatus.matched", cls: "text-green-600",   icon: "check_circle"    },
+  variance: { label: "procurement.invoices.variance", cls: "text-amber-600",   icon: "warning"         },
 };
 
 const FILTERS = ["all", "proforma_submitted", "received", "matched", "approved_for_payment", "rejected", "paid", "final_invoice_submitted"];
+
+const FILTER_LABEL_KEYS: Record<string, string> = {
+  all: "procurement.filter.all",
+  proforma_submitted: "procurement.invoiceStatus.proformaSubmitted",
+  received: "procurement.invoiceStatus.received",
+  matched: "procurement.invoiceStatus.matched",
+  approved_for_payment: "procurement.invoices.filter.approvedForPayment",
+  rejected: "status.rejected",
+  paid: "procurement.invoiceStatus.paid",
+  final_invoice_submitted: "procurement.invoices.filter.finalInvoiceSubmitted",
+};
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -39,6 +51,7 @@ export default function InvoicesPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -118,13 +131,13 @@ export default function InvoicesPage() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       setShowModal(false);
-      toast.success("Invoice recorded");
+      toast.success(t("procurement.invoices.recorded"));
       router.push(`/procurement/invoices/${res.data.data.id}`);
     },
     onError: (e: unknown) => {
-      const message = apiErrorMessage(e, "Failed to record invoice.");
+      const message = apiErrorMessage(e, t("procurement.invoices.recordFailed"));
       setSubmitError(message);
-      toast.error("Invoice not recorded", message);
+      toast.error(t("procurement.invoices.notRecorded"), message);
     },
   });
 
@@ -176,15 +189,15 @@ export default function InvoicesPage() {
         due_date: i.due_date,
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "vendor_invoice", header: "Vendor invoice #" },
-        { key: "vendor", header: "Vendor" },
-        { key: "status", header: "Status" },
-        { key: "match_status", header: "Match" },
-        { key: "amount", header: "Amount" },
-        { key: "currency", header: "Currency" },
-        { key: "invoice_date", header: "Invoice date" },
-        { key: "due_date", header: "Due date" },
+        { key: "reference", header: t("procurement.col.reference") },
+        { key: "vendor_invoice", header: t("procurement.invoices.csv.vendorInvoice") },
+        { key: "vendor", header: t("procurement.col.vendor") },
+        { key: "status", header: t("procurement.col.status") },
+        { key: "match_status", header: t("procurement.invoices.match") },
+        { key: "amount", header: t("procurement.col.amount") },
+        { key: "currency", header: t("procurement.col.currency") },
+        { key: "invoice_date", header: t("procurement.invoices.csv.invoiceDate") },
+        { key: "due_date", header: t("procurement.invoices.csv.dueDate") },
       ],
     );
   };
@@ -192,11 +205,11 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-6">
       <ProcurementPageHeader
-        title="Invoices"
-        subtitle="3-way matching and invoice approval workflow"
+        title={t("procurement.invoices.title")}
+        subtitle={t("procurement.invoices.subtitle")}
         crumbs={[
           { label: "nav.procurement", href: "/procurement" },
-          { label: "Invoices" },
+          { label: t("procurement.invoices.title") },
         ]}
         actions={
           <>
@@ -207,7 +220,7 @@ export default function InvoicesPage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[16px]">download</span>
-            Export CSV
+            {t("procurement.exportCsv")}
           </button>
           <button
             type="button"
@@ -215,7 +228,7 @@ export default function InvoicesPage() {
             className="btn-primary inline-flex items-center gap-1.5 text-sm"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
-            Record Invoice
+            {t("procurement.invoices.record")}
           </button>
           </>
         }
@@ -224,10 +237,10 @@ export default function InvoicesPage() {
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total",        value: total,    icon: "request_quote", color: "text-primary",   bg: "bg-primary/10"  },
-          { label: "Pending Match",value: pending,  icon: "hourglass_empty",color: "text-amber-600", bg: "bg-amber-50"   },
-          { label: "Matched",      value: matched,  icon: "link",          color: "text-blue-600",  bg: "bg-blue-50"     },
-          { label: "Approved/Paid",value: approved, icon: "check_circle",  color: "text-green-600", bg: "bg-green-50"    },
+          { label: t("procurement.invoices.kpi.total"), value: total,    icon: "request_quote", color: "text-primary",   bg: "bg-primary/10"  },
+          { label: t("procurement.invoices.kpi.pendingMatch"), value: pending,  icon: "hourglass_empty",color: "text-amber-600", bg: "bg-amber-50"   },
+          { label: t("procurement.invoiceStatus.matched"), value: matched,  icon: "link",          color: "text-blue-600",  bg: "bg-blue-50"     },
+          { label: t("procurement.invoices.kpi.approvedPaid"), value: approved, icon: "check_circle",  color: "text-green-600", bg: "bg-green-50"    },
         ].map((k) => (
           <div key={k.label} className="card p-4 flex items-center gap-3">
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${k.bg} flex-shrink-0`}>
@@ -251,7 +264,7 @@ export default function InvoicesPage() {
             <input
               type="search"
               className="form-input pl-10"
-              placeholder="Search invoice, vendor, PO…"
+              placeholder={t("procurement.invoices.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -270,7 +283,7 @@ export default function InvoicesPage() {
                 }}
                 className={`filter-tab capitalize ${statusFilter === f ? "active" : ""}`}
               >
-                {f === "all" ? "All" : f.replace(/_/g, " ")}
+                {FILTER_LABEL_KEYS[f] ? t(FILTER_LABEL_KEYS[f]) : f.replace(/_/g, " ")}
               </button>
             ))}
           </div>
@@ -292,25 +305,25 @@ export default function InvoicesPage() {
           ))}
         </div>
       ) : isError ? (
-        <div className="card p-6 text-center text-sm text-red-600">Failed to load invoices.</div>
+        <div className="card p-6 text-center text-sm text-red-600">{t("procurement.invoices.loadError")}</div>
       ) : filteredItems.length === 0 ? (
         <EmptyState
           icon="request_quote"
-          title="No invoices found."
-          description={search.trim() ? "No invoices match your search." : 'Click "Record Invoice" above to log an invoice against a purchase order.'}
+          title={t("procurement.invoices.empty")}
+          description={search.trim() ? t("procurement.invoices.emptySearch") : t("procurement.invoices.emptyHint")}
         />
       ) : (
         <div className="card overflow-hidden">
           <table className="data-table">
             <thead>
               <tr>
-                <th>INV Reference</th>
-                <th>Vendor</th>
-                <th>Purchase Order</th>
-                <th className="text-right">Amount</th>
-                <th>Due Date</th>
-                <th>Match</th>
-                <th>Status</th>
+                <th>{t("procurement.invoices.col.reference")}</th>
+                <th>{t("procurement.col.vendor")}</th>
+                <th>{t("procurement.purchaseOrder")}</th>
+                <th className="text-right">{t("procurement.col.amount")}</th>
+                <th>{t("procurement.invoice.dueDate")}</th>
+                <th>{t("procurement.invoices.match")}</th>
+                <th>{t("procurement.col.status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -342,13 +355,13 @@ export default function InvoicesPage() {
                     <td>
                       <span className={`inline-flex items-center gap-1 text-xs font-medium ${m.cls}`}>
                         <span className="material-symbols-outlined text-[13px]">{m.icon}</span>
-                        {m.label}
+                        {t(m.label)}
                       </span>
                     </td>
                     <td>
                       <span className={`badge ${s.cls} inline-flex items-center gap-1`}>
                         <span className="material-symbols-outlined text-[11px]">{s.icon}</span>
-                        {s.label}
+                        {t(s.label)}
                       </span>
                     </td>
                   </tr>
@@ -379,7 +392,7 @@ export default function InvoicesPage() {
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
                 <span className="material-symbols-outlined text-[20px] text-primary">request_quote</span>
               </div>
-              <h2 className="text-base font-bold text-neutral-900">Record Invoice</h2>
+              <h2 className="text-base font-bold text-neutral-900">{t("procurement.invoices.record")}</h2>
             </div>
 
             {submitError && (
@@ -389,16 +402,16 @@ export default function InvoicesPage() {
             <div className="space-y-4">
               {/* PO selector */}
               <div className="space-y-1">
-                <label htmlFor="procurement-invoices-purchase-order" className="text-xs font-semibold text-neutral-600">Purchase Order <span className="text-red-500">*</span></label>
+                <label htmlFor="procurement-invoices-purchase-order" className="text-xs font-semibold text-neutral-600">{t("procurement.purchaseOrder")} <span className="text-red-500">*</span></label>
                 <select id="procurement-invoices-purchase-order"
                   className="form-input"
                   value={selectedPoId}
                   onChange={(e) => setSelectedPoId(e.target.value ? Number(e.target.value) : "")}
                 >
-                  <option value="">Select purchase order…</option>
+                  <option value="">{t("procurement.invoices.selectPo")}</option>
                   {availablePOs.map((po) => (
                     <option key={po.id} value={po.id}>
-                      {po.reference_number} — {po.vendor?.name ?? "Unknown vendor"} ({po.status})
+                      {t("procurement.invoices.poOption", { ref: po.reference_number, vendor: po.vendor?.name ?? t("procurement.unknownVendor"), status: po.status })}
                     </option>
                   ))}
                 </select>
@@ -407,13 +420,13 @@ export default function InvoicesPage() {
               {/* GRN selector (optional) */}
               {availableGRNs.length > 0 && (
                 <div className="space-y-1">
-                  <label htmlFor="procurement-invoices-goods-receipt-note-optional" className="text-xs font-semibold text-neutral-600">Goods Receipt Note (optional)</label>
+                  <label htmlFor="procurement-invoices-goods-receipt-note-optional" className="text-xs font-semibold text-neutral-600">{t("procurement.invoices.grnOptional")}</label>
                   <select id="procurement-invoices-goods-receipt-note-optional"
                     className="form-input"
                     value={selectedGrnId}
                     onChange={(e) => setSelectedGrnId(e.target.value ? Number(e.target.value) : "")}
                   >
-                    <option value="">None</option>
+                    <option value="">{t("procurement.none")}</option>
                     {availableGRNs.map((g) => (
                       <option key={g.id} value={g.id}>{g.reference_number}</option>
                     ))}
@@ -422,11 +435,11 @@ export default function InvoicesPage() {
               )}
 
               <div className="space-y-1">
-                <label htmlFor="procurement-invoices-vendor-invoice-number" className="text-xs font-semibold text-neutral-600">Vendor Invoice Number <span className="text-red-500">*</span></label>
+                <label htmlFor="procurement-invoices-vendor-invoice-number" className="text-xs font-semibold text-neutral-600">{t("procurement.invoices.vendorInvoiceNumber")} <span className="text-red-500">*</span></label>
                 <input id="procurement-invoices-vendor-invoice-number"
                   type="text"
                   className="form-input"
-                  placeholder="e.g. INV-2026-001"
+                  placeholder={t("procurement.invoices.vendorInvoicePlaceholder")}
                   value={vendorInvNumber}
                   onChange={(e) => setVendorInvNumber(e.target.value)}
                 />
@@ -434,18 +447,18 @@ export default function InvoicesPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label htmlFor="procurement-invoices-invoice-date" className="text-xs font-semibold text-neutral-600">Invoice Date <span className="text-red-500">*</span></label>
+                  <label htmlFor="procurement-invoices-invoice-date" className="text-xs font-semibold text-neutral-600">{t("procurement.invoice.invoiceDate")} <span className="text-red-500">*</span></label>
                   <input id="procurement-invoices-invoice-date" type="date" className="form-input" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="procurement-invoices-due-date" className="text-xs font-semibold text-neutral-600">Due Date <span className="text-red-500">*</span></label>
+                  <label htmlFor="procurement-invoices-due-date" className="text-xs font-semibold text-neutral-600">{t("procurement.invoice.dueDate")} <span className="text-red-500">*</span></label>
                   <input id="procurement-invoices-due-date" type="date" className="form-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label htmlFor="procurement-invoices-amount" className="text-xs font-semibold text-neutral-600">Amount <span className="text-red-500">*</span></label>
+                  <label htmlFor="procurement-invoices-amount" className="text-xs font-semibold text-neutral-600">{t("procurement.col.amount")} <span className="text-red-500">*</span></label>
                   <input id="procurement-invoices-amount"
                     type="number"
                     min="0"
@@ -457,7 +470,7 @@ export default function InvoicesPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="procurement-invoices-currency" className="text-xs font-semibold text-neutral-600">Currency</label>
+                  <label htmlFor="procurement-invoices-currency" className="text-xs font-semibold text-neutral-600">{t("procurement.col.currency")}</label>
                   <input id="procurement-invoices-currency"
                     type="text"
                     className="form-input"
@@ -470,7 +483,7 @@ export default function InvoicesPage() {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <button className="btn-secondary flex-1" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="btn-secondary flex-1" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
               <button
                 className="btn-primary flex-1 disabled:opacity-60"
                 disabled={!canSubmit || createMutation.isPending}
@@ -481,7 +494,7 @@ export default function InvoicesPage() {
                 ) : (
                   <span className="material-symbols-outlined text-[18px]">check_circle</span>
                 )}
-                {createMutation.isPending ? "Recording…" : "Record Invoice"}
+                {createMutation.isPending ? t("procurement.recording") : t("procurement.invoices.record")}
               </button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { workflowEngineApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type StageStat = {
   step_index: number;
@@ -65,7 +66,7 @@ function normalizeAnalyticsSummary(raw: Record<string, unknown>): AnalyticsSumma
     exceptions_held: Number(raw.exceptions_held ?? 0),
     self_approved_count: Number(raw.self_approved_count ?? 0),
     acting_authority_approvals: Number(raw.acting_authority_approvals ?? 0),
-    note: String(raw.note ?? "Aggregate process metrics only."),
+    note: String(raw.note ?? ""),
   };
 }
 
@@ -108,6 +109,7 @@ function rateTone(rate: number): "good" | "warn" | "bad" {
 }
 
 export default function WorkflowAnalyticsPage() {
+  const { t } = useI18n();
   const [data, setData] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,19 +122,19 @@ export default function WorkflowAnalyticsPage() {
       .then((res) => {
         const payload = res.data?.data;
         if (!payload || typeof payload !== "object") {
-          throw new Error("Analytics response was empty.");
+          throw new Error(t("admin.workflows.analytics.emptyResponse"));
         }
         setData(normalizeAnalyticsSummary(payload as Record<string, unknown>));
       })
       .catch((err: unknown) => {
         const message =
           (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Workflow analytics could not be loaded.";
+          t("admin.workflows.analytics.loadFailed");
         setData(null);
         setError(message);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -145,20 +147,20 @@ export default function WorkflowAnalyticsPage() {
   return (
     <div className="w-full min-w-0 space-y-5" data-testid="workflow-analytics-page">
       <ModulePageHeader
-        title="Workflow Analytics"
-        subtitle="Cycle time, bottlenecks, overdue work, return rates, delegation usage, and exceptions."
+        title={t("admin.workflows.analytics.title")}
+        subtitle={t("admin.workflows.analytics.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Workflows", href: "/admin/workflows" },
-              { label: "Analytics" },
+              { label: t("admin.homeLabel"), href: "/admin" },
+              { label: t("admin.crumb.workflows"), href: "/admin/workflows" },
+              { label: t("admin.workflows.analytics.crumb") },
             ]}
           />
         }
         actions={
           <Link href="/admin/workflows" className="btn-secondary text-sm">
-            Back to workflows
+            {t("workflows.simulate.back")}
           </Link>
         }
       />
@@ -171,82 +173,82 @@ export default function WorkflowAnalyticsPage() {
         </div>
       ) : error || !data ? (
         <div className="card space-y-3 p-6 text-sm text-neutral-600">
-          <p>{error ?? "Workflow analytics could not be loaded."}</p>
+          <p>{error ?? t("admin.workflows.analytics.loadFailed")}</p>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-primary text-sm" onClick={load}>
-              Reload
+              {t("admin.workflows.analytics.reload")}
             </button>
             <Link href="/admin/workflows" className="btn-secondary text-sm">
-              Back to workflows
+              {t("workflows.simulate.back")}
             </Link>
           </div>
         </div>
       ) : (
         <>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            Window since {new Date(data.window_since).toLocaleDateString()} · {data.note}
+            {t("admin.workflows.analytics.windowSince", { date: new Date(data.window_since).toLocaleDateString() })} · {data.note || t("admin.workflows.analytics.defaultNote")}
           </p>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <MetricCard label="Completed requests" value={data.completed_count} />
-            <MetricCard label="Avg cycle time" value={data.avg_cycle_hours} suffix="hrs" />
-            <MetricCard label="Median cycle time" value={data.median_cycle_hours} suffix="hrs" />
+            <MetricCard label={t("admin.workflows.analytics.completed")} value={data.completed_count} />
+            <MetricCard label={t("admin.workflows.analytics.avgCycle")} value={data.avg_cycle_hours} suffix={t("admin.workflows.analytics.hrs")} />
+            <MetricCard label={t("admin.workflows.analytics.medianCycle")} value={data.median_cycle_hours} suffix={t("admin.workflows.analytics.hrs")} />
             <MetricCard
-              label="Overdue rate"
+              label={t("admin.workflows.analytics.overdueRate")}
               value={data.overdue_rate}
               suffix="%"
               tone={rateTone(data.overdue_rate)}
-              hint="Share of step-tasks completed or still open past their SLA."
+              hint={t("admin.workflows.analytics.overdueHint")}
             />
             <MetricCard
-              label="Return rate"
+              label={t("admin.workflows.analytics.returnRate")}
               value={data.return_rate}
               suffix="%"
               tone={rateTone(data.return_rate)}
-              hint="Share of decisions that returned the request for correction."
+              hint={t("admin.workflows.analytics.returnHint")}
             />
             <MetricCard
-              label="Reject rate"
+              label={t("admin.workflows.analytics.rejectRate")}
               value={data.reject_rate}
               suffix="%"
               tone={rateTone(data.reject_rate)}
             />
-            <MetricCard label="Delegation usage" value={data.delegation_usage} hint="Steps delegated to another user." />
+            <MetricCard label={t("admin.workflows.analytics.delegation")} value={data.delegation_usage} hint={t("admin.workflows.analytics.delegationHint")} />
             <MetricCard
-              label="Exceptions held"
+              label={t("admin.workflows.analytics.exceptions")}
               value={data.exceptions_held}
               tone={data.exceptions_held > 0 ? "warn" : "good"}
-              hint="Requests currently on hold (governance/SLA exception)."
+              hint={t("admin.workflows.analytics.exceptionsHint")}
             />
             <MetricCard
-              label="Self-authorised"
+              label={t("admin.workflows.analytics.selfAuthorised")}
               value={data.self_approved_count}
               tone={data.self_approved_count > 0 ? "warn" : "neutral"}
-              hint="Decisions where the approver was also the applicant."
+              hint={t("admin.workflows.analytics.selfAuthorisedHint")}
             />
             <MetricCard
-              label="Acting-authority approvals"
+              label={t("admin.workflows.analytics.acting")}
               value={data.acting_authority_approvals}
-              hint="Decisions made under an acting appointment rather than the substantive holder."
+              hint={t("admin.workflows.analytics.actingHint")}
             />
           </div>
 
-          <FormSection title="Bottlenecks — slowest stages" icon="hourglass_top">
+          <FormSection title={t("admin.workflows.analytics.bottlenecks")} icon="hourglass_top">
             {bottlenecks.length === 0 ? (
-              <p className="text-sm text-neutral-500">No stage activity in this window.</p>
+              <p className="text-sm text-neutral-500">{t("admin.workflows.analytics.noActivity")}</p>
             ) : (
               <div className="space-y-2">
                 {bottlenecks.map((stage, i) => (
                   <div key={`${stage.step_index}-${stage.stage_type}-${i}`} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium capitalize">
-                        Step {stage.step_index + 1} · {stage.stage_type}
+                        {t("admin.workflows.analytics.stepN", { n: stage.step_index + 1 })} · {stage.stage_type}
                       </span>
                       <span className="tabular-nums text-neutral-500">
-                        {(stage.avg_hours ?? 0).toFixed(1)} hrs avg · {stage.task_count} task
-                        {stage.task_count === 1 ? "" : "s"}
+                        {t("admin.workflows.analytics.hrsAvg", { hours: (stage.avg_hours ?? 0).toFixed(1) })} ·{" "}
+                        {t(stage.task_count === 1 ? "admin.workflows.analytics.taskOne" : "admin.workflows.analytics.taskMany", { count: stage.task_count })}
                         {stage.overdue_count > 0 ? (
-                          <span className="ml-2 text-rose-600 dark:text-rose-400">{stage.overdue_count} overdue</span>
+                          <span className="ml-2 text-rose-600 dark:text-rose-400">{t("admin.workflows.analytics.overdueN", { count: stage.overdue_count })}</span>
                         ) : null}
                       </span>
                     </div>
@@ -262,19 +264,19 @@ export default function WorkflowAnalyticsPage() {
             )}
           </FormSection>
 
-          <FormSection title="Stage cycle times — all stages" icon="timeline">
+          <FormSection title={t("admin.workflows.analytics.stageCycle")} icon="timeline">
             {stageCycleTimes.length === 0 ? (
-              <p className="text-sm text-neutral-500">No stage activity in this window.</p>
+              <p className="text-sm text-neutral-500">{t("admin.workflows.analytics.noActivity")}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="data-table min-w-full text-sm">
                   <thead className="bg-neutral-50 text-left dark:bg-neutral-900/50">
                     <tr>
-                      <th className="px-3 py-2 font-medium">Step</th>
-                      <th className="px-3 py-2 font-medium">Stage type</th>
-                      <th className="px-3 py-2 font-medium">Avg hours</th>
-                      <th className="px-3 py-2 font-medium">Tasks</th>
-                      <th className="px-3 py-2 font-medium">Overdue</th>
+                      <th className="px-3 py-2 font-medium">{t("admin.workflows.analytics.colStep")}</th>
+                      <th className="px-3 py-2 font-medium">{t("admin.workflows.analytics.colStageType")}</th>
+                      <th className="px-3 py-2 font-medium">{t("admin.workflows.analytics.colAvgHours")}</th>
+                      <th className="px-3 py-2 font-medium">{t("admin.workflows.analytics.colTasks")}</th>
+                      <th className="px-3 py-2 font-medium">{t("admin.workflows.analytics.colOverdue")}</th>
                     </tr>
                   </thead>
                   <tbody>

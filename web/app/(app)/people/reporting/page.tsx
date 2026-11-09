@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -30,6 +31,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 }
 
 export default function Page() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
   const [q, setQ] = useState("");
@@ -54,14 +56,14 @@ export default function Page() {
         effective_from: form.effective_from,
       }),
     onSuccess: () => {
-      toast.success("Reporting line created");
+      toast.success(t("people.reporting.created"));
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "reporting-relationships"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not create the reporting line. Both positions and a start date are required.");
+      const message = apiErrorMessage(e, t("people.reporting.createFailed"));
       setErr(message);
-      toast.error("Reporting line not created", message);
+      toast.error(t("people.reporting.notCreated"), message);
     },
   });
   const { data, isLoading, isError, refetch } = useQuery({
@@ -95,19 +97,19 @@ const chart = (await peopleAuthorityApi.orgChart()).data.data as any; return cha
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Reporting Relationships"
-        subtitle="People & Authority register"
+        title={t("people.reporting.title")}
+        subtitle={t("people.common.registerSubtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "Reporting Relationships" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.reporting.title") },
             ]}
           />
         }
         actions={
           <Link href="/people" className="btn-secondary text-sm">
-            Hub
+            {t("people.common.hub")}
           </Link>
         }
       />
@@ -120,34 +122,34 @@ const chart = (await peopleAuthorityApi.orgChart()).data.data as any; return cha
         }}
       >
         <label htmlFor="people-reporting-subordinate-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
-          Subordinate position
+          {t("people.reporting.subordinatePosition")}
           <select id="people-reporting-subordinate-position-setform-f-required-select" className="form-input mt-1" value={form.subordinate_position_id} onChange={(e) => setForm((f) => ({ ...f, subordinate_position_id: e.target.value }))} required>
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
             ))}
           </select>
         </label>
         <label htmlFor="people-reporting-supervisor-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
-          Supervisor position
+          {t("people.reporting.supervisorPosition")}
           <select id="people-reporting-supervisor-position-setform-f-required-select" className="form-input mt-1" value={form.supervisor_position_id} onChange={(e) => setForm((f) => ({ ...f, supervisor_position_id: e.target.value }))} required>
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
             ))}
           </select>
         </label>
         <label htmlFor="people-reporting-relationship-setform-f" className="block text-xs font-medium text-neutral-600">
-          Relationship
+          {t("people.reporting.relationship")}
           <input id="people-reporting-relationship-setform-f" className="form-input mt-1" value={form.relationship_type} onChange={(e) => setForm((f) => ({ ...f, relationship_type: e.target.value }))} />
         </label>
         <label htmlFor="people-reporting-effective-from-setform-f-required" className="block text-xs font-medium text-neutral-600">
-          Effective from
+          {t("people.authority.effectiveFrom")}
           <input id="people-reporting-effective-from-setform-f-required" type="date" className="form-input mt-1" value={form.effective_from} onChange={(e) => setForm((f) => ({ ...f, effective_from: e.target.value }))} required />
         </label>
         <div className="sm:col-span-2 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
-            {create.isPending ? "Saving…" : "Add reporting line"}
+            {create.isPending ? t("people.common.saving") : t("people.reporting.add")}
           </button>
           {err && <p className="text-sm text-red-700">{err}</p>}
         </div>
@@ -155,12 +157,12 @@ const chart = (await peopleAuthorityApi.orgChart()).data.data as any; return cha
 
       <div className="card p-3">
         <label htmlFor="people-reporting-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
+          {t("common.search")}
           <input id="people-reporting-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
+            placeholder={t("people.common.filterRows")}
           />
         </label>
       </div>
@@ -175,24 +177,24 @@ const chart = (await peopleAuthorityApi.orgChart()).data.data as any; return cha
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
             action={
               <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
+                {t("common.retry")}
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">Reporting Relationships</caption>
+              <caption className="sr-only">{t("people.reporting.title")}</caption>
               <thead>
                 <tr>
                   {columns.map((c) => (

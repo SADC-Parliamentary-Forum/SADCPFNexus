@@ -7,21 +7,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetVarianceRow } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const CATEGORIES = [
-  { value: "timing", label: "Timing" },
-  { value: "underspend", label: "Underspend" },
-  { value: "overspend", label: "Overspend" },
-  { value: "activity_delayed", label: "Activity delayed" },
-  { value: "activity_cancelled", label: "Activity cancelled" },
-  { value: "price_increase", label: "Price increase" },
-  { value: "exchange_rate", label: "Exchange rate" },
-  { value: "procurement_saving", label: "Procurement saving" },
-  { value: "participant_variation", label: "Participant variation" },
-  { value: "donor_change", label: "Donor change" },
-  { value: "scope_change", label: "Scope change" },
-  { value: "unplanned_expenditure", label: "Unplanned expenditure" },
-  { value: "other", label: "Other" },
+  { value: "timing", label: "budget.variance.category.timing" },
+  { value: "underspend", label: "budget.variance.category.underspend" },
+  { value: "overspend", label: "budget.variance.category.overspend" },
+  { value: "activity_delayed", label: "budget.variance.category.activity_delayed" },
+  { value: "activity_cancelled", label: "budget.variance.category.activity_cancelled" },
+  { value: "price_increase", label: "budget.variance.category.price_increase" },
+  { value: "exchange_rate", label: "budget.variance.category.exchange_rate" },
+  { value: "procurement_saving", label: "budget.variance.category.procurement_saving" },
+  { value: "participant_variation", label: "budget.variance.category.participant_variation" },
+  { value: "donor_change", label: "budget.variance.category.donor_change" },
+  { value: "scope_change", label: "budget.variance.category.scope_change" },
+  { value: "unplanned_expenditure", label: "budget.variance.category.unplanned_expenditure" },
+  { value: "other", label: "budget.variance.category.other" },
 ];
 
 function unwrapRows(payload: unknown): BudgetVarianceRow[] {
@@ -36,11 +37,12 @@ function unwrapRows(payload: unknown): BudgetVarianceRow[] {
   return [];
 }
 
-function money(n: number): string {
-  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function money(n: number, localeTag?: string): string {
+  return n.toLocaleString(localeTag, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function BudgetVariancePage() {
+  const { t, localeTag } = useI18n();
   const qc = useQueryClient();
   const user = getStoredUser();
   const canFinance =
@@ -83,7 +85,7 @@ export default function BudgetVariancePage() {
     onError: (err: unknown) => {
       setFormError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to submit explanation.",
+          t("budget.variance.explainFailed"),
       );
     },
   });
@@ -101,16 +103,16 @@ export default function BudgetVariancePage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
-        title="Budget variance"
-        subtitle="YTD approved vs actual. Significant variance default threshold: 20% (Accounting Manual guideline)."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget variance" }]} />}
+        title="budget.variance.title"
+        subtitle="budget.variance.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "budget.variance.title" }]} />}
       />
         <div className="flex items-center gap-2">
           <Link href="/budget" className="btn-secondary text-sm">
-            Budget control
+            {t("budget.variance.budgetControl")}
           </Link>
           <Link href="/budget/reports" className="btn-secondary text-sm">
-            Reports
+            {t("srhr.report.crumb")}
           </Link>
           {canFinance && (
             <button
@@ -119,7 +121,7 @@ export default function BudgetVariancePage() {
               disabled={scanMut.isPending}
               onClick={() => scanMut.mutate()}
             >
-              {scanMut.isPending ? "Scanning…" : "Run variance scan"}
+              {scanMut.isPending ? t("budget.variance.scanning") : t("budget.variance.runScan")}
             </button>
           )}
         </div>
@@ -132,10 +134,10 @@ export default function BudgetVariancePage() {
             checked={significantOnly}
             onChange={(e) => setSignificantOnly(e.target.checked)}
           />
-          Significant only
+          {t("budget.variance.significantOnly")}
         </label>
         <span className="text-sm text-neutral-500">
-          Showing {rows.length} row(s) · {significantCount} significant
+          {t("budget.variance.showing", { count: rows.length, significant: significantCount })}
         </span>
       </div>
 
@@ -144,24 +146,24 @@ export default function BudgetVariancePage() {
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th className="text-left text-xs uppercase text-neutral-500">Line</th>
-                <th className="text-right text-xs uppercase text-neutral-500">Approved</th>
-                <th className="text-right text-xs uppercase text-neutral-500">Actual</th>
-                <th className="text-right text-xs uppercase text-neutral-500">Variance</th>
+                <th className="text-left text-xs uppercase text-neutral-500">{t("budget.changeCreate.line")}</th>
+                <th className="text-right text-xs uppercase text-neutral-500">{t("hr.timesheets.monthly.approved")}</th>
+                <th className="text-right text-xs uppercase text-neutral-500">{t("budget.variance.actual")}</th>
+                <th className="text-right text-xs uppercase text-neutral-500">{t("budget.variance.crumb")}</th>
                 <th className="text-right text-xs uppercase text-neutral-500">%</th>
-                <th className="text-left text-xs uppercase text-neutral-500">Status</th>
-                <th className="text-right text-xs uppercase text-neutral-500">Actions</th>
+                <th className="text-left text-xs uppercase text-neutral-500">{t("hr.timesheets.monthly.status")}</th>
+                <th className="text-right text-xs uppercase text-neutral-500">{t("hr.timesheets.overtime.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
               {listQuery.isLoading ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-neutral-500">
-                    Loading…
+                    {t("common.loading")}
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
-                <TableEmpty colSpan={7} title="No variance snapshots yet. Finance can run a scan." />
+                <TableEmpty colSpan={7} title={t("budget.variance.empty")} />
               ) : (
                 rows.map((row) => {
                   const latest = row.explanations?.[0];
@@ -175,9 +177,9 @@ export default function BudgetVariancePage() {
                           {row.budget_line?.name ?? row.budget_line?.category}
                         </div>
                       </td>
-                      <td className="text-right">{money(row.approved_budget)}</td>
-                      <td className="text-right">{money(row.actual_expenditure)}</td>
-                      <td className="text-right font-medium">{money(row.variance_amount)}</td>
+                      <td className="text-right">{money(row.approved_budget, localeTag)}</td>
+                      <td className="text-right">{money(row.actual_expenditure, localeTag)}</td>
+                      <td className="text-right font-medium">{money(row.variance_amount, localeTag)}</td>
                       <td className={`text-right font-semibold ${row.is_significant ? "text-amber-700" : "text-neutral-700"}`}>
                         {row.variance_pct != null ? `${row.variance_pct}%` : "—"}
                       </td>
@@ -192,7 +194,7 @@ export default function BudgetVariancePage() {
                               setFormError(null);
                             }}
                           >
-                            Explain
+                            {t("budget.variance.explain")}
                           </button>
                         )}
                         {canFinance && latest?.status === "submitted" && (
@@ -202,14 +204,14 @@ export default function BudgetVariancePage() {
                               className="btn-primary text-xs py-1 px-2"
                               onClick={() => reviewMut.mutate({ id: latest.id, decision: "accepted" })}
                             >
-                              Accept
+                              {t("budget.submission.accept")}
                             </button>
                             <button
                               type="button"
                               className="btn-secondary text-xs py-1 px-2"
                               onClick={() => reviewMut.mutate({ id: latest.id, decision: "returned" })}
                             >
-                              Return
+                              {t("common.return")}
                             </button>
                           </>
                         )}
@@ -226,36 +228,36 @@ export default function BudgetVariancePage() {
       {explainFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setExplainFor(null)}>
           <div className="card w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-base font-bold">Variance explanation</h2>
+            <h2 className="text-base font-bold">{t("budget.variance.explanationTitle")}</h2>
             <p className="text-xs text-neutral-500">
-              {explainFor.budget_line?.code} · variance {explainFor.variance_pct}%
+              {t("budget.variance.lineVariance", { code: explainFor.budget_line?.code ?? "", pct: explainFor.variance_pct ?? "" })}
             </p>
             {formError && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>}
             <div>
-              <label htmlFor="budget-variance-category" className="block text-xs font-semibold mb-1">Category</label>
+              <label htmlFor="budget-variance-category" className="block text-xs font-semibold mb-1">{t("budget.variance.categoryLabel")}</label>
               <select id="budget-variance-category" className="form-input w-full" value={category} onChange={(e) => setCategory(e.target.value)}>
                 {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
+                  <option key={c.value} value={c.value}>{t(c.label)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label htmlFor="budget-variance-explanation" className="block text-xs font-semibold mb-1">Explanation</label>
+              <label htmlFor="budget-variance-explanation" className="block text-xs font-semibold mb-1">{t("budget.variance.explanation")}</label>
               <textarea id="budget-variance-explanation" className="form-input w-full h-24" value={explanation} onChange={(e) => setExplanation(e.target.value)} />
             </div>
             <div>
-              <label htmlFor="budget-variance-remedial-action" className="block text-xs font-semibold mb-1">Remedial action</label>
+              <label htmlFor="budget-variance-remedial-action" className="block text-xs font-semibold mb-1">{t("budget.variance.remedial")}</label>
               <textarea id="budget-variance-remedial-action" className="form-input w-full h-20" value={remedial} onChange={(e) => setRemedial(e.target.value)} />
             </div>
             <div className="flex gap-2">
-              <button type="button" className="btn-secondary flex-1" onClick={() => setExplainFor(null)}>Cancel</button>
+              <button type="button" className="btn-secondary flex-1" onClick={() => setExplainFor(null)}>{t("common.cancel")}</button>
               <button
                 type="button"
                 className="btn-primary flex-1 disabled:opacity-50"
                 disabled={explainMut.isPending || !explanation.trim()}
                 onClick={() => explainMut.mutate()}
               >
-                {explainMut.isPending ? "Saving…" : "Submit"}
+                {explainMut.isPending ? t("hr.timesheets.saving") : t("common.submit")}
               </button>
             </div>
           </div>

@@ -46,10 +46,10 @@ export default function PoTemplateDesignerPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["po-template", id] });
       setMessage(t("po.designer.saved"));
-      toast.success("PO template draft saved");
+      toast.success(t("po.designerPage.draftSaved"));
     },
     onError: (err: unknown) => {
-      toast.error("PO template not saved", apiErrorMessage(err, "Failed to save the PO template draft."));
+      toast.error(t("po.designerPage.notSaved"), apiErrorMessage(err, t("po.designerPage.saveFailed")));
     },
   });
 
@@ -61,10 +61,10 @@ export default function PoTemplateDesignerPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["po-template", id] });
       setMessage(t("po.designer.published"));
-      toast.success("PO template published");
+      toast.success(t("po.designerPage.published"));
     },
     onError: (err: unknown) => {
-      toast.error("PO template not published", apiErrorMessage(err, "Failed to publish the PO template."));
+      toast.error(t("po.designerPage.notPublished"), apiErrorMessage(err, t("po.designerPage.publishFailed")));
     },
   });
 

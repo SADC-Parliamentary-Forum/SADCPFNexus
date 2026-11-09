@@ -49,12 +49,12 @@ export default function RiskControlTestingPage() {
       setTitle("");
       setControlIds([]);
       qc.invalidateQueries({ queryKey: ["risk", "control-testing"] });
-      toast.success("Campaign created");
+      toast.success(t("risk.testing.campaignCreated"));
     },
     onError: (err) => {
-      const message = apiErrorMessage(err, "Could not create campaign.");
+      const message = apiErrorMessage(err, t("risk.testing.campaignCreateFailed"));
       setError(message);
-      toast.error("Campaign not created", message);
+      toast.error(t("risk.testing.campaignNotCreated"), message);
     },
   });
 
@@ -63,12 +63,12 @@ export default function RiskControlTestingPage() {
       riskApi.completeControlTestItem(id, { result, checklist_notes: "Completed via UI" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["risk", "control-testing"] });
-      toast.success("Control test completed");
+      toast.success(t("risk.testing.testCompleted"));
     },
     onError: (err) => {
-      const message = apiErrorMessage(err, "Could not complete control test.");
+      const message = apiErrorMessage(err, t("risk.testing.testCompleteFailed"));
       setError(message);
-      toast.error("Could not complete control test", message);
+      toast.error(t("risk.testing.testNotCompleted"), message);
     },
   });
 
@@ -76,10 +76,10 @@ export default function RiskControlTestingPage() {
     mutationFn: () => riskApi.markControlTestsOverdue(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["risk", "control-testing"] });
-      toast.success("Overdue control tests marked");
+      toast.success(t("risk.testing.overdueMarked"));
     },
     onError: (err) => {
-      toast.error("Could not mark overdue tests", apiErrorMessage(err, "Please try again."));
+      toast.error(t("risk.testing.overdueNotMarked"), apiErrorMessage(err, t("risk.common.tryAgain")));
     },
   });
 
@@ -96,16 +96,16 @@ export default function RiskControlTestingPage() {
     <RiskPageFrame>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
-        title="Control Testing Campaigns"
-        subtitle="Schedule control tests against Risk Register controls, record pass/fail with checklist evidence, and surface overdue items."
+        title="risk.testing.pageTitle"
+        subtitle="risk.testing.pageSubtitle"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.testing.title" }]} />}
       />
         <div className="flex gap-2">
           <Link href="/risk/kri" className="btn-secondary">
-            KRI alerts
+            {t("risk.testing.kriAlerts")}
           </Link>
           <button type="button" className="btn-secondary" onClick={() => markOverdue.mutate()} disabled={markOverdue.isPending}>
-            Refresh overdue
+            {t("risk.testing.refreshOverdue")}
           </button>
         </div>
       </div>
@@ -114,11 +114,11 @@ export default function RiskControlTestingPage() {
 
       <form onSubmit={onCreate} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-4">
         <label htmlFor="risk-control-testing-campaign-title-settitle-e-target-value" className="space-y-1 md:col-span-2">
-          <span className="text-sm font-medium">Campaign title</span>
+          <span className="text-sm font-medium">{t("risk.testing.campaignTitle")}</span>
           <input id="risk-control-testing-campaign-title-settitle-e-target-value" className="input w-full" required value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
         <label htmlFor="risk-control-testing-due-end-date-setscheduledend-e-target-value" className="space-y-1">
-          <span className="text-sm font-medium">Due / end date</span>
+          <span className="text-sm font-medium">{t("risk.testing.dueEndDate")}</span>
           <input id="risk-control-testing-due-end-date-setscheduledend-e-target-value" type="date" className="input w-full" value={scheduledEnd} onChange={(e) => setScheduledEnd(e.target.value)} />
         </label>
         <fieldset className="space-y-1 md:col-span-4" data-testid="testing-controls">
@@ -150,7 +150,7 @@ export default function RiskControlTestingPage() {
         </fieldset>
         <div className="md:col-span-4">
           <button type="submit" className="btn-primary" disabled={create.isPending}>
-            {create.isPending ? "Creating…" : "Create campaign"}
+            {create.isPending ? t("risk.testing.creating") : t("risk.testing.createCampaign")}
           </button>
         </div>
       </form>
@@ -159,10 +159,10 @@ export default function RiskControlTestingPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-50 text-left text-neutral-600">
             <tr>
-              <th className="px-3 py-2 font-medium">Campaign</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">Items</th>
-              <th className="px-3 py-2 font-medium">Overdue</th>
+              <th className="px-3 py-2 font-medium">{t("risk.testing.colCampaign")}</th>
+              <th className="px-3 py-2 font-medium">{t("risk.common.status")}</th>
+              <th className="px-3 py-2 font-medium">{t("risk.testing.colItems")}</th>
+              <th className="px-3 py-2 font-medium">{t("risk.common.overdue")}</th>
               <th className="px-3 py-2 font-medium" />
             </tr>
           </thead>
@@ -178,13 +178,13 @@ export default function RiskControlTestingPage() {
                 <td className="px-3 py-3">{c.overdue_items_count ?? 0}</td>
                 <td className="px-3 py-3 text-right">
                   <button type="button" className="btn-secondary" onClick={() => setSelectedId(c.id)}>
-                    Open
+                    {t("common.open")}
                   </button>
                 </td>
               </tr>
             ))}
             {campaigns.length === 0 && (
-              <TableEmpty colSpan={5} title="No campaigns yet." />
+              <TableEmpty colSpan={5} title="risk.testing.noCampaigns" />
             )}
           </tbody>
         </table>
@@ -197,10 +197,10 @@ export default function RiskControlTestingPage() {
             <table className="min-w-full text-sm">
               <thead className="bg-neutral-50 text-left text-neutral-600">
                 <tr>
-                  <th className="px-3 py-2">Control</th>
-                  <th className="px-3 py-2">Due</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Actions</th>
+                  <th className="px-3 py-2">{t("risk.testing.colControl")}</th>
+                  <th className="px-3 py-2">{t("risk.common.due")}</th>
+                  <th className="px-3 py-2">{t("risk.common.status")}</th>
+                  <th className="px-3 py-2">{t("risk.common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,10 +215,10 @@ export default function RiskControlTestingPage() {
                       {["pending", "in_progress", "overdue"].includes(item.status) && (
                         <div className="flex gap-1">
                           <button type="button" className="btn-primary" onClick={() => complete.mutate({ id: item.id, result: "pass" })}>
-                            Pass
+                            {t("risk.testing.pass")}
                           </button>
                           <button type="button" className="btn-secondary" onClick={() => complete.mutate({ id: item.id, result: "fail" })}>
-                            Fail
+                            {t("risk.testing.fail")}
                           </button>
                         </div>
                       )}

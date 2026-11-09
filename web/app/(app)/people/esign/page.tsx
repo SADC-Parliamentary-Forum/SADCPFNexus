@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -30,6 +31,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 }
 
 export default function Page() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
   const [q, setQ] = useState("");
@@ -43,24 +45,24 @@ export default function Page() {
         document_hash: form.document_hash.trim(),
       }),
     onSuccess: () => {
-      toast.success("E-sign request created");
+      toast.success(t("people.esign.created"));
       setForm({ document_type: "", document_id: "", document_hash: "" });
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "esign"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not create the e-sign request. Type, document id, and hash are required.");
+      const message = apiErrorMessage(e, t("people.esign.createFailed"));
       setErr(message);
-      toast.error("E-sign request not created", message);
+      toast.error(t("people.esign.notCreated"), message);
     },
   });
   const submit = useMutation({
     mutationFn: (id: number) => peopleAuthorityApi.submitEsign(id),
     onSuccess: () => {
-      toast.success("E-sign request submitted");
+      toast.success(t("people.esign.submitted"));
       qc.invalidateQueries({ queryKey: ["people-authority", "esign"] });
     },
-    onError: (e) => toast.error("E-sign request not submitted", apiErrorMessage(e, "Could not submit the e-sign request.")),
+    onError: (e) => toast.error(t("people.esign.notSubmitted"), apiErrorMessage(e, t("people.esign.submitFailed"))),
   });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","esign"],
@@ -93,19 +95,19 @@ return (await peopleAuthorityApi.listEsign()).data;
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="E-Sign Requests"
-        subtitle="People & E-Sign Requests"
+        title={t("people.esign.title")}
+        subtitle={t("people.esign.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "E-Sign Requests" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.esign.title") },
             ]}
           />
         }
         actions={
           <Link href="/people" className="btn-secondary text-sm">
-            Hub
+            {t("people.common.hub")}
           </Link>
         }
       />
@@ -118,20 +120,20 @@ return (await peopleAuthorityApi.listEsign()).data;
         }}
       >
         <label htmlFor="people-esign-document-type-setform-f-required" className="block text-xs font-medium text-neutral-600">
-          Document type
+          {t("people.esign.documentType")}
           <input id="people-esign-document-type-setform-f-required" className="form-input mt-1" value={form.document_type} onChange={(e) => setForm((f) => ({ ...f, document_type: e.target.value }))} required />
         </label>
         <label htmlFor="people-esign-document-id-setform-f-required" className="block text-xs font-medium text-neutral-600">
-          Document id
+          {t("people.esign.documentId")}
           <input id="people-esign-document-id-setform-f-required" className="form-input mt-1" value={form.document_id} onChange={(e) => setForm((f) => ({ ...f, document_id: e.target.value }))} required />
         </label>
         <label htmlFor="people-esign-document-hash-setform-f-required" className="block text-xs font-medium text-neutral-600">
-          Document hash
+          {t("people.esign.documentHash")}
           <input id="people-esign-document-hash-setform-f-required" className="form-input mt-1" value={form.document_hash} onChange={(e) => setForm((f) => ({ ...f, document_hash: e.target.value }))} required />
         </label>
         <div className="sm:col-span-3 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
-            {create.isPending ? "Saving…" : "Create e-sign request"}
+            {create.isPending ? t("people.common.saving") : t("people.esign.create")}
           </button>
           {err && <p className="text-sm text-red-700">{err}</p>}
         </div>
@@ -139,12 +141,12 @@ return (await peopleAuthorityApi.listEsign()).data;
 
       <div className="card p-3">
         <label htmlFor="people-esign-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
+          {t("common.search")}
           <input id="people-esign-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
+            placeholder={t("people.common.filterRows")}
           />
         </label>
       </div>
@@ -159,24 +161,24 @@ return (await peopleAuthorityApi.listEsign()).data;
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
             action={
               <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
+                {t("common.retry")}
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">E-Sign Requests</caption>
+              <caption className="sr-only">{t("people.esign.title")}</caption>
               <thead>
                 <tr>
                   {columns.map((c) => (
@@ -184,7 +186,7 @@ return (await peopleAuthorityApi.listEsign()).data;
                       {c.replace(/_/g, " ")}
                     </th>
                   ))}
-                  <th>Actions</th>
+                  <th>{t("people.common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -200,7 +202,7 @@ return (await peopleAuthorityApi.listEsign()).data;
                         disabled={submit.isPending || r.id == null}
                         onClick={() => submit.mutate(Number(r.id))}
                       >
-                        Submit
+                        {t("common.submit")}
                       </button>
                     </td>
                   </tr>

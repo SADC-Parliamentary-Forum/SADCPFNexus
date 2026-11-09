@@ -10,6 +10,7 @@ import { apiErrorMessage } from "@/lib/apiError";
 import { FormSection } from "@/components/ui/FormSection";
 import { AccessDenied } from "@/components/ui/AccessDenied";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -20,14 +21,18 @@ function formatBytes(n: number): string {
 export default function HrDryRunSourceUploadPage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const user = getStoredUser();
   if (!isSystemAdmin(user)) {
-    return <AccessDenied path="/hr/imports/dry-run-source" reason="System administrator access required — this stages real personal and banking source data." />;
+    return <AccessDenied path="/hr/imports/dry-run-source" reason={t("hr.imports.dryRun.accessReason")} />;
   }
+
+  const [warn1, warn2 = ""] = t("hr.imports.dryRun.warning").split("{workflow}");
+  const [once1, once2 = ""] = t("hr.imports.dryRun.onceStaged").split("{link}");
 
   const { data, isLoading } = useQuery({
     queryKey: ["hr-dry-run-source"],
@@ -42,15 +47,15 @@ export default function HrDryRunSourceUploadPage() {
     },
     onSuccess: (res) => {
       const { stored, rejected } = res.data.data;
-      setMessage(`Staged ${stored.length} file(s).${rejected.length ? ` Rejected: ${rejected.join(", ")}` : ""}`);
+      setMessage(rejected.length ? t("hr.imports.dryRun.stagedRejected", { count: stored.length, rejected: rejected.join(", ") }) : t("hr.imports.dryRun.stagedCount", { count: stored.length }));
       setError(null);
       setFiles([]);
       qc.invalidateQueries({ queryKey: ["hr-dry-run-source"] });
-      toast.success("Files uploaded", `Staged ${stored.length} file(s).`);
+      toast.success(t("hr.imports.dryRun.uploaded"), t("hr.imports.dryRun.stagedCount", { count: stored.length }));
     },
     onError: (err: unknown) => {
-      setError("Upload failed.");
-      toast.error("Upload failed", apiErrorMessage(err, "Upload failed."));
+      setError(t("hr.imports.dryRun.uploadFailedDot"));
+      toast.error(t("hr.imports.dryRun.uploadFailed"), apiErrorMessage(err, t("hr.imports.dryRun.uploadFailedDot")));
     },
   });
 
@@ -58,9 +63,9 @@ export default function HrDryRunSourceUploadPage() {
     mutationFn: (name: string) => hrDryRunSourceApi.remove(name),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["hr-dry-run-source"] });
-      toast.success("File removed");
+      toast.success(t("hr.imports.dryRun.removed"));
     },
-    onError: (err: unknown) => toast.error("Could not remove file", apiErrorMessage(err, "Could not remove file.")),
+    onError: (err: unknown) => toast.error(t("hr.imports.dryRun.removeFailed"), apiErrorMessage(err, t("hr.imports.dryRun.removeFailedDot"))),
   });
 
   const clearAll = useMutation({
@@ -68,52 +73,52 @@ export default function HrDryRunSourceUploadPage() {
     onSuccess: (res) => {
       setMessage(res.data.message);
       qc.invalidateQueries({ queryKey: ["hr-dry-run-source"] });
-      toast.success("Files cleared");
+      toast.success(t("hr.imports.dryRun.cleared"));
     },
-    onError: (err: unknown) => toast.error("Could not clear files", apiErrorMessage(err, "Could not clear files.")),
+    onError: (err: unknown) => toast.error(t("hr.imports.dryRun.clearFailed"), apiErrorMessage(err, t("hr.imports.dryRun.clearFailedDot"))),
   });
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Dry-run source files"
-        subtitle="Upload the 13 real Sage VIP export files here so the migration dry-run workflow can read them on the server — no SSH access needed. These files contain real names, bank accounts, and salaries: remove them once the dry run is done."
+        title="hr.imports.dryRunLink"
+        subtitle="hr.imports.dryRun.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "HR", href: "/hr" },
-              { label: "Historical Import", href: "/hr/imports" },
-              { label: "Dry-run source files" },
+              { label: "nav.hr", href: "/hr" },
+              { label: "hr.imports.crumb", href: "/hr/imports" },
+              { label: "hr.imports.dryRunLink" },
             ]}
           />
         }
       />
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        These files are stored on the production server&apos;s local disk only — never committed to git, never sent
-        through GitHub. After running the{" "}
-        <span className="font-mono">HR historical migration — dry run</span> workflow in GitHub Actions, come back
-        here and clear them.
+        {warn1}
+        <span className="font-mono">HR historical migration — dry run</span>{/* i18n-ignore */}
+        {warn2}
       </div>
 
-      <FormSection title="Upload" description="PDF, XLS, XLSX only." icon="upload_file">
+      <FormSection title="common.upload" description="hr.imports.dryRun.uploadHint" icon="upload_file">
         <div className="flex flex-col gap-3">
           <input
             type="file"
             multiple
             accept=".pdf,.xls,.xlsx"
             className="form-input"
+            aria-label={t("hr.imports.fileInput")}
             disabled={upload.isPending}
             onChange={(e) => setFiles(e.target.files ? Array.from(e.target.files) : [])}
           />
-          {files.length > 0 ? <p className="text-xs text-neutral-600">{files.length} file(s) selected.</p> : null}
+          {files.length > 0 ? <p className="text-xs text-neutral-600">{t("hr.imports.filesSelected", { count: files.length })}</p> : null}
           <button
             type="button"
             className="btn-primary text-sm w-fit"
             disabled={files.length === 0 || upload.isPending}
             onClick={() => upload.mutate()}
           >
-            {upload.isPending ? "Uploading…" : "Upload"}
+            {upload.isPending ? t("hr.imports.dryRun.uploading") : t("common.upload")}
           </button>
         </div>
       </FormSection>
@@ -130,7 +135,7 @@ export default function HrDryRunSourceUploadPage() {
       ) : null}
 
       <FormSection
-        title={`Currently staged (${data?.length ?? 0})`}
+        title={t("hr.imports.dryRun.currentlyStaged", { count: data?.length ?? 0 })}
         icon="folder"
         actions={
           data && data.length > 0 ? (
@@ -140,23 +145,23 @@ export default function HrDryRunSourceUploadPage() {
               disabled={clearAll.isPending}
               onClick={() => clearAll.mutate()}
             >
-              {clearAll.isPending ? "Clearing…" : "Clear all"}
+              {clearAll.isPending ? t("hr.imports.dryRun.clearing") : t("hr.imports.dryRun.clearAll")}
             </button>
           ) : undefined
         }
       >
         {isLoading ? (
-          <p className="text-sm text-neutral-500">Loading…</p>
+          <p className="text-sm text-neutral-500">{t("common.loading")}</p>
         ) : !data || data.length === 0 ? (
-          <p className="text-sm text-neutral-500">No files staged yet.</p>
+          <p className="text-sm text-neutral-500">{t("hr.imports.dryRun.empty")}</p>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>File</th>
-                <th>Size</th>
-                <th>Uploaded</th>
-                <th></th>
+                <th>{t("finance.payslips.col.file")}</th>
+                <th>{t("hr.imports.dryRun.col.size")}</th>
+                <th>{t("hr.imports.dryRun.col.uploaded")}</th>
+                <th><span className="sr-only">{t("finance.budget.col.actions")}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -172,7 +177,7 @@ export default function HrDryRunSourceUploadPage() {
                       disabled={removeOne.isPending}
                       onClick={() => removeOne.mutate(f.name)}
                     >
-                      Remove
+                      {t("hr.imports.dryRun.remove")}
                     </button>
                   </td>
                 </tr>
@@ -183,11 +188,11 @@ export default function HrDryRunSourceUploadPage() {
       </FormSection>
 
       <p className="text-sm text-neutral-600">
-        Once files are staged, run the dry-run from{" "}
+        {once1}
         <Link href="https://github.com/SADC-Parliamentary-Forum/SADCPFNexus/actions/workflows/hr-migration-dry-run.yml" className="font-semibold text-primary-700 hover:opacity-80">
-          GitHub Actions
+          GitHub Actions {/* i18n-ignore */}
         </Link>
-        .
+        {once2}
       </p>
     </div>
   );

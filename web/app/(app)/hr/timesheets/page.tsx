@@ -12,6 +12,7 @@ import { TIMESHEET_HUB_CARDS } from "@/lib/hubs/timesheets";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 import {
   firstTimesheetRowErrorMessage,
   normalizeTimesheetEntry,
@@ -47,13 +48,13 @@ function getWeekDates(weekStart: Date): Date[] {
   return [0, 1, 2, 3, 4].map((i) => addDays(weekStart, i));
 }
 
-function formatDayShort(d: Date): string {
-  return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+function formatDayShort(d: Date, localeTag = "en-GB"): string {
+  return d.toLocaleDateString(localeTag, { weekday: "short", day: "numeric", month: "short" });
 }
 
-function formatWeekLabel(start: Date, end: Date): string {
-  const s = start.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  const e = end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+function formatWeekLabel(start: Date, end: Date, localeTag = "en-GB"): string {
+  const s = start.toLocaleDateString(localeTag, { day: "numeric", month: "short" });
+  const e = end.toLocaleDateString(localeTag, { day: "numeric", month: "short", year: "numeric" });
   return `${s} – ${e}`;
 }
 
@@ -66,13 +67,13 @@ const BUCKET_ICONS: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }> = {
-  draft: { label: "Draft", cls: "badge-muted", icon: "edit_note" },
-  submitted: { label: "Pending Approval", cls: "badge-warning", icon: "pending" },
-  approved: { label: "Nexus Approved", cls: "badge-success", icon: "check_circle" },
-  rejected: { label: "Rejected", cls: "badge-danger", icon: "cancel" },
-  imported: { label: "Imported (historical)", cls: "text-indigo-700 bg-indigo-50 border-indigo-200", icon: "history" },
-  verified_historical: { label: "Verified Historical", cls: "text-violet-700 bg-violet-50 border-violet-200", icon: "verified" },
-  returned: { label: "Returned", cls: "badge-warning", icon: "undo" },
+  draft: { label: "hr.timesheets.status.draft", cls: "badge-muted", icon: "edit_note" },
+  submitted: { label: "hr.timesheets.status.submitted", cls: "badge-warning", icon: "pending" },
+  approved: { label: "timesheet.import.origin.approved", cls: "badge-success", icon: "check_circle" },
+  rejected: { label: "hr.timesheets.status.rejected", cls: "badge-danger", icon: "cancel" },
+  imported: { label: "timesheet.import.origin.imported", cls: "text-indigo-700 bg-indigo-50 border-indigo-200", icon: "history" },
+  verified_historical: { label: "timesheet.import.origin.verified", cls: "text-violet-700 bg-violet-50 border-violet-200", icon: "verified" },
+  returned: { label: "hr.timesheets.status.returned", cls: "badge-warning", icon: "undo" },
 };
 
 function applyEntryDefaults(entry: TimesheetEntry, projects: TimesheetProject[]): TimesheetEntry {
@@ -96,6 +97,7 @@ interface SummaryPanelProps {
 }
 
 function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, onApprove, onReject }: SummaryPanelProps) {
+  const { t } = useI18n();
   const totalHours = entries.reduce((s, e) => s + e.hours, 0);
   const overtimeHours = entries.reduce((s, e) => s + (e.overtime_hours ?? 0), 0);
   const expectedHours = 40;
@@ -109,7 +111,7 @@ function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, o
     <div className="space-y-4">
       {status === "rejected" && timesheet?.rejection_reason ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-          <p className="text-xs font-medium text-red-700">Returned</p>
+          <p className="text-xs font-medium text-red-700">{t("hr.timesheets.status.returned")}</p>
           <p className="mt-0.5 text-xs text-red-600">{timesheet.rejection_reason}</p>
         </div>
       ) : null}
@@ -117,12 +119,12 @@ function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, o
       <div className="card space-y-3 p-4">
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">This week</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("hr.timesheets.thisWeek")}</p>
             <span className="text-2xl font-bold text-neutral-900">{totalHours.toFixed(1)}</span>
-            <span className="text-sm text-neutral-400">h / {expectedHours}h</span>
+            <span className="text-sm text-neutral-400">{t("hr.timesheets.ofExpected", { hours: expectedHours })}</span>
           </div>
           {overtimeHours > 0 ? (
-            <span className="badge-warning text-xs">+{overtimeHours.toFixed(1)}h OT</span>
+            <span className="badge-warning text-xs">{t("hr.timesheets.overtimeBadge", { hours: overtimeHours.toFixed(1) })}</span>
           ) : null}
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
@@ -132,10 +134,10 @@ function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, o
           />
         </div>
         {missingHours > 0 && isDraft ? (
-          <p className="text-xs text-neutral-500">{missingHours.toFixed(1)}h still to record</p>
+          <p className="text-xs text-neutral-500">{t("hr.timesheets.stillToRecord", { hours: missingHours.toFixed(1) })}</p>
         ) : null}
         {timesheet?.submitted_at ? (
-          <p className="text-xs text-neutral-500">Submitted {formatDateShort(timesheet.submitted_at)}</p>
+          <p className="text-xs text-neutral-500">{t("hr.timesheets.submittedOn", { date: formatDateShort(timesheet.submitted_at) })}</p>
         ) : null}
       </div>
 
@@ -149,7 +151,7 @@ function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, o
               disabled={saving || entries.length === 0}
               className="btn-secondary w-full disabled:opacity-50"
             >
-              {saving ? "Saving…" : "Save Draft"}
+              {saving ? t("hr.timesheets.saving") : t("hr.timesheets.saveDraft")}
             </button>
             <button
               type="button"
@@ -157,14 +159,14 @@ function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, o
               disabled={saving || entries.length === 0}
               className="btn-primary w-full disabled:opacity-50"
             >
-              Submit for Approval
+              {t("hr.timesheets.submitForApproval")}
             </button>
           </>
         )}
         {isAdmin && isSubmitted && (
           <>
             <button type="button" onClick={onApprove} disabled={saving} className="btn-primary w-full disabled:opacity-50">
-              Approve
+              {t("common.approve")}
             </button>
             <button
               type="button"
@@ -172,7 +174,7 @@ function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, o
               disabled={saving}
               className="w-full rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
             >
-              Reject
+              {t("common.reject")}
             </button>
           </>
         )}
@@ -181,7 +183,7 @@ function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, o
             href={`/hr/timesheets/${timesheet.id}`}
             className="btn-secondary w-full text-center block"
           >
-            View Full Details
+            {t("hr.timesheets.viewFullDetails")}
           </Link>
         )}
       </div>
@@ -192,6 +194,7 @@ function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, o
 // ─── Main Page ─────────────────────────────────────────────────────────────
 
 export default function TimesheetsPage() {
+  const { t, localeTag } = useI18n();
   const toast = useToast();
   const [weekStartDate, setWeekStartDate] = useState<Date | null>(null);
   const [timesheet, setTimesheet] = useState<Timesheet | null>(null);
@@ -267,7 +270,7 @@ export default function TimesheetsPage() {
         setTemplates((tmplRes as any).data ?? []);
       }
     } catch {
-      setError("Failed to load timesheet data.");
+      setError(t("hr.timesheets.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -292,7 +295,7 @@ export default function TimesheetsPage() {
       const ts = data.data.timesheet;
       setTimesheet(ts);
       setEntries((ts.entries ?? []).map((e) => applyEntryDefaults(e, projects)));
-      toast.success("Template applied");
+      toast.success(t("hr.timesheets.templateApplied"));
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data
@@ -300,9 +303,9 @@ export default function TimesheetsPage() {
         Object.values(
           (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors ?? {},
         ).flat()[0] ||
-        "Failed to apply template.";
+        t("hr.timesheets.applyTemplateFailed");
       setError(msg);
-      toast.error("Template not applied", msg);
+      toast.error(t("hr.timesheets.templateNotApplied"), msg);
     } finally {
       setApplyingTemplate(false);
     }
@@ -364,10 +367,10 @@ export default function TimesheetsPage() {
     setError(null);
     try {
       await persistDraft();
-      toast.success("Timesheet saved");
+      toast.success(t("hr.timesheets.saved"));
     } catch (err) {
-      setError("Failed to save timesheet.");
-      toast.error("Timesheet not saved", apiErrorMessage(err, "Failed to save timesheet."));
+      setError(t("hr.timesheets.saveFailed"));
+      toast.error(t("hr.timesheets.notSaved"), apiErrorMessage(err, t("hr.timesheets.saveFailed")));
     } finally {
       setSaving(false);
     }
@@ -384,10 +387,10 @@ export default function TimesheetsPage() {
       const res = await hrApi.submitTimesheet(current.id);
       const updated = (res.data as any).data ?? res.data;
       setTimesheet((prev) => ({ ...prev!, ...updated }));
-      toast.success("Timesheet submitted");
+      toast.success(t("hr.timesheets.submitted"));
     } catch (err) {
-      setError("Failed to submit timesheet.");
-      toast.error("Timesheet not submitted", apiErrorMessage(err, "Failed to submit timesheet."));
+      setError(t("hr.timesheets.submitFailed"));
+      toast.error(t("hr.timesheets.notSubmitted"), apiErrorMessage(err, t("hr.timesheets.submitFailed")));
     } finally {
       setSaving(false);
     }
@@ -400,10 +403,10 @@ export default function TimesheetsPage() {
       const res = await hrApi.approveTimesheet(timesheet.id);
       const updated = (res.data as any).data ?? res.data;
       setTimesheet((prev) => ({ ...prev!, ...updated }));
-      toast.success("Timesheet approved");
+      toast.success(t("hr.timesheets.approved"));
     } catch (err) {
-      setError("Failed to approve timesheet.");
-      toast.error("Could not approve timesheet", apiErrorMessage(err, "Failed to approve timesheet."));
+      setError(t("hr.timesheets.approveFailed"));
+      toast.error(t("hr.timesheets.notApproved"), apiErrorMessage(err, t("hr.timesheets.approveFailed")));
     } finally {
       setSaving(false);
     }
@@ -418,10 +421,10 @@ export default function TimesheetsPage() {
       setTimesheet((prev) => ({ ...prev!, ...updated }));
       setShowRejectModal(false);
       setRejectReason("");
-      toast.success("Timesheet rejected");
+      toast.success(t("hr.timesheets.rejected"));
     } catch (err) {
-      setError("Failed to reject timesheet.");
-      toast.error("Could not reject timesheet", apiErrorMessage(err, "Failed to reject timesheet."));
+      setError(t("hr.timesheets.rejectFailed"));
+      toast.error(t("hr.timesheets.notRejected"), apiErrorMessage(err, t("hr.timesheets.rejectFailed")));
     } finally {
       setSaving(false);
     }
@@ -472,8 +475,8 @@ export default function TimesheetsPage() {
       const detail = firstTimesheetRowErrorMessage(rowErrors);
       setError(
         detail
-          ? `Fix highlighted rows before saving. ${detail}`
-          : "Fix highlighted rows before saving (project, bucket, and hours are required).",
+          ? t("hr.timesheets.fixRowsBeforeSavingDetail", { detail })
+          : t("hr.timesheets.fixRowsBeforeSaving"),
       );
       return;
     }
@@ -483,7 +486,7 @@ export default function TimesheetsPage() {
   const handleSubmitGuarded = async () => {
     if (hasRowErrors) {
       const detail = firstTimesheetRowErrorMessage(rowErrors);
-      setError(detail ? `Fix highlighted rows before submitting. ${detail}` : "Fix highlighted rows before submitting.");
+      setError(detail ? t("hr.timesheets.fixRowsBeforeSubmittingDetail", { detail }) : t("hr.timesheets.fixRowsBeforeSubmitting"));
       return;
     }
     await handleSubmit();
@@ -492,30 +495,30 @@ export default function TimesheetsPage() {
   return (
     <>
       <ModulePageHeader
-        title="My timesheet"
-        subtitle={weekStartDate ? formatWeekLabel(weekStartDate, addDays(weekStartDate, 4)) : "This week"}
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Timesheets" }]} />}
+        title="hr.timesheets.myTimesheet"
+        subtitle={weekStartDate ? formatWeekLabel(weekStartDate, addDays(weekStartDate, 4), localeTag) : t("hr.timesheets.thisWeek")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.timesheets" }]} />}
         actions={
           <>
             <button
               type="button"
               onClick={handlePrevWeek}
               disabled={!weekStartDate}
-              aria-label="Previous week"
-              title="Previous week"
+              aria-label={t("hr.timesheets.previousWeek")}
+              title={t("hr.timesheets.previousWeek")}
               className="btn-secondary text-sm"
             >
-              Previous
+              {t("common.previous")}
             </button>
             <button
               type="button"
               onClick={handleNextWeek}
               disabled={!weekStartDate}
-              aria-label="Next week"
-              title="Next week"
+              aria-label={t("hr.timesheets.nextWeek")}
+              title={t("hr.timesheets.nextWeek")}
               className="btn-secondary text-sm"
             >
-              Next
+              {t("common.next")}
             </button>
           </>
         }
@@ -526,11 +529,11 @@ export default function TimesheetsPage() {
         {timesheet ? (
           <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", STATUS_CONFIG[timesheet.status]?.cls ?? "badge-muted")}>
             {timesheet.status === "approved" && timesheet.origin !== "historical_import"
-              ? "Nexus Approved"
-              : STATUS_CONFIG[timesheet.status]?.label ?? timesheet.status}
+              ? t("timesheet.import.origin.approved")
+              : STATUS_CONFIG[timesheet.status] ? t(STATUS_CONFIG[timesheet.status].label) : timesheet.status}
           </span>
         ) : (
-          <span className="badge-muted rounded-full px-2.5 py-1 text-xs font-semibold">Draft</span>
+          <span className="badge-muted rounded-full px-2.5 py-1 text-xs font-semibold">{t("hr.timesheets.status.draft")}</span>
         )}
         <div className="flex flex-wrap items-center gap-2">
           {isDraft && templates.length > 0 && (
@@ -539,13 +542,13 @@ export default function TimesheetsPage() {
                 className="form-input max-w-[200px] py-1.5 text-sm"
                 value={selectedTemplateId}
                 onChange={(e) => setSelectedTemplateId(e.target.value)}
-                aria-label="Donor or project template"
+                aria-label={t("hr.timesheets.templateSelect")}
                 data-testid="timesheet-apply-template-select"
               >
-                <option value="">Donor / project template…</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.donor_name ? `${t.donor_name} — ${t.name}` : t.name}
+                <option value="">{t("hr.timesheets.templatePlaceholder")}</option>
+                {templates.map((tpl) => (
+                  <option key={tpl.id} value={tpl.id}>
+                    {tpl.donor_name ? `${tpl.donor_name} — ${tpl.name}` : tpl.name}
                   </option>
                 ))}
               </select>
@@ -556,7 +559,7 @@ export default function TimesheetsPage() {
                 onClick={() => void handleApplyTemplate()}
                 data-testid="timesheet-apply-template-btn"
               >
-                {applyingTemplate ? "Applying…" : "Apply"}
+                {applyingTemplate ? t("hr.timesheets.applying") : t("hr.timesheets.apply")}
               </button>
             </>
           )}
@@ -568,7 +571,7 @@ export default function TimesheetsPage() {
                 className="btn-secondary flex items-center gap-1.5 text-sm"
               >
                 <span className="material-symbols-outlined text-[18px]">playlist_add</span>
-                Add row
+                {t("hr.timesheets.addRow")}
               </button>
               <button
                 type="button"
@@ -576,7 +579,7 @@ export default function TimesheetsPage() {
                 className="btn-primary flex items-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
-                Quick entry
+                {t("hr.timesheets.quickEntry")}
               </button>
             </>
           )}
@@ -586,7 +589,7 @@ export default function TimesheetsPage() {
       {error && <ErrorBanner message={error} />}
       {isHistorical ? (
         <p className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800">
-          This historical week is read-only.
+          {t("timesheet.import.readOnly")}
         </p>
       ) : null}
 
@@ -617,7 +620,7 @@ export default function TimesheetsPage() {
                     )}
                   >
                     <div className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
-                      {d.toLocaleDateString("en-GB", { weekday: "short" })} {d.getDate()}
+                      {d.toLocaleDateString(localeTag, { weekday: "short" })} {d.getDate()}
                     </div>
                     <div className={cn("text-sm font-bold tabular-nums", over ? "text-amber-600" : total > 0 ? "text-neutral-900" : "text-neutral-300")}>
                       {total > 0 ? `${total}h` : "—"}
@@ -630,38 +633,38 @@ export default function TimesheetsPage() {
             <div className="card overflow-hidden">
               <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-4 py-3">
                 <div>
-                  <p className="text-sm font-semibold text-neutral-900">Draft entry grid</p>
+                  <p className="text-sm font-semibold text-neutral-900">{t("hr.timesheets.gridTitle")}</p>
                   <p className="text-xs text-neutral-500">
-                    Tab through fields · {weekTotal}h
-                    {otTotal > 0 ? ` · ${otTotal}h overtime` : ""}
+                    {t("hr.timesheets.gridHint", { hours: weekTotal })}
+                    {otTotal > 0 ? t("hr.timesheets.gridOvertime", { hours: otTotal }) : ""}
                   </p>
                 </div>
                 {hasRowErrors && (
-                  <span className="badge badge-warning text-xs">{Object.keys(rowErrors).length} row issue(s)</span>
+                  <span className="badge badge-warning text-xs">{t("hr.timesheets.rowIssues", { count: Object.keys(rowErrors).length })}</span>
                 )}
               </div>
               {isDraft && projects.length === 0 && entries.length > 0 ? (
                 <p className="border-b border-amber-100 bg-amber-50 px-4 py-2 text-xs text-amber-800">
-                  Charge codes did not load. Hours can still be saved; ask an administrator to publish timesheet projects if you need to allocate to a programme.
+                  {t("hr.timesheets.chargeCodesMissing")}
                 </p>
               ) : null}
 
               {entries.length === 0 ? (
                 <EmptyState
                   icon="schedule"
-                  title="No entries yet"
-                  description="Apply a template, add a row, or use Quick entry"
+                  title={t("hr.timesheets.emptyTitle")}
+                  description={t("hr.timesheets.emptyHint")}
                   action={isDraft ? (
                     <div className="flex gap-2">
                       <button type="button" className="btn-secondary text-sm" onClick={handleAddBlankRow}>
-                        Add row
+                        {t("hr.timesheets.addRow")}
                       </button>
                       <button
                         type="button"
                         className="btn-primary text-sm"
                         onClick={() => { setEditingEntry(null); setShowQuickEntry(true); }}
                       >
-                        Quick entry
+                        {t("hr.timesheets.quickEntry")}
                       </button>
                     </div>
                   ) : undefined}
@@ -671,13 +674,13 @@ export default function TimesheetsPage() {
                   <table className="data-table w-full min-w-[880px]">
                     <thead>
                       <tr>
-                        <th>Date</th>
-                        <th>Project</th>
-                        <th>Bucket</th>
-                        <th>Category / activity</th>
-                        <th className="text-right">Hours</th>
-                        <th className="text-right">OT hrs</th>
-                        <th>Notes</th>
+                        <th>{t("hr.timesheets.col.date")}</th>
+                        <th>{t("hr.timesheets.col.project")}</th>
+                        <th>{t("hr.timesheets.col.bucket")}</th>
+                        <th>{t("hr.timesheets.col.activity")}</th>
+                        <th className="text-right">{t("hr.timesheets.col.hours")}</th>
+                        <th className="text-right">{t("hr.timesheets.col.otHours")}</th>
+                        <th>{t("hr.timesheets.col.notes")}</th>
                         {isDraft && <th className="w-16" />}
                       </tr>
                     </thead>
@@ -696,10 +699,10 @@ export default function TimesheetsPage() {
                                   className="form-input py-1.5 text-sm"
                                   value={entry.work_date}
                                   onChange={(e) => updateEntryField(idx, "work_date", e.target.value)}
-                                  aria-label={`Row ${idx + 1} date`}
+                                  aria-label={t("hr.timesheets.rowDate", { row: idx + 1 })}
                                 />
                               ) : (
-                                <span className="text-sm">{formatDayShort(new Date(entry.work_date + "T12:00:00"))}</span>
+                                <span className="text-sm">{formatDayShort(new Date(entry.work_date + "T12:00:00"), localeTag)}</span>
                               )}
                             </td>
                             <td className="align-top min-w-[160px]">
@@ -714,11 +717,11 @@ export default function TimesheetsPage() {
                                       e.target.value ? Number(e.target.value) : null,
                                     )
                                   }
-                                  aria-label={`Row ${idx + 1} project`}
+                                  aria-label={t("hr.timesheets.rowProject", { row: idx + 1 })}
                                   aria-invalid={err === "Select a project"}
                                   aria-describedby={err ? `timesheet-row-${idx}-error` : undefined}
                                 >
-                                  <option value="">Select project…</option>
+                                  <option value="">{t("hr.timesheets.selectProject")}</option>
                                   {projects.map((p) => (
                                     <option key={p.id} value={p.id}>
                                       {p.label}
@@ -745,19 +748,19 @@ export default function TimesheetsPage() {
                                       (e.target.value || null) as TimesheetEntry["work_bucket"],
                                     )
                                   }
-                                  aria-label={`Row ${idx + 1} bucket`}
+                                  aria-label={t("hr.timesheets.rowBucket", { row: idx + 1 })}
                                   aria-invalid={err === "Select a work bucket"}
                                 >
-                                  <option value="">Bucket…</option>
+                                  <option value="">{t("hr.timesheets.bucketPlaceholder")}</option>
                                   {Object.keys(BUCKET_ICONS).map((b) => (
                                     <option key={b} value={b}>
-                                      {b}
+                                      {t(`hr.timesheets.bucket.${b}`)}
                                     </option>
                                   ))}
                                 </select>
                               ) : (
                                 <span className="text-xs capitalize text-neutral-600">
-                                  {entry.work_bucket ?? "—"}
+                                  {entry.work_bucket ? t(`hr.timesheets.bucket.${entry.work_bucket}`) : "—"}
                                 </span>
                               )}
                             </td>
@@ -767,8 +770,8 @@ export default function TimesheetsPage() {
                                   className="form-input py-1.5 text-sm"
                                   value={entry.activity_type ?? ""}
                                   onChange={(e) => updateEntryField(idx, "activity_type", e.target.value)}
-                                  placeholder="Activity / category"
-                                  aria-label={`Row ${idx + 1} activity`}
+                                  placeholder={t("hr.timesheets.activityPlaceholder")}
+                                  aria-label={t("hr.timesheets.rowActivity", { row: idx + 1 })}
                                 />
                               ) : (
                                 <span className="text-sm text-neutral-700">{entry.activity_type || "—"}</span>
@@ -786,7 +789,7 @@ export default function TimesheetsPage() {
                                   onChange={(e) =>
                                     updateEntryField(idx, "hours", Number(e.target.value) || 0)
                                   }
-                                  aria-label={`Row ${idx + 1} hours`}
+                                  aria-label={t("hr.timesheets.rowHours", { row: idx + 1 })}
                                 />
                               ) : (
                                 <span className="tabular-nums font-medium">{entry.hours}h</span>
@@ -804,7 +807,7 @@ export default function TimesheetsPage() {
                                   onChange={(e) =>
                                     updateEntryField(idx, "overtime_hours", Number(e.target.value) || 0)
                                   }
-                                  aria-label={`Row ${idx + 1} overtime hours`}
+                                  aria-label={t("hr.timesheets.rowOvertime", { row: idx + 1 })}
                                 />
                               ) : (
                                 <span className="tabular-nums text-neutral-600">
@@ -818,8 +821,8 @@ export default function TimesheetsPage() {
                                   className="form-input py-1.5 text-sm"
                                   value={entry.description ?? ""}
                                   onChange={(e) => updateEntryField(idx, "description", e.target.value)}
-                                  placeholder="Notes"
-                                  aria-label={`Row ${idx + 1} notes`}
+                                  placeholder={t("hr.timesheets.col.notes")}
+                                  aria-label={t("hr.timesheets.rowNotes", { row: idx + 1 })}
                                 />
                               ) : (
                                 <span className="text-sm text-neutral-600">{entry.description || "—"}</span>
@@ -834,7 +837,7 @@ export default function TimesheetsPage() {
                                   type="button"
                                   className="inline-flex h-8 w-8 items-center justify-center rounded text-neutral-400 hover:bg-red-50 hover:text-red-600"
                                   onClick={() => handleDeleteEntry(entry.id, idx)}
-                                  aria-label={`Remove row ${idx + 1}`}
+                                  aria-label={t("hr.timesheets.removeRow", { row: idx + 1 })}
                                 >
                                   <span className="material-symbols-outlined text-[16px]">delete</span>
                                 </button>
@@ -847,7 +850,7 @@ export default function TimesheetsPage() {
                     <tfoot>
                       <tr className="bg-neutral-50">
                         <td colSpan={4} className="px-3 py-2 text-xs font-semibold text-neutral-500">
-                          Week total
+                          {t("hr.timesheets.weekTotal")}
                         </td>
                         <td className="px-3 py-2 text-right text-sm font-bold tabular-nums text-neutral-900">
                           {weekTotal}h
@@ -866,7 +869,7 @@ export default function TimesheetsPage() {
                 <div className="flex flex-wrap gap-2 border-t border-neutral-100 px-4 py-3">
                   <button type="button" onClick={handleAddBlankRow} className="btn-secondary flex items-center gap-1.5 text-sm">
                     <span className="material-symbols-outlined text-[16px]">playlist_add</span>
-                    Add row
+                    {t("hr.timesheets.addRow")}
                   </button>
                   <button
                     type="button"
@@ -874,7 +877,7 @@ export default function TimesheetsPage() {
                     className="btn-secondary flex items-center gap-1.5 text-sm"
                   >
                     <span className="material-symbols-outlined text-[16px]">bolt</span>
-                    Quick entry
+                    {t("hr.timesheets.quickEntry")}
                   </button>
                 </div>
               )}
@@ -898,7 +901,7 @@ export default function TimesheetsPage() {
       )}
 
       <details className="mt-6 rounded-xl border border-neutral-200 bg-white px-4 py-3">
-        <summary className="cursor-pointer text-sm font-semibold text-neutral-700">More timesheet tools</summary>
+        <summary className="cursor-pointer text-sm font-semibold text-neutral-700">{t("hr.timesheets.moreTools")}</summary>
         <div className="mt-3">
           <ModuleHubCards cards={TIMESHEET_HUB_CARDS.filter((card) => card.href !== "/hr/timesheets")} />
         </div>
@@ -920,24 +923,24 @@ export default function TimesheetsPage() {
           <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} aria-hidden />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="card w-full max-w-md p-6 space-y-4">
-              <h3 className="text-base font-semibold text-neutral-900">Reject Timesheet</h3>
-              <p className="text-sm text-neutral-600">Please provide a reason for rejection.</p>
+              <h3 className="text-base font-semibold text-neutral-900">{t("hr.timesheets.rejectTitle")}</h3>
+              <p className="text-sm text-neutral-600">{t("hr.timesheets.rejectPrompt")}</p>
               <textarea
                 rows={4}
                 className="form-input resize-none"
-                placeholder="Rejection reason…"
+                placeholder={t("hr.timesheets.rejectPlaceholder")}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
               />
               <div className="flex gap-3 justify-end">
-                <button type="button" className="btn-secondary" onClick={() => setShowRejectModal(false)}>Cancel</button>
+                <button type="button" className="btn-secondary" onClick={() => setShowRejectModal(false)}>{t("common.cancel")}</button>
                 <button
                   type="button"
                   onClick={handleReject}
                   disabled={!rejectReason.trim() || saving}
                   className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
                 >
-                  {saving ? "Rejecting…" : "Reject"}
+                  {saving ? t("hr.timesheets.rejecting") : t("common.reject")}
                 </button>
               </div>
             </div>

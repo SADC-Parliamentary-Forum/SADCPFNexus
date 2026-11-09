@@ -9,16 +9,23 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const RESULT_LEVELS: { value: ResultLevel; label: string; cls: string }[] = [
-  { value: "impact",   label: "Impact",   cls: "badge-danger"  },
-  { value: "outcome",  label: "Outcome",  cls: "badge-primary" },
-  { value: "output",   label: "Output",   cls: "badge-success" },
-  { value: "activity", label: "Activity", cls: "badge-muted"   },
+  { value: "impact",   label: "mande.level.impact",   cls: "badge-danger"  },
+  { value: "outcome",  label: "mande.level.outcome",  cls: "badge-primary" },
+  { value: "output",   label: "mande.level.output",   cls: "badge-success" },
+  { value: "activity", label: "mande.level.activity", cls: "badge-muted"   },
 ];
 
 const FREQUENCIES = ["monthly", "quarterly", "bi_annual", "annual"];
 const DISAGG_OPTIONS = ["sex", "age", "country", "disability", "constituency"];
+const FREQUENCY_LABEL: Record<string, string> = {
+  monthly: "mande.frequency.monthly",
+  quarterly: "mande.frequency.quarterly",
+  bi_annual: "mande.frequency.biAnnual",
+  annual: "mande.frequency.annual",
+};
 
 const EMPTY: Partial<Indicator> = {
   name: "", result_level: "output", unit: "", frequency: "quarterly",
@@ -29,6 +36,8 @@ export default function IndicatorsPage() {
   const qc = useQueryClient();
   const { confirm } = useConfirm();
   const { success, error } = useToast();
+  const { t } = useI18n();
+  const freqLabel = (f: string) => (FREQUENCY_LABEL[f] ? t(FREQUENCY_LABEL[f]) : f.replace("_", "-"));
   const searchParams = useSearchParams();
   const missingActuals = searchParams.get("missing_actuals") === "1";
   const [levelFilter, setLevelFilter] = useState<string>("All");
@@ -75,56 +84,56 @@ export default function IndicatorsPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Indicators"
-        subtitle="Define and manage results-framework indicators, baselines and targets."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Indicators" }]} />}
+        title={t("mande.aggregation.indicators")}
+        subtitle={t("mande.indicators.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("mande.aggregation.indicators") }]} />}
       />
         <div className="flex gap-2">
           <button
             onClick={() => exportToXls("indicators", indicators.map((i) => ({
               code: i.code, name: i.name, level: i.result_level, unit: i.unit,
               baseline: i.baseline_value, annual_target: i.annual_target, frequency: i.frequency,
-              active: i.is_active ? "Yes" : "No",
+              active: i.is_active ? t("imprest.detail.yes") : t("mande.indicators.no"),
             })))}
             className="btn-secondary flex items-center gap-1.5 text-sm"
           >
-            <span className="material-symbols-outlined text-[16px]">table_view</span>Excel
+            <span className="material-symbols-outlined text-[16px]">table_view</span>{t("mande.indicators.excel")}
           </button>
           <button onClick={() => setModal({ ...EMPTY })} className="btn-primary flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[18px]">add</span>New Indicator
+            <span className="material-symbols-outlined text-[18px]">add</span>{t("mande.indicators.new")}
           </button>
         </div>
       </div>
 
       {missingActuals ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950" data-testid="mande-assist-filter-banner">
-          Filter applied from narrative assist: indicators without actuals. Confirm this is what you wanted — nothing was auto-mutated.
+          {t("mande.indicators.assistBanner")}
         </p>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
         {["All", ...RESULT_LEVELS.map((l) => l.value)].map((f) => (
           <button key={f} onClick={() => setLevelFilter(f)} className={`filter-tab ${levelFilter === f ? "active" : ""}`}>
-            {f === "All" ? "All" : RESULT_LEVELS.find((l) => l.value === f)!.label}
+            {f === "All" ? t("imprest.list.all") : t(RESULT_LEVELS.find((l) => l.value === f)!.label)}
           </button>
         ))}
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search indicators…"
+          placeholder={t("mande.indicators.search")}
           className="ml-auto form-input text-sm max-w-xs"
         />
       </div>
 
       <div className="card overflow-x-auto">
         {isLoading ? (
-          <div className="px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
+          <div className="px-5 py-10 text-center text-sm text-neutral-400">{t("common.loading")}</div>
         ) : indicators.length === 0 ? (
-          <EmptyState icon="speed" title="No indicators defined yet." />
+          <EmptyState icon="speed" title={t("mande.indicators.empty")} />
         ) : (
           <table className="data-table">
             <thead>
-              <tr><th>Code</th><th>Name</th><th>Level</th><th>Unit</th><th>Baseline</th><th>Annual Target</th><th>Frequency</th><th>Status</th><th></th></tr>
+              <tr><th>{t("fleet.col.code")}</th><th>{t("fleet.col.name")}</th><th>{t("mande.indicators.level")}</th><th>{t("mande.indicators.unit")}</th><th>{t("mande.indicators.baseline")}</th><th>{t("mande.indicators.annualTargetCol")}</th><th>{t("mande.indicators.frequency")}</th><th>{t("correspondence.col.status")}</th><th></th></tr>
             </thead>
             <tbody>
               {indicators.map((ind) => {
@@ -133,37 +142,37 @@ export default function IndicatorsPage() {
                   <tr key={ind.id}>
                     <td className="font-mono text-xs">{ind.code}</td>
                     <td className="font-medium text-neutral-900 max-w-xs"><span className="line-clamp-2">{ind.name}</span></td>
-                    <td><span className={`badge ${lvl?.cls}`}>{lvl?.label}</span></td>
+                    <td><span className={`badge ${lvl?.cls}`}>{lvl ? t(lvl.label) : ""}</span></td>
                     <td className="text-xs text-neutral-500">{ind.unit ?? "—"}</td>
                     <td className="text-xs text-neutral-500">{ind.baseline_value ?? "—"}</td>
                     <td className="text-xs text-neutral-700 font-medium">{ind.annual_target ?? "—"}</td>
-                    <td className="text-xs text-neutral-500 capitalize">{ind.frequency?.replace("_", "-") ?? "—"}</td>
-                    <td>{ind.is_active ? <span className="badge badge-success">Active</span> : <span className="badge badge-muted">Inactive</span>}</td>
+                    <td className="text-xs text-neutral-500 capitalize">{ind.frequency ? freqLabel(ind.frequency) : "—"}</td>
+                    <td>{ind.is_active ? <span className="badge badge-success">{t("mande.indicators.active")}</span> : <span className="badge badge-muted">{t("mande.indicators.inactive")}</span>}</td>
                     <td className="whitespace-nowrap">
-                      <button onClick={() => setModal({ ...ind })} className="btn-secondary text-xs py-1 px-2 mr-3">Edit</button>
+                      <button onClick={() => setModal({ ...ind })} className="btn-secondary text-xs py-1 px-2 mr-3">{t("common.edit")}</button>
                       <button
                         onClick={async () => {
-                          if (await confirm({ title: "Create snapshot", message: "Create a version snapshot of this indicator?", variant: "primary" })) {
+                          if (await confirm({ title: t("mande.indicators.snapshotTitle"), message: t("mande.indicators.snapshotMessage"), variant: "primary" })) {
                             mandeApi.createIndicatorVersion(ind.id, { label: `Snapshot ${new Date().toISOString().slice(0, 10)}` })
-                              .then(() => success("Version snapshot created."))
-                              .catch(() => error("Snapshot failed", "Could not create the indicator snapshot."));
+                              .then(() => success(t("mande.indicators.snapshotCreated")))
+                              .catch(() => error(t("mande.indicators.snapshotFailed"), t("mande.indicators.snapshotFailedDetail")));
                           }
                         }}
                         className="btn-secondary text-xs py-1 px-2 mr-3"
                       >
-                        Snapshot
+                        {t("mande.indicators.snapshot")}
                       </button>
                       <button
                         onClick={async () => {
                           if (delMut.isPending) return;
-                          if (await confirm({ title: "Delete indicator", message: "Delete this indicator?", variant: "danger" })) {
+                          if (await confirm({ title: t("mande.indicators.deleteTitle"), message: t("mande.indicators.deleteMessage"), variant: "danger" })) {
                             delMut.mutate(ind.id);
                           }
                         }}
                         disabled={delMut.isPending}
                         className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
-                        {delMut.isPending ? "Deleting…" : "Delete"}
+                        {delMut.isPending ? t("mande.indicators.deleting") : t("common.delete")}
                       </button>
                     </td>
                   </tr>
@@ -179,60 +188,60 @@ export default function IndicatorsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setModal(null)}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
-              <h2 className="font-semibold text-neutral-800">{modal.id ? "Edit Indicator" : "New Indicator"}</h2>
-              <button onClick={() => setModal(null)} aria-label="Close" className="text-neutral-400 hover:text-neutral-700"><span className="material-symbols-outlined">close</span></button>
+              <h2 className="font-semibold text-neutral-800">{modal.id ? t("mande.indicators.edit") : t("mande.indicators.new")}</h2>
+              <button onClick={() => setModal(null)} aria-label={t("common.close")} className="text-neutral-400 hover:text-neutral-700"><span className="material-symbols-outlined">close</span></button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label htmlFor="mande-indicators-indicator-name" className="block text-xs font-semibold text-neutral-700 mb-1">Indicator name *</label>
+                <label htmlFor="mande-indicators-indicator-name" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.indicators.nameRequired")}</label>
                 <input id="mande-indicators-indicator-name" className="form-input" value={modal.name ?? ""} onChange={(e) => setModal({ ...modal, name: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="mande-indicators-result-level" className="block text-xs font-semibold text-neutral-700 mb-1">Result level *</label>
+                  <label htmlFor="mande-indicators-result-level" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.indicators.levelRequired")}</label>
                   <select id="mande-indicators-result-level" className="form-input" value={modal.result_level} onChange={(e) => setModal({ ...modal, result_level: e.target.value as ResultLevel })}>
-                    {RESULT_LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                    {RESULT_LEVELS.map((l) => <option key={l.value} value={l.value}>{t(l.label)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="mande-indicators-unit-of-measure" className="block text-xs font-semibold text-neutral-700 mb-1">Unit of measure</label>
-                  <input id="mande-indicators-unit-of-measure" className="form-input" value={modal.unit ?? ""} onChange={(e) => setModal({ ...modal, unit: e.target.value })} placeholder="e.g. count, %" />
+                  <label htmlFor="mande-indicators-unit-of-measure" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.indicators.unitOfMeasure")}</label>
+                  <input id="mande-indicators-unit-of-measure" className="form-input" value={modal.unit ?? ""} onChange={(e) => setModal({ ...modal, unit: e.target.value })} placeholder={t("mande.indicators.unitPlaceholder")} />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="mande-indicators-baseline" className="block text-xs font-semibold text-neutral-700 mb-1">Baseline</label>
+                  <label htmlFor="mande-indicators-baseline" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.indicators.baseline")}</label>
                   <input id="mande-indicators-baseline" type="number" className="form-input" value={modal.baseline_value as number ?? ""} onChange={(e) => setModal({ ...modal, baseline_value: e.target.value === "" ? null : Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label htmlFor="mande-indicators-annual-target" className="block text-xs font-semibold text-neutral-700 mb-1">Annual target</label>
+                  <label htmlFor="mande-indicators-annual-target" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.indicators.annualTarget")}</label>
                   <input id="mande-indicators-annual-target" type="number" className="form-input" value={modal.annual_target as number ?? ""} onChange={(e) => setModal({ ...modal, annual_target: e.target.value === "" ? null : Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label htmlFor="mande-indicators-cumulative-target" className="block text-xs font-semibold text-neutral-700 mb-1">Cumulative target</label>
+                  <label htmlFor="mande-indicators-cumulative-target" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.indicators.cumulativeTarget")}</label>
                   <input id="mande-indicators-cumulative-target" type="number" className="form-input" value={modal.cumulative_target as number ?? ""} onChange={(e) => setModal({ ...modal, cumulative_target: e.target.value === "" ? null : Number(e.target.value) })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="mande-indicators-frequency" className="block text-xs font-semibold text-neutral-700 mb-1">Frequency</label>
+                  <label htmlFor="mande-indicators-frequency" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.indicators.frequency")}</label>
                   <select id="mande-indicators-frequency" className="form-input" value={modal.frequency ?? ""} onChange={(e) => setModal({ ...modal, frequency: (e.target.value || null) as Indicator["frequency"] })}>
                     <option value="">—</option>
-                    {FREQUENCIES.map((f) => <option key={f} value={f} className="capitalize">{f.replace("_", "-")}</option>)}
+                    {FREQUENCIES.map((f) => <option key={f} value={f} className="capitalize">{freqLabel(f)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="mande-indicators-data-source" className="block text-xs font-semibold text-neutral-700 mb-1">Data source</label>
+                  <label htmlFor="mande-indicators-data-source" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.indicators.dataSource")}</label>
                   <input id="mande-indicators-data-source" className="form-input" value={modal.data_source ?? ""} onChange={(e) => setModal({ ...modal, data_source: e.target.value })} />
                 </div>
               </div>
               <div>
-                <p className="block text-xs font-semibold text-neutral-700 mb-1">Disaggregation</p>
+                <p className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.indicators.disaggregation")}</p>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {DISAGG_OPTIONS.map((d) => (
                     <button key={d} type="button" onClick={() => toggleDisagg(d)}
                       className={`px-2.5 py-1 rounded-full text-xs border capitalize ${(modal.disaggregation ?? []).includes(d) ? "bg-primary text-white border-primary" : "bg-white text-neutral-600 border-neutral-300"}`}>
-                      {d}
+                      {t(`mande.disagg.${d}`)}
                     </button>
                   ))}
                 </div>
@@ -240,22 +249,22 @@ export default function IndicatorsPage() {
               <div className="flex items-center gap-6">
                 <label htmlFor="mande-indicators-setmodal-evidence-required" className="flex items-center gap-2 text-sm text-neutral-700">
                   <input id="mande-indicators-setmodal-evidence-required" type="checkbox" checked={!!modal.evidence_required} onChange={(e) => setModal({ ...modal, evidence_required: e.target.checked })} />
-                  Evidence required
+                  {t("mande.indicators.evidenceRequired")}
                 </label>
                 <label htmlFor="mande-indicators-setmodal-active" className="flex items-center gap-2 text-sm text-neutral-700">
                   <input id="mande-indicators-setmodal-active" type="checkbox" checked={!!modal.is_active} onChange={(e) => setModal({ ...modal, is_active: e.target.checked })} />
-                  Active
+                  {t("mande.indicators.activeLabel")}
                 </label>
               </div>
             </div>
             <div className="px-5 py-4 border-t border-neutral-100 flex justify-end gap-2">
-              <button onClick={() => setModal(null)} className="btn-secondary">Cancel</button>
+              <button onClick={() => setModal(null)} className="btn-secondary">{t("common.cancel")}</button>
               <button
                 disabled={!modal.name || saveMut.isPending}
                 onClick={() => saveMut.mutate(modal)}
                 className="btn-primary disabled:opacity-40"
               >
-                {saveMut.isPending ? "Saving…" : "Save"}
+                {saveMut.isPending ? t("correspondence.saving") : t("common.save")}
               </button>
             </div>
           </div>

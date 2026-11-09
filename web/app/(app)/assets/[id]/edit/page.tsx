@@ -11,15 +11,18 @@ import { assigneeDepartmentName, formatAssigneeLabel, tenantUserFromAsset } from
 import { createFilePreviewUrl } from "@/lib/filePreview";
 import { AssetIdentifierFields, EMPTY_IDENTIFIERS, isSerialConflict, type AssetIdentifiers } from "@/components/assets/AssetIdentifierFields";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
 
 const STATUSES = ["active", "service_due", "loan_out", "retired"] as const;
 const DEPRECIATION_METHODS = [
-  { value: "straight_line", label: "Straight Line" },
-  { value: "declining_balance", label: "Declining Balance" },
+  { value: "straight_line", label: "assets.form.method.straightLine" },
+  { value: "declining_balance", label: "assets.form.method.decliningBalance" },
 ] as const;
-const STEP_LABELS = ["Basic info", "Invoice & amount", "Financial", "Review"] as const;
+const STEP_LABELS = ["assets.form.step.basic", "assets.form.step.invoice", "assets.form.step.financial", "assets.form.step.review"] as const;
 
-function getAgeDisplay(purchaseDate: string, issuedAt: string): string {
+function getAgeDisplay(purchaseDate: string, issuedAt: string, t: T): string {
   const ref = purchaseDate || issuedAt;
   if (!ref) return "—";
   const refDate = new Date(ref);
@@ -31,10 +34,10 @@ function getAgeDisplay(purchaseDate: string, issuedAt: string): string {
     months += 12;
   }
   if (years === 0) {
-    return months === 0 ? "Less than 1 month" : `${months} month(s)`;
+    return months === 0 ? t("assets.form.age.lessThanMonth") : t("assets.form.age.months", { months });
   }
-  if (months === 0) return `${years} year(s)`;
-  return `${years} year(s) ${months} month(s)`;
+  if (months === 0) return t("assets.form.age.years", { years });
+  return t("assets.form.age.yearsMonths", { years, months });
 }
 
 function computeDepreciatedValue(
@@ -66,6 +69,7 @@ function formatDateForInput(value: string | null | undefined): string {
 export default function EditAssetPage() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const params = useParams();
   const id = params?.id != null ? Number(params.id) : NaN;
 
@@ -134,10 +138,10 @@ export default function EditAssetPage() {
         });
       })
       .catch(() => {
-        setError("Failed to load asset.");
+        setError(t("assets.edit.loadFailed"));
       })
       .finally(() => setLoading(false));
-  }, [id, allowed, router]);
+  }, [id, allowed, router, t]);
 
   useEffect(() => {
     if (!allowed) return;
@@ -160,7 +164,7 @@ export default function EditAssetPage() {
     };
   }, [invoiceFile]);
 
-  const previewAge = useMemo(() => getAgeDisplay(purchaseDate, issuedAt), [purchaseDate, issuedAt]);
+  const previewAge = useMemo(() => getAgeDisplay(purchaseDate, issuedAt, t), [purchaseDate, issuedAt, t]);
   const pv = purchaseValue === "" ? null : Number(purchaseValue);
   const ul = usefulLifeYears === "" ? null : Number(usefulLifeYears);
   const sv = salvageValue === "" ? 0 : Number(salvageValue);
@@ -179,7 +183,7 @@ export default function EditAssetPage() {
     const type = file.type.toLowerCase();
     const ok = type === "application/pdf" || type.startsWith("image/");
     if (!ok) {
-      setError("Please choose a PDF or image file (JPEG, PNG, WebP).");
+      setError(t("assets.form.invalidFile"));
       setInvoiceFile(null);
       return;
     }
@@ -193,11 +197,11 @@ export default function EditAssetPage() {
     const code = assetCode.trim();
     const assetName = name.trim();
     if (!code || !assetName) {
-      setError("Asset code and name are required.");
+      setError(t("assets.form.codeNameRequired"));
       return;
     }
     if (categories.length === 0 || !category) {
-      setError("No asset categories defined. Create categories first.");
+      setError(t("assets.form.noCategoriesError"));
       return;
     }
     setSubmitting(true);
@@ -225,7 +229,7 @@ export default function EditAssetPage() {
       if (invoiceFile) {
         await assetsApi.uploadInvoice(id, invoiceFile);
       }
-      toast.success("Asset updated", `${assetName} (${code}) has been saved.`);
+      toast.success(t("assets.edit.toast.updated"), t("assets.edit.toast.updatedDetail", { name: assetName, code }));
       router.push("/assets");
       router.refresh();
     } catch (err: unknown) {
@@ -240,9 +244,9 @@ export default function EditAssetPage() {
       const msg =
         data?.message ??
         (data?.errors ? Object.values(data.errors).flat().join(" ") : null) ??
-        "Failed to update asset. Please try again.";
+        t("assets.edit.updateFailed");
       setError(msg);
-      toast.error("Asset not updated", msg);
+      toast.error(t("assets.edit.toast.notUpdated"), msg);
     } finally {
       setSubmitting(false);
     }
@@ -256,12 +260,12 @@ export default function EditAssetPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Edit Asset"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "Edit Asset" }]} />}
+          title={t("assets.edit.title")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "assets.edit.title" }]} />}
         />
         <div className="p-8 flex items-center justify-center gap-2 text-neutral-500">
           <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
-          <span className="text-sm">Loading asset…</span>
+          <span className="text-sm">{t("assets.edit.loading")}</span>
         </div>
       </div>
     );
@@ -271,11 +275,11 @@ export default function EditAssetPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Edit Asset"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "Edit Asset" }]} />}
+          title={t("assets.edit.title")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "assets.edit.title" }]} />}
         />
         <p className="text-red-600">{error}</p>
-        <Link href="/assets" className="btn-secondary mt-2 inline-flex text-sm">Back to Assets</Link>
+        <Link href="/assets" className="btn-secondary mt-2 inline-flex text-sm">{t("assets.edit.backToAssets")}</Link>
       </div>
     );
   }
@@ -292,9 +296,9 @@ export default function EditAssetPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Edit Asset"
-        subtitle="Update the asset details below. You can attach a new invoice to replace the existing one."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "Edit Asset" }]} />}
+        title={t("assets.edit.title")}
+        subtitle={t("assets.edit.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "assets.edit.title" }]} />}
       />
 
       <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-5">
@@ -314,7 +318,7 @@ export default function EditAssetPage() {
                     i + 1 === currentStep ? "text-primary" : i + 1 < currentStep ? "text-neutral-700" : "text-neutral-400"
                   }`}
                 >
-                  {label}
+                  {t(label)}
                 </span>
               </div>
               {i < STEP_LABELS.length - 1 && (
@@ -337,11 +341,11 @@ export default function EditAssetPage() {
           <div className={cardCls}>
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">1</span>
-              Basic asset information
+              {t("assets.form.basicTitle")}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="asset_code" className={labelCls}>Asset code <span className="text-red-500">*</span></label>
+                <label htmlFor="asset_code" className={labelCls}>{t("assets.form.assetCode")} <span className="text-red-500">*</span></label>
                 <input
                   id="asset_code"
                   type="text"
@@ -353,7 +357,7 @@ export default function EditAssetPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="name" className={labelCls}>Name <span className="text-red-500">*</span></label>
+                <label htmlFor="name" className={labelCls}>{t("assets.form.name")} <span className="text-red-500">*</span></label>
                 <input
                   id="name"
                   type="text"
@@ -367,7 +371,7 @@ export default function EditAssetPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="category" className={labelCls}>Category <span className="text-red-500">*</span></label>
+                <label htmlFor="category" className={labelCls}>{t("assets.form.category")} <span className="text-red-500">*</span></label>
                 <select
                   id="category"
                   value={category}
@@ -381,7 +385,7 @@ export default function EditAssetPage() {
                   disabled={submitting}
                 >
                   {categories.length === 0 ? (
-                    <option value="">— No categories —</option>
+                    <option value="">{t("assets.form.noCategories")}</option>
                   ) : (
                     categories.map((c) => (
                       <option key={c.id} value={c.code}>{c.name}</option>
@@ -391,16 +395,16 @@ export default function EditAssetPage() {
                 {categories.length === 0 && (
                   <p className="text-xs text-neutral-500">
                     <Link href="/assets/categories" className="btn-secondary text-xs py-1 px-2">
-                      Add a category
+                      {t("assets.form.addCategory")}
                     </Link>
                   </p>
                 )}
               </div>
               <div className="space-y-2">
-                <label htmlFor="status" className={labelCls}>Status</label>
+                <label htmlFor="status" className={labelCls}>{t("assets.form.status")}</label>
                 <select id="status" value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls} disabled={submitting}>
                   {STATUSES.map((s) => (
-                    <option key={s} value={s}>{s.replace("_", " ")}</option>
+                    <option key={s} value={s}>{t(`assets.form.status.${s}`)}</option>
                   ))}
                 </select>
               </div>
@@ -423,18 +427,18 @@ export default function EditAssetPage() {
             />
             <AssetAssigneePicker
               id="assigned_to"
-              label="Assigned to"
+              label={t("assets.form.assignedTo")}
               value={assignedUser}
               onSelect={setAssignedUser}
               disabled={submitting}
-              hint="Optional. Search by full name, email or department."
+              hint={t("assets.form.assigneeHint")}
             />
             <div className="space-y-2">
-              <label htmlFor="issued_at" className={labelCls}>Issued date</label>
+              <label htmlFor="issued_at" className={labelCls}>{t("assets.form.issuedDate")}</label>
               <input id="issued_at" type="date" value={issuedAt} onChange={(e) => setIssuedAt(e.target.value)} className={`${inputCls} max-w-xs`} disabled={submitting} />
             </div>
             <div className="space-y-2">
-              <label htmlFor="notes" className={labelCls}>Notes</label>
+              <label htmlFor="notes" className={labelCls}>{t("assets.form.notes")}</label>
               <textarea id="notes" rows={3} maxLength={2000} value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} disabled={submitting} />
             </div>
           </div>
@@ -444,14 +448,14 @@ export default function EditAssetPage() {
           <div className={cardCls}>
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">2</span>
-              Invoice & amount
+              {t("assets.form.invoiceTitle")}
             </h3>
             <div className="space-y-2">
-              <label htmlFor="invoice_number" className={labelCls}>Invoice number</label>
+              <label htmlFor="invoice_number" className={labelCls}>{t("assets.form.invoiceNumber")}</label>
               <input id="invoice_number" type="text" maxLength={64} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className={`${inputCls} max-w-sm`} disabled={submitting} />
             </div>
             <div className="space-y-2">
-              <label htmlFor="purchase_value_step2" className={labelCls}>Amount / Purchase value ($)</label>
+              <label htmlFor="purchase_value_step2" className={labelCls}>{t("assets.form.amountValue")}</label>
               <input
                 id="purchase_value_step2"
                 type="number"
@@ -464,7 +468,7 @@ export default function EditAssetPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="invoice_file" className={labelCls}>Attach new invoice (PDF or image)</label>
+              <label htmlFor="invoice_file" className={labelCls}>{t("assets.edit.attachInvoice")}</label>
               <input
                 id="invoice_file"
                 type="file"
@@ -473,16 +477,16 @@ export default function EditAssetPage() {
                 className="block w-full text-sm text-neutral-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20"
                 disabled={submitting}
               />
-              <p className="text-xs text-neutral-500 mt-1">Leave empty to keep current invoice. PDF, JPEG, PNG or WebP. Max 10 MB.</p>
+              <p className="text-xs text-neutral-500 mt-1">{t("assets.edit.invoiceHint")}</p>
             </div>
             {invoicePreviewUrl && invoiceFile && (
               <div className="mt-4">
-                <p className="text-xs font-medium text-neutral-700 mb-2">Invoice preview</p>
+                <p className="text-xs font-medium text-neutral-700 mb-2">{t("assets.form.invoicePreview")}</p>
                 <div className="border border-neutral-200 rounded-lg overflow-hidden bg-neutral-50 max-h-[400px] overflow-auto">
                   {invoiceFile.type.startsWith("image/") ? (
-                    <img src={invoicePreviewUrl} alt="Invoice preview" className="max-w-full h-auto object-contain" />
+                    <img src={invoicePreviewUrl} alt={t("assets.form.invoicePreview")} className="max-w-full h-auto object-contain" />
                   ) : (
-                    <iframe src={invoicePreviewUrl} title="Invoice preview" className="w-full min-h-[400px] border-0" />
+                    <iframe src={invoicePreviewUrl} title={t("assets.form.invoicePreview")} className="w-full min-h-[400px] border-0" />
                   )}
                 </div>
               </div>
@@ -494,15 +498,15 @@ export default function EditAssetPage() {
           <div className={cardCls}>
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">3</span>
-              Financial & depreciation
+              {t("assets.form.financialTitle")}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="purchase_date" className={labelCls}>Purchase date</label>
+                <label htmlFor="purchase_date" className={labelCls}>{t("assets.form.purchaseDate")}</label>
                 <input id="purchase_date" type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} className={inputCls} disabled={submitting} />
               </div>
               <div className="space-y-2">
-                <label htmlFor="purchase_value" className={labelCls}>Purchase value ($)</label>
+                <label htmlFor="purchase_value" className={labelCls}>{t("assets.form.purchaseValueUsd")}</label>
                 <input
                   id="purchase_value"
                   type="number"
@@ -517,7 +521,7 @@ export default function EditAssetPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="useful_life_years" className={labelCls}>Useful life (years)</label>
+                <label htmlFor="useful_life_years" className={labelCls}>{t("assets.form.usefulLife")}</label>
                 <input
                   id="useful_life_years"
                   type="number"
@@ -530,7 +534,7 @@ export default function EditAssetPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="salvage_value" className={labelCls}>Salvage value ($)</label>
+                <label htmlFor="salvage_value" className={labelCls}>{t("assets.form.salvageValueUsd")}</label>
                 <input
                   id="salvage_value"
                   type="number"
@@ -544,10 +548,10 @@ export default function EditAssetPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <label htmlFor="depreciation_method" className={labelCls}>Depreciation method</label>
+              <label htmlFor="depreciation_method" className={labelCls}>{t("assets.form.depreciationMethod")}</label>
               <select id="depreciation_method" value={depreciationMethod} onChange={(e) => setDepreciationMethod(e.target.value)} className={`${inputCls} max-w-xs`} disabled={submitting}>
                 {DEPRECIATION_METHODS.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
+                  <option key={m.value} value={m.value}>{t(m.label)}</option>
                 ))}
               </select>
             </div>
@@ -558,20 +562,20 @@ export default function EditAssetPage() {
           <div className={`${cardCls} bg-neutral-50 border-neutral-100`}>
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">4</span>
-              Review and save
+              {t("assets.form.reviewTitle")}
             </h3>
             <div className="space-y-2">
               {[
-                { label: "Asset code", value: assetCode || "—" },
-                { label: "Name", value: name || "—" },
-                { label: "Category", value: categories.find((c) => c.code === category)?.name ?? category },
-                { label: "Status", value: status.replace("_", " ") },
-                { label: "Serial number", value: identifiers.serial_number.trim() || "—" },
-                { label: "Make / model", value: [identifiers.manufacturer.trim(), identifiers.model.trim()].filter(Boolean).join(" ") || "—" },
-                { label: "Assigned to", value: assignedUser ? formatAssigneeLabel(assignedUser) : "—" },
-                { label: "Invoice number", value: invoiceNumber || "—" },
-                { label: "Purchase value", value: pv != null ? `$${pv.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—" },
-                { label: "New invoice attached", value: invoiceFile ? invoiceFile.name : "No (existing kept)" },
+                { label: t("assets.form.assetCode"), value: assetCode || "—" },
+                { label: t("assets.form.name"), value: name || "—" },
+                { label: t("assets.form.category"), value: categories.find((c) => c.code === category)?.name ?? category },
+                { label: t("assets.form.status"), value: t(`assets.form.status.${status}`) },
+                { label: t("assets.form.serialNumber"), value: identifiers.serial_number.trim() || "—" },
+                { label: t("assets.form.makeModel"), value: [identifiers.manufacturer.trim(), identifiers.model.trim()].filter(Boolean).join(" ") || "—" },
+                { label: t("assets.form.assignedTo"), value: assignedUser ? formatAssigneeLabel(assignedUser) : "—" },
+                { label: t("assets.form.invoiceNumber"), value: invoiceNumber || "—" },
+                { label: t("assets.form.purchaseValue"), value: pv != null ? `$${pv.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—" },
+                { label: t("assets.edit.newInvoiceAttached"), value: invoiceFile ? invoiceFile.name : t("assets.edit.existingKept") },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-start py-2 border-b border-neutral-50">
                   <span className="text-xs text-neutral-500 flex-shrink-0 w-40">{label}</span>
@@ -581,11 +585,11 @@ export default function EditAssetPage() {
             </div>
             <div className="pt-4 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <span className="text-xs text-neutral-500 block mb-1">Age</span>
+                <span className="text-xs text-neutral-500 block mb-1">{t("assets.form.age")}</span>
                 <p className="text-sm font-semibold text-neutral-900">{previewAge}</p>
               </div>
               <div>
-                <span className="text-xs text-neutral-500 block mb-1">Current (depreciated) value</span>
+                <span className="text-xs text-neutral-500 block mb-1">{t("assets.form.currentValue")}</span>
                 <p className="text-sm font-semibold text-neutral-900">
                   {previewCurrentValue != null ? `$${previewCurrentValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
                 </p>
@@ -593,7 +597,7 @@ export default function EditAssetPage() {
             </div>
             <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 flex items-start gap-2">
               <span className="material-symbols-outlined text-amber-500 text-[16px] mt-0.5">info</span>
-              <p className="text-xs text-amber-700">If you change the asset code, the QR code will be regenerated automatically.</p>
+              <p className="text-xs text-amber-700">{t("assets.edit.qrNote")}</p>
             </div>
           </div>
         )}
@@ -608,13 +612,13 @@ export default function EditAssetPage() {
                 disabled={submitting}
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                Back
+                {t("common.back")}
               </button>
             )}
           </div>
           <div className="flex items-center gap-3">
             <Link href="/assets" className="btn-secondary">
-              Cancel
+              {t("common.cancel")}
             </Link>
             {currentStep < 4 ? (
               <button
@@ -623,7 +627,7 @@ export default function EditAssetPage() {
                 disabled={submitting}
                 className="btn-primary inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Next Step
+                {t("assets.form.nextStep")}
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>
             ) : (
@@ -632,7 +636,7 @@ export default function EditAssetPage() {
                 disabled={submitting}
                 className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
               >
-                {submitting ? "Saving…" : "Save changes"}
+                {submitting ? t("assets.form.saving") : t("assets.edit.saveChanges")}
                 <span className={`material-symbols-outlined text-[18px] ${submitting ? "animate-spin" : ""}`}>{submitting ? "progress_activity" : "save"}</span>
               </button>
             )}

@@ -7,8 +7,10 @@ import { stockUnitsApi, type StockUnit } from "@/lib/api";
 import { canConfigureStockCatalogue, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function StockUnitsPage() {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [items, setItems] = useState<StockUnit[]>([]);
   const [canManage, setCanManage] = useState(false);
@@ -20,9 +22,9 @@ export default function StockUnitsPage() {
     setLoading(true);
     stockUnitsApi.list()
       .then((res) => setItems(res.data.data ?? []))
-      .catch(() => toast("error", "Failed to load units"))
+      .catch(() => toast("error", t("stock.units.loadFailed")))
       .finally(() => setLoading(false));
-  }, [toast]);
+  }, [toast, t]);
 
   useEffect(() => {
     setCanManage(canConfigureStockCatalogue(getStoredUser()));
@@ -31,58 +33,58 @@ export default function StockUnitsPage() {
 
   const create = async () => {
     if (!code.trim() || !name.trim()) {
-      toast("error", "Code and name are required");
+      toast("error", t("stock.common.codeNameRequired"));
       return;
     }
     try {
       await stockUnitsApi.create({ code: code.trim(), name: name.trim() });
-      toast("success", "Unit created");
+      toast("success", t("stock.units.created"));
       setCode(""); setName("");
       load();
     } catch {
-      toast("error", "Could not create unit");
+      toast("error", t("stock.units.createFailed"));
     }
   };
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Units of measure"
-        subtitle="Controlled UoM for consumables (ream, box, pack, each…)."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Units of measure" }]} />}
+        title={t("stock.units.title")}
+        subtitle={t("stock.units.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("stock.common.stock"), href: "/stock" }, { label: t("stock.units.title") }]} />}
       />
 
       {canManage && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 grid md:grid-cols-3 gap-3 items-end">
           <div>
-            <label htmlFor="stock-units-code" className="block text-xs font-semibold mb-1">Code</label>
-            <input id="stock-units-code" className="form-input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="ream" />
+            <label htmlFor="stock-units-code" className="block text-xs font-semibold mb-1">{t("stock.common.code")}</label>
+            <input id="stock-units-code" className="form-input" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t("stock.units.codePlaceholder")} />
           </div>
           <div>
-            <label htmlFor="stock-units-name" className="block text-xs font-semibold mb-1">Name</label>
-            <input id="stock-units-name" className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ream" />
+            <label htmlFor="stock-units-name" className="block text-xs font-semibold mb-1">{t("stock.common.name")}</label>
+            <input id="stock-units-name" className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("stock.units.namePlaceholder")} />
           </div>
-          <button type="button" className="btn-primary" onClick={create}>Add unit</button>
+          <button type="button" className="btn-primary" onClick={create}>{t("stock.addUnit")}</button>
         </div>
       )}
 
       {loading ? (
-        <p className="text-sm text-neutral-500">Loading…</p>
+        <p className="text-sm text-neutral-500">{t("common.loading")}</p>
       ) : items.length === 0 ? (
         <div className="card">
           <EmptyState
             icon="straighten"
-            title="No units of measure yet"
-            description="Add units such as ream, box, pack, or each so items can be measured consistently."
+            title={t("stock.units.emptyTitle")}
+            description={t("stock.units.emptyHint")}
           />
         </div>
       ) : (
         <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
           <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
             <tr>
-              <th className="px-4 py-2">Code</th>
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Active</th>
+              <th className="px-4 py-2">{t("stock.common.code")}</th>
+              <th className="px-4 py-2">{t("stock.common.name")}</th>
+              <th className="px-4 py-2">{t("stock.common.active")}</th>
             </tr>
           </thead>
           <tbody>
@@ -90,14 +92,14 @@ export default function StockUnitsPage() {
               <tr key={u.id} className="border-t border-neutral-100">
                 <td className="px-4 py-2 font-mono text-xs">{u.code}</td>
                 <td className="px-4 py-2">{u.name}</td>
-                <td className="px-4 py-2">{u.is_active ? "Yes" : "No"}</td>
+                <td className="px-4 py-2">{u.is_active ? t("stock.common.yes") : t("stock.common.no")}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-      <Link href="/stock" className="btn-secondary text-sm">Back to stock register</Link>
+      <Link href="/stock" className="btn-secondary text-sm">{t("stock.common.backToRegister")}</Link>
     </div>
   );
 }

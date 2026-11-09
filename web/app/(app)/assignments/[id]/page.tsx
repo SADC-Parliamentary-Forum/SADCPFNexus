@@ -11,29 +11,30 @@ import { useEffect } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const priorityConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  low:      { label: "Low",      cls: "badge-muted",   icon: "arrow_downward" },
-  medium:   { label: "Medium",   cls: "badge-primary", icon: "drag_handle" },
-  high:     { label: "High",     cls: "badge-warning", icon: "arrow_upward" },
-  critical: { label: "Critical", cls: "badge-danger",  icon: "priority_high" },
+  low:      { label: "assignments.priority.low",      cls: "badge-muted",   icon: "arrow_downward" },
+  medium:   { label: "assignments.priority.medium",   cls: "badge-primary", icon: "drag_handle" },
+  high:     { label: "assignments.priority.high",     cls: "badge-warning", icon: "arrow_upward" },
+  critical: { label: "assignments.priority.critical", cls: "badge-danger",  icon: "priority_high" },
 };
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  draft:               { label: "Draft",               cls: "badge-muted",    icon: "edit_note" },
-  issued:              { label: "Issued",              cls: "badge-primary",  icon: "send" },
-  awaiting_acceptance: { label: "Awaiting Acceptance", cls: "badge-warning",  icon: "pending_actions" },
-  accepted:            { label: "Accepted",            cls: "badge-primary",  icon: "thumb_up" },
-  active:              { label: "Active",              cls: "badge-success",  icon: "play_circle" },
-  at_risk:             { label: "At Risk",             cls: "badge-warning",  icon: "warning" },
-  blocked:             { label: "Blocked",             cls: "badge-danger",   icon: "block" },
-  delayed:             { label: "Delayed",             cls: "badge-danger",   icon: "hourglass_bottom" },
-  completed:           { label: "Completed",           cls: "badge-success",  icon: "check_circle" },
-  closed:              { label: "Closed",              cls: "badge-muted",    icon: "lock" },
-  returned:            { label: "Returned",            cls: "badge-warning",  icon: "undo" },
-  cancelled:           { label: "Cancelled",           cls: "badge-muted",    icon: "cancel" },
+  draft:               { label: "assignments.status.draft",               cls: "badge-muted",    icon: "edit_note" },
+  issued:              { label: "assignments.status.issued",              cls: "badge-primary",  icon: "send" },
+  awaiting_acceptance: { label: "assignments.status.awaiting_acceptance", cls: "badge-warning",  icon: "pending_actions" },
+  accepted:            { label: "assignments.status.accepted",            cls: "badge-primary",  icon: "thumb_up" },
+  active:              { label: "assignments.status.active",              cls: "badge-success",  icon: "play_circle" },
+  at_risk:             { label: "assignments.status.at_risk",             cls: "badge-warning",  icon: "warning" },
+  blocked:             { label: "assignments.status.blocked",             cls: "badge-danger",   icon: "block" },
+  delayed:             { label: "assignments.status.delayed",             cls: "badge-danger",   icon: "hourglass_bottom" },
+  completed:           { label: "assignments.status.completed",           cls: "badge-success",  icon: "check_circle" },
+  closed:              { label: "assignments.status.closed",              cls: "badge-muted",    icon: "lock" },
+  returned:            { label: "assignments.status.returned",            cls: "badge-warning",  icon: "undo" },
+  cancelled:           { label: "assignments.status.cancelled",           cls: "badge-muted",    icon: "cancel" },
 };
 
 const updateTypeIcon: Record<string, string> = {
@@ -54,6 +55,45 @@ const updateTypeColor: Record<string, string> = {
   system:          "bg-neutral-100 text-neutral-500",
 };
 
+const BLOCKER_LOWER_KEYS: Record<string, string> = {
+  awaiting_approval: "assignments.blockerLower.awaiting_approval",
+  awaiting_funds: "assignments.blockerLower.awaiting_funds",
+  awaiting_information: "assignments.blockerLower.awaiting_information",
+  external_dependency: "assignments.blockerLower.external_dependency",
+};
+
+const BLOCKER_KEYS: Record<string, string> = {
+  awaiting_approval: "assignments.blocker.awaiting_approval",
+  awaiting_funds: "assignments.blocker.awaiting_funds",
+  awaiting_information: "assignments.blocker.awaiting_information",
+  external_dependency: "assignments.blocker.external_dependency",
+};
+
+const DECISION_KEYS: Record<string, string> = {
+  accepted: "assignments.detail.decisionValue.accepted",
+  clarification_requested: "assignments.detail.decisionValue.clarification_requested",
+  deadline_proposed: "assignments.detail.decisionValue.deadline_proposed",
+  rejected: "assignments.detail.decisionValue.rejected",
+};
+
+const FREQUENCY_KEYS: Record<string, string> = {
+  daily: "assignments.frequency.daily",
+  weekly: "assignments.frequency.weekly",
+  biweekly: "assignments.frequency.biweekly",
+  monthly: "assignments.frequency.monthly",
+};
+
+const TYPE_KEYS: Record<string, string> = {
+  individual: "assignments.type.individual",
+  sector: "assignments.type.sector",
+  collaborative: "assignments.type.collaborative",
+};
+
+/** Translates a known enum value; unknown values from the server fall back to readable text. */
+function enumLabel(t: (key: string) => string, keys: Record<string, string>, value: string): string {
+  return keys[value] ? t(keys[value]) : value.replace(/_/g, " ");
+}
+
 // ── Section header helper ───────────────────────────────────────────────────
 
 function SectionIcon({ icon, color, label }: { icon: string; color: string; label: string }) {
@@ -70,6 +110,7 @@ function SectionIcon({ icon, color, label }: { icon: string; color: string; labe
 // ── Update Timeline item ────────────────────────────────────────────────────
 
 function UpdateItem({ u }: { u: AssignmentUpdate }) {
+  const { t } = useI18n();
   const icon = updateTypeIcon[u.type] ?? "info";
   const color = updateTypeColor[u.type] ?? "bg-neutral-100 text-neutral-500";
   return (
@@ -79,7 +120,7 @@ function UpdateItem({ u }: { u: AssignmentUpdate }) {
       </div>
       <div className="flex-1 min-w-0 pb-4 border-b border-neutral-100 last:border-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-semibold text-neutral-700">{u.submitter?.name ?? "System"}</span>
+          <span className="text-xs font-semibold text-neutral-700">{u.submitter?.name ?? t("assignments.detail.system")}</span>
           <span className="text-[10px] text-neutral-400">{formatDateRelative(u.created_at)}</span>
           {u.progress_percent != null && (
             <span className="badge badge-primary text-[10px]">{u.progress_percent}%</span>
@@ -89,7 +130,7 @@ function UpdateItem({ u }: { u: AssignmentUpdate }) {
         {u.blocker_type && (
           <p className="mt-1 text-[10px] text-red-500 flex items-center gap-1">
             <span className="material-symbols-outlined text-[12px]">block</span>
-            Blocker: {u.blocker_type.replace(/_/g, " ")}
+            {t("assignments.detail.blockerPrefix", { type: enumLabel(t, BLOCKER_LOWER_KEYS, u.blocker_type) })}
             {u.blocker_details && ` — ${u.blocker_details}`}
           </p>
         )}
@@ -104,6 +145,7 @@ export default function AssignmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
+  const { t } = useI18n();
 
   // Modals
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -265,18 +307,18 @@ export default function AssignmentDetailPage() {
       invalidate();
       setShowDueDateModal(false);
       setDueDateForm({ due_date: "", reason: "" });
-      success("Due date updated.");
+      success(t("assignments.detail.toast.dueDateUpdated"));
     },
-    onError: () => showErrorToast("Could not change the due date."),
+    onError: () => showErrorToast(t("assignments.detail.toast.dueDateFailed")),
   });
 
   const claimMutation = useMutation({
     mutationFn: () => assignmentsApi.claim(Number(id)),
     onSuccess: () => {
       invalidate();
-      success("Assignment claimed.");
+      success(t("assignments.detail.toast.claimed"));
     },
-    onError: () => showErrorToast("Could not claim this assignment. Only unassigned department-queue work can be claimed."),
+    onError: () => showErrorToast(t("assignments.detail.toast.claimFailed")),
   });
 
   const checklistMutation = useMutation({
@@ -307,14 +349,16 @@ export default function AssignmentDetailPage() {
     return (
       <div className="card p-10 text-center max-w-lg">
         <span className="material-symbols-outlined text-4xl text-red-400 block">error_outline</span>
-        <p className="mt-3 text-sm text-neutral-600">Failed to load assignment.</p>
-        <Link href="/assignments" className="btn-secondary mt-4 inline-flex">Back to Assignments</Link>
+        <p className="mt-3 text-sm text-neutral-600">{t("assignments.detail.loadFailed")}</p>
+        <Link href="/assignments" className="btn-secondary mt-4 inline-flex">{t("assignments.detail.back")}</Link>
       </div>
     );
   }
 
-  const s = statusConfig[assignment.status] ?? { label: assignment.status, cls: "badge-muted", icon: "info" };
-  const p = priorityConfig[assignment.priority] ?? { label: assignment.priority, cls: "badge-muted", icon: "drag_handle" };
+  const sc = statusConfig[assignment.status];
+  const pc = priorityConfig[assignment.priority];
+  const s = sc ? { ...sc, label: t(sc.label) } : { label: assignment.status, cls: "badge-muted", icon: "info" };
+  const p = pc ? { ...pc, label: t(pc.label) } : { label: assignment.priority, cls: "badge-muted", icon: "drag_handle" };
   const isOverdue = !["closed", "cancelled"].includes(assignment.status) && new Date(assignment.due_date) < new Date();
 
   return (
@@ -342,12 +386,12 @@ export default function AssignmentDetailPage() {
               <span className="material-symbols-outlined text-[12px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>{s.icon}</span>
               {s.label}
             </span>
-            <span className={`badge ${p.cls}`}>{p.label} Priority</span>
-            {isOverdue && <span className="badge badge-danger">Overdue</span>}
+            <span className={`badge ${p.cls}`}>{t("assignments.detail.priorityBadge", { priority: p.label })}</span>
+            {isOverdue && <span className="badge badge-danger">{t("assignments.overdueBadge")}</span>}
             {assignment.is_confidential && (
               <span className="badge badge-muted">
                 <span className="material-symbols-outlined text-[12px] mr-1">lock</span>
-                Confidential
+                {t("assignments.detail.confidential")}
               </span>
             )}
           </div>
@@ -360,7 +404,7 @@ export default function AssignmentDetailPage() {
         {/* Progress bar */}
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs text-neutral-500 mb-1.5">
-            <span>Progress</span>
+            <span>{t("assignments.detail.progress")}</span>
             <span className="font-semibold text-neutral-700">{assignment.progress_percent}%</span>
           </div>
           <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
@@ -382,11 +426,11 @@ export default function AssignmentDetailPage() {
             <button
               onClick={() => claimMutation.mutate()}
               disabled={claimMutation.isPending || !assignment.department_id}
-              title={!assignment.department_id ? "Only department-queue assignments can be claimed." : "Claim this assignment"}
+              title={!assignment.department_id ? t("assignments.detail.claimOnlyQueue") : t("assignments.detail.claimThis")}
               className="btn-secondary disabled:opacity-60"
             >
               <span className="material-symbols-outlined text-[16px]">handshake</span>
-              Claim
+              {t("assignments.detail.claim")}
             </button>
           )}
           {assignment.status === "draft" && (
@@ -396,13 +440,13 @@ export default function AssignmentDetailPage() {
               className="btn-primary disabled:opacity-60"
             >
               <span className="material-symbols-outlined text-[16px]">send</span>
-              Issue Assignment
+              {t("assignments.detail.issue")}
             </button>
           )}
           {["issued", "awaiting_acceptance"].includes(assignment.status) && (
             <button onClick={() => setShowAcceptModal(true)} className="btn-primary">
               <span className="material-symbols-outlined text-[16px]">task_alt</span>
-              Respond to Assignment
+              {t("assignments.detail.respond")}
             </button>
           )}
           {assignment.status === "accepted" && (
@@ -412,19 +456,19 @@ export default function AssignmentDetailPage() {
               className="btn-primary disabled:opacity-60"
             >
               <span className="material-symbols-outlined text-[16px]">play_arrow</span>
-              Start Working
+              {t("assignments.detail.start")}
             </button>
           )}
           {["active", "at_risk", "blocked", "delayed", "accepted"].includes(assignment.status) && (
             <>
               <button onClick={() => setShowUpdateModal(true)} className="btn-secondary">
                 <span className="material-symbols-outlined text-[16px]">edit_note</span>
-                Post Update
+                {t("assignments.detail.postUpdate")}
               </button>
               {assignment.status !== "blocked" ? (
                 <button onClick={() => setShowBlockModal(true)} className="btn-secondary text-red-600 border-red-200">
                   <span className="material-symbols-outlined text-[16px]">block</span>
-                  Mark Blocked
+                  {t("assignments.detail.markBlocked")}
                 </button>
               ) : (
                 <button
@@ -433,16 +477,16 @@ export default function AssignmentDetailPage() {
                   className="btn-secondary disabled:opacity-60"
                 >
                   <span className="material-symbols-outlined text-[16px]">lock_open</span>
-                  Unblock
+                  {t("assignments.detail.unblock")}
                 </button>
               )}
               <button onClick={() => setShowReassignModal(true)} className="btn-secondary">
                 <span className="material-symbols-outlined text-[16px]">swap_horiz</span>
-                Reassign
+                {t("assignments.detail.reassign")}
               </button>
               <button onClick={() => setShowChecklistModal(true)} className="btn-secondary">
                 <span className="material-symbols-outlined text-[16px]">checklist</span>
-                Add Checklist Item
+                {t("assignments.detail.addChecklistItem")}
               </button>
               <button
                 onClick={() => completeMutation.mutate()}
@@ -450,7 +494,7 @@ export default function AssignmentDetailPage() {
                 className="btn-secondary disabled:opacity-60"
               >
                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                Submit for Closure
+                {t("assignments.detail.submitForClosure")}
               </button>
             </>
           )}
@@ -458,11 +502,11 @@ export default function AssignmentDetailPage() {
             <>
               <button onClick={() => setShowVerifyModal(true)} className="btn-primary">
                 <span className="material-symbols-outlined text-[16px]">verified</span>
-                Verify
+                {t("assignments.detail.verify")}
               </button>
               <button onClick={() => setShowCloseModal(true)} className="btn-secondary">
                 <span className="material-symbols-outlined text-[16px]">lock</span>
-                Close Assignment
+                {t("assignments.detail.closeAssignment")}
               </button>
               <button
                 onClick={() => returnMutation.mutate("Returned for further revision.")}
@@ -470,7 +514,7 @@ export default function AssignmentDetailPage() {
                 className="btn-secondary disabled:opacity-60"
               >
                 <span className="material-symbols-outlined text-[16px]">undo</span>
-                Return
+                {t("common.return")}
               </button>
             </>
           )}
@@ -487,11 +531,11 @@ export default function AssignmentDetailPage() {
                 className="btn-secondary"
               >
                 <span className="material-symbols-outlined text-[16px]">event</span>
-                Change due date
+                {t("assignments.detail.changeDueDate")}
               </button>
               <button onClick={() => setShowCancelModal(true)} className="btn-secondary text-red-500 border-red-200 hover:bg-red-50">
                 <span className="material-symbols-outlined text-[16px]">cancel</span>
-                Cancel
+                {t("common.cancel")}
               </button>
             </>
           )}
@@ -501,37 +545,38 @@ export default function AssignmentDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Details */}
         <div className="card p-5">
-          <SectionIcon icon="info" color="bg-blue-50 text-blue-600" label="Assignment Details" />
+          <SectionIcon icon="info" color="bg-blue-50 text-blue-600" label={t("assignments.detail.detailsTitle")} />
           <div className="space-y-3 text-sm">
-            <InfoRow icon="person" label="Assignee" value={assignment.assignee?.name ?? "—"} />
-            <InfoRow icon="person_add" label="Created By" value={assignment.creator?.name ?? "—"} />
-            <InfoRow icon="corporate_fare" label="Department" value={assignment.department?.name ?? "—"} />
-            <InfoRow icon="calendar_today" label="Due Date" value={formatDateShort(assignment.due_date)} alert={isOverdue} />
+            <InfoRow icon="person" label={t("assignments.capacity.assignee")} value={assignment.assignee?.name ?? "—"} />
+            <InfoRow icon="person_add" label={t("assignments.detail.createdBy")} value={assignment.creator?.name ?? "—"} />
+            <InfoRow icon="corporate_fare" label={t("assignments.detail.department")} value={assignment.department?.name ?? "—"} />
+            <InfoRow icon="calendar_today" label={t("assignments.create.dueDate")} value={formatDateShort(assignment.due_date)} alert={isOverdue} />
             {assignment.start_date && (
-              <InfoRow icon="play_arrow" label="Start Date" value={formatDateShort(assignment.start_date)} />
+              <InfoRow icon="play_arrow" label={t("assignments.create.startDate")} value={formatDateShort(assignment.start_date)} />
             )}
             {assignment.checkin_frequency && (
-              <InfoRow icon="repeat" label="Check-in" value={assignment.checkin_frequency} />
+              <InfoRow icon="repeat" label={t("assignments.detail.checkin")} value={enumLabel(t, FREQUENCY_KEYS, assignment.checkin_frequency)} />
             )}
-            <InfoRow icon="category" label="Type" value={assignment.type} />
+            <InfoRow icon="category" label={t("assignments.detail.type")} value={enumLabel(t, TYPE_KEYS, assignment.type)} />
           </div>
         </div>
 
         <div className="card p-5" data-testid="assignment-timesheet-hours">
-          <SectionIcon icon="schedule" color="bg-sky-50 text-sky-700" label="Timesheet hours" />
+          <SectionIcon icon="schedule" color="bg-sky-50 text-sky-700" label={t("assignments.detail.timesheetHours")} />
           <p className="mb-2 text-xs text-neutral-500">
-            Logged hours coupled from timesheet entries. Informational only — this does not complete the assignment.
+            {t("assignments.detail.timesheetHint")}
           </p>
           <p className="text-sm">
-            Logged {hoursQuery.data?.logged_hours ?? 0}
-            {hoursQuery.data?.estimated_hours != null ? ` of ${hoursQuery.data.estimated_hours} estimated` : ""}.
+            {hoursQuery.data?.estimated_hours != null
+              ? t("assignments.detail.loggedOfEstimated", { logged: hoursQuery.data?.logged_hours ?? 0, estimated: hoursQuery.data.estimated_hours })
+              : t("assignments.detail.logged", { logged: hoursQuery.data?.logged_hours ?? 0 })}
           </p>
         </div>
 
         <div className="card p-5">
-          <SectionIcon icon="account_tree" color="bg-amber-50 text-amber-700" label="Dependencies" />
+          <SectionIcon icon="account_tree" color="bg-amber-50 text-amber-700" label={t("assignments.detail.dependencies")} />
           <p className="mb-3 text-xs text-neutral-500">
-            This assignment is blocked by the items below. Removing a link does not change permissions.
+            {t("assignments.detail.dependenciesHint")}
           </p>
           <ul className="mb-3 space-y-2 text-sm">
             {(depsQuery.data?.blocked_by ?? []).map((raw) => {
@@ -544,7 +589,7 @@ export default function AssignmentDetailPage() {
               return (
                 <li key={String(row.id)} className="flex items-center justify-between gap-2">
                   <Link href={`/assignments/${row.depends_on_assignment_id}`} className="btn-secondary text-xs py-1 px-2">
-                    {linked?.title ?? `Assignment #${row.depends_on_assignment_id}`}
+                    {linked?.title ?? t("assignments.detail.assignmentNumber", { id: String(row.depends_on_assignment_id) })}
                     {linked?.reference_number ? ` · ${linked.reference_number}` : ""}
                   </Link>
                   <button
@@ -553,30 +598,30 @@ export default function AssignmentDetailPage() {
                     onClick={() => removeDep.mutate(Number(row.id))}
                     disabled={removeDep.isPending}
                   >
-                    Remove
+                    {t("assignments.detail.remove")}
                   </button>
                 </li>
               );
             })}
             {(depsQuery.data?.blocked_by ?? []).length === 0 && (
-              <li className="text-neutral-500">Not blocked by another assignment.</li>
+              <li className="text-neutral-500">{t("assignments.detail.notBlocked")}</li>
             )}
           </ul>
           {(depsQuery.data?.blocks ?? []).length > 0 && (
             <p className="mb-3 text-xs text-neutral-500">
-              Blocks {(depsQuery.data?.blocks ?? []).length} later assignment(s).
+              {t("assignments.detail.blocksLater", { count: (depsQuery.data?.blocks ?? []).length })}
             </p>
           )}
           <div className="flex flex-wrap items-end gap-2">
             <label htmlFor="assignment-depends-on" className="block min-w-[220px] flex-1 text-sm">
-              <span className="mb-1 block text-neutral-600">Depends on</span>
+              <span className="mb-1 block text-neutral-600">{t("assignments.detail.dependsOn")}</span>
               <select
                 id="assignment-depends-on"
                 className="form-input w-full"
                 value={depId}
                 onChange={(e) => setDepId(e.target.value)}
               >
-                <option value="">Select assignment…</option>
+                <option value="">{t("assignments.detail.selectAssignment")}</option>
                 {(peersQuery.data ?? [])
                   .filter((a) => a.id !== assignment.id)
                   .map((a) => (
@@ -592,7 +637,7 @@ export default function AssignmentDetailPage() {
               disabled={!depId || addDep.isPending}
               onClick={() => addDep.mutate()}
             >
-              Add dependency
+              {t("assignments.detail.addDependency")}
             </button>
           </div>
         </div>
@@ -600,16 +645,16 @@ export default function AssignmentDetailPage() {
         {/* Objective & Output */}
         {(assignment.objective || assignment.expected_output) && (
           <div className="card p-5">
-            <SectionIcon icon="flag" color="bg-primary/10 text-primary" label="Objective & Output" />
+            <SectionIcon icon="flag" color="bg-primary/10 text-primary" label={t("assignments.detail.objectiveOutput")} />
             {assignment.objective && (
               <div className="mb-3">
-                <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">Objective</p>
+                <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">{t("assignments.create.objective")}</p>
                 <p className="text-sm text-neutral-700">{assignment.objective}</p>
               </div>
             )}
             {assignment.expected_output && (
               <div>
-                <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">Expected Output</p>
+                <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">{t("assignments.create.expectedOutput")}</p>
                 <p className="text-sm text-neutral-700">{assignment.expected_output}</p>
               </div>
             )}
@@ -619,9 +664,9 @@ export default function AssignmentDetailPage() {
         {/* Blocker */}
         {assignment.blocker_type && (
           <div className="card p-5 border-red-200 bg-red-50">
-            <SectionIcon icon="block" color="bg-red-100 text-red-600" label="Active Blocker" />
+            <SectionIcon icon="block" color="bg-red-100 text-red-600" label={t("assignments.detail.activeBlocker")} />
             <p className="text-sm font-semibold text-red-700 mb-1">
-              {assignment.blocker_type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+              {BLOCKER_KEYS[assignment.blocker_type] ? t(BLOCKER_KEYS[assignment.blocker_type]) : assignment.blocker_type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
             </p>
             {assignment.blocker_details && (
               <p className="text-sm text-red-600">{assignment.blocker_details}</p>
@@ -632,14 +677,14 @@ export default function AssignmentDetailPage() {
         {/* Acceptance info */}
         {assignment.acceptance_decision && (
           <div className="card p-5">
-            <SectionIcon icon="task_alt" color="bg-green-50 text-green-600" label="Acceptance Response" />
+            <SectionIcon icon="task_alt" color="bg-green-50 text-green-600" label={t("assignments.detail.acceptanceResponse")} />
             <div className="space-y-2 text-sm">
-              <InfoRow icon="check" label="Decision" value={assignment.acceptance_decision.replace(/_/g, " ")} />
+              <InfoRow icon="check" label={t("assignments.detail.decision")} value={enumLabel(t, DECISION_KEYS, assignment.acceptance_decision)} />
               {assignment.acceptance_notes && (
-                <InfoRow icon="notes" label="Notes" value={assignment.acceptance_notes} />
+                <InfoRow icon="notes" label={t("assignments.detail.notes")} value={assignment.acceptance_notes} />
               )}
               {assignment.proposed_deadline && (
-                <InfoRow icon="event" label="Proposed Deadline" value={formatDateShort(assignment.proposed_deadline)} />
+                <InfoRow icon="event" label={t("assignments.detail.proposedDeadline")} value={formatDateShort(assignment.proposed_deadline)} />
               )}
             </div>
           </div>
@@ -648,15 +693,15 @@ export default function AssignmentDetailPage() {
         {/* Closure */}
         {assignment.status === "closed" && (
           <div className="card p-5">
-            <SectionIcon icon="lock" color="bg-neutral-100 text-neutral-600" label="Closure" />
+            <SectionIcon icon="lock" color="bg-neutral-100 text-neutral-600" label={t("assignments.detail.closure")} />
             <div className="space-y-2 text-sm">
               {assignment.closed_at && (
-                <InfoRow icon="calendar_today" label="Closed On" value={formatDateShort(assignment.closed_at)} />
+                <InfoRow icon="calendar_today" label={t("assignments.detail.closedOn")} value={formatDateShort(assignment.closed_at)} />
               )}
               {assignment.completion_rating && (
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[14px] text-neutral-400">star</span>
-                  <span className="text-neutral-500 w-20">Rating</span>
+                  <span className="text-neutral-500 w-20">{t("assignments.detail.rating")}</span>
                   <span className="flex gap-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <span
@@ -669,7 +714,7 @@ export default function AssignmentDetailPage() {
                 </div>
               )}
               {assignment.closure_notes && (
-                <InfoRow icon="notes" label="Notes" value={assignment.closure_notes} />
+                <InfoRow icon="notes" label={t("assignments.detail.notes")} value={assignment.closure_notes} />
               )}
             </div>
           </div>
@@ -679,7 +724,7 @@ export default function AssignmentDetailPage() {
       {/* Checklist */}
       {(assignment.checklist_items?.length ?? 0) > 0 && (
         <div className="card p-5">
-          <SectionIcon icon="checklist" color="bg-teal-50 text-teal-600" label="Checklist" />
+          <SectionIcon icon="checklist" color="bg-teal-50 text-teal-600" label={t("assignments.detail.checklist")} />
           <ul className="space-y-2">
             {assignment.checklist_items!.map((item) => (
               <li key={item.id} className="flex items-center gap-2 text-sm">
@@ -699,13 +744,13 @@ export default function AssignmentDetailPage() {
 
       {/* Update Timeline */}
       <div className="card p-5">
-        <SectionIcon icon="history" color="bg-neutral-100 text-neutral-600" label="Activity Timeline" />
+        <SectionIcon icon="history" color="bg-neutral-100 text-neutral-600" label={t("assignments.detail.timeline")} />
         {(assignment.updates?.length ?? 0) > 0 ? (
           <div className="space-y-0">
             {assignment.updates!.map((u) => <UpdateItem key={u.id} u={u} />)}
           </div>
         ) : (
-          <p className="text-sm text-neutral-400 text-center py-4">No updates yet.</p>
+          <p className="text-sm text-neutral-400 text-center py-4">{t("assignments.detail.noUpdates")}</p>
         )}
       </div>
 
@@ -713,25 +758,25 @@ export default function AssignmentDetailPage() {
 
       {/* Post Update Modal */}
       {showUpdateModal && (
-        <Modal title="Post Update" onClose={() => setShowUpdateModal(false)}>
+        <Modal title={t("assignments.detail.postUpdate")} onClose={() => setShowUpdateModal(false)}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="assignment-update-type" className="block text-sm font-medium text-neutral-700 mb-1">Update Type</label>
+              <label htmlFor="assignment-update-type" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.updateType")}</label>
               <select
                 id="assignment-update-type"
                 value={updateForm.type}
                 onChange={(e) => setUpdateForm((f) => ({ ...f, type: e.target.value }))}
                 className="form-input"
               >
-                <option value="update">Progress Update</option>
-                <option value="comment">Comment</option>
-                <option value="feedback">Feedback</option>
-                <option value="escalation">Escalation</option>
-                <option value="closure_request">Closure Request</option>
+                <option value="update">{t("assignments.detail.updateTypes.update")}</option>
+                <option value="comment">{t("assignments.detail.updateTypes.comment")}</option>
+                <option value="feedback">{t("assignments.detail.updateTypes.feedback")}</option>
+                <option value="escalation">{t("assignments.detail.updateTypes.escalation")}</option>
+                <option value="closure_request">{t("assignments.detail.updateTypes.closure_request")}</option>
               </select>
             </div>
             <div>
-              <label htmlFor="assignment-update-progress" className="block text-sm font-medium text-neutral-700 mb-1">Progress %</label>
+              <label htmlFor="assignment-update-progress" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.progressPct")}</label>
               <input
                 id="assignment-update-progress"
                 type="number"
@@ -739,39 +784,39 @@ export default function AssignmentDetailPage() {
                 max={100}
                 value={updateForm.progress_percent}
                 onChange={(e) => setUpdateForm((f) => ({ ...f, progress_percent: e.target.value }))}
-                placeholder={`Current: ${assignment.progress_percent}%`}
+                placeholder={t("assignments.detail.currentProgress", { percent: assignment.progress_percent })}
                 className="form-input"
               />
             </div>
             <div>
-              <label htmlFor="assignment-update-notes" className="block text-sm font-medium text-neutral-700 mb-1">Notes <span className="text-red-500">*</span></label>
+              <label htmlFor="assignment-update-notes" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.notes")} <span className="text-red-500">*</span></label>
               <textarea
                 id="assignment-update-notes"
                 rows={4}
                 value={updateForm.notes}
                 onChange={(e) => setUpdateForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="Describe your progress, issues, or feedback…"
+                placeholder={t("assignments.detail.notesPlaceholder")}
                 className="form-input"
               />
             </div>
             <div>
-              <label htmlFor="assignment-update-blocker" className="block text-sm font-medium text-neutral-700 mb-1">Blocker (if any)</label>
+              <label htmlFor="assignment-update-blocker" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.blockerIfAny")}</label>
               <select
                 id="assignment-update-blocker"
                 value={updateForm.blocker_type}
                 onChange={(e) => setUpdateForm((f) => ({ ...f, blocker_type: e.target.value }))}
                 className="form-input"
               >
-                <option value="">— No blocker —</option>
-                <option value="awaiting_approval">Awaiting Approval</option>
-                <option value="awaiting_funds">Awaiting Funds</option>
-                <option value="awaiting_information">Awaiting Information</option>
-                <option value="external_dependency">External Dependency</option>
+                <option value="">{t("assignments.detail.noBlocker")}</option>
+                <option value="awaiting_approval">{t("assignments.blocker.awaiting_approval")}</option>
+                <option value="awaiting_funds">{t("assignments.blocker.awaiting_funds")}</option>
+                <option value="awaiting_information">{t("assignments.blocker.awaiting_information")}</option>
+                <option value="external_dependency">{t("assignments.blocker.external_dependency")}</option>
               </select>
             </div>
             {updateForm.blocker_type && (
               <div>
-                <label htmlFor="assignment-update-blocker-details" className="block text-sm font-medium text-neutral-700 mb-1">Blocker Details</label>
+                <label htmlFor="assignment-update-blocker-details" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.blockerDetails")}</label>
                 <textarea
                   id="assignment-update-blocker-details"
                   rows={2}
@@ -787,9 +832,9 @@ export default function AssignmentDetailPage() {
                 disabled={!updateForm.notes || updateMutation.isPending}
                 className="btn-primary disabled:opacity-60"
               >
-                {updateMutation.isPending ? "Posting…" : "Post Update"}
+                {updateMutation.isPending ? t("assignments.detail.posting") : t("assignments.detail.postUpdate")}
               </button>
-              <button onClick={() => setShowUpdateModal(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => setShowUpdateModal(false)} className="btn-secondary">{t("common.cancel")}</button>
             </div>
           </div>
         </Modal>
@@ -797,24 +842,24 @@ export default function AssignmentDetailPage() {
 
       {/* Accept Modal */}
       {showAcceptModal && (
-        <Modal title="Respond to Assignment" onClose={() => setShowAcceptModal(false)}>
+        <Modal title={t("assignments.detail.respond")} onClose={() => setShowAcceptModal(false)}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="assignment-accept-decision" className="block text-sm font-medium text-neutral-700 mb-1">Decision</label>
+              <label htmlFor="assignment-accept-decision" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.decision")}</label>
               <select
                 id="assignment-accept-decision"
                 value={acceptForm.decision}
                 onChange={(e) => setAcceptForm((f) => ({ ...f, decision: e.target.value }))}
                 className="form-input"
               >
-                <option value="accepted">Accept</option>
-                <option value="clarification_requested">Request Clarification</option>
-                <option value="deadline_proposed">Propose New Deadline</option>
-                <option value="rejected">Decline</option>
+                <option value="accepted">{t("assignments.detail.accept")}</option>
+                <option value="clarification_requested">{t("assignments.detail.requestClarification")}</option>
+                <option value="deadline_proposed">{t("assignments.detail.proposeDeadline")}</option>
+                <option value="rejected">{t("assignments.detail.decline")}</option>
               </select>
             </div>
             <div>
-              <label htmlFor="assignment-accept-notes" className="block text-sm font-medium text-neutral-700 mb-1">Notes</label>
+              <label htmlFor="assignment-accept-notes" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.notes")}</label>
               <textarea
                 id="assignment-accept-notes"
                 rows={3}
@@ -825,7 +870,7 @@ export default function AssignmentDetailPage() {
             </div>
             {acceptForm.decision === "deadline_proposed" && (
               <div>
-                <label htmlFor="assignment-accept-deadline" className="block text-sm font-medium text-neutral-700 mb-1">Proposed Deadline</label>
+                <label htmlFor="assignment-accept-deadline" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.proposedDeadline")}</label>
                 <input
                   id="assignment-accept-deadline"
                   type="date"
@@ -841,9 +886,9 @@ export default function AssignmentDetailPage() {
                 disabled={acceptMutation.isPending}
                 className="btn-primary disabled:opacity-60"
               >
-                {acceptMutation.isPending ? "Submitting…" : "Submit Response"}
+                {acceptMutation.isPending ? t("assignments.detail.submitting") : t("assignments.detail.submitResponse")}
               </button>
-              <button onClick={() => setShowAcceptModal(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => setShowAcceptModal(false)} className="btn-secondary">{t("common.cancel")}</button>
             </div>
           </div>
         </Modal>
@@ -851,21 +896,21 @@ export default function AssignmentDetailPage() {
 
       {/* Close Modal */}
       {showCloseModal && (
-        <Modal title="Close Assignment" onClose={() => setShowCloseModal(false)}>
+        <Modal title={t("assignments.detail.closeAssignment")} onClose={() => setShowCloseModal(false)}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="assignment-close-notes" className="block text-sm font-medium text-neutral-700 mb-1">Closure Notes</label>
+              <label htmlFor="assignment-close-notes" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.closureNotes")}</label>
               <textarea
                 id="assignment-close-notes"
                 rows={3}
                 value={closeForm.notes}
                 onChange={(e) => setCloseForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="Summary of outcome, key observations…"
+                placeholder={t("assignments.detail.closurePlaceholder")}
                 className="form-input"
               />
             </div>
             <div>
-              <p id="assignment-close-rating" className="block text-sm font-medium text-neutral-700 mb-1">Performance Rating (1–5)</p>
+              <p id="assignment-close-rating" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.performanceRating")}</p>
               <div className="flex gap-2" role="radiogroup" aria-labelledby="assignment-close-rating">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
@@ -892,9 +937,9 @@ export default function AssignmentDetailPage() {
                 disabled={closeMutation.isPending}
                 className="btn-primary disabled:opacity-60"
               >
-                {closeMutation.isPending ? "Closing…" : "Close Assignment"}
+                {closeMutation.isPending ? t("assignments.detail.closing") : t("assignments.detail.closeAssignment")}
               </button>
-              <button onClick={() => setShowCloseModal(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => setShowCloseModal(false)} className="btn-secondary">{t("common.cancel")}</button>
             </div>
           </div>
         </Modal>
@@ -902,11 +947,11 @@ export default function AssignmentDetailPage() {
 
       {/* Cancel Modal */}
       {showCancelModal && (
-        <Modal title="Cancel Assignment" onClose={() => setShowCancelModal(false)}>
+        <Modal title={t("assignments.detail.cancelAssignment")} onClose={() => setShowCancelModal(false)}>
           <div className="space-y-4">
-            <p className="text-sm text-neutral-600">Are you sure you want to cancel this assignment? This action cannot be undone.</p>
+            <p className="text-sm text-neutral-600">{t("assignments.detail.cancelConfirm")}</p>
             <div>
-              <label htmlFor="assignment-cancel-reason" className="block text-sm font-medium text-neutral-700 mb-1">Reason (optional)</label>
+              <label htmlFor="assignment-cancel-reason" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.reasonOptional")}</label>
               <textarea
                 id="assignment-cancel-reason"
                 rows={3}
@@ -921,35 +966,35 @@ export default function AssignmentDetailPage() {
                 disabled={cancelMutation.isPending}
                 className="btn-primary bg-red-600 hover:bg-red-700 border-red-600 disabled:opacity-60"
               >
-                {cancelMutation.isPending ? "Cancelling…" : "Confirm Cancel"}
+                {cancelMutation.isPending ? t("assignments.detail.cancelling") : t("assignments.detail.confirmCancel")}
               </button>
-              <button onClick={() => setShowCancelModal(false)} className="btn-secondary">Keep Assignment</button>
+              <button onClick={() => setShowCancelModal(false)} className="btn-secondary">{t("assignments.detail.keep")}</button>
             </div>
           </div>
         </Modal>
       )}
 
       {showBlockModal && (
-        <Modal title="Mark Blocked" onClose={() => setShowBlockModal(false)}>
+        <Modal title={t("assignments.detail.markBlocked")} onClose={() => setShowBlockModal(false)}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="assignment-block-type" className="block text-sm font-medium text-neutral-700 mb-1">Blocker type</label>
+              <label htmlFor="assignment-block-type" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.blockerType")}</label>
               <select id="assignment-block-type" className="form-input" value={blockForm.blocker_type} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_type: e.target.value }))}>
-                <option value="awaiting_approval">Awaiting approval</option>
-                <option value="awaiting_funds">Awaiting funds</option>
-                <option value="awaiting_information">Awaiting information</option>
-                <option value="external_dependency">External dependency</option>
+                <option value="awaiting_approval">{t("assignments.blockerOption.awaiting_approval")}</option>
+                <option value="awaiting_funds">{t("assignments.blockerOption.awaiting_funds")}</option>
+                <option value="awaiting_information">{t("assignments.blockerOption.awaiting_information")}</option>
+                <option value="external_dependency">{t("assignments.blockerOption.external_dependency")}</option>
               </select>
             </div>
             <div>
-              <label htmlFor="assignment-block-owner" className="block text-sm font-medium text-neutral-700 mb-1">Blocker owner</label>
+              <label htmlFor="assignment-block-owner" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.blockerOwner")}</label>
               <select id="assignment-block-owner" className="form-input" value={blockForm.blocker_owner_id} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_owner_id: e.target.value }))}>
-                <option value="">Select…</option>
+                <option value="">{t("assignments.detail.select")}</option>
                 {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="assignment-block-details" className="block text-sm font-medium text-neutral-700 mb-1">Details</label>
+              <label htmlFor="assignment-block-details" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.details")}</label>
               <textarea id="assignment-block-details" className="form-input" rows={3} value={blockForm.blocker_details} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_details: e.target.value }))} />
             </div>
             <button
@@ -957,47 +1002,47 @@ export default function AssignmentDetailPage() {
               disabled={blockMutation.isPending || !blockForm.blocker_owner_id}
               onClick={() => blockMutation.mutate()}
             >
-              {blockMutation.isPending ? "Saving…" : "Mark Blocked"}
+              {blockMutation.isPending ? t("assignments.recurring.saving") : t("assignments.detail.markBlocked")}
             </button>
           </div>
         </Modal>
       )}
 
       {showVerifyModal && (
-        <Modal title="Verify Completion" onClose={() => setShowVerifyModal(false)}>
+        <Modal title={t("assignments.detail.verifyCompletion")} onClose={() => setShowVerifyModal(false)}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="assignment-verify-decision" className="block text-sm font-medium text-neutral-700 mb-1">Decision</label>
+              <label htmlFor="assignment-verify-decision" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.decision")}</label>
               <select id="assignment-verify-decision" className="form-input" value={verifyForm.decision} onChange={(e) => setVerifyForm((f) => ({ ...f, decision: e.target.value }))}>
-                <option value="accepted">Accepted</option>
-                <option value="accepted_with_follow_up">Accepted with follow-up</option>
-                <option value="returned">Returned</option>
-                <option value="request_evidence">Request evidence</option>
+                <option value="accepted">{t("assignments.status.accepted")}</option>
+                <option value="accepted_with_follow_up">{t("assignments.detail.acceptedFollowUp")}</option>
+                <option value="returned">{t("assignments.status.returned")}</option>
+                <option value="request_evidence">{t("assignments.detail.requestEvidence")}</option>
               </select>
             </div>
             <div>
-              <label htmlFor="assignment-verify-comments" className="block text-sm font-medium text-neutral-700 mb-1">Comments</label>
+              <label htmlFor="assignment-verify-comments" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.comments")}</label>
               <textarea id="assignment-verify-comments" className="form-input" rows={3} value={verifyForm.comments} onChange={(e) => setVerifyForm((f) => ({ ...f, comments: e.target.value }))} />
             </div>
             <button className="btn-primary disabled:opacity-60" disabled={verifyMutation.isPending} onClick={() => verifyMutation.mutate()}>
-              {verifyMutation.isPending ? "Saving…" : "Submit Verification"}
+              {verifyMutation.isPending ? t("assignments.recurring.saving") : t("assignments.detail.submitVerification")}
             </button>
           </div>
         </Modal>
       )}
 
       {showReassignModal && (
-        <Modal title="Reassign" onClose={() => setShowReassignModal(false)}>
+        <Modal title={t("assignments.detail.reassign")} onClose={() => setShowReassignModal(false)}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="assignment-reassign-user" className="block text-sm font-medium text-neutral-700 mb-1">New assignee</label>
+              <label htmlFor="assignment-reassign-user" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.newAssignee")}</label>
               <select id="assignment-reassign-user" className="form-input" value={reassignForm.assigned_to} onChange={(e) => setReassignForm((f) => ({ ...f, assigned_to: e.target.value }))}>
-                <option value="">Select…</option>
+                <option value="">{t("assignments.detail.select")}</option>
                 {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="assignment-reassign-reason" className="block text-sm font-medium text-neutral-700 mb-1">Reason</label>
+              <label htmlFor="assignment-reassign-reason" className="block text-sm font-medium text-neutral-700 mb-1">{t("common.reason")}</label>
               <textarea id="assignment-reassign-reason" className="form-input" rows={3} value={reassignForm.reason} onChange={(e) => setReassignForm((f) => ({ ...f, reason: e.target.value }))} />
             </div>
             <button
@@ -1005,17 +1050,17 @@ export default function AssignmentDetailPage() {
               disabled={reassignMutation.isPending || !reassignForm.assigned_to || !reassignForm.reason.trim()}
               onClick={() => reassignMutation.mutate()}
             >
-              {reassignMutation.isPending ? "Saving…" : "Reassign"}
+              {reassignMutation.isPending ? t("assignments.recurring.saving") : t("assignments.detail.reassign")}
             </button>
           </div>
         </Modal>
       )}
 
       {showDueDateModal && (
-        <Modal title="Change due date" onClose={() => setShowDueDateModal(false)}>
+        <Modal title={t("assignments.detail.changeDueDate")} onClose={() => setShowDueDateModal(false)}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="assignment-due-date" className="block text-sm font-medium text-neutral-700 mb-1">New due date</label>
+              <label htmlFor="assignment-due-date" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.detail.newDueDate")}</label>
               <input
                 id="assignment-due-date"
                 type="date"
@@ -1025,7 +1070,7 @@ export default function AssignmentDetailPage() {
               />
             </div>
             <div>
-              <label htmlFor="assignment-due-reason" className="block text-sm font-medium text-neutral-700 mb-1">Reason</label>
+              <label htmlFor="assignment-due-reason" className="block text-sm font-medium text-neutral-700 mb-1">{t("common.reason")}</label>
               <textarea
                 id="assignment-due-reason"
                 className="form-input"
@@ -1039,17 +1084,17 @@ export default function AssignmentDetailPage() {
               disabled={changeDueDateMutation.isPending || !dueDateForm.due_date || !dueDateForm.reason.trim()}
               onClick={() => changeDueDateMutation.mutate()}
             >
-              {changeDueDateMutation.isPending ? "Saving…" : "Update due date"}
+              {changeDueDateMutation.isPending ? t("assignments.recurring.saving") : t("assignments.detail.updateDueDate")}
             </button>
           </div>
         </Modal>
       )}
 
       {showChecklistModal && (
-        <Modal title="Add Checklist Item" onClose={() => setShowChecklistModal(false)}>
+        <Modal title={t("assignments.detail.addChecklistItem")} onClose={() => setShowChecklistModal(false)}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="assignment-checklist-title" className="block text-sm font-medium text-neutral-700 mb-1">Title</label>
+              <label htmlFor="assignment-checklist-title" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.create.titleLabel")}</label>
               <input id="assignment-checklist-title" className="form-input" value={checklistTitle} onChange={(e) => setChecklistTitle(e.target.value)} />
             </div>
             <button
@@ -1057,7 +1102,7 @@ export default function AssignmentDetailPage() {
               disabled={checklistMutation.isPending || !checklistTitle.trim()}
               onClick={() => checklistMutation.mutate()}
             >
-              {checklistMutation.isPending ? "Adding…" : "Add Item"}
+              {checklistMutation.isPending ? t("assignments.detail.adding") : t("assignments.detail.addItem")}
             </button>
           </div>
         </Modal>
@@ -1079,13 +1124,14 @@ function InfoRow({ icon, label, value, alert }: { icon: string; label: string; v
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-neutral-900">{title}</h3>
-          <button onClick={onClose} aria-label={`Close ${title}`} className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100">
+          <button onClick={onClose} aria-label={t("assignments.detail.closeModal", { title })} className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100">
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>

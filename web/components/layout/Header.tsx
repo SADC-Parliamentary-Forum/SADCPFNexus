@@ -121,7 +121,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
 
   const roleLabel = user?.roles?.[0]
     ? user.roles[0].replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-    : user?.classification ?? "Staff";
+    : user?.classification ?? t("layout.header.staff");
   const profileHref = accountProfilePath(user);
 
   const handleLogout = async () => {
@@ -165,7 +165,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
         <span className="relative inline-block h-8 w-8 flex-shrink-0">
           <Image
             src="/sadcpf-logo.png"
-            alt="SADC Parliamentary Forum"
+            alt="SADC Parliamentary Forum" // i18n-ignore
             fill
             className="object-contain"
             sizes="32px"
@@ -173,7 +173,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
           />
         </span>
         <div className="hidden md:block">
-          <h2 className="text-lg font-bold leading-tight tracking-tight text-neutral-900 dark:text-neutral-100">SADC PF Nexus</h2>
+          <h2 className="text-lg font-bold leading-tight tracking-tight text-neutral-900 dark:text-neutral-100">SADC PF Nexus</h2>{/* i18n-ignore */}
           <p className="text-xs font-medium text-neutral-700 dark:text-neutral-400 leading-none">{t("auth.platform")}</p>
         </div>
       </Link>
@@ -302,7 +302,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
             aria-haspopup="menu"
           >
             <div className="hidden sm:block text-right">
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 leading-tight">{user?.name ?? "User"}</p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 leading-tight">{user?.name ?? t("layout.header.user")}</p>
               <p className="text-xs text-neutral-700 dark:text-neutral-400 leading-none">{String(roleLabel)}</p>
             </div>
             <div className="flex size-9 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-primary-700 text-white text-xs font-bold flex-shrink-0 shadow-sm">
@@ -322,7 +322,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                       {initials}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{user?.name ?? "User"}</p>
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{user?.name ?? t("layout.header.user")}</p>
                       <p className="text-xs text-neutral-400 truncate">{user?.email ?? ""}</p>
                     </div>
                   </div>

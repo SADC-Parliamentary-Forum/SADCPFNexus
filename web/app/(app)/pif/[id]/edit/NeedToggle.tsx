@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useId } from "react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export function NeedToggle({
   label,
@@ -18,6 +19,7 @@ export function NeedToggle({
   children?: ReactNode;
 }) {
   const id = useId();
+  const { t } = useI18n();
   return (
     <div
       data-testid="pif-need-toggle"
@@ -35,8 +37,8 @@ export function NeedToggle({
           className="mt-0.5 rounded border-neutral-300"
         />
         <span className="min-w-0">
-          <span className="block text-sm font-medium text-neutral-800">{label}</span>
-          {hint ? <span className="mt-0.5 block text-[11px] leading-snug text-neutral-500">{hint}</span> : null}
+          <span className="block text-sm font-medium text-neutral-800">{t(label)}</span>
+          {hint ? <span className="mt-0.5 block text-[11px] leading-snug text-neutral-500">{t(hint)}</span> : null}
         </span>
       </label>
       {checked && children ? <div className="mt-3 space-y-3 pl-7">{children}</div> : null}

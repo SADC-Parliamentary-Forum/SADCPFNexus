@@ -26,21 +26,21 @@ import { EmptyState } from "@/components/ui/EmptyState";
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }> = {
-  draft:      { label: "Draft",      cls: "badge-muted",    icon: "edit_note"          },
-  submitted:  { label: "Submitted",  cls: "badge-warning",  icon: "pending"            },
-  reviewed:   { label: "Reviewed",   cls: "badge-primary",  icon: "rate_review"        },
-  approved:   { label: "Approved",   cls: "badge-success",  icon: "check_circle"       },
-  monitoring: { label: "Monitoring", cls: "badge-primary",  icon: "monitor_heart"      },
-  escalated:  { label: "Escalated",  cls: "badge-danger",   icon: "warning"            },
-  closed:     { label: "Closed",     cls: "badge-muted",    icon: "lock"               },
-  archived:   { label: "Archived",   cls: "badge-muted",    icon: "archive"            },
+  draft:      { label: "risk.analytics.status.draft",      cls: "badge-muted",    icon: "edit_note"          },
+  submitted:  { label: "risk.analytics.status.submitted",  cls: "badge-warning",  icon: "pending"            },
+  reviewed:   { label: "risk.analytics.status.reviewed",   cls: "badge-primary",  icon: "rate_review"        },
+  approved:   { label: "risk.analytics.status.approved",   cls: "badge-success",  icon: "check_circle"       },
+  monitoring: { label: "risk.analytics.status.monitoring", cls: "badge-primary",  icon: "monitor_heart"      },
+  escalated:  { label: "risk.analytics.status.escalated",  cls: "badge-danger",   icon: "warning"            },
+  closed:     { label: "risk.analytics.status.closed",     cls: "badge-muted",    icon: "lock"               },
+  archived:   { label: "risk.analytics.status.archived",   cls: "badge-muted",    icon: "archive"            },
 };
 
 const LEVEL_CONFIG: Record<string, { label: string; cls: string; bg: string }> = {
-  low:      { label: "Low",      cls: "text-green-700",  bg: "bg-green-100 border-green-300"  },
-  medium:   { label: "Medium",   cls: "text-yellow-700", bg: "bg-yellow-100 border-yellow-300"},
-  high:     { label: "High",     cls: "text-orange-700", bg: "bg-orange-100 border-orange-300"},
-  critical: { label: "Critical", cls: "text-red-700",    bg: "bg-red-100 border-red-300"      },
+  low:      { label: "risk.create.level.low",      cls: "text-green-700",  bg: "bg-green-100 border-green-300"  },
+  medium:   { label: "risk.create.level.medium",   cls: "text-yellow-700", bg: "bg-yellow-100 border-yellow-300"},
+  high:     { label: "risk.create.level.high",     cls: "text-orange-700", bg: "bg-orange-100 border-orange-300"},
+  critical: { label: "risk.create.level.critical", cls: "text-red-700",    bg: "bg-red-100 border-red-300"      },
 };
 
 const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
@@ -69,6 +69,19 @@ function cellBg(score: number): string {
 }
 
 const STATUS_FILTERS = ["All", "Draft", "Submitted", "Reviewed", "Approved", "Monitoring", "Escalated", "Closed"] as const;
+/** Catalog key for each status filter tab; the filter values themselves stay English state ids. */
+const FILTER_LABELS: Record<string, string> = {
+  All: "risk.register.filterAll", Draft: "risk.analytics.status.draft", Submitted: "risk.analytics.status.submitted",
+  Reviewed: "risk.analytics.status.reviewed", Approved: "risk.analytics.status.approved",
+  Monitoring: "risk.analytics.status.monitoring", Escalated: "risk.analytics.status.escalated", Closed: "risk.analytics.status.closed",
+};
+
+/** Translated risk category, falling back to the raw value. */
+function categoryLabel(t: (key: string) => string, category: string): string {
+  const key = `risk.create.category.${category}`;
+  const label = t(key);
+  return label === key ? category : label;
+}
 const filterMap: Record<string, string | undefined> = {
   All: undefined, Draft: "draft", Submitted: "submitted", Reviewed: "reviewed",
   Approved: "approved", Monitoring: "monitoring", Escalated: "escalated", Closed: "closed",
@@ -123,17 +136,17 @@ export default function RiskRegisterPage() {
   const escalated = risks.filter((r) => r.status === "escalated").length;
 
   const EXPORT_COLUMNS = [
-    { key: "risk_code",       header: "Risk Code"         },
-    { key: "title",           header: "Title"             },
-    { key: "category",        header: "Category"          },
-    { key: "inherent_score",  header: "Inherent Score"    },
-    { key: "risk_level",      header: "Risk Level"        },
-    { key: "residual_score",  header: "Residual Score"    },
-    { key: "status",          header: "Status"            },
-    { key: "owner",           header: "Risk Owner"        },
-    { key: "department",      header: "Department"        },
-    { key: "next_review",     header: "Next Review Date"  },
-    { key: "review_notes",    header: "Notes / Controls"  },
+    { key: "risk_code",       header: t("risk.auditTrail.riskCode")       },
+    { key: "title",           header: t("risk.common.title")              },
+    { key: "category",        header: t("risk.create.category")           },
+    { key: "inherent_score",  header: t("risk.common.inherentScore")      },
+    { key: "risk_level",      header: t("risk.register.riskLevel")        },
+    { key: "residual_score",  header: t("risk.common.residualScore")      },
+    { key: "status",          header: t("risk.common.status")             },
+    { key: "owner",           header: t("risk.common.riskOwner")          },
+    { key: "department",      header: t("risk.analytics.department")      },
+    { key: "next_review",     header: t("risk.register.nextReviewDate")   },
+    { key: "review_notes",    header: t("risk.register.notesControls")    },
   ];
 
   function buildExportRows() {
@@ -158,9 +171,9 @@ export default function RiskRegisterPage() {
     const { jsPDF, autoTable } = await loadPdfLibs();
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
     doc.setFontSize(14);
-    doc.text("Risk Register", 14, 14);
+    doc.text(t("risk.hub"), 14, 14);
     doc.setFontSize(9);
-    doc.text(`Generated ${new Date().toLocaleDateString("en-GB")} · ${displayRisks.length} risk(s)`, 14, 20);
+    doc.text(t("risk.register.pdfGenerated", { date: new Date().toLocaleDateString("en-GB"), count: displayRisks.length }), 14, 20);
     autoTable(doc, {
       head: [EXPORT_COLUMNS.map((c) => c.header)],
       body: buildExportRows().map((r) => EXPORT_COLUMNS.map((c) => String(r[c.key as keyof typeof r] ?? ""))),
@@ -224,8 +237,8 @@ export default function RiskRegisterPage() {
   return (
     <>
     <RegisterShell
-      title="Risk Register"
-      subtitle="Institutional risk management — identify, assess, and mitigate risks across all departments."
+      title="risk.hub"
+      subtitle="risk.register.subtitle"
       density={density}
       onDensityChange={setDensity}
       loading={isLoading}
@@ -258,16 +271,16 @@ export default function RiskRegisterPage() {
                   risk_level: r.risk_level ?? "",
                 })),
                 [
-                  { key: "risk_code", header: "Risk Code" },
-                  { key: "title", header: "Title" },
-                  { key: "category", header: "Category" },
-                  { key: "status", header: "Status" },
-                  { key: "risk_level", header: "Level" },
+                  { key: "risk_code", header: t("risk.auditTrail.riskCode") },
+                  { key: "title", header: t("risk.common.title") },
+                  { key: "category", header: t("risk.create.category") },
+                  { key: "status", header: t("risk.common.status") },
+                  { key: "risk_level", header: t("reports.col.level") },
                 ],
               );
             }}
           >
-            Export selected
+            {t("procurement.register.exportSelected")}
           </button>
         </BulkSelectionBar>
       }
@@ -277,23 +290,23 @@ export default function RiskRegisterPage() {
             onClick={() => exportToXls("risk-register", buildExportRows(), EXPORT_COLUMNS)}
             disabled={displayRisks.length === 0}
             className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-40"
-            title="Export to Excel"
+            title={t("risk.register.exportExcel")}
           >
             <span className="material-symbols-outlined text-[16px]">table_view</span>
-            Excel
+            Excel{/* i18n-ignore */}
           </button>
           <button
             onClick={handleExportPdf}
             disabled={displayRisks.length === 0}
             className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-40"
-            title="Export to PDF"
+            title={t("risk.register.exportPdf")}
           >
             <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
-            PDF
+            PDF{/* i18n-ignore */}
           </button>
           <Link href="/risk/create" className="btn-primary flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Log Risk
+            {t("risk.register.logRisk")}
           </Link>
         </div>
       }
@@ -301,7 +314,7 @@ export default function RiskRegisterPage() {
         isError ? (
           <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
             <span className="material-symbols-outlined text-[16px]">error_outline</span>
-            Failed to load risk register.
+            {t("risk.register.loadFailed")}
           </div>
         ) : null
       }
@@ -311,10 +324,10 @@ export default function RiskRegisterPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total Risks",    value: risks.length,  icon: "shield",          color: "text-primary",   bg: "bg-primary/10"  },
-          { label: "Open",           value: open,          icon: "warning_amber",   color: "text-amber-600", bg: "bg-amber-50"    },
-          { label: "Critical / High",value: critical + high, icon: "crisis_alert",  color: "text-red-600",   bg: "bg-red-50"      },
-          { label: "Escalated",      value: escalated,     icon: "escalator_warning",color: "text-orange-600",bg: "bg-orange-50"  },
+          { label: "risk.analytics.totalRisks",       value: risks.length,  icon: "shield",          color: "text-primary",   bg: "bg-primary/10"  },
+          { label: "risk.register.kpiOpen",           value: open,          icon: "warning_amber",   color: "text-amber-600", bg: "bg-amber-50"    },
+          { label: "risk.register.kpiCriticalHigh",   value: critical + high, icon: "crisis_alert",  color: "text-red-600",   bg: "bg-red-50"      },
+          { label: "risk.analytics.status.escalated", value: escalated,     icon: "escalator_warning",color: "text-orange-600",bg: "bg-orange-50"  },
         ].map((kpi) => (
           <div key={kpi.label} className="card px-4 py-4 flex items-center gap-4">
             <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${kpi.bg}`}>
@@ -322,7 +335,7 @@ export default function RiskRegisterPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-neutral-900 leading-tight">{isLoading ? "—" : kpi.value}</p>
-              <p className="text-xs text-neutral-500 mt-0.5">{kpi.label}</p>
+              <p className="text-xs text-neutral-500 mt-0.5">{t(kpi.label)}</p>
             </div>
           </div>
         ))}
@@ -334,8 +347,8 @@ export default function RiskRegisterPage() {
         <div className="card p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-semibold text-neutral-800">Risk Heatmap</h2>
-              <p className="text-xs text-neutral-500">Likelihood × Impact — click a cell to filter the list</p>
+              <h2 className="text-sm font-semibold text-neutral-800">{t("risk.analytics.heatmap")}</h2>
+              <p className="text-xs text-neutral-500">{t("risk.register.heatmapHint")}</p>
             </div>
             {matrixFilter && (
               <button
@@ -343,7 +356,7 @@ export default function RiskRegisterPage() {
                 className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
               >
                 <span className="material-symbols-outlined text-[14px]">close</span>
-                Clear filter
+                {t("governance.plenary.clearFilter")}
               </button>
             )}
           </div>
@@ -351,7 +364,7 @@ export default function RiskRegisterPage() {
           <div className="flex gap-3">
             {/* Y axis label */}
             <div className="flex flex-col justify-center items-center w-5">
-              <span className="text-[10px] text-neutral-400 -rotate-90 whitespace-nowrap">Likelihood →</span>
+              <span className="text-[10px] text-neutral-400 -rotate-90 whitespace-nowrap">{t("risk.analytics.likelihoodAxis")}</span>
             </div>
 
             <div className="flex-1">
@@ -377,7 +390,7 @@ export default function RiskRegisterPage() {
                           key={`${l}-${im}`}
                           onClick={() => setMatrixFilter(active ? null : { likelihood: l, impact: im })}
                           className={`relative aspect-square rounded flex items-center justify-center text-xs font-bold transition-all ${cellBg(score)} ${active ? "ring-2 ring-neutral-900 scale-110 z-10" : "hover:scale-105"}`}
-                          title={`L${l} × I${im} = ${score} — ${count} risk${count !== 1 ? "s" : ""}`}
+                          title={t(count === 1 ? "risk.register.cellOne" : "risk.register.cellMany", { l, i: im, score, count })}
                         >
                           {count > 0 && <span className="text-[11px] font-bold">{count}</span>}
                         </button>
@@ -388,21 +401,21 @@ export default function RiskRegisterPage() {
               </div>
 
               {/* X axis label */}
-              <div className="text-center text-[10px] text-neutral-400 mt-2">Impact →</div>
+              <div className="text-center text-[10px] text-neutral-400 mt-2">{t("risk.analytics.impactAxis")}</div>
             </div>
           </div>
 
           {/* Legend */}
           <div className="flex gap-3 mt-4 flex-wrap">
             {[
-              { label: "Low (1–5)",      bg: "bg-green-200"  },
-              { label: "Medium (6–10)",  bg: "bg-yellow-300" },
-              { label: "High (11–15)",   bg: "bg-orange-400" },
-              { label: "Critical (≥16)", bg: "bg-red-500"    },
+              { label: "risk.register.legendLow",      bg: "bg-green-200"  },
+              { label: "risk.register.legendMedium",   bg: "bg-yellow-300" },
+              { label: "risk.register.legendHigh",     bg: "bg-orange-400" },
+              { label: "risk.register.legendCritical", bg: "bg-red-500"    },
             ].map((z) => (
               <div key={z.label} className="flex items-center gap-1.5">
                 <div className={`h-3 w-3 rounded ${z.bg}`} />
-                <span className="text-[11px] text-neutral-500">{z.label}</span>
+                <span className="text-[11px] text-neutral-500">{t(z.label)}</span>
               </div>
             ))}
           </div>
@@ -411,24 +424,24 @@ export default function RiskRegisterPage() {
         {/* By status + by level */}
         <div className="space-y-4">
           <div className="card p-5">
-            <h2 className="text-sm font-semibold text-neutral-800 mb-3">By Status</h2>
+            <h2 className="text-sm font-semibold text-neutral-800 mb-3">{t("risk.register.byStatus")}</h2>
             <div className="space-y-2">
               {Object.entries(matrix?.by_status ?? {}).map(([status, count]) => {
                 const cfg = STATUS_CONFIG[status];
                 if (!cfg || count === 0) return null;
                 return (
                   <div key={status} className="flex items-center justify-between text-sm">
-                    <span className="text-neutral-600">{cfg.label}</span>
+                    <span className="text-neutral-600">{t(cfg.label)}</span>
                     <span className="font-semibold text-neutral-900">{count as number}</span>
                   </div>
                 );
               })}
-              {!matrix && <p className="text-xs text-neutral-400">Loading…</p>}
+              {!matrix && <p className="text-xs text-neutral-400">{t("common.loading")}</p>}
             </div>
           </div>
 
           <div className="card p-5">
-            <h2 className="text-sm font-semibold text-neutral-800 mb-3">By Risk Level</h2>
+            <h2 className="text-sm font-semibold text-neutral-800 mb-3">{t("risk.register.byLevel")}</h2>
             <div className="space-y-2">
               {(["critical", "high", "medium", "low"] as const).map((level) => {
                 const count = matrix?.by_risk_level?.[level] ?? 0;
@@ -441,7 +454,7 @@ export default function RiskRegisterPage() {
                         style={{ width: `${matrix?.totals.total ? Math.round((count / matrix.totals.total) * 100) : 0}%` }}
                       />
                     </div>
-                    <span className={`text-xs font-medium w-16 text-right ${cfg.cls}`}>{cfg.label}</span>
+                    <span className={`text-xs font-medium w-16 text-right ${cfg.cls}`}>{t(cfg.label)}</span>
                     <span className="text-xs text-neutral-500 w-5 text-right">{count}</span>
                   </div>
                 );
@@ -459,7 +472,7 @@ export default function RiskRegisterPage() {
             onClick={() => { setStatusFilter(f); setMatrixFilter(null); }}
             className={`filter-tab ${statusFilter === f ? "active" : ""}`}
           >
-            {f}
+            {t(FILTER_LABELS[f])}
             {f !== "All" && (() => {
               const s = filterMap[f];
               const cnt = s ? risks.filter((r) => r.status === s).length : risks.length;
@@ -483,17 +496,17 @@ export default function RiskRegisterPage() {
         ) : displayRisks.length === 0 ? (
           <EmptyState
             icon="shield"
-            title={matrixFilter ? "No risks found in selected heatmap cell." : "No risks found."}
+            title={matrixFilter ? "risk.register.emptyCell" : "risk.register.empty"}
             action={
               <Link href="/risk/create" className="btn-primary inline-flex items-center gap-1.5 text-sm">
                 <span className="material-symbols-outlined text-[16px]">add</span>
-                Log first risk
+                {t("risk.register.logFirst")}
               </Link>
             }
           />
         ) : (
           <table className="data-table">
-              <caption className="sr-only">Risk register</caption>
+              <caption className="sr-only">{t("risk.register.caption")}</caption>
             <thead>
               <tr>
                 <th className="w-10">
@@ -503,16 +516,16 @@ export default function RiskRegisterPage() {
                     onChange={selection.toggleAllSelectable}
                   />
                 </th>
-                <th>Code</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Inherent Score</th>
-                <th>Residual Score</th>
-                <th>Level</th>
-                <th>Status</th>
-                <th>Next Review</th>
-                <th>Owner</th>
-                <th>Updated</th>
+                <th>{t("risk.incidents.col.code")}</th>
+                <th>{t("risk.common.title")}</th>
+                <th>{t("risk.create.category")}</th>
+                <th>{t("risk.common.inherentScore")}</th>
+                <th>{t("risk.common.residualScore")}</th>
+                <th>{t("reports.col.level")}</th>
+                <th>{t("risk.common.status")}</th>
+                <th>{t("risk.common.nextReview")}</th>
+                <th>{t("risk.policies.colOwner")}</th>
+                <th>{t("risk.register.colUpdated")}</th>
               </tr>
             </thead>
             <tbody>
@@ -526,7 +539,7 @@ export default function RiskRegisterPage() {
                       <RowCheckbox
                         checked={selection.isSelected(risk.id)}
                         onChange={() => selection.toggle(risk.id)}
-                        label={`Select ${risk.risk_code}`}
+                        label={t("risk.register.selectRow", { code: risk.risk_code })}
                       />
                     </td>
                     <td>
@@ -542,7 +555,7 @@ export default function RiskRegisterPage() {
                     <td>
                       <span className="inline-flex items-center gap-1 text-xs">
                         <span className={`material-symbols-outlined text-[13px] ${cat.color}`}>{cat.icon}</span>
-                        <span className="capitalize text-neutral-600">{risk.category}</span>
+                        <span className="capitalize text-neutral-600">{categoryLabel(t, risk.category)}</span>
                       </span>
                     </td>
                     <td>
@@ -562,12 +575,12 @@ export default function RiskRegisterPage() {
                       })() : <span className="text-xs text-neutral-300">—</span>}
                     </td>
                     <td>
-                      <span className={`text-xs font-semibold ${level.cls}`}>{level.label}</span>
+                      <span className={`text-xs font-semibold ${level.cls}`}>{t(level.label)}</span>
                     </td>
                     <td>
                       <span className={`badge ${status.cls} inline-flex items-center gap-1`}>
                         <span className="material-symbols-outlined text-[11px]">{status.icon}</span>
-                        {status.label}
+                        {t(status.label)}
                       </span>
                     </td>
                     <td>

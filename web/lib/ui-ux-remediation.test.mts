@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readdirSync, readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 
 const webRoot = join(process.cwd());
@@ -112,7 +113,7 @@ test("audit universe create locks duplicate submits while pending", () => {
 });
 
 test("risk control create locks duplicate submits while pending", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/risk/controls/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/risk/controls/page.tsx"));
 
   assert.match(source, /const \[creating,\s*setCreating\]/);
   assert.match(source, /if \(!controlTitle \|\| creating\) return/);
@@ -123,7 +124,7 @@ test("risk control create locks duplicate submits while pending", () => {
 });
 
 test("correspondence retention save locks duplicate submits while pending", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/correspondence/retention/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/correspondence/retention/page.tsx"));
 
   assert.match(source, /const \[saving,\s*setSaving\]/);
   assert.match(source, /if \(!targetLetterId \|\| saving\) return/);
@@ -159,7 +160,7 @@ test("travel DSA rate fields are constrained to non-negative values", () => {
 });
 
 test("asset insurance effective date inputs have visible labels", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/assets/insurance/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/assets/insurance/page.tsx"));
 
   assert.match(source, /htmlFor="policy-effective-from"/);
   assert.match(source, /Effective from/);
@@ -170,7 +171,7 @@ test("asset insurance effective date inputs have visible labels", () => {
 });
 
 test("timesheet week navigation chevrons have accessible names", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/hr/timesheets/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/hr/timesheets/page.tsx"));
 
   assert.match(source, /aria-label="Previous week"/);
   assert.match(source, /title="Previous week"/);
@@ -309,7 +310,7 @@ test("organogram unit modal uses shared accessible modal and bound labels", () =
 });
 
 test("organogram icon controls have accessible names", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/organogram/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/organogram/page.tsx"));
 
   assert.match(source, /aria-label="Zoom in"/);
   assert.match(source, /title="Zoom in"/);
@@ -536,8 +537,8 @@ test("audit module pages use shared chrome, i18n, and wrapping actions", () => {
 });
 
 test("monthly timesheet chevrons and global search clear control have accessible names", () => {
-  const monthly = readFileSync(join(webRoot, "app/(app)/hr/timesheets/monthly/page.tsx"), "utf8");
-  const search = readFileSync(join(webRoot, "components/layout/GlobalSearch.tsx"), "utf8");
+  const monthly = readEnglishSource(join(webRoot, "app/(app)/hr/timesheets/monthly/page.tsx"));
+  const search = readEnglishSource(join(webRoot, "components/layout/GlobalSearch.tsx"));
 
   assert.match(monthly, /aria-label="Previous month"/);
   assert.match(monthly, /aria-label="Next month"/);
@@ -547,7 +548,7 @@ test("monthly timesheet chevrons and global search clear control have accessible
 });
 
 test("risk detail tabs expose tablist and selected tab semantics", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/risk/[id]/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/risk/[id]/page.tsx"));
 
   assert.match(source, /role="tablist"/);
   assert.match(source, /aria-label="Risk detail sections"/);
@@ -600,7 +601,7 @@ test("cited close and delete icon buttons expose accessible names", () => {
   ] as const;
 
   for (const [path, labels] of expectations) {
-    const source = readFileSync(join(webRoot, path), "utf8");
+    const source = readEnglishSource(join(webRoot, path));
     for (const label of labels) {
       assert.match(source, new RegExp(`aria-label="${label}"`));
     }
@@ -632,7 +633,7 @@ test("UX-196 asset transfers CTA uses Next Link", () => {
 });
 
 test("UX-208 stock register title does not use slash style", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/stock/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/stock/page.tsx"));
   assert.doesNotMatch(source, /Consumables \/ Stock/);
   assert.match(source, /title="Stock"/);
 });
@@ -679,7 +680,7 @@ test("UX-337 fleet tables use data-table", () => {
 });
 
 test("UX-349 access review create shows required-name error text", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/admin/access/reviews/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/admin/access/reviews/page.tsx"));
   assert.match(source, /error=\{/);
   assert.match(source, /Campaign name is required/);
 });
@@ -783,7 +784,7 @@ test("UX-262 fleet utilisation exports CSV", () => {
 });
 
 test("UX-353 correspondence retention exports CSV", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/correspondence/retention/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/correspondence/retention/page.tsx"));
   assert.match(source, /exportToCsv/);
   assert.match(source, /Saving…/);
   assert.doesNotMatch(source, /Saving\.\.\./);
@@ -818,9 +819,9 @@ test("UX-276 stock submodules use ModulePageHeader", () => {
 });
 
 test("UX-074 LIL chrome uses Leave in Lieu wording", () => {
-  const leave = readFileSync(join(webRoot, "app/(app)/leave/page.tsx"), "utf8");
-  const detail = readFileSync(join(webRoot, "app/(app)/leave/[id]/page.tsx"), "utf8");
-  const balances = readFileSync(join(webRoot, "app/(app)/hr/leave/balances/page.tsx"), "utf8");
+  const leave = readEnglishSource(join(webRoot, "app/(app)/leave/page.tsx"));
+  const detail = readEnglishSource(join(webRoot, "app/(app)/leave/[id]/page.tsx"));
+  const balances = readEnglishSource(join(webRoot, "app/(app)/hr/leave/balances/page.tsx"));
   const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
   assert.match(leave, /leave\.type\.\$\{code\}/);
   assert.match(keys, /"leave\.type\.lil": "Leave in Lieu"/);
@@ -830,7 +831,7 @@ test("UX-074 LIL chrome uses Leave in Lieu wording", () => {
 });
 
 test("UX-317 access requests register shows business reason", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/admin/access/requests/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/admin/access/requests/page.tsx"));
   assert.match(source, /<th>Reason<\/th>/);
   assert.match(source, /r\.business_reason/);
 });

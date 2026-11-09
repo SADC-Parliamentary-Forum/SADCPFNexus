@@ -10,13 +10,14 @@ import { formatDateShort } from "@/lib/utils";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { PROCUREMENT_HUB_CARDS } from "@/lib/hubs/procurement";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  approved:  { label: "Approved",  cls: "badge-success" },
-  submitted: { label: "Submitted", cls: "badge-warning" },
-  rejected:  { label: "Rejected",  cls: "badge-danger"  },
-  draft:     { label: "Draft",     cls: "badge-muted"   },
-  cancelled: { label: "Cancelled", cls: "badge-muted"   },
+  approved:  { label: "status.approved",  cls: "badge-success" },
+  submitted: { label: "status.submitted", cls: "badge-warning" },
+  rejected:  { label: "status.rejected",  cls: "badge-danger"  },
+  draft:     { label: "status.draft",     cls: "badge-muted"   },
+  cancelled: { label: "status.cancelled", cls: "badge-muted"   },
 };
 
 const categoryColors: Record<string, string> = {
@@ -35,8 +36,23 @@ const FILTERS = ["All", "Draft", "Submitted", "Approved", "Rejected"] as const;
 const filterMap: Record<string, string | undefined> = {
   All: undefined, Draft: "draft", Submitted: "submitted", Approved: "approved", Rejected: "rejected",
 };
+const FILTER_LABEL_KEYS: Record<(typeof FILTERS)[number], string> = {
+  All: "procurement.filter.all",
+  Draft: "status.draft",
+  Submitted: "status.submitted",
+  Approved: "status.approved",
+  Rejected: "status.rejected",
+};
+const FILTER_EMPTY_KEYS: Record<(typeof FILTERS)[number], string> = {
+  All: "procurement.index.emptyAll",
+  Draft: "procurement.index.emptyDraft",
+  Submitted: "procurement.index.emptySubmitted",
+  Approved: "procurement.index.emptyApproved",
+  Rejected: "procurement.index.emptyRejected",
+};
 
 export default function ProcurementPage() {
+  const { t } = useI18n();
   const user = getStoredUser();
   const canCreateRequest = !!user && (isSystemAdmin(user) || hasPermission(user, ["procurement.create", "procurement.admin"]));
   const canViewVendors = canViewProcurementVendors(user);
@@ -66,27 +82,27 @@ export default function ProcurementPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Procurement"
-        subtitle="Manage requisitions, vendor quotes, and procurement approvals."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement" }]} />}
+        title={t("nav.procurement")}
+        subtitle={t("procurement.index.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("nav.procurement") }]} />}
       />
         <div className="flex items-center gap-2">
           {canViewVendors && (
             <Link href="/procurement/vendors" className="btn-secondary flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[18px]">storefront</span>
-              Vendors
+              {t("procurement.index.vendors")}
             </Link>
           )}
           {canCreateRequest && (
             <Link href="/procurement/from-document" className="btn-primary flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[18px]">upload_file</span>
-              Create from Invoice / Quote
+              {t("procurement.index.fromDocument")}
             </Link>
           )}
           {canCreateRequest && (
             <Link href="/procurement/create" className="btn-secondary flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[18px]">add</span>
-              New Requisition
+              {t("procurement.index.newRequisition")}
             </Link>
           )}
         </div>
@@ -97,36 +113,36 @@ export default function ProcurementPage() {
       {canCreateRequest && workbench && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {([
-            ["new_documents", "New documents", "/procurement/from-document"],
-            ["needs_extraction_review", "Needs extraction review", "/procurement/from-document"],
-            ["requests_pending", "Requests pending", "/procurement"],
-            ["ready_for_lpo", "Ready for LPO", "/procurement/purchase-orders"],
-            ["awaiting_approval", "Awaiting approval", "/approvals"],
-            ["returned_for_correction", "Returned for correction", "/procurement/purchase-orders"],
-            ["approved_ready_to_issue", "Approved / ready to issue", "/procurement/purchase-orders"],
-            ["outstanding_lpos", "Outstanding LPOs", "/procurement/purchase-orders"],
-            ["awaiting_receipt", "Awaiting receipt", "/procurement/receipts"],
-            ["unmatched_invoices", "Unmatched invoices", "/procurement/invoices"],
-            ["ready_for_finance", "Ready for Finance", "/procurement/invoices"],
-            ["exceptions", "Exceptions", "/procurement/exceptions"],
+            ["new_documents", "procurement.index.wb.newDocuments", "/procurement/from-document"],
+            ["needs_extraction_review", "procurement.index.wb.needsExtractionReview", "/procurement/from-document"],
+            ["requests_pending", "procurement.index.wb.requestsPending", "/procurement"],
+            ["ready_for_lpo", "procurement.index.wb.readyForLpo", "/procurement/purchase-orders"],
+            ["awaiting_approval", "procurement.index.wb.awaitingApproval", "/approvals"],
+            ["returned_for_correction", "procurement.index.wb.returnedForCorrection", "/procurement/purchase-orders"],
+            ["approved_ready_to_issue", "procurement.index.wb.approvedReadyToIssue", "/procurement/purchase-orders"],
+            ["outstanding_lpos", "procurement.index.wb.outstandingLpos", "/procurement/purchase-orders"],
+            ["awaiting_receipt", "procurement.index.wb.awaitingReceipt", "/procurement/receipts"],
+            ["unmatched_invoices", "procurement.index.wb.unmatchedInvoices", "/procurement/invoices"],
+            ["ready_for_finance", "procurement.index.wb.readyForFinance", "/procurement/invoices"],
+            ["exceptions", "procurement.exceptions.crumb", "/procurement/exceptions"],
           ] as const).map(([key, label, href]) => (
             <Link key={key} href={href} className="card p-4 hover:border-primary/30">
-              <p className="text-xs text-neutral-500">{label}</p>
+              <p className="text-xs text-neutral-500">{t(label)}</p>
               <p className="mt-1 text-2xl font-bold text-neutral-900">{workbench[key] ?? 0}</p>
             </Link>
           ))}
         </div>
       )}
 
-      {isError && <ErrorBanner message="Failed to load procurement requests." />}
+      {isError && <ErrorBanner message={t("procurement.index.loadError")} />}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total Requisitions", value: requests.length.toString(),                                       icon: "shopping_cart",  color: "text-primary",   bg: "bg-primary/10"},
-          { label: "Pending Approval",   value: requests.filter((r) => r.status === "submitted").length.toString(), icon: "pending_actions",color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20"  },
-          { label: "Approved",           value: requests.filter((r) => r.status === "approved").length.toString(),  icon: "check_circle",   color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20"  },
-          { label: "Total Value",        value: totalValue > 0 ? `${currency} ${(totalValue / 1000).toFixed(0)}k` : "—", icon: "payments", color: "text-primary",bg: "bg-primary/10" },
+          { label: t("procurement.index.kpi.total"), value: requests.length.toString(),                                       icon: "shopping_cart",  color: "text-primary",   bg: "bg-primary/10"},
+          { label: t("procurement.index.kpi.pending"), value: requests.filter((r) => r.status === "submitted").length.toString(), icon: "pending_actions",color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20"  },
+          { label: t("status.approved"), value: requests.filter((r) => r.status === "approved").length.toString(),  icon: "check_circle",   color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20"  },
+          { label: t("procurement.index.kpi.totalValue"), value: totalValue > 0 ? `${currency} ${(totalValue / 1000).toFixed(0)}k` : "—", icon: "payments", color: "text-primary",bg: "bg-primary/10" },
         ].map((s) => (
           <div key={s.label} className="card p-4">
             <div className="flex items-center justify-between">
@@ -150,7 +166,7 @@ export default function ProcurementPage() {
             onClick={() => setStatusFilter(f)}
             className={`filter-tab ${statusFilter === f ? "active" : ""}`}
           >
-            {f}
+            {t(FILTER_LABEL_KEYS[f])}
           </button>
         ))}
       </div>
@@ -160,7 +176,7 @@ export default function ProcurementPage() {
         <div className="card p-12 text-center">
           <div className="flex items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-            <span className="text-sm">Loading…</span>
+            <span className="text-sm">{t("common.loading")}</span>
           </div>
         </div>
       ) : requests.length > 0 ? (
@@ -186,7 +202,7 @@ export default function ProcurementPage() {
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${catColor}`}>
                           {req.category}
                         </span>
-                        <span className={`badge ${s.cls}`}>{s.label}</span>
+                        <span className={`badge ${s.cls}`}>{statusConfig[req.status] ? t(s.label) : s.label}</span>
                       </div>
                       <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{req.title}</p>
                       <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-neutral-500 dark:text-neutral-400">
@@ -195,13 +211,13 @@ export default function ProcurementPage() {
                         </span>
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                          Required by {formatDateShort(req.required_by_date)}
+                          {t("procurement.index.requiredBy", { date: formatDateShort(req.required_by_date) })}
                         </span>
                       </div>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wide">Est. Value</p>
+                    <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wide">{t("procurement.index.estValue")}</p>
                     <p className="text-base font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
                       {req.currency} {req.estimated_value.toLocaleString()}
                     </p>
@@ -215,12 +231,12 @@ export default function ProcurementPage() {
         <div className="card">
           <EmptyState
             icon="shopping_cart"
-            title="No procurement requests found"
-            description={statusFilter === "All" ? "Create a requisition to get started." : `No ${statusFilter.toLowerCase()} requests.`}
+            title={t("procurement.index.empty")}
+            description={t(FILTER_EMPTY_KEYS[statusFilter as (typeof FILTERS)[number]] ?? FILTER_EMPTY_KEYS.All)}
             action={canCreateRequest ? (
               <Link href="/procurement/create" className="btn-primary inline-flex">
                 <span className="material-symbols-outlined text-[18px]">add</span>
-                New Requisition
+                {t("procurement.index.newRequisition")}
               </Link>
             ) : undefined}
           />

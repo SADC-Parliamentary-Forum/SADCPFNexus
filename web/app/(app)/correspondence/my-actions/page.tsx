@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function MyCorrespondenceActionsPage() {
+  const { t } = useI18n();
   const [items, setItems] = useState<CorrespondenceLetter[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,27 +23,27 @@ export default function MyCorrespondenceActionsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="My Action Items"
-        subtitle="Correspondence where you are the primary or supporting action owner."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "My Action Items" }]} />}
+        title={t("correspondence.myActions.title")}
+        subtitle={t("correspondence.myActions.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("correspondence.myActions.title") }]} />}
       />
 
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
             <tr>
-              <th className="px-4 py-3">Reference</th>
-              <th className="px-4 py-3">Subject</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Deadline</th>
+              <th className="px-4 py-3">{t("correspondence.col.reference")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.subject")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.status")}</th>
+              <th className="px-4 py-3">{t("correspondence.col.deadline")}</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-400">Loading…</td></tr>
+              <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-400">{t("common.loading")}</td></tr>
             )}
             {!loading && items.length === 0 && (
-              <TableEmpty colSpan={4} title="No open action items." />
+              <TableEmpty colSpan={4} title={t("correspondence.myActions.empty")} />
             )}
             {items.map((item) => (
               <tr key={item.id} className="border-t border-neutral-100 hover:bg-neutral-50">

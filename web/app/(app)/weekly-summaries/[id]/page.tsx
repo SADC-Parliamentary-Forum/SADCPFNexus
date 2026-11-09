@@ -9,6 +9,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LabelledRecord, labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -18,6 +19,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 export default function WeeklySummaryDetailPage() {
+  const { t } = useI18n();
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
   const [report, setReport] = useState<WeeklyOpsReport | null>(null);
@@ -30,7 +32,7 @@ export default function WeeklySummaryDetailPage() {
   const load = async () => {
     const id = Number(params.id);
     if (!Number.isFinite(id) || id <= 0) {
-      setError("Failed to load");
+      setError(t("weeklySummaries.detail.loadFailed"));
       setReport(null);
       setBusy(false);
       return;
@@ -41,7 +43,7 @@ export default function WeeklySummaryDetailPage() {
       setReport(data.data);
       setError(null);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load");
+      setError(e instanceof Error ? e.message : t("weeklySummaries.detail.loadFailed"));
       setReport(null);
     } finally {
       setBusy(false);
@@ -57,13 +59,13 @@ export default function WeeklySummaryDetailPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title={report?.reference ?? "Weekly summary"}
-        subtitle="Open a submitted digest, export it, or return it with a labelled reason. Accept and return never run automatically."
+        title={report?.reference ?? t("weeklySummaries.detail.title")}
+        subtitle="weeklySummaries.detail.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Weekly Summaries", href: "/weekly-summaries" },
-              { label: report?.reference ?? "Detail" },
+              { label: "weeklySummaries.crumb", href: "/weekly-summaries" },
+              { label: report?.reference ?? "weeklySummaries.detail.crumb" },
             ]}
           />
         }
@@ -75,7 +77,7 @@ export default function WeeklySummaryDetailPage() {
 
       {busy && !report ? (
         <div className="card space-y-3 p-6" aria-live="polite">
-          <p className="text-sm text-neutral-500">Loading…</p>
+          <p className="text-sm text-neutral-500">{t("common.loading")}</p>
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-10 animate-pulse rounded bg-neutral-100" />
           ))}
@@ -84,35 +86,35 @@ export default function WeeklySummaryDetailPage() {
 
       {report ? (
         <>
-          <FormSection title="Report" description="Status and period for this digest." icon="description">
+          <FormSection title="weeklySummaries.detail.report" description="weeklySummaries.detail.reportHint" icon="description">
             <LabelledRecord
               value={{
-                reference: report.reference,
-                type: report.report_type,
-                status: report.status,
-                version: report.version,
-                period: report.period
+                [t("weeklySummaries.detail.field.reference")]: report.reference,
+                [t("weeklySummaries.detail.field.type")]: report.report_type,
+                [t("weeklySummaries.detail.field.status")]: report.status,
+                [t("weeklySummaries.detail.field.version")]: report.version,
+                [t("weeklySummaries.detail.field.period")]: report.period
                   ? `${report.period.reference} · ${formatDateShort(report.period.start_date)} → ${formatDateShort(report.period.end_date)}`
                   : "—",
               }}
             />
           </FormSection>
 
-          <FormSection title="Items" description="Achievements, priorities, and other sections on this digest." icon="list">
+          <FormSection title="weeklySummaries.detail.items" description="weeklySummaries.detail.itemsHint" icon="list">
             {items.length === 0 ? (
               <EmptyState
                 icon="notes"
-                title="No items on this digest"
-                description="Nothing has been added to this weekly summary yet."
+                title="weeklySummaries.detail.noItems"
+                description="weeklySummaries.detail.noItemsHint"
               />
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-left text-neutral-500">
-                      <th className="p-2">Section</th>
-                      <th className="p-2">Title</th>
-                      <th className="p-2">Narrative</th>
+                      <th className="p-2">{t("weeklySummaries.detail.col.section")}</th>
+                      <th className="p-2">{t("weeklySummaries.detail.field.title")}</th>
+                      <th className="p-2">{t("weeklySummaries.detail.col.narrative")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -133,12 +135,12 @@ export default function WeeklySummaryDetailPage() {
           </FormSection>
 
           <FormSection
-            title="Supervisor review"
-            description="Accept or return this digest. Return requires a labelled reason."
+            title="weeklySummaries.detail.review"
+            description="weeklySummaries.detail.reviewHint"
             icon="rule"
           >
             <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-              <FormField label="Return reason" htmlFor="weekly-return-reason">
+              <FormField label="weeklySummaries.detail.returnReason" htmlFor="weekly-return-reason">
                 <input
                   id="weekly-return-reason"
                   className="form-input"
@@ -159,13 +161,13 @@ export default function WeeklySummaryDetailPage() {
                       await weeklyReportsApi.accept(report.id);
                       await load();
                     } catch (e: unknown) {
-                      toast("error", e instanceof Error ? e.message : "Failed to accept report");
+                      toast("error", e instanceof Error ? e.message : t("weeklySummaries.detail.acceptFailed"));
                     } finally {
                       setAccepting(false);
                     }
                   }}
                 >
-                  {accepting ? "Accepting..." : "Accept (supervisor)"}
+                  {accepting ? t("weeklySummaries.detail.accepting") : t("weeklySummaries.detail.accept")}
                 </button>
                 <button
                   type="button"
@@ -181,31 +183,31 @@ export default function WeeklySummaryDetailPage() {
                       setReturnReason("");
                       await load();
                     } catch (e: unknown) {
-                      toast("error", e instanceof Error ? e.message : "Failed to return report");
+                      toast("error", e instanceof Error ? e.message : t("weeklySummaries.detail.returnFailed"));
                     } finally {
                       setReturning(false);
                     }
                   }}
                 >
-                  {returning ? "Returning..." : "Return"}
+                  {returning ? t("weeklySummaries.detail.returning") : t("common.return")}
                 </button>
               </div>
             </div>
           </FormSection>
 
-          <FormSection title="Export" description="Download this digest. The management pack includes the assignment feed and emerging-risk counts. Exports do not change status and are not auto-sent." icon="download">
+          <FormSection title="common.export" description="weeklySummaries.detail.exportHint" icon="download">
             <div className="flex flex-wrap gap-2">
               <a className="btn-secondary text-sm" href={weeklyReportsApi.exportUrl(report.id, "pdf")}>
-                PDF
+                PDF {/* i18n-ignore */}
               </a>
               <a className="btn-secondary text-sm" href={weeklyReportsApi.exportUrl(report.id, "csv")}>
-                Excel/CSV
+                Excel/CSV {/* i18n-ignore */}
               </a>
               <a className="btn-secondary text-sm" href={weeklyReportsApi.exportUrl(report.id, "word")}>
-                Word
+                Word {/* i18n-ignore */}
               </a>
               <a className="btn-secondary text-sm" href={weeklyReportsApi.exportUrl(report.id, "management-pack")}>
-                Management pack
+                {t("weeklySummaries.detail.managementPack")}
               </a>
             </div>
           </FormSection>
@@ -215,8 +217,8 @@ export default function WeeklySummaryDetailPage() {
       {!busy && !report && !error ? (
         <EmptyState
           icon="description"
-          title="Weekly summary not found"
-          description="This digest could not be opened."
+          title="weeklySummaries.detail.notFound"
+          description="weeklySummaries.detail.notFoundHint"
         />
       ) : null}
     </div>

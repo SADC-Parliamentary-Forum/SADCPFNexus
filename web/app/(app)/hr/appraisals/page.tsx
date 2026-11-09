@@ -7,14 +7,15 @@ import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_LABELS: Record<string, string> = {
-  draft: "Draft",
-  employee_submitted: "Employee submitted",
-  supervisor_reviewed: "Supervisor reviewed",
-  hod_reviewed: "HOD reviewed",
-  hr_reviewed: "HR reviewed",
-  finalized: "Finalized",
+  draft: "hr.appraisals.status.draft",
+  employee_submitted: "hr.appraisals.status.employee_submitted",
+  supervisor_reviewed: "hr.appraisals.status.supervisor_reviewed",
+  hod_reviewed: "hr.appraisals.status.hod_reviewed",
+  hr_reviewed: "hr.appraisals.status.hr_reviewed",
+  finalized: "hr.appraisals.status.finalized",
 };
 
 const STATUS_CLS: Record<string, string> = {
@@ -31,6 +32,7 @@ function formatDate(d: string) {
 }
 
 export default function AppraisalsPage() {
+  const { t } = useI18n();
   const [cycles, setCycles] = useState<AppraisalCycle[]>([]);
   const [list, setList] = useState<Appraisal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,12 +69,12 @@ export default function AppraisalsPage() {
       setLastPage(payload.last_page ?? 1);
       setTotal(payload.total ?? 0);
     } catch {
-      setError("Failed to load appraisals.");
+      setError(t("hr.appraisals.list.loadFailed"));
       setList([]);
     } finally {
       setLoading(false);
     }
-  }, [page, cycleFilter, statusFilter]);
+  }, [page, cycleFilter, statusFilter, t]);
 
   useEffect(() => {
     loadCycles();
@@ -101,11 +103,11 @@ export default function AppraisalsPage() {
         period_end: a.cycle?.period_end ?? "",
       })),
       [
-        { key: "employee", header: "Employee" },
-        { key: "cycle", header: "Cycle" },
-        { key: "status", header: "Status" },
-        { key: "period_start", header: "Period start" },
-        { key: "period_end", header: "Period end" },
+        { key: "employee", header: t("hr.appraisals.list.employee") },
+        { key: "cycle", header: t("hr.appraisals.list.cycle") },
+        { key: "status", header: t("hr.appraisals.list.status") },
+        { key: "period_start", header: t("hr.appraisals.list.periodStart") },
+        { key: "period_end", header: t("hr.appraisals.list.periodEnd") },
       ],
     );
   };
@@ -113,9 +115,9 @@ export default function AppraisalsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Performance Appraisal"
-        subtitle="Formal review cycles, self-assessment, supervisor and HOD review, and SG decision. Completed appraisals are filed in the staff member's HR file."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Appraisals" }]} />}
+        title="hr.appraisals.list.title"
+        subtitle="hr.appraisals.list.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "hr.appraisals.list.crumb" }]} />}
         actions={
           <>
             <button
@@ -125,11 +127,11 @@ export default function AppraisalsPage() {
               onClick={handleExport}
             >
               <span className="material-symbols-outlined text-[18px]">download</span>
-              Export CSV
+              {t("hr.appraisals.list.exportCsv")}
             </button>
             <Link href="/hr/appraisals/new" className="btn-primary py-2 px-3 text-sm flex items-center gap-1">
               <span className="material-symbols-outlined text-[18px]">add</span>
-              New appraisal
+              {t("hr.appraisals.list.newAppraisal")}
             </Link>
           </>
         }
@@ -150,12 +152,12 @@ export default function AppraisalsPage() {
           <input
             type="search"
             className="form-input pl-10"
-            placeholder="Search employee or cycle…"
+            placeholder={t("hr.appraisals.list.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Cycle</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{t("hr.appraisals.list.cycle")}</span>
         <select
           className="form-input max-w-[240px] py-2 text-sm"
           value={cycleFilter}
@@ -164,14 +166,14 @@ export default function AppraisalsPage() {
             setPage(1);
           }}
         >
-          <option value="">All cycles</option>
+          <option value="">{t("hr.appraisals.list.allCycles")}</option>
           {cycles.map((c) => (
             <option key={c.id} value={String(c.id)}>
               {c.title} ({formatDate(c.period_start)} – {formatDate(c.period_end)})
             </option>
           ))}
         </select>
-        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Status</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{t("hr.appraisals.list.status")}</span>
         <select
           className="form-input max-w-[200px] py-2 text-sm"
           value={statusFilter}
@@ -180,10 +182,10 @@ export default function AppraisalsPage() {
             setPage(1);
           }}
         >
-          <option value="">All</option>
+          <option value="">{t("hr.appraisals.list.all")}</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
-              {label}
+              {t(label)}
             </option>
           ))}
         </select>
@@ -191,19 +193,19 @@ export default function AppraisalsPage() {
 
       <div className="card overflow-hidden">
         <div className="card-header flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-neutral-900">Appraisals</h3>
+          <h3 className="text-sm font-semibold text-neutral-900">{t("hr.appraisals.list.crumb")}</h3>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16 text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[28px]">progress_activity</span>
-            <span className="ml-2">Loading…</span>
+            <span className="ml-2">{t("common.loading")}</span>
           </div>
         ) : visible.length === 0 ? (
           <EmptyState
             icon="rate_review"
-            title="No appraisals found."
-            description={cycleFilter || statusFilter || search ? "Try changing the filters." : "Appraisals will appear here when created for a cycle."}
+            title="hr.appraisals.list.empty"
+            description={cycleFilter || statusFilter || search ? "hr.appraisals.list.emptyFiltered" : "hr.appraisals.list.emptyHint"}
           />
         ) : (
           <>
@@ -211,11 +213,11 @@ export default function AppraisalsPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Employee</th>
-                    <th>Cycle</th>
-                    <th>Status</th>
-                    <th>Period</th>
-                    <th className="text-right">Action</th>
+                    <th>{t("hr.appraisals.list.employee")}</th>
+                    <th>{t("hr.appraisals.list.cycle")}</th>
+                    <th>{t("hr.appraisals.list.status")}</th>
+                    <th>{t("hr.appraisals.list.period")}</th>
+                    <th className="text-right">{t("hr.appraisals.list.action")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -225,11 +227,11 @@ export default function AppraisalsPage() {
                         {a.employee?.name ?? `#${a.employee_id}`}
                       </td>
                       <td className="text-neutral-600 text-sm">
-                        {a.cycle?.title ?? `Cycle #${a.cycle_id}`}
+                        {a.cycle?.title ?? t("hr.appraisals.list.cycleNumber", { id: a.cycle_id })}
                       </td>
                       <td>
                         <span className={`badge text-xs ${STATUS_CLS[a.status] ?? "badge-muted"}`}>
-                          {STATUS_LABELS[a.status] ?? a.status}
+                          {STATUS_LABELS[a.status] ? t(STATUS_LABELS[a.status]) : a.status}
                         </span>
                       </td>
                       <td className="text-sm text-neutral-600 whitespace-nowrap">
@@ -240,7 +242,7 @@ export default function AppraisalsPage() {
                           href={`/hr/appraisals/${a.id}`}
                           className="btn-secondary text-xs"
                         >
-                          View
+                          {t("hr.appraisals.list.view")}
                         </Link>
                       </td>
                     </tr>

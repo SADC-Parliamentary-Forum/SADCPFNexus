@@ -1,6 +1,7 @@
 // Presentation constants and dialog chrome for the PIF detail page.
 import type { ReactNode } from "react";
 import type { ProgrammeAttachmentType } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 export const STATUS_BADGE: Record<string, string> = {
@@ -18,22 +19,24 @@ export const STATUS_BADGE: Record<string, string> = {
   amendment_pending_approval: "badge-warning",
   superseded: "badge-muted",
 };
+/** Catalog keys; render with t(). */
 export const STATUS_LABEL: Record<string, string> = {
-  draft: "Draft", submitted: "Submitted", approved: "Approved", rejected: "Rejected", active: "Active",
-  on_hold: "On Hold", completed: "Completed", financially_closed: "Fin. Closed", archived: "Archived",
-  amended: "Amended", amendment_draft: "Amendment Draft",
-  amendment_pending_approval: "Amendment Pending Approval", superseded: "Superseded",
+  draft: "pif.status.draft", submitted: "pif.status.submitted", approved: "pif.status.approved", rejected: "pif.status.rejected", active: "pif.status.active",
+  on_hold: "pif.status.on_hold", completed: "pif.status.completed", financially_closed: "pif.status.financially_closed", archived: "pif.status.archived",
+  amended: "pif.status.amended", amendment_draft: "pif.status.amendment_draft",
+  amendment_pending_approval: "pif.status.amendment_pending_approval", superseded: "pif.status.superseded",
 };
+/** Catalog keys; render with t(). */
 export const ME_STATUS_LABEL: Record<string, string> = {
-  not_yet_linked: "Not Yet Linked",
-  linked_record_archived: "Linked Record Archived",
-  report_pending: "Report Pending",
-  report_submitted: "Report Submitted",
-  returned_for_correction: "Returned for Correction",
-  me_reviewed: "M&E Reviewed",
-  accepted: "Accepted",
-  closed: "Closed",
-  link_unavailable: "Link Unavailable",
+  not_yet_linked: "pif.meStatus.not_yet_linked",
+  linked_record_archived: "pif.meStatus.linked_record_archived",
+  report_pending: "pif.meStatus.report_pending",
+  report_submitted: "pif.meStatus.report_submitted",
+  returned_for_correction: "pif.meStatus.returned_for_correction",
+  me_reviewed: "pif.meStatus.me_reviewed",
+  accepted: "pif.meStatus.accepted",
+  closed: "pif.meStatus.closed",
+  link_unavailable: "pif.meStatus.link_unavailable",
 };
 export const ME_STATUS_BADGE: Record<string, string> = {
   not_yet_linked: "badge-muted",
@@ -56,36 +59,38 @@ export const MS_BADGE: Record<string, string> = {
 export const DEL_BADGE: Record<string, string> = {
   pending: "badge-warning", submitted: "badge-primary", accepted: "badge-success",
 };
-// Hardcoded to match config('pif.declaration_versions.v1') — the server is the
+// Catalog key for copy matching config('pif.declaration_versions.v1') — the server is the
 // source of truth for what was actually agreed (via the stored declaration_version),
-// this is only client-side copy shown before submission.
-export const DECLARATION_TEXT =
-  "I confirm that this PIF relates to one activity, the information provided is accurate to the best of my knowledge, required supporting documents have been included, and any known conflict of interest has been disclosed.";
+// this is only client-side copy shown before submission. Render with t().
+export const DECLARATION_TEXT = "pif.detail.declaration";
 
 export const PROC_BADGE: Record<string, string> = {
   pending: "badge-warning", ordered: "badge-primary", delivered: "badge-success", cancelled: "badge-danger",
 };
+/** Catalog keys; render with t(). */
 export const METHOD_LABEL: Record<string, string> = {
-  direct_purchase: "Direct Purchase", three_quotations: "3 Quotations", tender: "Tender",
+  direct_purchase: "pif.method.direct_purchase", three_quotations: "pif.method.three_quotations", tender: "pif.method.tender",
 };
+/** Catalog keys; render with t(). */
 export const ATTACHMENT_TYPE_LABEL: Record<ProgrammeAttachmentType, string> = {
-  concept_note: "Concept Note",
-  memo: "Memo",
-  hotel_quote: "Hotel Quote",
-  transport_quote: "Transport Quote",
-  other: "Other",
+  concept_note: "pif.attachmentType.concept_note",
+  memo: "pif.attachmentType.memo",
+  hotel_quote: "pif.attachmentType.hotel_quote",
+  transport_quote: "pif.attachmentType.transport_quote",
+  other: "pif.attachmentType.other",
 };
 
 export type DetailTab = "overview" | "logistics" | "activities" | "milestones" | "budget" | "procurement" | "attachments" | "timeline" | "approval";
 
 // ─── Modal wrapper ────────────────────────────────────────────────────────────
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-sm font-semibold text-neutral-900">{title}</h2>
-          <button type="button" onClick={onClose} aria-label={`Close ${title}`} className="text-neutral-400 hover:text-neutral-600">
+          <h2 className="text-sm font-semibold text-neutral-900">{t(title)}</h2>
+          <button type="button" onClick={onClose} aria-label={t("pif.detail.closeDialog", { title: t(title) })} className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>

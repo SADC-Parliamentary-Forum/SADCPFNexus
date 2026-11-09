@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { mandeApi, type MeActivityReport } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { reviewStatusLabel } from "@/lib/mandeStatusLabels";
 
 const STATUS_BADGE: Record<string, string> = {
   submitted: "badge-warning",
@@ -16,6 +18,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function ReviewQueuePage() {
+  const { t } = useI18n();
   const [filter, setFilter] = useState<"submitted" | "reviewed" | "both">("both");
 
   const { data: submitted = [], isLoading: loadingSubmitted, isError: errSubmitted } = useQuery({
@@ -51,17 +54,17 @@ export default function ReviewQueuePage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Review Queue"
-        subtitle="Activity reports awaiting M&amp;E review, return, accept or close."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Review Queue" }]} />}
+        title={t("mande.reviewQueue.title")}
+        subtitle={t("mande.reviewQueue.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("mande.reviewQueue.title") }]} />}
       />
 
       <div className="flex flex-wrap gap-2">
         {(
           [
-            { value: "both", label: "Submitted + Reviewed" },
-            { value: "submitted", label: "Submitted" },
-            { value: "reviewed", label: "Reviewed" },
+            { value: "both", label: "mande.reviewQueue.both" },
+            { value: "submitted", label: "status.submitted" },
+            { value: "reviewed", label: "mande.reviewQueue.reviewed" },
           ] as const
         ).map((f) => (
           <button
@@ -70,32 +73,32 @@ export default function ReviewQueuePage() {
             onClick={() => setFilter(f.value)}
             className={`filter-tab ${filter === f.value ? "active" : ""}`}
           >
-            {f.label}
+            {t(f.label)}
           </button>
         ))}
       </div>
 
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          Failed to load review queue.
+          {t("mande.reviewQueue.loadFailed")}
         </div>
       )}
 
       <div className="card overflow-x-auto">
         {isLoading ? (
-          <div className="px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
+          <div className="px-5 py-10 text-center text-sm text-neutral-400">{t("common.loading")}</div>
         ) : rows.length === 0 ? (
-          <EmptyState icon="rate_review" title="No reports in this queue." />
+          <EmptyState icon="rate_review" title={t("mande.reviewQueue.empty")} />
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Reference</th>
-                <th>Activity</th>
-                <th>PIF</th>
-                <th>Officer</th>
-                <th>Status</th>
-                <th>Submitted</th>
+                <th>{t("correspondence.col.reference")}</th>
+                <th>{t("mande.col.activity")}</th>
+                <th>{t("mande.col.pif")}</th>
+                <th>{t("mande.col.officer")}</th>
+                <th>{t("correspondence.col.status")}</th>
+                <th>{t("mande.col.submitted")}</th>
                 <th></th>
               </tr>
             </thead>
@@ -108,7 +111,7 @@ export default function ReviewQueuePage() {
                   <td className="text-xs text-neutral-500">{r.responsibleOfficer?.name ?? "—"}</td>
                   <td>
                     <span className={`badge ${STATUS_BADGE[r.review_status] ?? "badge-muted"}`}>
-                      {r.review_status.replace(/_/g, " ")}
+                      {reviewStatusLabel(t, r.review_status)}
                     </span>
                   </td>
                   <td className="text-xs text-neutral-400">
@@ -116,7 +119,7 @@ export default function ReviewQueuePage() {
                   </td>
                   <td>
                     <Link href={`/mande/activity-reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">
-                      Review
+                      {t("mande.reviewQueue.review")}
                     </Link>
                   </td>
                 </tr>

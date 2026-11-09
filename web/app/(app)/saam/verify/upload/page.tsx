@@ -6,6 +6,7 @@ import Link from "next/link";
 import { saamApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type SigType = "full" | "initials";
 
@@ -14,6 +15,7 @@ const MAX_BYTES = 512 * 1024; // 512 KB — backend limit
 export default function UploadSignaturePage() {
   const { success, error: showErrorToast, info } = useToast();
   const router = useRouter();
+  const { t } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sigType, setSigType] = useState<SigType>("full");
   const [file, setFile] = useState<File | null>(null);
@@ -26,11 +28,11 @@ export default function UploadSignaturePage() {
   function handleFile(f: File) {
     setError(null);
     if (!["image/png", "image/svg+xml"].includes(f.type)) {
-      setError("Only PNG and SVG files are accepted.");
+      setError(t("saam.upload.typeError"));
       return;
     }
     if (f.size > MAX_BYTES) {
-      setError(`File is too large (${(f.size / 1024).toFixed(0)} KB). Maximum is 512 KB.`);
+      setError(t("saam.upload.tooLarge", { size: (f.size / 1024).toFixed(0) }));
       return;
     }
     setFile(f);
@@ -60,19 +62,19 @@ export default function UploadSignaturePage() {
 
   async function save() {
     if (!file) {
-      setError("Please select a file before saving.");
+      setError(t("saam.upload.required"));
       return;
     }
     setSaving(true);
     setError(null);
     try {
       await saamApi.upload(sigType, file);
-      success("Signature uploaded successfully.");
+      success(t("saam.upload.uploaded"));
       setTimeout(() => router.push("/saam"), 1000);
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Failed to upload signature. Please try again.";
+          ?.message ?? t("saam.upload.uploadFailed");
       setError(msg);
     } finally {
       setSaving(false);
@@ -82,13 +84,13 @@ export default function UploadSignaturePage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Upload Your Signature"
-        subtitle="Upload a PNG or SVG image of your signature. Max file size: 512 KB."
+        title={t("saam.upload.title")}
+        subtitle={t("saam.upload.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "SAAM", href: "/saam" },
-              { label: "Upload Signature" },
+              { label: t("saam.uploadSignature") },
             ]}
           />
         }
@@ -97,22 +99,22 @@ export default function UploadSignaturePage() {
       {/* Type selector */}
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100">
-          <p className="text-xs font-semibold text-neutral-700 mb-3">Signature Type</p>
+          <p className="text-xs font-semibold text-neutral-700 mb-3">{t("saam.draw.type")}</p>
           <div className="flex gap-2">
-            {(["full", "initials"] as SigType[]).map((t) => (
+            {(["full", "initials"] as SigType[]).map((st) => (
               <button
-                key={t}
-                onClick={() => setSigType(t)}
+                key={st}
+                onClick={() => setSigType(st)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  sigType === t
+                  sigType === st
                     ? "bg-primary text-white"
                     : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                 }`}
               >
                 <span className="material-symbols-outlined text-[15px]">
-                  {t === "full" ? "draw" : "text_fields"}
+                  {st === "full" ? "draw" : "text_fields"}
                 </span>
-                {t === "full" ? "Full Signature" : "Initials"}
+                {st === "full" ? t("saam.sigType.full") : t("saam.sigType.initials")}
               </button>
             ))}
           </div>
@@ -141,10 +143,10 @@ export default function UploadSignaturePage() {
                 </span>
               </div>
               <p className="text-sm font-medium text-neutral-700">
-                Drag &amp; drop or{" "}
-                <span className="text-primary underline">browse file</span>
+                {t("saam.upload.dragDrop")}{" "}
+                <span className="text-primary underline">{t("saam.upload.browse")}</span>
               </p>
-              <p className="text-xs text-neutral-400 mt-1">PNG, SVG · max 512 KB</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("saam.upload.formats")}</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -156,20 +158,20 @@ export default function UploadSignaturePage() {
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-neutral-700">Preview</p>
+                <p className="text-xs font-semibold text-neutral-700">{t("saam.upload.preview")}</p>
                 <button
                   onClick={clearFile}
                   className="flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-700 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[14px]">close</span>
-                  Remove
+                  {t("assignments.detail.remove")}
                 </button>
               </div>
               <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white flex items-center justify-center p-4 min-h-[120px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={preview}
-                  alt="Signature preview"
+                  alt={t("saam.upload.previewAlt")}
                   className="max-h-[100px] max-w-full object-contain"
                 />
               </div>
@@ -179,7 +181,7 @@ export default function UploadSignaturePage() {
                 </span>
                 <span className="font-medium truncate">{file?.name}</span>
                 <span className="text-neutral-400 flex-shrink-0">
-                  ({((file?.size ?? 0) / 1024).toFixed(0)} KB)
+                  {t("saam.upload.size", { size: ((file?.size ?? 0) / 1024).toFixed(0) })}
                 </span>
               </div>
             </div>
@@ -204,7 +206,7 @@ export default function UploadSignaturePage() {
       <div className="flex items-center justify-between">
         <Link href="/saam" className="btn-secondary text-sm">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back
+          {t("common.back")}
         </Link>
         <button
           onClick={save}
@@ -218,7 +220,7 @@ export default function UploadSignaturePage() {
           ) : (
             <span className="material-symbols-outlined text-[16px]">upload</span>
           )}
-          {saving ? "Uploading…" : "Upload Signature"}
+          {saving ? t("leave.detail.uploading") : t("saam.uploadSignature")}
         </button>
       </div>
     </div>

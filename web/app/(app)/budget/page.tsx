@@ -66,7 +66,7 @@ export default function BudgetControlPage() {
         }
         setAvailabilityById(map);
       })
-      .catch(() => setError("Failed to load budget control data."))
+      .catch(() => setError(t("budget.home.loadFailed")))
       .finally(() => setLoading(false));
   }, [q]);
 
@@ -88,28 +88,28 @@ export default function BudgetControlPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
-        title="Budget Control"
-        subtitle="Authoritative available balances including commitments (approved − actual − committed)"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget Control" }]} />}
+        title={t("budget.home.title")}
+        subtitle={t("budget.home.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("budget.home.title") }]} />}
       />
         <div className="flex items-center gap-2">
           <Link href="/budget/cycles" className="btn-secondary text-sm">
-            Annual cycles
+            {t("budget.home.cycles")}
           </Link>
           <Link href="/budget/changes" className="btn-secondary text-sm">
-            Changes
+            {t("budget.home.changes")}
           </Link>
           <Link href="/budget/variance" className="btn-secondary text-sm">
-            Variance
+            {t("budget.home.variance")}
           </Link>
           <Link href="/budget/reports" className="btn-secondary text-sm">
-            Reports
+            {t("budget.home.reports")}
           </Link>
           <Link href="/finance/budget" className="btn-secondary text-sm">
-            Legacy portfolios
+            {t("budget.home.legacy")}
           </Link>
           <Link href="/procurement/budget" className="btn-primary text-sm">
-            Procurement reserves
+            {t("budget.home.reserves")}
           </Link>
         </div>
       </div>
@@ -123,14 +123,14 @@ export default function BudgetControlPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         {[
-          { label: "Approved (sample)", value: totals.approved },
-          { label: "Actual", value: totals.actual },
-          { label: "Commitments", value: totals.commitments },
-          { label: "Available", value: totals.available },
+          { label: t("budget.home.card.approved"), value: totals.approved },
+          { label: t("budget.home.card.actual"), value: totals.actual },
+          { label: t("budget.home.card.commitments"), value: totals.commitments },
+          { label: t("budget.home.card.available"), value: totals.available },
         ].map((card) => (
           <div key={card.label} className="card p-5">
             <div className="text-sm font-medium text-neutral-500 mb-1">{card.label}</div>
-            <div className="text-xl font-bold text-neutral-900">NAD {money(card.value)}</div>
+            <div className="text-xl font-bold text-neutral-900">{t("budget.home.amountNad", { amount: money(card.value) })}</div>
           </div>
         ))}
       </div>
@@ -149,17 +149,17 @@ export default function BudgetControlPage() {
               debit: amount,
               credit: amount,
             });
-            setJournalMsg("Journal posted against the budget line GL code. This does not own bank accounts.");
-            toast.success("Journal posted");
+            setJournalMsg(t("budget.home.journalPostedMsg"));
+            toast.success(t("budget.home.journalPosted"));
           } catch (err) {
-            const message = "Unable to post journal. Finance write access and a balanced amount are required.";
+            const message = t("budget.home.journalFailed");
             setJournalMsg(message);
-            toast.error("Journal not posted", apiErrorMessage(err, message));
+            toast.error(t("budget.home.journalNotPosted"), apiErrorMessage(err, message));
           }
         }}
       >
-        <h2 className="text-lg font-semibold text-neutral-800">GL journal (budget line)</h2>
-        <p className="text-neutral-600">Double-entry posting keyed by the line GL account code. Not bank ownership.</p>
+        <h2 className="text-lg font-semibold text-neutral-800">{t("budget.home.journalTitle")}</h2>
+        <p className="text-neutral-600">{t("budget.home.journalHint")}</p>
         <div className="flex flex-wrap gap-3">
           <select
             className="form-input min-w-[16rem]"
@@ -175,19 +175,19 @@ export default function BudgetControlPage() {
               </option>
             ))}
           </select>
-          <input className="form-input w-40" placeholder="Amount" value={journalAmount} onChange={(e) => setJournalAmount(e.target.value)} />
-          <input className="form-input min-w-[12rem] flex-1" placeholder="Memo" value={journalMemo} onChange={(e) => setJournalMemo(e.target.value)} />
-          <button type="submit" className="btn-primary">Post journal</button>
+          <input className="form-input w-40" placeholder={t("budget.home.amount")} value={journalAmount} onChange={(e) => setJournalAmount(e.target.value)} />
+          <input className="form-input min-w-[12rem] flex-1" placeholder={t("budget.home.memo")} value={journalMemo} onChange={(e) => setJournalMemo(e.target.value)} />
+          <button type="submit" className="btn-primary">{t("budget.home.postJournal")}</button>
         </div>
         {journalMsg ? <p className="text-xs text-neutral-600">{journalMsg}</p> : null}
       </form>
 
       <div className="card overflow-hidden">
         <div className="card-header flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-neutral-800">Active budget lines</h2>
+          <h2 className="text-lg font-semibold text-neutral-800">{t("budget.home.activeLines")}</h2>
           <input
             className="form-input max-w-xs"
-            placeholder="Search code or name…"
+            placeholder={t("budget.home.search")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -196,13 +196,13 @@ export default function BudgetControlPage() {
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th className="text-left text-xs uppercase tracking-wider text-neutral-500">Code</th>
-                <th className="text-left text-xs uppercase tracking-wider text-neutral-500">Name</th>
-                <th className="text-left text-xs uppercase tracking-wider text-neutral-500">Category</th>
-                <th className="text-right text-xs uppercase tracking-wider text-neutral-500">Approved</th>
-                <th className="text-right text-xs uppercase tracking-wider text-neutral-500">Actual</th>
-                <th className="text-right text-xs uppercase tracking-wider text-neutral-500">Committed</th>
-                <th className="text-right text-xs uppercase tracking-wider text-neutral-500">Available</th>
+                <th className="text-left text-xs uppercase tracking-wider text-neutral-500">{t("budget.home.col.code")}</th>
+                <th className="text-left text-xs uppercase tracking-wider text-neutral-500">{t("budget.home.col.name")}</th>
+                <th className="text-left text-xs uppercase tracking-wider text-neutral-500">{t("budget.home.col.category")}</th>
+                <th className="text-right text-xs uppercase tracking-wider text-neutral-500">{t("budget.home.col.approved")}</th>
+                <th className="text-right text-xs uppercase tracking-wider text-neutral-500">{t("budget.home.col.actual")}</th>
+                <th className="text-right text-xs uppercase tracking-wider text-neutral-500">{t("budget.home.col.committed")}</th>
+                <th className="text-right text-xs uppercase tracking-wider text-neutral-500">{t("budget.home.col.available")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
@@ -213,7 +213,7 @@ export default function BudgetControlPage() {
                   </td>
                 </tr>
               ) : lines.length === 0 ? (
-                <TableEmpty colSpan={7} title="No active budget lines. Seed DefaultBudgetSeeder or create lines under Finance portfolios." />
+                <TableEmpty colSpan={7} title={t("budget.home.empty")} />
               ) : (
                 lines.map((line, idx) => {
                   const avail = availabilityById[line.id];
@@ -228,7 +228,7 @@ export default function BudgetControlPage() {
                       <td className="text-right">{avail ? money(avail.commitments) : "—"}</td>
                       <td className={`text-right font-semibold ${avail && avail.available < 0 ? "text-red-600" : "text-emerald-700"}`}>
                         {avail ? money(avail.available) : wasChecked ? "…" : (
-                          <span className="text-xs font-normal italic text-neutral-400">Not loaded</span>
+                          <span className="text-xs font-normal italic text-neutral-400">{t("budget.home.notLoaded")}</span>
                         )}
                       </td>
                     </tr>

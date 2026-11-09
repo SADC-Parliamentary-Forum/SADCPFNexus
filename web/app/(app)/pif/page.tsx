@@ -15,6 +15,8 @@ import { RegisterShell, type RegisterDensity } from "@/components/registers/Regi
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { personLabel } from "@/lib/pifForm";
+import { STATUS_LABEL } from "./[id]/pifDetailShared";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_BADGE: Record<string, string> = {
   draft: "badge-muted",
@@ -34,12 +36,13 @@ function formatBudget(currency: string | null | undefined, amount: number | null
   return formatCurrency(Number(amount), currency?.trim() || "NAD");
 }
 
-function statusLabel(status: string | null | undefined): string {
-  if (!status) return "unknown";
-  return status.replace(/_/g, " ");
+function statusLabel(t: (key: string) => string, status: string | null | undefined): string {
+  if (!status) return t("pif.list.unknown");
+  return STATUS_LABEL[status] ? t(STATUS_LABEL[status]) : status.replace(/_/g, " ");
 }
 
 export default function PifPage() {
+  const { t } = useI18n();
   const [programmes, setProgrammes] = useState<Programme[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +65,7 @@ export default function PifPage() {
       .catch(() => {
         if (cancelled) return;
         setProgrammes([]);
-        setError("Failed to load programmes.");
+        setError(t("pif.list.loadFailed"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -71,7 +74,7 @@ export default function PifPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -119,23 +122,23 @@ export default function PifPage() {
         end_date: p.end_date ?? "",
       })),
       [
-        { key: "reference", header: "Code" },
-        { key: "title", header: "Title" },
-        { key: "status", header: "Status" },
-        { key: "funding_source", header: "Funding Source" },
-        { key: "currency", header: "Currency" },
-        { key: "total_budget", header: "Budget" },
-        { key: "responsible_officer", header: "Responsible" },
-        { key: "end_date", header: "End Date" },
+        { key: "reference", header: t("pif.list.code") },
+        { key: "title", header: t("pif.list.title") },
+        { key: "status", header: t("pif.list.status") },
+        { key: "funding_source", header: t("pif.list.fundingSource") },
+        { key: "currency", header: t("pif.list.currency") },
+        { key: "total_budget", header: t("pif.list.budget") },
+        { key: "responsible_officer", header: t("pif.list.responsible") },
+        { key: "end_date", header: t("pif.list.endDate") },
       ],
     );
   };
 
   return (
     <RegisterShell
-      title="Programmes"
-      subtitle="Programme Implementation Framework — manage and track all funded programmes."
-      breadcrumbs={<PageBreadcrumbs items={[{ label: "Programmes (PIF)" }]} />}
+      title="pif.common.programmes"
+      subtitle="pif.list.subtitle"
+      breadcrumbs={<PageBreadcrumbs items={[{ label: "pif.list.crumb" }]} />}
       density={density}
       onDensityChange={setDensity}
       page={safePage}
@@ -152,11 +155,11 @@ export default function PifPage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("hr.appraisals.list.exportCsv")}
           </button>
           <Link href="/pif/create" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New Programme
+            {t("pif.list.newProgramme")}
           </Link>
         </>
       }
@@ -172,7 +175,7 @@ export default function PifPage() {
             {stats.map(({ status, count }) => (
               <div key={status} className="card p-4 text-center">
                 <p className="text-2xl font-bold text-neutral-900">{loading ? "—" : count}</p>
-                <p className="mt-0.5 text-xs capitalize text-neutral-500">{status.replace("_", " ")}</p>
+                <p className="mt-0.5 text-xs capitalize text-neutral-500">{statusLabel(t, status)}</p>
               </div>
             ))}
           </div>
@@ -186,7 +189,7 @@ export default function PifPage() {
             </span>
             <input
               type="search"
-              placeholder="Search programmes…"
+              placeholder={t("pif.list.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -206,7 +209,7 @@ export default function PifPage() {
                 }}
                 className={`filter-tab capitalize ${filterStatus === s ? "active" : ""}`}
               >
-                {s === "All" ? "All" : s.replace("_", " ")}
+                {s === "All" ? t("pif.list.all") : statusLabel(t, s)}
               </button>
             ))}
           </div>
@@ -217,16 +220,16 @@ export default function PifPage() {
           <div className="card overflow-hidden">
             <EmptyState
               icon="account_tree"
-              title="No programmes found"
+              title="pif.list.empty"
               description={
                 filterStatus === "All" && !search
-                  ? "Start a Programme Implementation Form to track activities, budget, and approvals."
-                  : "No rows match the current filters."
+                  ? "pif.list.emptyHint"
+                  : "pif.list.emptyFiltered"
               }
               action={
                 <Link href="/pif/create" className="btn-primary text-sm">
                   <span className="material-symbols-outlined text-[18px]">add</span>
-                  New Programme
+                  {t("pif.list.newProgramme")}
                 </Link>
               }
             />
@@ -237,16 +240,16 @@ export default function PifPage() {
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="data-table">
-              <caption className="sr-only">Programme implementation register</caption>
+              <caption className="sr-only">{t("pif.list.caption")}</caption>
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Funding Source</th>
-                <th>Budget</th>
-                <th>Responsible</th>
-                <th>End Date</th>
+                <th>{t("pif.list.code")}</th>
+                <th>{t("pif.list.title")}</th>
+                <th>{t("pif.list.status")}</th>
+                <th>{t("pif.list.fundingSource")}</th>
+                <th>{t("pif.list.budget")}</th>
+                <th>{t("pif.list.responsible")}</th>
+                <th>{t("pif.list.endDate")}</th>
                 <th></th>
               </tr>
             </thead>
@@ -259,7 +262,7 @@ export default function PifPage() {
                   </td>
                   <td>
                     <span className={`badge capitalize ${STATUS_BADGE[p.status] ?? "badge-muted"}`}>
-                      {statusLabel(p.status)}
+                      {statusLabel(t, p.status)}
                     </span>
                   </td>
                   <td className="text-neutral-600">{p.funding_source || "—"}</td>
@@ -271,14 +274,14 @@ export default function PifPage() {
                   <td>
                     <div className="flex flex-wrap gap-2">
                       <Link href={`/pif/${p.id}`} className="btn-secondary text-xs py-1 px-2">
-                        View
+                        {t("hr.appraisals.list.view")}
                       </Link>
                       {(p.status === "draft" || p.status === "amendment_draft") && (
                         <Link
                           href={`/pif/${p.id}/edit`}
                           className="btn-secondary text-xs py-1 px-2"
                         >
-                          Edit
+                          {t("common.edit")}
                         </Link>
                       )}
                     </div>

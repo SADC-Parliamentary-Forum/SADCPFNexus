@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { DEFAULT_PAGE_SIZE, clientPageCount, getListData, slicePage } from "@/lib/listPagination";
 import { formatPayPeriod } from "@/lib/payslipPeriod";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function periodLabel(p: Payslip): string {
   return p.period_label || formatPayPeriod(p.period_month, p.period_year);
@@ -19,6 +20,7 @@ function periodLabel(p: Payslip): string {
 
 export default function PayslipsPage() {
   const { error: toastError } = useToast();
+  const { t } = useI18n();
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export default function PayslipsPage() {
     financeApi
       .listPayslips({ per_page: 100 })
       .then((res) => setPayslips(getListData<Payslip>(res.data)))
-      .catch(() => setError("Failed to load payslips."))
+      .catch(() => setError(t("finance.payslips.loadFailed")))
       .finally(() => setLoading(false));
   }, []);
 
@@ -66,15 +68,15 @@ export default function PayslipsPage() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {
-      toastError("Payslip document is not available yet.");
+      toastError(t("finance.hub.payslipUnavailable"));
     }
   };
 
   return (
     <RegisterShell
-      title="Payslips"
-      subtitle="Your official pay documents. Download or open any period."
-      breadcrumbs={<PageBreadcrumbs items={[{ label: "Finance", href: "/finance" }, { label: "Payslips" }]} />}
+      title="finance.hub.payslips"
+      subtitle="finance.payslips.subtitle"
+      breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "finance.hub.payslips" }]} />}
       actions={
         <button
           type="button"
@@ -91,16 +93,16 @@ export default function PayslipsPage() {
                 confirmation: p.confirmation_status ?? "",
               })),
               [
-                { key: "period", header: "Period" },
-                { key: "gross_amount", header: "Gross" },
-                { key: "net_amount", header: "Net pay" },
-                { key: "currency", header: "Currency" },
-                { key: "confirmation", header: "Confirmation" },
+                { key: "period", header: t("finance.payslips.col.period") },
+                { key: "gross_amount", header: t("finance.payslips.col.gross") },
+                { key: "net_amount", header: t("finance.payslips.col.netPay") },
+                { key: "currency", header: t("finance.budget.col.currency") },
+                { key: "confirmation", header: t("finance.payslips.col.confirmation") },
               ],
             );
           }}
         >
-          Export CSV
+          {t("finance.budget.exportCsv")}
         </button>
       }
       stats={
@@ -110,10 +112,10 @@ export default function PayslipsPage() {
             className="card flex items-center justify-between gap-4 p-5 transition-colors hover:border-primary/40"
           >
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Latest payslip</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">{t("finance.payslips.latest")}</p>
               <p className="mt-1 text-lg font-semibold text-neutral-900 dark:text-neutral-100">{periodLabel(latest)}</p>
               <p className="mt-0.5 text-sm text-neutral-500">
-                Net {latest.currency ?? "NAD"} {Number(latest.net_amount || 0).toLocaleString()}
+                {t("finance.payslips.netAmount", { amount: `${latest.currency ?? "NAD"} ${Number(latest.net_amount || 0).toLocaleString()}` })}
               </p>
             </div>
             <span className="material-symbols-outlined text-primary">arrow_forward</span>
@@ -124,19 +126,19 @@ export default function PayslipsPage() {
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[200px] flex-1">
             <Input
-              label="Search"
+              label={t("common.search")}
               icon="search"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search by period…"
+              placeholder={t("finance.payslips.searchPlaceholder")}
             />
           </div>
           <div>
             <label htmlFor="payslip-year" className="mb-1 block text-xs font-medium uppercase tracking-wider text-neutral-500">
-              Year
+              {t("finance.budget.col.year")}
             </label>
             <select
               id="payslip-year"
@@ -147,7 +149,7 @@ export default function PayslipsPage() {
                 setPage(1);
               }}
             >
-              <option value="all">All years</option>
+              <option value="all">{t("finance.payslips.allYears")}</option>
               {years.map((y) => (
                 <option key={y} value={String(y)}>
                   {y}
@@ -167,12 +169,12 @@ export default function PayslipsPage() {
       empty={
         !loading && filtered.length === 0 ? (
           error ? (
-            <EmptyState icon="error" title="Could not load payslips" description={error} />
+            <EmptyState icon="error" title="finance.payslips.couldNotLoad" description={error} />
           ) : (
             <EmptyState
               icon="receipt_long"
-              title="No payslips yet"
-              description="HR issues payslips after each payroll run. They will appear here when your file is ready."
+              title="finance.payslips.empty"
+              description="finance.payslips.emptyHint"
             />
           )
         ) : undefined
@@ -182,11 +184,11 @@ export default function PayslipsPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Period</th>
-              <th>Net pay</th>
-              <th>File</th>
-              <th>Status</th>
-              <th />
+              <th>{t("finance.payslips.col.period")}</th>
+              <th>{t("finance.payslips.col.netPay")}</th>
+              <th>{t("finance.payslips.col.file")}</th>
+              <th>{t("finance.budget.col.status")}</th>
+              <th><span className="sr-only">{t("finance.budget.col.actions")}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -200,23 +202,23 @@ export default function PayslipsPage() {
                 <td>
                   {p.net_amount != null ? `${p.currency ?? "NAD"} ${Number(p.net_amount).toLocaleString()}` : "—"}
                 </td>
-                <td>{p.has_file ? <span className="badge badge-success">Available</span> : <span className="badge badge-muted">Pending</span>}</td>
+                <td>{p.has_file ? <span className="badge badge-success">{t("finance.payslips.available")}</span> : <span className="badge badge-muted">{t("finance.hub.status.pending")}</span>}</td>
                 <td>
                   {p.confirmation_status === "confirmed" ? (
-                    <span className="badge badge-success">Confirmed</span>
+                    <span className="badge badge-success">{t("finance.payslips.confirmed")}</span>
                   ) : p.confirmation_status === "rejected" ? (
-                    <span className="badge badge-danger">Returned</span>
+                    <span className="badge badge-danger">{t("finance.payslips.returned")}</span>
                   ) : (
-                    <span className="badge badge-muted">On file</span>
+                    <span className="badge badge-muted">{t("finance.payslips.onFile")}</span>
                   )}
                 </td>
                 <td>
                   <div className="flex gap-3">
                     <Link href={`/finance/payslips/${p.id}`} className="btn-secondary text-xs py-1 px-2">
-                      View
+                      {t("finance.hub.view")}
                     </Link>
                     <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => void handleDownload(p)}>
-                      Download
+                      {t("common.download")}
                     </button>
                   </div>
                 </td>
@@ -230,15 +232,15 @@ export default function PayslipsPage() {
         getKey={(p) => p.id}
         title={(p) => periodLabel(p)}
         subtitle={(p) =>
-          p.net_amount != null ? `Net ${p.currency ?? "NAD"} ${Number(p.net_amount).toLocaleString()}` : "Open for details"
+          p.net_amount != null ? t("finance.payslips.netAmount", { amount: `${p.currency ?? "NAD"} ${Number(p.net_amount).toLocaleString()}` }) : t("finance.payslips.openForDetails")
         }
         actions={(p) => (
           <div className="flex gap-3">
             <Link href={`/finance/payslips/${p.id}`} className="text-xs font-medium text-primary">
-              View
+              {t("finance.hub.view")}
             </Link>
             <button type="button" className="text-xs font-medium text-neutral-600" onClick={() => void handleDownload(p)}>
-              Download
+              {t("common.download")}
             </button>
           </div>
         )}

@@ -7,6 +7,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { ObjectSummary } from "@/components/ui/ObjectSummary";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const SUGGESTION_KINDS = [
   "config_suggestion",
@@ -24,6 +25,7 @@ function suggestionId(value: unknown): number | null {
 }
 
 export default function WorkflowAiPage() {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [guards, setGuards] = useState<unknown>(null);
   const [kind, setKind] = useState("config_suggestion");
@@ -40,9 +42,9 @@ export default function WorkflowAiPage() {
     try {
       const res = await workflowEngineApi.aiSuggest({ kind, context: { query: "leave parallel certify" } });
       setSuggestion((res.data as { data?: unknown }).data ?? res.data);
-      toast("success", "Suggestion ready", "Human confirmation required before apply.");
+      toast("success", t("admin.workflows.ai.ready"), t("admin.workflows.ai.readyDesc"));
     } catch {
-      toast("error", "Suggest failed", "AI assist unavailable.");
+      toast("error", t("admin.workflows.ai.suggestFailed"), t("admin.workflows.ai.unavailable"));
     }
   };
 
@@ -55,40 +57,40 @@ export default function WorkflowAiPage() {
         confirmed: true,
         note: "Human-confirmed draft note only",
       });
-      toast("success", "Applied", "Safe draft note attached. AI did not publish or approve.");
+      toast("success", t("admin.workflows.ai.applied"), t("admin.workflows.ai.appliedDesc"));
     } catch (e: any) {
-      toast("error", "Apply blocked", e?.response?.data?.message || "Guard prevented unsafe action.");
+      toast("error", t("admin.workflows.ai.applyBlocked"), e?.response?.data?.message || t("admin.workflows.ai.guardPrevented"));
     }
   };
 
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="AI Configuration Assist"
-        subtitle="Workflow suggestions with guardrails and human-confirmed application."
+        title={t("admin.workflows.ai.title")}
+        subtitle={t("admin.workflows.ai.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Workflows", href: "/admin/workflows" },
-              { label: "AI Assist" },
+              { label: t("admin.homeLabel"), href: "/admin" },
+              { label: t("admin.crumb.workflows"), href: "/admin/workflows" },
+              { label: t("admin.workflows.ai.crumb") },
             ]}
           />
         }
         actions={
           <Link href="/admin/workflows" className="btn-secondary text-sm">
-            Back to workflows
+            {t("workflows.simulate.back")}
           </Link>
         }
       />
 
-      <FormSection title="Guard status" icon="shield">
+      <FormSection title={t("admin.workflows.ai.guardStatus")} icon="shield">
         <ObjectSummary value={guards} />
       </FormSection>
 
-      <FormSection title="Request suggestion" icon="psychology" dense>
+      <FormSection title={t("admin.workflows.ai.request")} icon="psychology" dense>
         <div className="flex flex-wrap items-end gap-3">
-          <FormField label="Suggestion type" htmlFor="suggestion-kind" required className="min-w-[260px]">
+          <FormField label={t("admin.workflows.ai.type")} htmlFor="suggestion-kind" required className="min-w-[260px]">
             <select
               id="suggestion-kind"
               className="form-input"
@@ -97,22 +99,22 @@ export default function WorkflowAiPage() {
             >
               {SUGGESTION_KINDS.map((item) => (
                 <option key={item} value={item}>
-                  {item.replace(/_/g, " ")}
+                  {t(`admin.workflows.ai.kind.${item}`)}
                 </option>
               ))}
             </select>
           </FormField>
           <button type="button" className="btn-primary text-sm" onClick={suggest}>
-            Suggest
+            {t("admin.workflows.ai.suggest")}
           </button>
           <button type="button" className="btn-secondary text-sm" onClick={applySafe} disabled={!suggestionId(suggestion)}>
-            Apply draft note
+            {t("admin.workflows.ai.applyNote")}
           </button>
         </div>
       </FormSection>
 
       {suggestion ? (
-        <FormSection title="Suggestion" icon="lightbulb">
+        <FormSection title={t("admin.workflows.ai.suggestion")} icon="lightbulb">
           <ObjectSummary value={suggestion} />
         </FormSection>
       ) : null}

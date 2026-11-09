@@ -8,6 +8,7 @@ import { positionsApi, adminApi, type Department } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const GRADES = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"];
 
@@ -15,6 +16,7 @@ export default function CreatePositionPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
 
   const [form, setForm] = useState({
     department_id: "",
@@ -45,11 +47,11 @@ export default function CreatePositionPage() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-positions"] });
-      toast.success("Position created");
+      toast.success(t("hr.positions.form.created"));
       router.push("/hr/positions");
     },
     onError: (err: any) => {
-      toast.error("Position not created", apiErrorMessage(err, "Failed to create position."));
+      toast.error(t("hr.positions.form.notCreated"), apiErrorMessage(err, t("hr.positions.form.createFailed")));
       const data = err?.response?.data;
       if (data?.errors) {
         const mapped: Record<string, string> = {};
@@ -58,7 +60,7 @@ export default function CreatePositionPage() {
         }
         setErrors(mapped);
       } else {
-        setErrors({ _global: data?.message ?? "Failed to create position." });
+        setErrors({ _global: data?.message ?? t("hr.positions.form.createFailed") });
       }
     },
   });
@@ -71,9 +73,9 @@ export default function CreatePositionPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    if (!form.department_id) errs.department_id = "Department is required.";
-    if (!form.title.trim()) errs.title = "Title is required.";
-    if (Number(form.headcount) < 1) errs.headcount = "Headcount must be at least 1.";
+    if (!form.department_id) errs.department_id = t("hr.positions.form.departmentRequired");
+    if (!form.title.trim()) errs.title = t("hr.positions.form.titleRequired");
+    if (Number(form.headcount) < 1) errs.headcount = t("hr.positions.form.headcountMin");
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     mutation.mutate();
   }
@@ -81,14 +83,14 @@ export default function CreatePositionPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="New Position"
-        subtitle="Add an establishment position to a department."
+        title="hr.positions.newPosition"
+        subtitle="hr.positions.form.createSubtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Positions", href: "/hr/positions" },
-              { label: "New Position" },
+              { label: "hr.positions.crumb", href: "/hr/positions" },
+              { label: "hr.positions.newPosition" },
             ]}
           />
         }
@@ -104,14 +106,14 @@ export default function CreatePositionPage() {
         {/* Department */}
         <div>
           <label htmlFor="hr-positions-create-department" className="block text-sm font-medium text-neutral-700 mb-1.5">
-            Department <span className="text-red-500">*</span>
+            {t("hr.positions.form.department")} <span className="text-red-500">*</span>
           </label>
           <select id="hr-positions-create-department"
             value={form.department_id}
             onChange={(e) => set("department_id", e.target.value)}
             className={`form-input w-full ${errors.department_id ? "border-red-400" : ""}`}
           >
-            <option value="">Select department…</option>
+            <option value="">{t("hr.positions.form.selectDepartment")}</option>
             {departments.map((d) => (
               <option key={d.id} value={d.id}>{d.name}</option>
             ))}
@@ -122,13 +124,13 @@ export default function CreatePositionPage() {
         {/* Title */}
         <div>
           <label htmlFor="hr-positions-create-position-title" className="block text-sm font-medium text-neutral-700 mb-1.5">
-            Position Title <span className="text-red-500">*</span>
+            {t("hr.positions.positionTitle")} <span className="text-red-500">*</span>
           </label>
           <input id="hr-positions-create-position-title"
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
-            placeholder="e.g. Senior Programme Officer"
+            placeholder={t("hr.positions.form.titlePlaceholder")}
             className={`form-input w-full ${errors.title ? "border-red-400" : ""}`}
           />
           {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
@@ -137,13 +139,13 @@ export default function CreatePositionPage() {
         {/* Grade + Headcount */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="hr-positions-create-grade" className="block text-sm font-medium text-neutral-700 mb-1.5">Grade</label>
+            <label htmlFor="hr-positions-create-grade" className="block text-sm font-medium text-neutral-700 mb-1.5">{t("hr.positions.grade")}</label>
             <select id="hr-positions-create-grade"
               value={form.grade}
               onChange={(e) => set("grade", e.target.value)}
               className="form-input w-full"
             >
-              <option value="">No grade</option>
+              <option value="">{t("hr.positions.form.noGrade")}</option>
               {GRADES.map((g) => (
                 <option key={g} value={g}>{g}</option>
               ))}
@@ -151,7 +153,7 @@ export default function CreatePositionPage() {
           </div>
           <div>
             <label htmlFor="hr-positions-create-headcount" className="block text-sm font-medium text-neutral-700 mb-1.5">
-              Headcount <span className="text-red-500">*</span>
+              {t("hr.positions.headcount")} <span className="text-red-500">*</span>
             </label>
             <input id="hr-positions-create-headcount"
               type="number"
@@ -167,12 +169,12 @@ export default function CreatePositionPage() {
 
         {/* Description */}
         <div>
-          <label htmlFor="hr-positions-create-description" className="block text-sm font-medium text-neutral-700 mb-1.5">Description</label>
+          <label htmlFor="hr-positions-create-description" className="block text-sm font-medium text-neutral-700 mb-1.5">{t("hr.positions.form.description")}</label>
           <textarea id="hr-positions-create-description"
             rows={3}
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
-            placeholder="Brief description of the position's responsibilities…"
+            placeholder={t("hr.positions.form.descriptionPlaceholder")}
             className="form-input w-full resize-none"
           />
         </div>
@@ -190,18 +192,18 @@ export default function CreatePositionPage() {
               className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.is_active ? "translate-x-4" : "translate-x-0.5"}`}
             />
           </button>
-          <span className="text-sm text-neutral-700">Active position</span>
+          <span className="text-sm text-neutral-700">{t("hr.positions.form.activePosition")}</span>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-3 pt-2 border-t border-neutral-100">
-          <Link href="/hr/positions" className="btn-secondary">Cancel</Link>
+          <Link href="/hr/positions" className="btn-secondary">{t("common.cancel")}</Link>
           <button
             type="submit"
             disabled={mutation.isPending}
             className="btn-primary"
           >
-            {mutation.isPending ? "Creating…" : "Create Position"}
+            {mutation.isPending ? t("hr.positions.form.creating") : t("hr.positions.form.create")}
           </button>
         </div>
       </form>

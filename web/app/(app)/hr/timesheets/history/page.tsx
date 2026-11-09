@@ -6,39 +6,37 @@ import { hrApi, type Timesheet } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-function weekLabel(weekStart: string, weekEnd: string): string {
+function weekLabel(weekStart: string, weekEnd: string, localeTag = "en-GB"): string {
   const s = new Date(weekStart + "T00:00:00");
   const e = new Date(weekEnd   + "T00:00:00");
-  return `${s.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${e.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+  return `${s.toLocaleDateString(localeTag, { day: "numeric", month: "short" })} – ${e.toLocaleDateString(localeTag, { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }> = {
-  draft:     { label: "Draft",    cls: "badge-muted",    icon: "edit_note"    },
-  submitted: { label: "Pending",  cls: "badge-warning",  icon: "pending"      },
-  approved:  { label: "Nexus Approved", cls: "badge-success",  icon: "check_circle" },
-  rejected:  { label: "Rejected", cls: "badge-danger",   icon: "cancel"       },
-  imported:  { label: "Imported (historical)", cls: "badge-muted", icon: "history" },
-  verified_historical: { label: "Verified Historical", cls: "badge-success", icon: "verified" },
-  returned: { label: "Returned", cls: "badge-warning", icon: "undo" },
+  draft:     { label: "hr.timesheets.status.draft", cls: "badge-muted",    icon: "edit_note"    },
+  submitted: { label: "hr.timesheets.history.pending", cls: "badge-warning",  icon: "pending"      },
+  approved:  { label: "timesheet.import.origin.approved", cls: "badge-success",  icon: "check_circle" },
+  rejected:  { label: "hr.timesheets.status.rejected", cls: "badge-danger",   icon: "cancel"       },
+  imported:  { label: "timesheet.import.origin.imported", cls: "badge-muted", icon: "history" },
+  verified_historical: { label: "timesheet.import.origin.verified", cls: "badge-success", icon: "verified" },
+  returned: { label: "hr.timesheets.status.returned", cls: "badge-warning", icon: "undo" },
 };
 
 const FILTER_TABS = [
-  { value: "",          label: "All"      },
-  { value: "draft",     label: "Draft"    },
-  { value: "submitted", label: "Pending"  },
-  { value: "approved",  label: "Nexus Approved" },
-  { value: "imported",  label: "Imported" },
-  { value: "verified_historical", label: "Verified Historical" },
-  { value: "rejected",  label: "Rejected" },
+  { value: "",          label: "timesheet.import.filterAll" },
+  { value: "draft",     label: "hr.timesheets.status.draft" },
+  { value: "submitted", label: "hr.timesheets.history.pending" },
+  { value: "approved",  label: "timesheet.import.origin.approved" },
+  { value: "imported",  label: "hr.timesheets.history.imported" },
+  { value: "verified_historical", label: "timesheet.import.origin.verified" },
+  { value: "rejected",  label: "hr.timesheets.status.rejected" },
 ];
 
-const MONTHS = [
-  "All months","January","February","March","April","May","June",
-  "July","August","September","October","November","December",
-];
+const MONTH_NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2];
@@ -46,6 +44,7 @@ const YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2];
 // ─── Page ──────────────────────────────────────────────────────────────────
 
 export default function TimesheetHistoryPage() {
+  const { t, localeTag } = useI18n();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [total, setTotal]           = useState(0);
   const [page, setPage]             = useState(1);
@@ -72,7 +71,7 @@ export default function TimesheetHistoryPage() {
       setTotal(data.total ?? 0);
       setLastPage(data.last_page ?? 1);
     } catch {
-      setError("Failed to load timesheet history.");
+      setError(t("hr.timesheets.history.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -84,21 +83,21 @@ export default function TimesheetHistoryPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Timesheet History"
-        subtitle="All your submitted and approved timesheets"
+        title="hr.timesheets.history.title"
+        subtitle="hr.timesheets.history.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Timesheets", href: "/hr/timesheets" },
-              { label: "History" },
+              { label: "nav.timesheets", href: "/hr/timesheets" },
+              { label: "hr.timesheets.history.crumb" },
             ]}
           />
         }
         actions={
           <Link href="/hr/timesheets" className="btn-primary flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Current Week
+            {t("hr.timesheets.history.currentWeek")}
           </Link>
         }
       />
@@ -114,7 +113,7 @@ export default function TimesheetHistoryPage() {
               onClick={() => setStatusFilter(tab.value)}
               className={cn("filter-tab", statusFilter === tab.value && "active")}
             >
-              {tab.label}
+              {t(tab.label)}
             </button>
           ))}
         </div>
@@ -126,8 +125,10 @@ export default function TimesheetHistoryPage() {
             value={monthFilter}
             onChange={(e) => setMonthFilter(Number(e.target.value))}
           >
-            {MONTHS.map((m, i) => (
-              <option key={i} value={i}>{m}</option>
+            {MONTH_NUMBERS.map((i) => (
+              <option key={i} value={i}>
+                {i === 0 ? t("hr.timesheets.history.allMonths") : new Date(2000, i - 1, 1).toLocaleString(localeTag, { month: "long" })}
+              </option>
             ))}
           </select>
           {/* Year */}
@@ -149,7 +150,7 @@ export default function TimesheetHistoryPage() {
 
       {/* Results count */}
       {!loading && (
-        <p className="text-xs text-neutral-400">{total} timesheet{total !== 1 ? "s" : ""} found</p>
+        <p className="text-xs text-neutral-400">{t(total === 1 ? "hr.timesheets.history.foundOne" : "hr.timesheets.history.foundMany", { count: total })}</p>
       )}
 
       {/* Grid */}
@@ -166,9 +167,9 @@ export default function TimesheetHistoryPage() {
       ) : timesheets.length === 0 ? (
         <EmptyState
           icon="schedule"
-          title="No timesheets found"
-          description="Try adjusting the filters or submit your first timesheet"
-          action={<Link href="/hr/timesheets" className="btn-primary">Go to Current Week</Link>}
+          title={t("hr.timesheets.history.emptyTitle")}
+          description={t("hr.timesheets.history.emptyHint")}
+          action={<Link href="/hr/timesheets" className="btn-primary">{t("hr.timesheets.history.goToCurrentWeek")}</Link>}
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -188,23 +189,23 @@ export default function TimesheetHistoryPage() {
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs text-neutral-400 mb-0.5">Week of</p>
+                    <p className="text-xs text-neutral-400 mb-0.5">{t("hr.timesheets.history.weekOf")}</p>
                     <p className="text-sm font-semibold text-neutral-800 leading-tight">
-                      {weekLabel(ts.week_start, ts.week_end)}
+                      {weekLabel(ts.week_start, ts.week_end, localeTag)}
                     </p>
                   </div>
                   <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold flex-shrink-0", sc.cls)}>
                     <span className="material-symbols-outlined text-[12px]">{sc.icon}</span>
-                    {sc.label}
+                    {t(sc.label)}
                   </span>
                 </div>
 
                 {/* Hours bar */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-neutral-500">Hours logged</span>
+                    <span className="text-neutral-500">{t("hr.timesheets.history.hoursLogged")}</span>
                     <span className={cn("font-semibold", totalH >= 40 ? "text-green-600" : totalH > 0 ? "text-amber-600" : "text-neutral-400")}>
-                      {totalH.toFixed(1)}h / 40h
+                      {t("hr.timesheets.history.hoursOf", { hours: totalH.toFixed(1), expected: 40 })}
                     </span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
@@ -220,13 +221,13 @@ export default function TimesheetHistoryPage() {
                   {entryCount > 0 && (
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-[14px]">list_alt</span>
-                      {entryCount} entr{entryCount === 1 ? "y" : "ies"}
+                      {t(entryCount === 1 ? "hr.timesheets.history.entryOne" : "hr.timesheets.history.entryMany", { count: entryCount })}
                     </span>
                   )}
                   {otH > 0 && (
                     <span className="flex items-center gap-1 text-amber-600">
                       <span className="material-symbols-outlined text-[14px]">timer</span>
-                      +{otH.toFixed(1)}h OT
+                      {t("hr.timesheets.overtimeBadge", { hours: otH.toFixed(1) })}
                     </span>
                   )}
                   {ts.submitted_at && (
@@ -239,7 +240,7 @@ export default function TimesheetHistoryPage() {
 
                 {/* View link */}
                 <div className="flex items-center justify-end text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                  View details →
+                  {t("hr.timesheets.history.viewDetails")}
                 </div>
               </Link>
             );
@@ -254,17 +255,19 @@ export default function TimesheetHistoryPage() {
             type="button"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
+            aria-label={t("common.previous")}
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
           <span className="text-sm text-neutral-600">
-            Page {page} of {lastPage}
+            {t("common.pageOf", { page, total: lastPage })}
           </span>
           <button
             type="button"
             onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
             disabled={page === lastPage}
+            aria-label={t("common.next")}
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>

@@ -142,7 +142,7 @@ export function StockItemFormModal({
 
   const handleSave = async () => {
     if (!form.item_code.trim() || !form.name.trim()) {
-      setError("Item code and name are required.");
+      setError(t("stock.itemForm.required"));
       return;
     }
     setSaving(true);
@@ -167,14 +167,14 @@ export function StockItemFormModal({
     try {
       if (editing) {
         await stockItemsApi.update(item!.id, payload);
-        toast("success", "Stock item updated");
+        toast("success", t("stock.itemForm.updated"));
       } else {
         await stockItemsApi.create(payload);
-        toast("success", "Stock item created");
+        toast("success", t("stock.itemForm.created"));
       }
       onSaved();
     } catch (err: unknown) {
-      const msg = errorMessage(err, "Failed to save stock item.");
+      const msg = errorMessage(err, t("stock.itemForm.saveFailed"));
       setError(msg);
       toast("error", msg);
     } finally {
@@ -190,7 +190,7 @@ export function StockItemFormModal({
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <span className="material-symbols-outlined text-primary text-[18px]">{editing ? "edit" : "add_box"}</span>
             </div>
-            <h3 className="font-semibold text-neutral-900 text-sm">{editing ? "Edit Stock Item" : "New Stock Item"}</h3>
+            <h3 className="font-semibold text-neutral-900 text-sm">{editing ? t("stock.itemForm.editTitle") : t("stock.itemForm.newTitle")}</h3>
           </div>
           <button type="button" onClick={onClose} className="text-neutral-400 hover:text-neutral-600" aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
@@ -206,12 +206,12 @@ export function StockItemFormModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="stock-item-code" className="block text-xs font-semibold text-neutral-700 mb-1">Item Code *</label>
-              <input id="stock-item-code" className="form-input font-mono" placeholder="e.g. STK-A4-001" value={form.item_code} onChange={(e) => set("item_code", e.target.value)} />
+              <label htmlFor="stock-item-code" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.itemForm.itemCode")}</label>
+              <input id="stock-item-code" className="form-input font-mono" placeholder={t("stock.itemForm.codePlaceholder")} value={form.item_code} onChange={(e) => set("item_code", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="stock-item-name" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
-              <input id="stock-item-name" className="form-input" placeholder="e.g. A4 Paper Ream" value={form.name} onChange={(e) => set("name", e.target.value)} />
+              <label htmlFor="stock-item-name" className="block text-xs font-semibold text-neutral-700 mb-1">{t("workplan.types.nameLabel")}</label>
+              <input id="stock-item-name" className="form-input" placeholder={t("stock.itemForm.namePlaceholder")} value={form.name} onChange={(e) => set("name", e.target.value)} />
             </div>
             <div>
               <div className="flex items-center justify-between gap-2 mb-1">
@@ -330,32 +330,32 @@ export function StockItemFormModal({
               )}
             </div>
             <div>
-              <label htmlFor="stock-item-unit-cost" className="block text-xs font-semibold text-neutral-700 mb-1">Unit Cost</label>
+              <label htmlFor="stock-item-unit-cost" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.common.unitCost")}</label>
               <input id="stock-item-unit-cost" type="number" min={0} step="0.01" className="form-input" placeholder="0.00" value={form.unit_cost} onChange={(e) => set("unit_cost", e.target.value)} />
             </div>
             <div>
-              <label htmlFor="stock-item-reorder" className="block text-xs font-semibold text-neutral-700 mb-1">Reorder Level</label>
+              <label htmlFor="stock-item-reorder" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.common.reorderLevel")}</label>
               <input id="stock-item-reorder" type="number" min={0} className="form-input" placeholder="0" value={form.reorder_level} onChange={(e) => set("reorder_level", e.target.value)} />
             </div>
             {!editing && (
               <div>
-                <label htmlFor="stock-item-opening" className="block text-xs font-semibold text-neutral-700 mb-1">Opening Balance</label>
+                <label htmlFor="stock-item-opening" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.itemForm.openingBalance")}</label>
                 <input id="stock-item-opening" type="number" min={0} className="form-input" placeholder="0" value={form.opening_balance} onChange={(e) => set("opening_balance", e.target.value)} />
-                <p className="text-xs text-neutral-400 mt-1">Recorded as an initial stock-in.</p>
+                <p className="text-xs text-neutral-400 mt-1">{t("stock.itemForm.openingHelp")}</p>
               </div>
             )}
             <div>
-              <label htmlFor="stock-item-location" className="block text-xs font-semibold text-neutral-700 mb-1">Storage Location</label>
+              <label htmlFor="stock-item-location" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.itemForm.storageLocation")}</label>
               <select id="stock-item-location" className="form-input" value={form.stock_location_id} onChange={(e) => set("stock_location_id", e.target.value)}>
-                <option value="">Select location…</option>
+                <option value="">{t("stock.itemForm.selectLocation")}</option>
                 {(locationsQuery.data ?? []).map((l) => (
                   <option key={l.id} value={l.id}>{l.code} — {l.name}</option>
                 ))}
               </select>
             </div>
             <div className="col-span-2">
-              <label htmlFor="stock-item-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
-              <textarea id="stock-item-description" className="form-input" rows={2} placeholder="Optional notes" value={form.description} onChange={(e) => set("description", e.target.value)} />
+              <label htmlFor="stock-item-description" className="block text-xs font-semibold text-neutral-700 mb-1">{t("stock.common.description")}</label>
+              <textarea id="stock-item-description" className="form-input" rows={2} placeholder={t("procurement.detail.optionalNotes")} value={form.description} onChange={(e) => set("description", e.target.value)} />
             </div>
           </div>
         </div>
@@ -364,7 +364,7 @@ export function StockItemFormModal({
           <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
           <button type="button" onClick={handleSave} disabled={saving} className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
             <span className="material-symbols-outlined text-[16px]">save</span>
-            {saving ? "Saving…" : editing ? "Update Item" : "Create Item"}
+            {saving ? t("stock.common.saving") : editing ? t("stock.itemForm.update") : t("stock.itemForm.create")}
           </button>
         </div>
       </div>

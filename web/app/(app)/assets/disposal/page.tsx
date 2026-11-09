@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import { assetsApi, type Asset } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
 import { AssetPicker } from "@/components/assets/AssetPicker";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type AssetOption = { id: number; asset_code: string; name: string; status: string; book_value?: number };
 type Disposal = {
@@ -31,8 +32,9 @@ const REASONS = ["obsolete", "damaged", "lost", "stolen", "surplus", "other"] as
 const METHODS = ["sale", "donation", "scrap", "write_off", "transfer"] as const;
 
 export default function AssetDisposalPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="w-full min-w-0 space-y-5 text-sm text-neutral-500">Loading disposal…</div>}>
+    <Suspense fallback={<div className="w-full min-w-0 space-y-5 text-sm text-neutral-500">{t("assets.disposal.loading")}</div>}>
       <AssetDisposalPageInner />
     </Suspense>
   );
@@ -40,6 +42,11 @@ export default function AssetDisposalPage() {
 
 function AssetDisposalPageInner() {
   const searchParams = useSearchParams();
+  const { t } = useI18n();
+  const tv = (key: string, fallback: string) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
   const [rows, setRows] = useState<Disposal[]>([]);
   const [pickedAsset, setPickedAsset] = useState<Asset | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -96,13 +103,13 @@ function AssetDisposalPageInner() {
         justification: form.justification,
         estimated_value: form.estimated_value ? Number(form.estimated_value) : null,
       });
-      setMsg("Disposal request created.");
+      setMsg(t("assets.disposal.created"));
       setShowCreate(false);
       setForm({ asset_id: "", reason: "obsolete", method: "scrap", justification: "", estimated_value: "" });
       setPickedAsset(null);
       await load();
     } catch (error: unknown) {
-      setErr(error instanceof Error ? error.message : "Failed to create disposal.");
+      setErr(error instanceof Error ? error.message : t("assets.disposal.createFailed"));
     } finally {
       setSaving(false);
     }
@@ -113,7 +120,7 @@ function AssetDisposalPageInner() {
     setErr(null);
     try {
       await api.post(`/asset-disposals/${id}/${action}`, payload);
-      setMsg(`Disposal ${action} recorded.`);
+      setMsg(tv(`assets.disposal.recorded.${action}`, `Disposal ${action} recorded.`)); // i18n-ignore
       setCompleteOpen(false);
       await load();
       if (selected?.id === id) {
@@ -121,7 +128,7 @@ function AssetDisposalPageInner() {
         setSelected((r.data as { data: Disposal }).data);
       }
     } catch (error: unknown) {
-      setErr(error instanceof Error ? error.message : `Failed to ${action}.`);
+      setErr(error instanceof Error ? error.message : tv(`assets.disposal.failed.${action}`, `Failed to ${action}.`)); // i18n-ignore
     } finally {
       setSaving(false);
     }
@@ -131,16 +138,16 @@ function AssetDisposalPageInner() {
     <div className="w-full min-w-0 space-y-5">
       <div className="page-header flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
-        title="Disposal Requests"
-        subtitle="Workflow: request → HOD recommend → Finance review → approve → complete. Assets are never hard-deleted."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Disposal Requests" }]} />}
+        title={t("assets.disposal.title")}
+        subtitle={t("assets.disposal.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "assets.disposal.title" }]} />}
       />
         <div className="flex gap-2">
           <Link href="/assets/revaluation" className="btn-secondary btn-sm">
-            Revaluations
+            {t("assets.disposal.revaluations")}
           </Link>
           <button type="button" className="btn-primary btn-sm" onClick={() => setShowCreate(true)}>
-            New disposal
+            {t("assets.disposal.new")}
           </button>
         </div>
       </div>
@@ -150,11 +157,11 @@ function AssetDisposalPageInner() {
 
       {showCreate && (
         <form onSubmit={createDisposal}>
-          <FormSection title="Create disposal request" icon="delete_forever" dense>
+          <FormSection title={t("assets.disposal.createTitle")} icon="delete_forever" dense>
             <div className="space-y-3">
           <AssetPicker
             id="disposal-asset"
-            label="Asset"
+            label={t("assets.disposal.asset")}
             value={pickedAsset}
             onSelect={(asset) => {
               setPickedAsset(asset);
@@ -165,22 +172,22 @@ function AssetDisposalPageInner() {
             dataTestId="disposal-asset"
           />
           <div className="grid gap-3 md:grid-cols-2">
-            <FormField label="Reason" htmlFor="disposal-reason">
+            <FormField label={t("assets.disposal.reason")} htmlFor="disposal-reason">
               <select id="disposal-reason" className="form-input w-full" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}>
                 {REASONS.map((r) => (
-                  <option key={r} value={r}>{r}</option>
+                  <option key={r} value={r}>{t(`assets.disposal.reason.${r}`)}</option>
                 ))}
               </select>
             </FormField>
-            <FormField label="Method" htmlFor="disposal-method">
+            <FormField label={t("assets.disposal.method")} htmlFor="disposal-method">
               <select id="disposal-method" className="form-input w-full" value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
                 {METHODS.map((m) => (
-                  <option key={m} value={m}>{m}</option>
+                  <option key={m} value={m}>{t(`assets.disposal.method.${m}`)}</option>
                 ))}
               </select>
             </FormField>
           </div>
-          <FormField label="Justification" htmlFor="disposal-justification" required>
+          <FormField label={t("assets.disposal.justification")} htmlFor="disposal-justification" required>
             <textarea
               id="disposal-justification"
               className="form-input w-full"
@@ -190,7 +197,7 @@ function AssetDisposalPageInner() {
               onChange={(e) => setForm({ ...form, justification: e.target.value })}
             />
           </FormField>
-          <FormField label="Estimated value" htmlFor="disposal-value">
+          <FormField label={t("assets.disposal.estimatedValue")} htmlFor="disposal-value">
             <input
               id="disposal-value"
               type="number"
@@ -202,8 +209,8 @@ function AssetDisposalPageInner() {
             />
           </FormField>
           <div className="flex gap-2">
-            <button type="submit" className="btn-primary btn-sm" disabled={saving}>{saving ? "Saving…" : "Submit request"}</button>
-            <button type="button" className="btn-secondary btn-sm" onClick={() => setShowCreate(false)}>Cancel</button>
+            <button type="submit" className="btn-primary btn-sm" disabled={saving}>{saving ? t("assets.disposal.saving") : t("assets.disposal.submit")}</button>
+            <button type="button" className="btn-secondary btn-sm" onClick={() => setShowCreate(false)}>{t("common.cancel")}</button>
           </div>
             </div>
           </FormSection>
@@ -215,11 +222,11 @@ function AssetDisposalPageInner() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Reference</th>
-                <th>Asset</th>
-                <th>Reason</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>{t("assets.disposal.col.reference")}</th>
+                <th>{t("assets.disposal.asset")}</th>
+                <th>{t("assets.disposal.reason")}</th>
+                <th>{t("assets.disposal.col.status")}</th>
+                <th>{t("assets.disposal.col.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -231,22 +238,22 @@ function AssetDisposalPageInner() {
                     </button>
                   </td>
                   <td>{d.asset?.asset_code ?? "—"}</td>
-                  <td>{d.reason}</td>
-                  <td>{d.status}</td>
+                  <td>{tv(`assets.disposal.reason.${d.reason}`, d.reason)}</td>
+                  <td>{tv(`assets.disposal.status.${d.status}`, d.status)}</td>
                   <td className="flex flex-wrap gap-1">
                     {d.status === "draft" && (
                       <button className="btn-secondary text-xs" disabled={saving} onClick={() => advance(d.id, "recommend", { comments: "Recommended" })}>
-                        HOD recommend
+                        {t("assets.disposal.hodRecommend")}
                       </button>
                     )}
                     {d.status === "recommended" && (
                       <button className="btn-secondary text-xs" disabled={saving} onClick={() => advance(d.id, "finance-review", { comments: "Finance OK" })}>
-                        Finance review
+                        {t("assets.disposal.financeReview")}
                       </button>
                     )}
                     {d.status === "finance_reviewed" && (
                       <button className="btn-secondary text-xs" disabled={saving} onClick={() => advance(d.id, "approve")}>
-                        Approve
+                        {t("common.approve")}
                       </button>
                     )}
                     {d.status === "approved" && (
@@ -263,32 +270,32 @@ function AssetDisposalPageInner() {
                           setCompleteOpen(true);
                         }}
                       >
-                        Complete
+                        {t("assets.disposal.complete")}
                       </button>
                     )}
                   </td>
                 </tr>
               ))}
               {rows.length === 0 && (
-                <TableEmpty colSpan={5} title="No disposal requests." />
+                <TableEmpty colSpan={5} title={t("assets.disposal.empty")} />
               )}
             </tbody>
           </table>
         </div>
 
         <div className="card space-y-2 p-4 lg:col-span-2">
-          <h2 className="text-lg font-semibold">Detail</h2>
-          {!selected && <p className="text-sm text-neutral-500">Select a disposal to view workflow detail.</p>}
+          <h2 className="text-lg font-semibold">{t("assets.disposal.detail")}</h2>
+          {!selected && <p className="text-sm text-neutral-500">{t("assets.disposal.selectHint")}</p>}
           {selected && (
             <>
-              <p className="text-sm"><span className="font-medium">Reference:</span> {selected.reference}</p>
-              <p className="text-sm"><span className="font-medium">Asset:</span> {selected.asset?.asset_code} — {selected.asset?.name}</p>
-              <p className="text-sm"><span className="font-medium">Status:</span> {selected.status}</p>
-              <p className="text-sm"><span className="font-medium">Reason / method:</span> {selected.reason} / {selected.method ?? "—"}</p>
-              <p className="text-sm whitespace-pre-wrap"><span className="font-medium">Justification:</span> {selected.justification}</p>
-              {selected.hod_comments && <p className="text-sm"><span className="font-medium">HOD:</span> {selected.hod_comments}</p>}
-              {selected.finance_comments && <p className="text-sm"><span className="font-medium">Finance:</span> {selected.finance_comments}</p>}
-              {selected.accounting_reference && <p className="text-sm"><span className="font-medium">Accounting ref:</span> {selected.accounting_reference}</p>}
+              <p className="text-sm"><span className="font-medium">{t("assets.disposal.d.reference")}</span> {selected.reference}</p>
+              <p className="text-sm"><span className="font-medium">{t("assets.disposal.d.asset")}</span> {selected.asset?.asset_code} — {selected.asset?.name}</p>
+              <p className="text-sm"><span className="font-medium">{t("assets.disposal.d.status")}</span> {tv(`assets.disposal.status.${selected.status}`, selected.status)}</p>
+              <p className="text-sm"><span className="font-medium">{t("assets.disposal.d.reasonMethod")}</span> {tv(`assets.disposal.reason.${selected.reason}`, selected.reason)} / {selected.method ? tv(`assets.disposal.method.${selected.method}`, selected.method) : "—"}</p>
+              <p className="text-sm whitespace-pre-wrap"><span className="font-medium">{t("assets.disposal.d.justification")}</span> {selected.justification}</p>
+              {selected.hod_comments && <p className="text-sm"><span className="font-medium">{t("assets.disposal.d.hod")}</span> {selected.hod_comments}</p>}
+              {selected.finance_comments && <p className="text-sm"><span className="font-medium">{t("assets.disposal.d.finance")}</span> {selected.finance_comments}</p>}
+              {selected.accounting_reference && <p className="text-sm"><span className="font-medium">{t("assets.disposal.d.accountingRef")}</span> {selected.accounting_reference}</p>}
             </>
           )}
         </div>
@@ -306,28 +313,28 @@ function AssetDisposalPageInner() {
             });
           }}
         >
-          <h2 className="text-lg font-semibold">Complete disposal — {selected.reference}</h2>
+          <h2 className="text-lg font-semibold">{t("assets.disposal.completeTitle", { reference: selected.reference })}</h2>
           <div className="grid gap-3 md:grid-cols-3">
             <label htmlFor="assets-disposal-method-setcompleteform" className="block text-sm">
-              Method
+              {t("assets.disposal.method")}
               <select id="assets-disposal-method-setcompleteform" className="form-input mt-1 w-full" value={completeForm.method} onChange={(e) => setCompleteForm({ ...completeForm, method: e.target.value })}>
                 {METHODS.map((m) => (
-                  <option key={m} value={m}>{m}</option>
+                  <option key={m} value={m}>{t(`assets.disposal.method.${m}`)}</option>
                 ))}
               </select>
             </label>
             <label htmlFor="assets-disposal-proceeds-setcompleteform" className="block text-sm">
-              Proceeds
+              {t("assets.disposal.proceeds")}
               <input id="assets-disposal-proceeds-setcompleteform" type="number" min="0" step="0.01" className="form-input mt-1 w-full" value={completeForm.proceeds} onChange={(e) => setCompleteForm({ ...completeForm, proceeds: e.target.value })} />
             </label>
             <label htmlFor="assets-disposal-accounting-reference-setcompleteform" className="block text-sm">
-              Accounting reference
+              {t("assets.disposal.accountingReference")}
               <input id="assets-disposal-accounting-reference-setcompleteform" className="form-input mt-1 w-full" value={completeForm.accounting_reference} onChange={(e) => setCompleteForm({ ...completeForm, accounting_reference: e.target.value })} />
             </label>
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="btn-primary btn-sm" disabled={saving}>Complete</button>
-            <button type="button" className="btn-secondary btn-sm" onClick={() => setCompleteOpen(false)}>Cancel</button>
+            <button type="submit" className="btn-primary btn-sm" disabled={saving}>{t("assets.disposal.complete")}</button>
+            <button type="button" className="btn-secondary btn-sm" onClick={() => setCompleteOpen(false)}>{t("common.cancel")}</button>
           </div>
         </form>
       )}

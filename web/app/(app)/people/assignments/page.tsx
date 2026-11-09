@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -34,6 +35,7 @@ function personLabel(p: Record<string, unknown>): string {
 }
 
 export default function Page() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
   const [q, setQ] = useState("");
@@ -64,14 +66,14 @@ export default function Page() {
         start_at: form.start_at,
       }),
     onSuccess: () => {
-      toast.success("Position assigned");
+      toast.success(t("people.assignments.assigned"));
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "position-assignments"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not assign the position. Person, position, type, and start date are required.");
+      const message = apiErrorMessage(e, t("people.assignments.assignFailed"));
       setErr(message);
-      toast.error("Position not assigned", message);
+      toast.error(t("people.assignments.notAssigned"), message);
     },
   });
   const { data, isLoading, isError, refetch } = useQuery({
@@ -106,19 +108,19 @@ export default function Page() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Position Assignments"
-        subtitle="People & Authority register"
+        title={t("people.assignments.title")}
+        subtitle={t("people.common.registerSubtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "Position Assignments" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.assignments.title") },
             ]}
           />
         }
         actions={
           <Link href="/people" className="btn-secondary text-sm">
-            Hub
+            {t("people.common.hub")}
           </Link>
         }
       />
@@ -131,38 +133,38 @@ export default function Page() {
         }}
       >
         <label htmlFor="people-assignments-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
-          Position
+          {t("people.common.position")}
           <select id="people-assignments-position-setform-f-required-select" className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
             ))}
           </select>
         </label>
         <label htmlFor="people-assignments-person-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
-          Person
+          {t("people.common.person")}
           <select id="people-assignments-person-setform-f-required-select" className="form-input mt-1" value={form.person_id} onChange={(e) => setForm((f) => ({ ...f, person_id: e.target.value }))} required>
-            <option value="">Select…</option>
+            <option value="">{t("people.common.select")}</option>
             {(peopleQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
             ))}
           </select>
         </label>
         <label htmlFor="people-assignments-assignment-type-setform-f-substantive-acting-tem" className="block text-xs font-medium text-neutral-600">
-          Assignment type
+          {t("people.assignments.assignmentType")}
           <select id="people-assignments-assignment-type-setform-f-substantive-acting-tem" className="form-input mt-1" value={form.assignment_type} onChange={(e) => setForm((f) => ({ ...f, assignment_type: e.target.value }))}>
-            <option value="substantive">Substantive</option>
-            <option value="acting">Acting</option>
-            <option value="temporary">Temporary</option>
+            <option value="substantive">{t("people.assignments.typeSubstantive")}</option>
+            <option value="acting">{t("people.assignments.typeActing")}</option>
+            <option value="temporary">{t("people.assignments.typeTemporary")}</option>
           </select>
         </label>
         <label htmlFor="people-assignments-start-setform-f-required" className="block text-xs font-medium text-neutral-600">
-          Start
+          {t("people.common.start")}
           <input id="people-assignments-start-setform-f-required" type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
         </label>
         <div className="sm:col-span-4 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={assign.isPending}>
-            {assign.isPending ? "Saving…" : "Assign position"}
+            {assign.isPending ? t("people.common.saving") : t("people.assignments.assign")}
           </button>
           {err && <p className="text-sm text-red-700">{err}</p>}
         </div>
@@ -170,12 +172,12 @@ export default function Page() {
 
       <div className="card p-3">
         <label htmlFor="people-assignments-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
+          {t("common.search")}
           <input id="people-assignments-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
+            placeholder={t("people.common.filterRows")}
           />
         </label>
       </div>
@@ -190,24 +192,24 @@ export default function Page() {
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
             action={
               <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
+                {t("common.retry")}
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">Position Assignments</caption>
+              <caption className="sr-only">{t("people.assignments.title")}</caption>
               <thead>
                 <tr>
                   {columns.map((c) => (

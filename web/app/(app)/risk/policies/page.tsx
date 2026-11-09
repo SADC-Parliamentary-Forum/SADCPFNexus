@@ -11,12 +11,13 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_OPTS = ["all", "active", "archived"] as const;
 
 // Policy-specific document types (most relevant subset)
-const POLICY_DOC_TYPES = RISK_DOCUMENT_TYPES.filter((t) =>
-  ["risk_policy", "risk_assessment", "risk_evidence", "other"].includes(t.value)
+const POLICY_DOC_TYPES = RISK_DOCUMENT_TYPES.filter((dt) =>
+  ["risk_policy", "risk_assessment", "risk_evidence", "other"].includes(dt.value)
 );
 
 function RenewalBadge({ date }: { date: string | null }) {
@@ -60,6 +61,7 @@ function formatBytes(bytes: number): string {
 }
 
 export default function PolicyLibraryPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { confirm } = useConfirm();
   const toast = useToast();
@@ -95,10 +97,10 @@ export default function PolicyLibraryPage() {
     mutationFn: (id: number) => policyApi.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["risk-policies"] });
-      toast.success("Policy deleted");
+      toast.success(t("risk.policies.deleted"));
     },
     onError: (err) => {
-      toast.error("Policy not deleted", apiErrorMessage(err, "Failed to delete policy."));
+      toast.error(t("risk.policies.notDeleted"), apiErrorMessage(err, t("risk.policies.deleteFailed")));
     },
   });
 
@@ -176,14 +178,14 @@ export default function PolicyLibraryPage() {
         failedUploads = results.filter((r) => r.status === "rejected").length;
       }
 
-      toast.success(editing ? "Policy updated" : "Policy created", form.title);
+      toast.success(editing ? t("risk.policies.updated") : t("risk.policies.created"), form.title);
       if (failedUploads > 0) {
-        toast.warning("Some documents not uploaded", `${failedUploads} document(s) failed to upload. Add them from the policy page.`);
+        toast.warning(t("risk.policies.someNotUploaded"), t("risk.policies.uploadsFailed", { count: failedUploads }));
       }
       qc.invalidateQueries({ queryKey: ["risk-policies"] });
       closeModal();
     } catch (err) {
-      toast.error(editing ? "Policy not updated" : "Policy not created", apiErrorMessage(err, "Failed to save policy."));
+      toast.error(editing ? t("risk.policies.notUpdated") : t("risk.policies.notCreated"), apiErrorMessage(err, t("risk.policies.saveFailed")));
     } finally {
       setSaving(false);
     }
@@ -194,12 +196,12 @@ export default function PolicyLibraryPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Policy Library"
-        subtitle="Manage organisational policies and link them to risks in the register."
+        title={t("risk.policies.pageTitle")}
+        subtitle={t("risk.policies.subtitle")}
         breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.policies.title" }]} />}
       />
         <button onClick={openCreate} className="btn-primary flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[18px]">add</span> New Policy
+          <span className="material-symbols-outlined text-[18px]">add</span> {t("risk.policies.new")}
         </button>
       </div>
 
@@ -212,7 +214,7 @@ export default function PolicyLibraryPage() {
               onClick={() => setStatusFilter(s)}
               className={`filter-tab capitalize ${statusFilter === s ? "active" : ""}`}
             >
-              {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+              {s === "all" ? t("risk.policies.all") : t(`risk.policies.status.${s}`)}
             </button>
           ))}
         </div>
@@ -220,7 +222,7 @@ export default function PolicyLibraryPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search policies…"
+          placeholder={t("risk.policies.searchPlaceholder")}
           className="form-input w-60"
         />
       </div>
@@ -232,15 +234,15 @@ export default function PolicyLibraryPage() {
             <span className="material-symbols-outlined animate-spin text-primary text-2xl mr-2">
               progress_activity
             </span>
-            <span className="text-sm text-neutral-400">Loading policies…</span>
+            <span className="text-sm text-neutral-400">{t("risk.policies.loading")}</span>
           </div>
         ) : policies.length === 0 ? (
           <EmptyState
             icon="policy"
-            title="No policies found."
+            title={t("risk.policies.empty")}
             action={
               <button type="button" onClick={openCreate} className="btn-primary">
-                Add First Policy
+                {t("risk.policies.addFirst")}
               </button>
             }
           />
@@ -248,12 +250,12 @@ export default function PolicyLibraryPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Policy Title</th>
-                <th>Owner</th>
-                <th>Renewal Date</th>
-                <th>Linked Risks</th>
-                <th>Status</th>
-                <th className="text-right">Actions</th>
+                <th>{t("risk.policies.colTitle")}</th>
+                <th>{t("risk.policies.colOwner")}</th>
+                <th>{t("risk.policies.renewalDate")}</th>
+                <th>{t("risk.policy.linkedRisks")}</th>
+                <th>{t("risk.policies.status")}</th>
+                <th className="text-right">{t("risk.policies.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -274,7 +276,7 @@ export default function PolicyLibraryPage() {
                   <td className="text-neutral-500">{p.risks_count ?? 0}</td>
                   <td>
                     <span className={`badge-${p.status === "active" ? "success" : "muted"}`}>
-                      {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+                      {p.status === "active" || p.status === "archived" ? t(`risk.policies.status.${p.status}`) : p.status}
                     </span>
                   </td>
                   <td>
@@ -282,25 +284,25 @@ export default function PolicyLibraryPage() {
                       <Link
                         href={`/risk/policies/${p.id}`}
                         className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-primary"
-                        title="View"
+                        title={t("risk.policies.view")}
                       >
                         <span className="material-symbols-outlined text-[16px]">open_in_new</span>
                       </Link>
                       <button
                         onClick={() => openEdit(p)}
                         className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-primary"
-                        title="Edit"
+                        title={t("common.edit")}
                       >
                         <span className="material-symbols-outlined text-[16px]">edit</span>
                       </button>
                       <button
                         onClick={async () => {
-                          if (await confirm({ title: "Delete policy", message: "Delete this policy? This cannot be undone.", variant: "danger" })) {
+                          if (await confirm({ title: t("risk.policies.deleteTitle"), message: t("risk.policies.deleteMessage"), variant: "danger" })) {
                             deleteMutation.mutate(p.id);
                           }
                         }}
                         className="p-1.5 rounded-lg hover:bg-red-50 text-neutral-400 hover:text-red-600"
-                        title="Delete"
+                        title={t("common.delete")}
                       >
                         <span className="material-symbols-outlined text-[16px]">delete</span>
                       </button>
@@ -325,12 +327,12 @@ export default function PolicyLibraryPage() {
           >
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-neutral-900">
-                {editing ? "Edit Policy" : "New Policy"}
+                {editing ? t("risk.policies.edit") : t("risk.policies.new")}
               </h2>
               <button
                 type="button"
                 onClick={closeModal}
-                aria-label="Close policy form"
+                aria-label={t("risk.policies.closeForm")}
                 className="text-neutral-400 hover:text-neutral-600"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
@@ -342,37 +344,37 @@ export default function PolicyLibraryPage() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <label htmlFor="risk-policies-title" className="text-xs font-semibold text-neutral-700">
-                    Title <span className="text-red-500">*</span>
+                    {t("risk.policies.titleLabel")} <span className="text-red-500">*</span>
                   </label>
                   <input id="risk-policies-title"
                     value={form.title}
                     onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                     required
                     className="form-input w-full"
-                    placeholder="e.g. ICT Security Policy"
+                    placeholder={t("risk.policies.titlePlaceholder")}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="risk-policies-description" className="text-xs font-semibold text-neutral-700">Description</label>
+                  <label htmlFor="risk-policies-description" className="text-xs font-semibold text-neutral-700">{t("risk.create.description")}</label>
                   <textarea id="risk-policies-description"
                     value={form.description}
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                     className="form-input w-full h-20 resize-none"
-                    placeholder="Brief description of the policy…"
+                    placeholder={t("risk.policies.descriptionPlaceholder")}
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2 space-y-1">
-                    <label htmlFor="risk-policies-policy-owner" className="text-xs font-semibold text-neutral-700">Policy Owner</label>
+                    <label htmlFor="risk-policies-policy-owner" className="text-xs font-semibold text-neutral-700">{t("risk.policies.owner")}</label>
                     <input id="risk-policies-policy-owner"
                       value={form.owner_name}
                       onChange={(e) => setForm((f) => ({ ...f, owner_name: e.target.value }))}
                       className="form-input w-full"
-                      placeholder="e.g. Ronald Windwaai"
+                      placeholder={t("risk.policies.ownerPlaceholder")}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label htmlFor="risk-policies-renewal-date" className="text-xs font-semibold text-neutral-700">Renewal Date</label>
+                    <label htmlFor="risk-policies-renewal-date" className="text-xs font-semibold text-neutral-700">{t("risk.policies.renewalDate")}</label>
                     <input id="risk-policies-renewal-date"
                       type="date"
                       value={form.renewal_date}
@@ -382,7 +384,7 @@ export default function PolicyLibraryPage() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="risk-policies-status" className="text-xs font-semibold text-neutral-700">Status</label>
+                  <label htmlFor="risk-policies-status" className="text-xs font-semibold text-neutral-700">{t("risk.policies.status")}</label>
                   <select id="risk-policies-status"
                     value={form.status}
                     onChange={(e) =>
@@ -390,8 +392,8 @@ export default function PolicyLibraryPage() {
                     }
                     className="form-input w-full"
                   >
-                    <option value="active">Active</option>
-                    <option value="archived">Archived</option>
+                    <option value="active">{t("risk.policies.status.active")}</option>
+                    <option value="archived">{t("risk.policies.status.archived")}</option>
                   </select>
                 </div>
               </div>
@@ -401,7 +403,7 @@ export default function PolicyLibraryPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-semibold text-neutral-700">
-                      Attachments
+                      {t("risk.policies.attachments")}
                       {stagedDocs.length > 0 && (
                         <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary text-white text-[10px] font-bold">
                           {stagedDocs.length}
@@ -409,7 +411,7 @@ export default function PolicyLibraryPage() {
                       )}
                     </p>
                     <p className="text-[11px] text-neutral-400 mt-0.5">
-                      Attach the policy document, evidence, or supporting files.
+                      {t("risk.policies.attachmentsHint")}
                     </p>
                   </div>
                   <button
@@ -418,7 +420,7 @@ export default function PolicyLibraryPage() {
                     className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 transition-colors"
                   >
                     <span className="material-symbols-outlined text-[14px]">attach_file</span>
-                    Browse
+                    {t("risk.policies.browse")}
                   </button>
                 </div>
 
@@ -442,9 +444,9 @@ export default function PolicyLibraryPage() {
                     cloud_upload
                   </span>
                   <p className="text-xs text-neutral-500">
-                    Drag &amp; drop or{" "}
-                    <span className="text-primary font-medium">click to browse</span>
-                    <span className="text-neutral-400"> — PDF, Word, images, max 25 MB</span>
+                    {t("risk.policies.dropBefore")}{" "}
+                    <span className="text-primary font-medium">{t("risk.policies.dropClick")}</span>
+                    <span className="text-neutral-400"> {t("risk.policies.dropFormats")}</span>
                   </p>
                 </div>
 
@@ -483,16 +485,16 @@ export default function PolicyLibraryPage() {
                           }
                           className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                         >
-                          {POLICY_DOC_TYPES.map((t) => (
-                            <option key={t.value} value={t.value}>
-                              {t.label}
+                          {POLICY_DOC_TYPES.map((dt) => (
+                            <option key={dt.value} value={dt.value}>
+                              {t(dt.label)}
                             </option>
                           ))}
                         </select>
                         <button
                           type="button"
                           onClick={() => removeStagedDoc(doc.id)}
-                          aria-label="Remove attachment"
+                          aria-label={t("risk.policies.removeAttachment")}
                           className="text-neutral-400 hover:text-red-500 transition-colors shrink-0"
                         >
                           <span className="material-symbols-outlined text-[15px]">close</span>
@@ -510,7 +512,7 @@ export default function PolicyLibraryPage() {
                   onClick={closeModal}
                   className="btn-secondary flex-1"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
@@ -519,11 +521,11 @@ export default function PolicyLibraryPage() {
                 >
                   {saving
                     ? stagedDocs.length > 0
-                      ? "Saving & uploading…"
-                      : "Saving…"
+                      ? t("risk.policies.savingUploading")
+                      : t("risk.policies.saving")
                     : editing
-                    ? "Save Changes"
-                    : "Create Policy"}
+                    ? t("risk.policies.saveChanges")
+                    : t("risk.policies.create")}
                 </button>
               </div>
             </form>

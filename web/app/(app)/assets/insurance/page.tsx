@@ -7,10 +7,12 @@ import { assetsApi, type AssetInsuranceClaim, type AssetInsurancePolicy } from "
 import { TableEmpty } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function AssetInsurancePage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [tab, setTab] = useState<"policies" | "claims">("policies");
   const [policyForm, setPolicyForm] = useState({
     policy_number: "",
@@ -50,7 +52,7 @@ export default function AssetInsurancePage() {
       }),
     onSuccess: () => {
       setError(null);
-      toast.success("Insurance policy saved");
+      toast.success(t("assets.insurance.policySaved"));
       setPolicyForm({
         policy_number: "",
         insurer_name: "",
@@ -64,8 +66,8 @@ export default function AssetInsurancePage() {
       qc.invalidateQueries({ queryKey: ["assets", "insurance"] });
     },
     onError: (err) => {
-      setError("Could not save policy.");
-      toast.error("Insurance policy not saved", apiErrorMessage(err, "Could not save policy."));
+      setError(t("assets.insurance.policySaveFailed"));
+      toast.error(t("assets.insurance.policyNotSaved"), apiErrorMessage(err, t("assets.insurance.policySaveFailed")));
     },
   });
 
@@ -81,7 +83,7 @@ export default function AssetInsurancePage() {
       }),
     onSuccess: () => {
       setError(null);
-      toast.success("Insurance claim saved");
+      toast.success(t("assets.insurance.claimSaved"));
       setClaimForm({
         policy_id: "",
         claim_number: "",
@@ -93,8 +95,8 @@ export default function AssetInsurancePage() {
       qc.invalidateQueries({ queryKey: ["assets", "insurance"] });
     },
     onError: (err) => {
-      setError("Could not save claim.");
-      toast.error("Insurance claim not saved", apiErrorMessage(err, "Could not save claim."));
+      setError(t("assets.insurance.claimSaveFailed"));
+      toast.error(t("assets.insurance.claimNotSaved"), apiErrorMessage(err, t("assets.insurance.claimSaveFailed")));
     },
   });
 
@@ -105,16 +107,16 @@ export default function AssetInsurancePage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="page-header">
         <ModulePageHeader
-        title="Insurance"
-        subtitle="Policies and claims for capital assets (Phase 2). Warranty fields remain on the asset register."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Insurance" }]} />}
+        title={t("assets.insurance.title")}
+        subtitle={t("assets.insurance.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "assets.insurance.title" }]} />}
       />
         <div className="flex gap-2">
           <button type="button" className={tab === "policies" ? "btn-primary text-sm" : "btn-secondary text-sm"} onClick={() => setTab("policies")}>
-            Policies
+            {t("assets.insurance.policies")}
           </button>
           <button type="button" className={tab === "claims" ? "btn-primary text-sm" : "btn-secondary text-sm"} onClick={() => setTab("claims")}>
-            Claims
+            {t("assets.insurance.claims")}
           </button>
         </div>
       </div>
@@ -125,27 +127,27 @@ export default function AssetInsurancePage() {
         <>
           <div className="card grid gap-3 p-4 md:grid-cols-3">
             <label htmlFor="policy-number" className="space-y-1 text-xs font-semibold text-neutral-700">
-              Policy number
+              {t("assets.insurance.policyNumber")}
               <input id="policy-number" className="form-input" value={policyForm.policy_number} onChange={(e) => setPolicyForm((f) => ({ ...f, policy_number: e.target.value }))} />
             </label>
             <label htmlFor="policy-insurer" className="space-y-1 text-xs font-semibold text-neutral-700">
-              Insurer
+              {t("assets.insurance.insurer")}
               <input id="policy-insurer" className="form-input" value={policyForm.insurer_name} onChange={(e) => setPolicyForm((f) => ({ ...f, insurer_name: e.target.value }))} />
             </label>
             <label htmlFor="policy-coverage-type" className="space-y-1 text-xs font-semibold text-neutral-700">
-              Coverage type
+              {t("assets.insurance.coverageType")}
               <input id="policy-coverage-type" className="form-input" value={policyForm.coverage_type} onChange={(e) => setPolicyForm((f) => ({ ...f, coverage_type: e.target.value }))} />
             </label>
             <label htmlFor="policy-effective-from" className="space-y-1 text-xs font-semibold text-neutral-700">
-              Effective from
+              {t("assets.insurance.effectiveFrom")}
               <input id="policy-effective-from" className="form-input" type="date" value={policyForm.effective_from} onChange={(e) => setPolicyForm((f) => ({ ...f, effective_from: e.target.value }))} />
             </label>
             <label htmlFor="policy-effective-to" className="space-y-1 text-xs font-semibold text-neutral-700">
-              Effective to
+              {t("assets.insurance.effectiveTo")}
               <input id="policy-effective-to" className="form-input" type="date" value={policyForm.effective_to} onChange={(e) => setPolicyForm((f) => ({ ...f, effective_to: e.target.value }))} />
             </label>
             <label htmlFor="policy-sum-insured" className="space-y-1 text-xs font-semibold text-neutral-700">
-              Sum insured
+              {t("assets.insurance.sumInsured")}
               <input id="policy-sum-insured" className="form-input" type="number" min={0} value={policyForm.sum_insured} onChange={(e) => setPolicyForm((f) => ({ ...f, sum_insured: e.target.value }))} />
             </label>
             <button
@@ -154,18 +156,18 @@ export default function AssetInsurancePage() {
               disabled={!policyForm.policy_number || !policyForm.insurer_name || !policyForm.effective_from || !policyForm.effective_to || createPolicy.isPending}
               onClick={() => createPolicy.mutate()}
             >
-              {createPolicy.isPending ? "Saving…" : "Add policy"}
+              {createPolicy.isPending ? t("assets.insurance.saving") : t("assets.insurance.addPolicy")}
             </button>
           </div>
           <div className="card overflow-x-auto p-4">
             <table className="min-w-full text-sm">
               <thead className="text-left text-neutral-500">
                 <tr>
-                  <th className="py-2">Policy</th>
-                  <th className="py-2">Insurer</th>
-                  <th className="py-2">Period</th>
-                  <th className="py-2">Sum insured</th>
-                  <th className="py-2">Status</th>
+                  <th className="py-2">{t("assets.insurance.policy")}</th>
+                  <th className="py-2">{t("assets.insurance.insurer")}</th>
+                  <th className="py-2">{t("assets.insurance.period")}</th>
+                  <th className="py-2">{t("assets.insurance.sumInsured")}</th>
+                  <th className="py-2">{t("assets.insurance.status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,7 +181,7 @@ export default function AssetInsurancePage() {
                   </tr>
                 ))}
                 {policies.length === 0 && (
-                  <TableEmpty colSpan={5} title="No policies yet." />
+                  <TableEmpty colSpan={5} title={t("assets.insurance.noPolicies")} />
                 )}
               </tbody>
             </table>
@@ -191,28 +193,28 @@ export default function AssetInsurancePage() {
         <>
           <div className="card grid gap-3 p-4 md:grid-cols-3">
             <label htmlFor="claim-policy" className="space-y-1 text-xs font-semibold text-neutral-700">
-              Policy
+              {t("assets.insurance.policy")}
             <select id="claim-policy" className="form-input" value={claimForm.policy_id} onChange={(e) => setClaimForm((f) => ({ ...f, policy_id: e.target.value }))}>
-              <option value="">Select policy</option>
+              <option value="">{t("assets.insurance.selectPolicy")}</option>
               {policies.map((p) => (
                 <option key={p.id} value={p.id}>{p.policy_number} — {p.insurer_name}</option>
               ))}
             </select>
             </label>
             <label htmlFor="claim-number" className="space-y-1 text-xs font-semibold text-neutral-700">
-              Claim number
+              {t("assets.insurance.claimNumber")}
               <input id="claim-number" className="form-input" value={claimForm.claim_number} onChange={(e) => setClaimForm((f) => ({ ...f, claim_number: e.target.value }))} />
             </label>
             <label htmlFor="claim-incident-date" className="space-y-1 text-xs font-semibold text-neutral-700">
-              Incident date
+              {t("assets.insurance.incidentDate")}
               <input id="claim-incident-date" className="form-input" type="date" value={claimForm.incident_date} onChange={(e) => setClaimForm((f) => ({ ...f, incident_date: e.target.value }))} />
             </label>
             <label htmlFor="claim-amount" className="space-y-1 text-xs font-semibold text-neutral-700">
-              Claim amount
+              {t("assets.insurance.claimAmount")}
               <input id="claim-amount" className="form-input" type="number" min={0} value={claimForm.claim_amount} onChange={(e) => setClaimForm((f) => ({ ...f, claim_amount: e.target.value }))} />
             </label>
             <label htmlFor="claim-description" className="space-y-1 text-xs font-semibold text-neutral-700 md:col-span-2">
-              Description
+              {t("assets.insurance.description")}
               <input id="claim-description" className="form-input" value={claimForm.description} onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))} />
             </label>
             <button
@@ -221,18 +223,18 @@ export default function AssetInsurancePage() {
               disabled={!claimForm.policy_id || !claimForm.claim_number || !claimForm.incident_date || createClaim.isPending}
               onClick={() => createClaim.mutate()}
             >
-              {createClaim.isPending ? "Saving…" : "Add claim"}
+              {createClaim.isPending ? t("assets.insurance.saving") : t("assets.insurance.addClaim")}
             </button>
           </div>
           <div className="card overflow-x-auto p-4">
             <table className="min-w-full text-sm">
               <thead className="text-left text-neutral-500">
                 <tr>
-                  <th className="py-2">Claim</th>
-                  <th className="py-2">Policy</th>
-                  <th className="py-2">Incident</th>
-                  <th className="py-2">Amount</th>
-                  <th className="py-2">Status</th>
+                  <th className="py-2">{t("assets.insurance.claim")}</th>
+                  <th className="py-2">{t("assets.insurance.policy")}</th>
+                  <th className="py-2">{t("assets.insurance.incident")}</th>
+                  <th className="py-2">{t("assets.insurance.amount")}</th>
+                  <th className="py-2">{t("assets.insurance.status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -246,7 +248,7 @@ export default function AssetInsurancePage() {
                   </tr>
                 ))}
                 {claims.length === 0 && (
-                  <TableEmpty colSpan={5} title="No claims yet." />
+                  <TableEmpty colSpan={5} title={t("assets.insurance.noClaims")} />
                 )}
               </tbody>
             </table>

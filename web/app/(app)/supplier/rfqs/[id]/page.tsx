@@ -8,6 +8,7 @@ import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -16,6 +17,7 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
   const requestId = Number(id);
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [quotedAmount, setQuotedAmount] = useState("");
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [quoteDate, setQuoteDate] = useState("");
@@ -50,17 +52,17 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
       queryClient.invalidateQueries({ queryKey: ["supplier-rfq", requestId] });
       queryClient.invalidateQueries({ queryKey: ["supplier-rfqs"] });
       setError(null);
-      toast.success("Quote submitted");
+      toast.success(t("supplier.rfq.toast.submitted"));
     },
     onError: (err: unknown) => {
-      const message = apiErrorMessage(err, "Failed to submit quote.");
+      const message = apiErrorMessage(err, t("supplier.rfq.submitFailed"));
       setError(message);
-      toast.error("Quote not submitted", message);
+      toast.error(t("supplier.rfq.toast.notSubmitted"), message);
     },
   });
 
-  if (isLoading) return <div className="card p-6">Loading RFQ...</div>;
-  if (isError || !data) return <div className="card p-6">RFQ not found.</div>;
+  if (isLoading) return <div className="card p-6">{t("supplier.rfq.loading")}</div>;
+  if (isError || !data) return <div className="card p-6">{t("supplier.rfq.notFound")}</div>;
 
   const request = data.request;
   const invitation = data.invitation;
@@ -75,8 +77,8 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Supplier Portal", href: "/supplier" },
-              { label: "RFQs", href: "/supplier/rfqs" },
+              { label: t("nav.supplier"), href: "/supplier" },
+              { label: t("supplier.dashboard.rfqs"), href: "/supplier/rfqs" },
               { label: request.reference_number },
             ]}
           />
@@ -86,9 +88,9 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
 
       <div className="card p-5 space-y-4">
         <div className="grid gap-4 md:grid-cols-3 text-sm">
-          <div><p className="text-xs text-neutral-400">Deadline</p><p>{request.rfq_deadline ? formatDateShort(request.rfq_deadline) : "Open"}</p></div>
-          <div><p className="text-xs text-neutral-400">Currency</p><p>{request.currency ?? DEFAULT_CURRENCY}</p></div>
-          <div><p className="text-xs text-neutral-400">Status</p><p>{request.status}</p></div>
+          <div><p className="text-xs text-neutral-400">{t("supplier.rfqs.col.deadline")}</p><p>{request.rfq_deadline ? formatDateShort(request.rfq_deadline) : t("supplier.rfqs.open")}</p></div>
+          <div><p className="text-xs text-neutral-400">{t("settings.hr.allowance.currency")}</p><p>{request.currency ?? DEFAULT_CURRENCY}</p></div>
+          <div><p className="text-xs text-neutral-400">{t("assignments.handover.colStatus")}</p><p>{request.status}</p></div>
         </div>
         {request.description && <p className="text-sm text-neutral-600">{request.description}</p>}
         {(request.supplierCategories ?? []).length > 0 && (
@@ -110,10 +112,10 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th>Description</th>
-                <th>Qty</th>
-                <th>Unit</th>
-                <th className="text-right">Estimated Unit Price</th>
+                <th>{t("assignments.create.description")}</th>
+                <th>{t("supplier.rfq.col.qty")}</th>
+                <th>{t("supplier.rfq.col.unit")}</th>
+                <th className="text-right">{t("supplier.rfq.col.unitPrice")}</th>
               </tr>
             </thead>
             <tbody>
@@ -132,22 +134,22 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
 
       <div className="card p-5 space-y-4">
         <div>
-          <h2 className="text-sm font-bold text-neutral-800">{alreadySubmitted ? "Submitted Quote" : "Submit Quote"}</h2>
+          <h2 className="text-sm font-bold text-neutral-800">{alreadySubmitted ? t("supplier.rfq.submittedQuote") : t("supplier.rfq.submitQuote")}</h2>
           <p className="text-xs text-neutral-400">
-            {isAwarded ? "This RFQ has already been awarded." : "Your quote will be visible to procurement after submission."}
+            {isAwarded ? t("supplier.rfq.awarded") : t("supplier.rfq.visibleHint")}
           </p>
         </div>
         {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         <div className="grid gap-4 md:grid-cols-3">
-          <input type="number" min="0" className="form-input" placeholder="Quoted amount" value={quotedAmount} onChange={(e) => setQuotedAmount(e.target.value)} disabled={isAwarded} />
-          <input className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} disabled={isAwarded} />
-          <input type="date" className="form-input" value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} disabled={isAwarded} />
+          <input type="number" min="0" className="form-input" placeholder={t("supplier.rfq.amountPlaceholder")} aria-label={t("supplier.rfq.amountPlaceholder")} value={quotedAmount} onChange={(e) => setQuotedAmount(e.target.value)} disabled={isAwarded} />
+          <input className="form-input" aria-label={t("settings.hr.allowance.currency")} value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} disabled={isAwarded} />
+          <input type="date" className="form-input" aria-label={t("supplier.rfq.quoteDate")} value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} disabled={isAwarded} />
         </div>
-        <textarea className="form-input h-24 resize-none" placeholder="Lead time, conditions, notes" value={notes} onChange={(e) => setNotes(e.target.value)} disabled={isAwarded} />
+        <textarea className="form-input h-24 resize-none" placeholder={t("supplier.rfq.notesPlaceholder")} aria-label={t("supplier.rfq.notesPlaceholder")} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={isAwarded} />
         <div className="flex gap-2">
-          <Link href="/supplier/rfqs" className="btn-secondary">Back</Link>
+          <Link href="/supplier/rfqs" className="btn-secondary">{t("common.back")}</Link>
           <button className="btn-primary disabled:opacity-60" disabled={submitMutation.isPending || isAwarded || !quotedAmount} onClick={() => submitMutation.mutate()}>
-            {submitMutation.isPending ? "Submitting..." : alreadySubmitted ? "Update Quote" : "Submit Quote"}
+            {submitMutation.isPending ? t("supplier.submitting") : alreadySubmitted ? t("supplier.rfq.updateQuote") : t("supplier.rfq.submitQuote")}
           </button>
         </div>
       </div>

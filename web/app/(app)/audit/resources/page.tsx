@@ -26,10 +26,10 @@ export default function AuditResourcePage() {
   const createBudget = useMutation({
     mutationFn: () => auditApi.createEffortBudget({ budget_hours: Number(hours), label }),
     onSuccess: () => {
-      toast.success("Effort budget saved");
+      toast.success(t("audit.toast.budgetSaved"));
       refetch();
     },
-    onError: (err) => toast.error("Effort budget not saved", apiErrorMessage(err, "Failed to save the effort budget.")),
+    onError: (err) => toast.error(t("audit.toast.budgetNotSaved"), apiErrorMessage(err, t("audit.toast.budgetFailed"))),
   });
 
   const auditors = ((data as { auditors?: Array<Record<string, unknown>> })?.auditors) ?? [];

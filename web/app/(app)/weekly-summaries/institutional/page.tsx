@@ -10,6 +10,10 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
 import { LabelledRecord, labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { TranslateVars } from "@/lib/i18n/messages";
+
+type Translate = (key: string, vars?: TranslateVars) => string;
 
 type PeriodRow = {
   id?: number;
@@ -37,14 +41,14 @@ function dateLabel(value: unknown): string {
   return formatted === "—" ? "" : formatted;
 }
 
-function periodLabel(value: unknown): string {
+function periodLabel(value: unknown, t: Translate): string {
   const rec = asRecord(value);
   if (!rec) return "—";
   const ref = rec.reference != null && rec.reference !== "" ? String(rec.reference) : "";
   const start = dateLabel(rec.start_date);
   const end = dateLabel(rec.end_date);
   const range = start && end ? `${start} → ${end}` : start || end;
-  return [ref, range].filter(Boolean).join(" · ") || "Current period";
+  return [ref, range].filter(Boolean).join(" · ") || t("weeklySummaries.currentPeriod");
 }
 
 function numericId(value: unknown): number | null {
@@ -55,6 +59,7 @@ function numericId(value: unknown): number | null {
 function departmentName(
   row: Record<string, unknown>,
   departments: Array<{ id: number; name: string }>,
+  t: Translate,
 ): string {
   if (typeof row.department === "string" && row.department.trim()) return row.department;
   const nested = asRecord(row.department);
@@ -65,12 +70,12 @@ function departmentName(
   const deptId = numericId(row.department_id);
   const match = deptId ? departments.find((d) => d.id === deptId) : undefined;
   if (match?.name) return match.name;
-  return "Unassigned";
+  return t("weeklySummaries.unassigned");
 }
 
-function itemTitle(row: Record<string, unknown>): string {
+function itemTitle(row: Record<string, unknown>, t: Translate): string {
   const title = row.title ?? row.narrative ?? row.reference;
-  return title != null && title !== "" ? String(title) : "Consolidated item";
+  return title != null && title !== "" ? String(title) : t("weeklySummaries.institutional.consolidatedItem");
 }
 
 function sourceReportId(row: Record<string, unknown>): number | null {
@@ -80,6 +85,7 @@ function sourceReportId(row: Record<string, unknown>): number | null {
 
 export default function WeeklyInstitutionalPage() {
   const toast = useToast();
+  const { t } = useI18n();
   const [periods, setPeriods] = useState<PeriodRow[]>([]);
   const [periodId, setPeriodId] = useState("");
   const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([]);
@@ -119,7 +125,7 @@ export default function WeeklyInstitutionalPage() {
           setDepartments(
             asRows(deptResult.data.data).map((row) => ({
               id: numericId(row.id) ?? 0,
-              name: String(row.name ?? row.code ?? "Department"),
+              name: String(row.name ?? row.code ?? t("weeklySummaries.col.department")),
             })).filter((row) => row.id > 0),
           );
         }
@@ -128,7 +134,7 @@ export default function WeeklyInstitutionalPage() {
         setPeriodId(selected ? String(selected) : "");
       } catch (e: unknown) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Failed to load institutional summary");
+          setError(e instanceof Error ? e.message : t("weeklySummaries.institutional.loadFailed"));
         }
       } finally {
         if (!cancelled) setBusy(false);
@@ -155,7 +161,7 @@ export default function WeeklyInstitutionalPage() {
       } catch (e: unknown) {
         if (!cancelled) {
           setReport(null);
-          setError(e instanceof Error ? e.message : "Failed to load institutional summary");
+          setError(e instanceof Error ? e.message : t("weeklySummaries.institutional.loadFailed"));
         }
       } finally {
         if (!cancelled) setLoadingReport(false);
@@ -183,13 +189,13 @@ export default function WeeklyInstitutionalPage() {
       current[field] += 1;
       counts.set(label, current);
     };
-    for (const row of missing) bump(departmentName(row, departments), "missing");
+    for (const row of missing) bump(departmentName(row, departments, t), "missing");
     for (const row of items) {
       const structured = asRecord(row.structured) ?? {};
-      bump(departmentName({ ...structured, ...row }, departments), "items");
+      bump(departmentName({ ...structured, ...row }, departments, t), "items");
     }
     return Array.from(counts.values());
-  }, [missing, items, departments]);
+  }, [missing, items, departments, t]);
 
   const publish = async () => {
     if (!report || publishing) return;
@@ -198,31 +204,31 @@ export default function WeeklyInstitutionalPage() {
     try {
       const { data } = await weeklyReportsApi.publish(report.id);
       setReport(data.data);
-      toast.success("Institutional summary published");
+      toast.success(t("weeklySummaries.institutional.published"));
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to publish institutional summary");
-      toast.error("Institutional summary not published", apiErrorMessage(e, "Failed to publish institutional summary"));
+      setError(e instanceof Error ? e.message : t("weeklySummaries.institutional.publishFailed"));
+      toast.error(t("weeklySummaries.institutional.notPublished"), apiErrorMessage(e, t("weeklySummaries.institutional.publishFailed")));
     } finally {
       setPublishing(false);
     }
   };
 
   const errorCopy = error
-    ? error.startsWith("Failed to load") || error.startsWith("Failed to publish")
+    ? error === t("weeklySummaries.institutional.loadFailed") || error === t("weeklySummaries.institutional.publishFailed")
       ? error
-      : `Failed to load institutional summary: ${error}`
+      : t("weeklySummaries.institutional.loadFailedWith", { error })
     : null;
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Institutional summary"
-        subtitle="Tenant rollup for the selected reporting week. Periods are chosen by name and dates — this page never auto-submits or auto-publishes."
+        title="weeklySummaries.institutional.title"
+        subtitle="weeklySummaries.institutional.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Weekly Summaries", href: "/weekly-summaries" },
-              { label: "Institutional" },
+              { label: "weeklySummaries.crumb", href: "/weekly-summaries" },
+              { label: "weeklySummaries.institutional.crumb" },
             ]}
           />
         }
@@ -230,11 +236,11 @@ export default function WeeklyInstitutionalPage() {
           <div className="flex flex-wrap gap-2">
             {report ? (
               <Link href={`/weekly-summaries/${report.id}`} className="btn-secondary text-sm">
-                Open detail
+                {t("weeklySummaries.institutional.openDetail")}
               </Link>
             ) : null}
             <Link href="/weekly-summaries/department" className="btn-secondary text-sm">
-              Department view
+              {t("weeklySummaries.departmentView")}
             </Link>
           </div>
         }
@@ -248,7 +254,7 @@ export default function WeeklyInstitutionalPage() {
 
       {busy ? (
         <div className="card space-y-3 p-6" aria-busy="true">
-          <p className="text-sm text-neutral-500">Loading…</p>
+          <p className="text-sm text-neutral-500">{t("common.loading")}</p>
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-10 animate-pulse rounded bg-neutral-100" />
           ))}
@@ -257,29 +263,29 @@ export default function WeeklyInstitutionalPage() {
 
       {!busy ? (
         <FormSection
-          title="Reporting period"
-          description="The current tenant week loads automatically. Switch periods by label if you need an earlier week."
+          title="weeklySummaries.reportingPeriod"
+          description="weeklySummaries.institutional.periodHint"
           icon="edit_calendar"
         >
           {periods.length === 0 ? (
             <EmptyState
               icon="event_busy"
-              title="No reporting periods"
-              description="Weekly reporting periods for this institution will appear here when they are opened."
+              title="weeklySummaries.noPeriods"
+              description="weeklySummaries.institutional.noPeriodsHint"
             />
           ) : (
-            <FormField label="Period" htmlFor="institutional-period" hint="Shown as reference and date range, not a numeric identifier.">
+            <FormField label="weeklySummaries.col.period" htmlFor="institutional-period" hint="weeklySummaries.periodFieldHint">
               <select
                 id="institutional-period"
                 className="form-input max-w-xl"
                 value={periodId}
                 onChange={(e) => setPeriodId(e.target.value)}
               >
-                <option value="">Select period</option>
+                <option value="">{t("weeklySummaries.selectPeriod")}</option>
                 {periods.map((row) => (
                   <option key={String(row.id)} value={String(row.id)}>
-                    {periodLabel(row)}
-                    {numericId(row.id) === currentPeriodId ? " · current" : ""}
+                    {periodLabel(row, t)}
+                    {numericId(row.id) === currentPeriodId ? ` · ${t("weeklySummaries.current")}` : ""}
                   </option>
                 ))}
               </select>
@@ -290,7 +296,7 @@ export default function WeeklyInstitutionalPage() {
 
       {!busy && periodId && loadingReport ? (
         <div className="card space-y-3 p-6" aria-busy="true">
-          <p className="text-sm text-neutral-500">Loading…</p>
+          <p className="text-sm text-neutral-500">{t("common.loading")}</p>
           <div className="h-10 animate-pulse rounded bg-neutral-100" />
         </div>
       ) : null}
@@ -299,8 +305,8 @@ export default function WeeklyInstitutionalPage() {
         <div className="card">
           <EmptyState
             icon="account_balance"
-            title="No institutional summary"
-            description="The current institution rollup will appear here when you are authorised to open it."
+            title="weeklySummaries.institutional.empty"
+            description="weeklySummaries.institutional.emptyHint"
           />
         </div>
       ) : null}
@@ -308,8 +314,8 @@ export default function WeeklyInstitutionalPage() {
       {!busy && !loadingReport && report ? (
         <>
           <FormSection
-            title="Institutional rollup"
-            description={`${report.reference} · ${report.status}${selectedPeriod ? ` · ${periodLabel(selectedPeriod)}` : ""}`}
+            title="weeklySummaries.institutional.rollup"
+            description={`${report.reference} · ${report.status}${selectedPeriod ? ` · ${periodLabel(selectedPeriod, t)}` : ""}`}
             icon="account_balance"
             actions={
               <button
@@ -318,42 +324,42 @@ export default function WeeklyInstitutionalPage() {
                 disabled={publishing || report.status === "published" || report.status === "closed"}
                 onClick={() => void publish()}
               >
-                {publishing ? "Publishing…" : report.status === "published" ? "Published" : "Publish"}
+                {publishing ? t("weeklySummaries.institutional.publishing") : report.status === "published" ? t("weeklySummaries.institutional.publishedLabel") : t("weeklySummaries.institutional.publish")}
               </button>
             }
           >
             <LabelledRecord
               value={{
-                period: periodLabel(report.period ?? selectedPeriod),
-                status: report.status,
-                reference: report.reference,
-                version: `v${report.version}`,
-                published_at: report.published_at ?? "Not published",
+                [t("weeklySummaries.detail.field.period")]: periodLabel(report.period ?? selectedPeriod, t),
+                [t("weeklySummaries.detail.field.status")]: report.status,
+                [t("weeklySummaries.detail.field.reference")]: report.reference,
+                [t("weeklySummaries.detail.field.version")]: `v${report.version}`,
+                [t("weeklySummaries.institutional.field.publishedAt")]: report.published_at ?? t("weeklySummaries.institutional.notPublishedValue"),
               }}
             />
           </FormSection>
 
           <FormSection
-            title="Department / unit breakdown"
-            description="Consolidated items and missing submissions grouped by department name."
+            title="weeklySummaries.institutional.breakdown"
+            description="weeklySummaries.institutional.breakdownHint"
             icon="account_tree"
           >
             {unitBreakdown.length === 0 ? (
               <EmptyState
                 icon="group"
-                title="No department breakdown yet"
-                description="Items and missing reports for this period will group here by unit name."
+                title="weeklySummaries.institutional.noBreakdown"
+                description="weeklySummaries.institutional.noBreakdownHint"
               />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <caption className="sr-only">Department breakdown for the institutional summary</caption>
+                  <caption className="sr-only">{t("weeklySummaries.institutional.breakdownCaption")}</caption>
                   <thead>
                     <tr className="border-b border-neutral-100 text-neutral-500">
-                      <th className="py-2 pr-3 font-medium">Department</th>
-                      <th className="py-2 pr-3 font-medium">Consolidated items</th>
-                      <th className="py-2 pr-3 font-medium">Missing reports</th>
-                      <th className="py-2 font-medium">View</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.department")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.consolidatedItems")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.review.missing")}</th>
+                      <th className="py-2 font-medium">{t("finance.hub.view")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -364,7 +370,7 @@ export default function WeeklyInstitutionalPage() {
                         <td className="py-2 pr-3">{row.missing}</td>
                         <td className="py-2">
                           <Link href="/weekly-summaries/department" className="font-medium text-primary">
-                            Department view
+                            {t("weeklySummaries.departmentView")}
                           </Link>
                         </td>
                       </tr>
@@ -376,26 +382,26 @@ export default function WeeklyInstitutionalPage() {
           </FormSection>
 
           <FormSection
-            title="Consolidated items"
-            description="Snapshots copied into the institutional rollup. Source reports stay unchanged."
+            title="weeklySummaries.consolidatedItems"
+            description="weeklySummaries.institutional.itemsHint"
             icon="layers"
           >
             {items.length === 0 && links.length === 0 ? (
               <EmptyState
                 icon="inbox"
-                title="No consolidated items"
-                description="Selected department and employee items will appear here after they are included."
+                title="weeklySummaries.institutional.noItems"
+                description="weeklySummaries.institutional.noItemsHint"
               />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <caption className="sr-only">Items in the institutional weekly summary</caption>
+                  <caption className="sr-only">{t("weeklySummaries.institutional.itemsCaption")}</caption>
                   <thead>
                     <tr className="border-b border-neutral-100 text-neutral-500">
-                      <th className="py-2 pr-3 font-medium">Title</th>
-                      <th className="py-2 pr-3 font-medium">Section</th>
-                      <th className="py-2 pr-3 font-medium">Source</th>
-                      <th className="py-2 font-medium">Report</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.detail.field.title")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.detail.col.section")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.source")}</th>
+                      <th className="py-2 font-medium">{t("weeklySummaries.detail.report")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -403,7 +409,7 @@ export default function WeeklyInstitutionalPage() {
                       const sourceId = sourceReportId(row) ?? numericId(row.source_report_id);
                       return (
                         <tr key={numericId(row.id) ?? `item-${idx}`} className="border-b border-neutral-50">
-                          <td className="py-2 pr-3">{labelledObjectCell(itemTitle(row))}</td>
+                          <td className="py-2 pr-3">{labelledObjectCell(itemTitle(row, t))}</td>
                           <td className="py-2 pr-3 capitalize">{labelledObjectCell(row.section_type ?? "consolidated")}</td>
                           <td className="py-2 pr-3">
                             {labelledObjectCell(row.source_reference_snapshot ?? row.source_entity_type ?? "—")}
@@ -411,11 +417,11 @@ export default function WeeklyInstitutionalPage() {
                           <td className="py-2">
                             {sourceId ? (
                               <Link href={`/weekly-summaries/${sourceId}`} className="font-medium text-primary">
-                                Open source
+                                {t("weeklySummaries.openSource")}
                               </Link>
                             ) : report ? (
                               <Link href={`/weekly-summaries/${report.id}`} className="font-medium text-primary">
-                                Open rollup
+                                {t("weeklySummaries.institutional.openRollup")}
                               </Link>
                             ) : (
                               "—"
@@ -431,34 +437,34 @@ export default function WeeklyInstitutionalPage() {
           </FormSection>
 
           <FormSection
-            title="Missing reports"
+            title="weeklySummaries.review.missing"
             description={
               viewingCurrentPeriod
-                ? "People in the current tenant week who have not submitted."
-                : "Missing-report names are listed for the current tenant week. Switch back to the current period for this list."
+                ? "weeklySummaries.institutional.missingHint"
+                : "weeklySummaries.institutional.missingOtherHint"
             }
             icon="person_off"
           >
             {!viewingCurrentPeriod ? (
               <p className="mb-4 text-sm text-neutral-500">
-                Showing current-week missing reports because the dashboard is scoped to the open period.
+                {t("weeklySummaries.institutional.missingScope")}
               </p>
             ) : null}
             {missing.length === 0 ? (
               <EmptyState
                 icon="check_circle"
-                title="No missing reports"
-                description="None listed for the current institution week."
+                title="weeklySummaries.review.noMissing"
+                description="weeklySummaries.institutional.noMissingHint"
               />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <caption className="sr-only">People missing weekly summaries</caption>
+                  <caption className="sr-only">{t("weeklySummaries.review.missingCaption")}</caption>
                   <thead>
                     <tr className="border-b border-neutral-100 text-neutral-500">
-                      <th className="py-2 pr-3 font-medium">Person</th>
-                      <th className="py-2 pr-3 font-medium">Department</th>
-                      <th className="py-2 font-medium">Period</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.person")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.department")}</th>
+                      <th className="py-2 font-medium">{t("weeklySummaries.col.period")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -469,11 +475,11 @@ export default function WeeklyInstitutionalPage() {
                       >
                         <td className="py-2 pr-3">
                           {labelledObjectCell(
-                            typeof row.name === "string" && row.name.trim() ? row.name : "Unknown person",
+                            typeof row.name === "string" && row.name.trim() ? row.name : t("weeklySummaries.unknownPerson"),
                           )}
                         </td>
-                        <td className="py-2 pr-3">{labelledObjectCell(departmentName(row, departments))}</td>
-                        <td className="py-2">{labelledObjectCell(periodLabel(row.period ?? selectedPeriod))}</td>
+                        <td className="py-2 pr-3">{labelledObjectCell(departmentName(row, departments, t))}</td>
+                        <td className="py-2">{labelledObjectCell(periodLabel(row.period ?? selectedPeriod, t))}</td>
                       </tr>
                     ))}
                   </tbody>

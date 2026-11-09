@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { financeApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type ParsedBudgetLine = {
     category: string;
@@ -16,6 +17,7 @@ type ParsedBudgetLine = {
 
 export default function BudgetUploadPage() {
   const { success, error: showErrorToast, info } = useToast();
+    const { t } = useI18n();
     const router = useRouter();
 
     const [saving, setSaving] = useState(false);
@@ -60,7 +62,7 @@ export default function BudgetUploadPage() {
                 setParsedLines(lines);
                 setError("");
             } catch (err) {
-                setError("Failed to parse CSV file. Ensure standard formatting.");
+                setError(t("finance.budget.upload.parseFailed"));
             }
         };
         reader.readAsText(file);
@@ -68,11 +70,11 @@ export default function BudgetUploadPage() {
 
     const handleSave = async () => {
         if (!name.trim()) {
-            setError("Budget name is required.");
+            setError(t("finance.budget.upload.nameRequired"));
             return;
         }
         if (parsedLines.length === 0) {
-            setError("No budget lines found. Please upload a valid CSV.");
+            setError(t("finance.budget.upload.noLines"));
             return;
         }
 
@@ -89,10 +91,10 @@ export default function BudgetUploadPage() {
                 lines: parsedLines as any,
             });
 
-            success("Budget successfully uploaded.");
+            success(t("finance.budget.upload.success"));
             setTimeout(() => router.push("/finance/budget"), 1500);
         } catch {
-            setError("Failed to upload budget. Please check the network payload.");
+            setError(t("finance.budget.upload.failed"));
             setSaving(false);
         }
     };
@@ -103,16 +105,16 @@ export default function BudgetUploadPage() {
 
             {/* Page header */}
             <div className="flex items-center gap-2 text-sm text-neutral-500">
-                <Link href="/finance/budget" className="hover:text-primary">Budgets</Link>
+                <Link href="/finance/budget" className="hover:text-primary">{t("finance.budget.budgets")}</Link>
                 <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                <span className="text-neutral-900 font-medium">Upload</span>
+                <span className="text-neutral-900 font-medium">{t("common.upload")}</span>
             </div>
 
             <div className="flex items-start justify-between">
                 <ModulePageHeader
-        title="Upload New Budget"
-        subtitle="Import budget lines via CSV for a core or project portfolio."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Upload New Budget" }]} />}
+        title="finance.budget.upload.title"
+        subtitle="finance.budget.upload.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "finance.budget.upload.title" }]} />}
       />
             </div>
 
@@ -126,51 +128,51 @@ export default function BudgetUploadPage() {
             {/* Basic Setup */}
             <div className="card p-5 space-y-4">
                 <div>
-                    <label htmlFor="finance-budget-upload-budget-name" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Budget Name *</label>
+                    <label htmlFor="finance-budget-upload-budget-name" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">{t("finance.budget.upload.name")}</label>
                     <input id="finance-budget-upload-budget-name"
                         className="form-input"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. SADC PF Core Budget 2026"
+                        placeholder={t("finance.budget.upload.namePlaceholder")}
                     />
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
                     <div>
-                        <label htmlFor="finance-budget-upload-year" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Year *</label>
+                        <label htmlFor="finance-budget-upload-year" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">{t("finance.budget.upload.year")}</label>
                         <input id="finance-budget-upload-year"
                             type="number"
                             className="form-input"
                             value={year}
                             onChange={(e) => setYear(e.target.value)}
-                            placeholder="YYYY"
+                            placeholder={t("finance.budget.upload.yearPlaceholder")}
                         />
                     </div>
                     <div>
-                        <label htmlFor="finance-budget-upload-type" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Type *</label>
+                        <label htmlFor="finance-budget-upload-type" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">{t("finance.budget.upload.type")}</label>
                         <select id="finance-budget-upload-type" className="form-input" value={type} onChange={(e) => setType(e.target.value as any)}>
-                            <option value="core">Core Budget</option>
-                            <option value="project">Project / Extra-Budgetary</option>
+                            <option value="core">{t("finance.budget.upload.typeCore")}</option>
+                            <option value="project">{t("finance.budget.upload.typeProject")}</option>
                         </select>
                     </div>
                     <div>
-                        <label htmlFor="finance-budget-upload-currency" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Currency *</label>
+                        <label htmlFor="finance-budget-upload-currency" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">{t("finance.budget.upload.currency")}</label>
                         <select id="finance-budget-upload-currency" className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                            <option value="USD">USD</option>
-                            <option value="NAD">NAD</option>
-                            <option value="ZAR">ZAR</option>
-                            <option value="EUR">EUR</option>
+                            <option value="USD">USD</option> {/* i18n-ignore */}
+                            <option value="NAD">NAD</option> {/* i18n-ignore */}
+                            <option value="ZAR">ZAR</option> {/* i18n-ignore */}
+                            <option value="EUR">EUR</option> {/* i18n-ignore */}
                         </select>
                     </div>
                 </div>
 
                 <div>
-                    <label htmlFor="finance-budget-upload-description" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Description</label>
+                    <label htmlFor="finance-budget-upload-description" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">{t("finance.budget.upload.description")}</label>
                     <textarea id="finance-budget-upload-description"
                         className="form-input min-h-[60px]"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Optional context about this budget portfolio."
+                        placeholder={t("finance.budget.upload.descriptionPlaceholder")}
                     />
                 </div>
             </div>
@@ -178,16 +180,16 @@ export default function BudgetUploadPage() {
             {/* CSV Uploader */}
             <div className="card">
                 <div className="card-header border-b border-neutral-100 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-neutral-800">Import CSV Lines</h2>
-                    <a href="#" className="btn-secondary text-sm py-1 px-2">Download Template</a>
+                    <h2 className="text-lg font-semibold text-neutral-800">{t("finance.budget.upload.importLines")}</h2>
+                    <a href="#" className="btn-secondary text-sm py-1 px-2">{t("finance.budget.upload.downloadTemplate")}</a>
                 </div>
                 <div className="p-5">
                     <div className="flex items-center justify-center w-full">
                         <label htmlFor="finance-budget-upload-cloud-upload-click-to-upload-a-csv-file-format-c" className="flex flex-col items-center justify-center w-full h-32 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-neutral-50 hover:bg-neutral-100 transition-colors">
                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                 <span className="material-symbols-outlined text-3xl text-neutral-400 mb-2">cloud_upload</span>
-                                <p className="mb-1 text-sm text-neutral-500 font-medium">Click to upload a CSV file</p>
-                                <p className="text-xs text-neutral-400">Format: Category, Account Code, Description, Amount</p>
+                                <p className="mb-1 text-sm text-neutral-500 font-medium">{t("finance.budget.upload.clickToUpload")}</p>
+                                <p className="text-xs text-neutral-400">{t("finance.budget.upload.format")}</p>
                             </div>
                             <input id="finance-budget-upload-cloud-upload-click-to-upload-a-csv-file-format-c" type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
                         </label>
@@ -196,15 +198,15 @@ export default function BudgetUploadPage() {
                     {parsedLines.length > 0 && (
                         <div className="mt-6 border border-neutral-200 rounded-lg overflow-hidden">
                             <div className="bg-neutral-50 px-4 py-2 text-xs font-semibold text-neutral-500 uppercase flex justify-between">
-                                <span>Preview extracted data</span>
-                                <span>{parsedLines.length} lines detected</span>
+                                <span>{t("finance.budget.upload.preview")}</span>
+                                <span>{t("finance.budget.upload.detected", { count: parsedLines.length })}</span>
                             </div>
                             <div className="max-h-60 overflow-y-auto">
                                 <table className="w-full text-sm text-left">
                                     <thead className="bg-white sticky top-0 border-b border-neutral-200 shadow-sm">
                                         <tr>
-                                            <th className="px-4 py-2 font-medium text-neutral-900">Category</th>
-                                            <th className="px-4 py-2 font-medium text-neutral-900 text-right">Amount</th>
+                                            <th className="px-4 py-2 font-medium text-neutral-900">{t("finance.budget.detail.col.category")}</th>
+                                            <th className="px-4 py-2 font-medium text-neutral-900 text-right">{t("finance.budget.upload.amount")}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-neutral-100 bg-white">
@@ -219,7 +221,7 @@ export default function BudgetUploadPage() {
                                         {parsedLines.length > 10 && (
                                             <tr>
                                                 <td colSpan={2} className="px-4 py-3 text-center text-xs text-neutral-500 italic bg-neutral-50">
-                                                    ...and {parsedLines.length - 10} more lines.
+                                                    {t("finance.budget.upload.more", { count: parsedLines.length - 10 })}
                                                 </td>
                                             </tr>
                                         )}
@@ -232,13 +234,13 @@ export default function BudgetUploadPage() {
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
-                <Link href="/finance/budget" className="btn-secondary">Cancel</Link>
+                <Link href="/finance/budget" className="btn-secondary">{t("common.cancel")}</Link>
                 <button
                     onClick={handleSave}
                     disabled={saving || parsedLines.length === 0}
                     className="btn-primary"
                 >
-                    {saving ? "Uploading..." : "Save Budget"}
+                    {saving ? t("finance.budget.upload.uploading") : t("finance.budget.upload.save")}
                 </button>
             </div>
         </div>

@@ -13,25 +13,35 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import { TRAVEL_HUB_CARDS, type TravelHubCard, type TravelHubSection } from "@/lib/travelHub";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
+/** Status badges; `label` is a catalog key translated where it renders. */
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  approved:  { label: "Approved",  cls: "badge-success" },
-  submitted: { label: "Submitted", cls: "badge-warning" },
-  rejected:  { label: "Rejected",  cls: "badge-danger"  },
-  draft:     { label: "Draft",     cls: "badge-muted"   },
-  cancelled: { label: "Cancelled", cls: "badge-muted"   },
-  returned_for_correction: { label: "Returned", cls: "badge-warning" },
+  approved:  { label: "travel.hub.status.approved",  cls: "badge-success" },
+  submitted: { label: "travel.hub.status.submitted", cls: "badge-warning" },
+  rejected:  { label: "travel.hub.status.rejected",  cls: "badge-danger"  },
+  draft:     { label: "travel.hub.status.draft",     cls: "badge-muted"   },
+  cancelled: { label: "travel.hub.status.cancelled", cls: "badge-muted"   },
+  returned_for_correction: { label: "travel.hub.status.returned", cls: "badge-warning" },
 };
 
 const FILTERS = ["All", "Draft", "Submitted", "Approved", "Rejected"] as const;
 const filterMap: Record<string, string | undefined> = {
   All: undefined, Draft: "draft", Submitted: "submitted", Approved: "approved", Rejected: "rejected",
 };
+const FILTER_LABEL: Record<(typeof FILTERS)[number], string> = {
+  All: "travel.hub.filter.all",
+  Draft: "travel.hub.status.draft",
+  Submitted: "travel.hub.status.submitted",
+  Approved: "travel.hub.status.approved",
+  Rejected: "travel.hub.status.rejected",
+};
 
+/** Section headings are catalog keys, translated where they render. */
 const HUB_SECTIONS: { id: TravelHubSection; title: string; description: string; icon: string }[] = [
-  { id: "queues", title: "Work queues", description: "Approvals, administration, finance, and retirement.", icon: "fact_check" },
-  { id: "views", title: "Registers & views", description: "Calendar, missions, and who is away or upcoming.", icon: "menu_book" },
-  { id: "tools", title: "Tools & policy", description: "Advances, TOIL, reports, visas, and DSA rates.", icon: "tune" },
+  { id: "queues", title: "travel.hub.section.queues.title", description: "travel.hub.section.queues.description", icon: "fact_check" },
+  { id: "views", title: "travel.hub.section.views.title", description: "travel.hub.section.views.description", icon: "menu_book" },
+  { id: "tools", title: "travel.hub.section.tools.title", description: "travel.hub.section.tools.description", icon: "tune" },
 ];
 
 function StatCard({ label, value, href }: { label: string; value: number | string; href?: string }) {
@@ -45,6 +55,7 @@ function StatCard({ label, value, href }: { label: string; value: number | strin
 }
 
 function FeatureCard({ card }: { card: TravelHubCard }) {
+  const { t } = useI18n();
   return (
     <Link
       href={card.href}
@@ -52,14 +63,15 @@ function FeatureCard({ card }: { card: TravelHubCard }) {
     >
       <span className="material-symbols-outlined mt-0.5 text-primary">{card.icon}</span>
       <span>
-        <span className="block text-sm font-semibold text-neutral-900">{card.title}</span>
-        <span className="mt-0.5 block text-xs text-neutral-500">{card.purpose}</span>
+        <span className="block text-sm font-semibold text-neutral-900">{t(card.title)}</span>
+        <span className="mt-0.5 block text-xs text-neutral-500">{t(card.purpose)}</span>
       </span>
     </Link>
   );
 }
 
 function TravelPageInner() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const scope = searchParams.get("scope") || undefined;
   const view = searchParams.get("view") || undefined;
@@ -155,19 +167,19 @@ function TravelPageInner() {
   const destination = (r: TravelRequest) =>
     [r.destination_city, r.destination_country].filter(Boolean).join(", ") || r.destination_country || "—";
 
-  const title = view === "upcoming" ? "Upcoming Travel"
-    : view === "away" ? "Travellers Away"
-    : view === "approved" ? "Approved Travel"
-    : scope === "mine" ? "My Travel Requests"
-    : "Travel Administration";
+  const title = view === "upcoming" ? t("travel.hub.title.upcoming")
+    : view === "away" ? t("travel.hub.title.away")
+    : view === "approved" ? t("travel.hub.title.approved")
+    : scope === "mine" ? t("travel.hub.title.mine")
+    : t("travel.hub.title.admin");
 
   const subtitle = view || scope
-    ? "Manage travel requisitions, readiness, and retirement."
-    : "Queues, registers, and tools in one place — without a long submenu.";
+    ? t("travel.hub.subtitle.filtered")
+    : t("travel.hub.subtitle.hub");
 
   const crumbItems = view || scope
-    ? [{ label: "Travel", href: "/travel" }, { label: title }]
-    : [{ label: "Travel" }];
+    ? [{ label: t("nav.travel"), href: "/travel" }, { label: title }]
+    : [{ label: t("nav.travel") }];
 
   const handleExport = () => {
     if (filtered.length === 0) return;
@@ -183,13 +195,13 @@ function TravelPageInner() {
         return_date: r.return_date,
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "purpose", header: "Purpose" },
-        { key: "destination", header: "Destination" },
-        { key: "requester", header: "Requester" },
-        { key: "status", header: "Status" },
-        { key: "departure_date", header: "Departure" },
-        { key: "return_date", header: "Return" },
+        { key: "reference", header: t("travel.mission.col.reference") },
+        { key: "purpose", header: t("salaryAdvances.certificate.purpose") },
+        { key: "destination", header: t("travel.missions.col.destination") },
+        { key: "requester", header: t("travel.certificate.requester") },
+        { key: "status", header: t("travel.mission.col.status") },
+        { key: "departure_date", header: t("travel.calendar.type.departure") },
+        { key: "return_date", header: t("travel.calendar.type.return") },
       ],
     );
   };
@@ -205,13 +217,13 @@ function TravelPageInner() {
             {canRegister ? (
               <Link href="/travel/register" className="btn-secondary text-sm">
                 <span className="material-symbols-outlined text-[18px]">menu_book</span>
-                Open register
+                {t("travel.hub.openRegister")}
               </Link>
             ) : null}
             {canCreate ? (
               <Link href="/travel/create" className="btn-primary text-sm">
                 <span className="material-symbols-outlined text-[18px]">add</span>
-                New request
+                {t("travel.hub.newRequest")}
               </Link>
             ) : null}
           </>
@@ -220,49 +232,49 @@ function TravelPageInner() {
 
       {dash && !view && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="travel-traveller-dashboard">
-          <StatCard label="Drafts" value={dash.drafts ?? 0} href="/travel?scope=mine" />
-          <StatCard label="Pending" value={dash.pending_approvals ?? 0} href="/travel?scope=mine" />
-          <StatCard label="Upcoming" value={dash.upcoming ?? 0} href="/travel?view=upcoming" />
-          <StatCard label="Current trip" value={dash.current_trip ?? 0} href="/travel?view=away" />
-          <StatCard label="Retirement due" value={dash.retirement_due ?? 0} href="/travel/queues/retirement" />
-          <StatCard label="TOIL pending" value={dash.toil_pending ?? 0} href="/travel/toil" />
-          <StatCard label="Historical" value={dash.historical ?? 0} href="/travel?view=approved" />
-          <StatCard label="Docs pending" value={dash.documents_pending ?? 0} />
+          <StatCard label={t("travel.hub.stat.drafts")} value={dash.drafts ?? 0} href="/travel?scope=mine" />
+          <StatCard label={t("travel.hub.stat.pending")} value={dash.pending_approvals ?? 0} href="/travel?scope=mine" />
+          <StatCard label={t("travel.hub.stat.upcoming")} value={dash.upcoming ?? 0} href="/travel?view=upcoming" />
+          <StatCard label={t("travel.hub.stat.currentTrip")} value={dash.current_trip ?? 0} href="/travel?view=away" />
+          <StatCard label={t("travel.hub.stat.retirementDue")} value={dash.retirement_due ?? 0} href="/travel/queues/retirement" />
+          <StatCard label={t("travel.hub.stat.toilPending")} value={dash.toil_pending ?? 0} href="/travel/toil" />
+          <StatCard label={t("travel.hub.stat.historical")} value={dash.historical ?? 0} href="/travel?view=approved" />
+          <StatCard label={t("travel.hub.stat.docsPending")} value={dash.documents_pending ?? 0} />
         </div>
       )}
 
       {canSeeAdmin && adminDash ? (
         <FormSection
-          title="Administration readiness"
-          description="Bookings, visas, and itineraries still waiting on logistics."
+          title={t("travel.hub.adminReadiness")}
+          description={t("travel.hub.adminReadinessHint")}
           icon="admin_panel_settings"
           dense
         >
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="travel-hub-admin-dashboard">
-            <StatCard label="Needs itinerary" value={adminDash.needs_itinerary ?? 0} href="/travel/queues/admin" />
+            <StatCard label={t("travel.adminDash.kpi.needsItinerary.label")} value={adminDash.needs_itinerary ?? 0} href="/travel/queues/admin" />
             <StatCard
-              label="Bookings to confirm"
+              label={t("travel.adminDash.kpi.bookings.label")}
               value={adminDash.bookings_pending ?? adminDash.tickets_pending ?? 0}
               href="/travel/queues/admin"
             />
-            <StatCard label="Visas pending" value={adminDash.visas_pending ?? 0} href="/travel/dashboards/admin" />
-            <StatCard label="Accommodation pending" value={adminDash.accommodation_pending ?? 0} href="/travel/queues/admin" />
+            <StatCard label={t("travel.adminDash.kpi.visas.label")} value={adminDash.visas_pending ?? 0} href="/travel/dashboards/admin" />
+            <StatCard label={t("travel.adminDash.kpi.accommodation.label")} value={adminDash.accommodation_pending ?? 0} href="/travel/queues/admin" />
           </div>
         </FormSection>
       ) : null}
 
       {canSeeFinance && financeDash ? (
         <FormSection
-          title="Finance queues"
-          description="DSA, advances, and retirement still with Finance."
+          title={t("travel.hub.financeQueues")}
+          description={t("travel.hub.financeQueuesHint")}
           icon="account_balance"
           dense
         >
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="travel-hub-finance-dashboard">
-            <StatCard label="DSA pending" value={financeCount("dsa_pending")} href="/travel/queues/finance" />
-            <StatCard label="Funds confirmation" value={financeCount("funds_confirmation_pending")} href="/travel/queues/finance" />
-            <StatCard label="Travel advances" value={financeCount("travel_advances")} href="/imprest?linked=travel" />
-            <StatCard label="Overdue retirement" value={financeCount("overdue_retirement")} href="/travel/queues/retirement" />
+            <StatCard label={t("travel.financeDash.dsaPending")} value={financeCount("dsa_pending")} href="/travel/queues/finance" />
+            <StatCard label={t("travel.financeDash.funds")} value={financeCount("funds_confirmation_pending")} href="/travel/queues/finance" />
+            <StatCard label={t("travel.financeDash.advances")} value={financeCount("travel_advances")} href="/imprest?linked=travel" />
+            <StatCard label={t("travel.financeDash.overdueRetirement")} value={financeCount("overdue_retirement")} href="/travel/queues/retirement" />
           </div>
         </FormSection>
       ) : null}
@@ -271,7 +283,7 @@ function TravelPageInner() {
         const cards = visibleCards.filter((card) => card.section === section.id);
         if (cards.length === 0) return null;
         return (
-          <FormSection key={section.id} title={section.title} description={section.description} icon={section.icon} dense>
+          <FormSection key={section.id} title={t(section.title)} description={t(section.description)} icon={section.icon} dense>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
               {cards.map((card) => (
                 <FeatureCard key={`${card.section}-${card.title}-${card.href}`} card={card} />
@@ -282,12 +294,12 @@ function TravelPageInner() {
       })}
 
       {isError && (
-        <ErrorBanner message="Failed to load travel requests." onRetry={() => void refetch()} />
+        <ErrorBanner message={t("travel.hub.loadFailed")} onRetry={() => void refetch()} />
       )}
 
       <FormSection
-        title="Travel requests"
-        description="Search by traveller name, reference, or destination."
+        title={t("travel.hub.requests")}
+        description={t("travel.hub.requestsHint")}
         icon="list_alt"
         dense
         actions={
@@ -298,7 +310,7 @@ function TravelPageInner() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("travel.missions.export")}
           </button>
         }
       >
@@ -310,7 +322,7 @@ function TravelPageInner() {
             <input
               type="search"
               className="form-input pl-10"
-              placeholder="Search reference, purpose, destination…"
+              placeholder={t("travel.hub.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -323,7 +335,7 @@ function TravelPageInner() {
                 onClick={() => setStatusFilter(f)}
                 className={`filter-tab ${statusFilter === f ? "active" : ""}`}
               >
-                {f}
+                {t(FILTER_LABEL[f])}
               </button>
             ))}
           </div>
@@ -340,19 +352,22 @@ function TravelPageInner() {
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Purpose</th>
-                  <th>Destination</th>
-                  <th>Requester</th>
-                  <th>Stage</th>
-                  <th>Dates</th>
-                  <th>Status</th>
+                  <th>{t("travel.mission.col.reference")}</th>
+                  <th>{t("salaryAdvances.certificate.purpose")}</th>
+                  <th>{t("travel.missions.col.destination")}</th>
+                  <th>{t("travel.certificate.requester")}</th>
+                  <th>{t("travel.hub.col.stage")}</th>
+                  <th>{t("travel.missions.col.dates")}</th>
+                  <th>{t("travel.mission.col.status")}</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((r) => {
-                  const cfg = statusConfig[r.status] ?? { label: r.status || "Unknown", cls: "badge-muted" };
+                  const known = statusConfig[r.status];
+                  const cfg = known
+                    ? { label: t(known.label), cls: known.cls }
+                    : { label: r.status || t("travel.hub.status.unknown"), cls: "badge-muted" };
                   const canEdit = r.status === "draft" || r.status === "returned_for_correction";
                   return (
                     <tr key={r.id}>
@@ -372,11 +387,11 @@ function TravelPageInner() {
                       <td>
                         <div className="flex flex-wrap gap-2">
                           <Link href={`/travel/${r.id}`} className="btn-secondary text-xs py-1 px-2">
-                            View
+                            {t("travel.missions.view")}
                           </Link>
                           {canEdit && (
                             <Link href={`/travel/create?edit=${r.id}`} className="btn-secondary text-xs py-1 px-2">
-                              Edit
+                              {t("common.edit")}
                             </Link>
                           )}
                         </div>
@@ -390,13 +405,13 @@ function TravelPageInner() {
         ) : (
           <EmptyState
             icon="flight"
-            title="No travel requests found"
-            description="Create a requisition or adjust the status filter."
+            title={t("travel.hub.empty")}
+            description={t("travel.hub.emptyHint")}
             action={
               canCreate ? (
                 <Link href="/travel/create" className="btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm">
                   <span className="material-symbols-outlined text-[16px]">add</span>
-                  New request
+                  {t("travel.hub.newRequest")}
                 </Link>
               ) : null
             }
@@ -408,8 +423,9 @@ function TravelPageInner() {
 }
 
 export default function TravelPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">Loading travel…</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">{t("travel.hub.loading")}</div>}>
       <TravelPageInner />
     </Suspense>
   );

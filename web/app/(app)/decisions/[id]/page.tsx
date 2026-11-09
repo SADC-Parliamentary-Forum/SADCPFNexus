@@ -11,31 +11,33 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const TYPE_LABEL: Record<string, string> = {
-  resolution: "Resolution",
-  management_decision: "Management decision",
+  resolution: "decisions.type.resolution",
+  management_decision: "decisions.type.management_decision",
 };
 
 const OP_LABEL: Record<string, { success: string; error: string }> = {
-  adopt: { success: "Decision adopted", error: "Could not adopt decision" },
-  start: { success: "Decision marked in progress", error: "Could not start decision" },
-  implemented: { success: "Decision marked implemented", error: "Could not mark decision implemented" },
-  close: { success: "Decision closed", error: "Could not close decision" },
-  assignment: { success: "Assignment created", error: "Assignment not created" },
-  action: { success: "Action added", error: "Action not added" },
+  adopt: { success: "decisions.detail.op.adopted", error: "decisions.detail.op.adoptFailed" },
+  start: { success: "decisions.detail.op.started", error: "decisions.detail.op.startFailed" },
+  implemented: { success: "decisions.detail.op.implemented", error: "decisions.detail.op.implementedFailed" },
+  close: { success: "decisions.detail.op.closed", error: "decisions.detail.op.closeFailed" },
+  assignment: { success: "decisions.detail.op.assignmentCreated", error: "decisions.detail.op.assignmentFailed" },
+  action: { success: "decisions.detail.op.actionAdded", error: "decisions.detail.op.actionFailed" },
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  draft: "Draft",
-  adopted: "Adopted",
-  in_progress: "In progress",
-  implemented: "Implemented",
-  closed: "Closed",
-  superseded: "Superseded",
+  draft: "decisions.status.draft",
+  adopted: "decisions.status.adopted",
+  in_progress: "decisions.status.inProgress",
+  implemented: "decisions.status.implemented",
+  closed: "decisions.status.closed",
+  superseded: "decisions.status.superseded",
 };
 
 export default function DecisionDetailPage() {
+  const { t } = useI18n();
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const qc = useQueryClient();
@@ -83,15 +85,15 @@ export default function DecisionDetailPage() {
       throw new Error("Unknown op");
     },
     onSuccess: (_res, op) => {
-      setMsg(op === "action" ? "Action added." : "Updated.");
+      setMsg(op === "action" ? t("decisions.detail.actionAddedMsg") : t("decisions.detail.updatedMsg"));
       if (op === "action") setActionDesc("");
-      toast.success(OP_LABEL[op]?.success ?? "Decision updated");
+      toast.success(t(OP_LABEL[op]?.success ?? "decisions.detail.op.updated"));
       refresh();
     },
     onError: (e: unknown, op) => {
-      const message = apiErrorMessage(e, "Action failed.");
+      const message = apiErrorMessage(e, t("decisions.detail.actionFailedMsg"));
       setErr(message);
-      toast.error(OP_LABEL[op]?.error ?? "Could not update decision", message);
+      toast.error(t(OP_LABEL[op]?.error ?? "decisions.detail.op.updateFailed"), message);
     },
   });
 
@@ -108,11 +110,11 @@ export default function DecisionDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-5">
         <ModulePageHeader
-          title="Decision"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "Decision Register", href: "/decisions" }, { label: "Not found" }]} />}
+          title="decisions.detail.title"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "decisions.register.title", href: "/decisions" }, { label: "decisions.detail.notFoundCrumb" }]} />}
         />
         <div className="card overflow-hidden">
-          <EmptyState icon="error" title="Decision not found" description="It may have been removed or you may not have access." />
+          <EmptyState icon="error" title="decisions.detail.notFound" description="decisions.detail.notFoundHint" />
         </div>
       </div>
     );
@@ -124,33 +126,33 @@ export default function DecisionDetailPage() {
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title={data.title}
-        subtitle={`${data.reference_number} · ${TYPE_LABEL[data.decision_type] ?? data.decision_type} · ${STATUS_LABEL[data.status] ?? data.status}`}
+        subtitle={`${data.reference_number} · ${TYPE_LABEL[data.decision_type] ? t(TYPE_LABEL[data.decision_type]) : data.decision_type} · ${STATUS_LABEL[data.status] ? t(STATUS_LABEL[data.status]) : data.status}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Governance", href: "/governance" },
-              { label: "Decision Register", href: "/decisions" },
+              { label: "decisions.crumb.governance", href: "/governance" },
+              { label: "decisions.register.title", href: "/decisions" },
               { label: data.reference_number },
             ]}
           />
         }
         meta={
           <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-600 dark:text-neutral-400">
-            <span>Owner: {data.owner?.name ?? "—"}</span>
-            <span>Due: {data.due_date ? formatDateShort(data.due_date) : "—"}</span>
-            {data.is_confidential ? <span className="text-amber-600 dark:text-amber-400">Confidential</span> : null}
+            <span>{t("decisions.detail.owner", { name: data.owner?.name ?? "—" })}</span>
+            <span>{t("decisions.detail.due", { date: data.due_date ? formatDateShort(data.due_date) : "—" })}</span>
+            {data.is_confidential ? <span className="text-amber-600 dark:text-amber-400">{t("decisions.confidential")}</span> : null}
           </div>
         }
       />
 
       {data.body ? (
-        <FormSection title="Decision text" icon="description">
+        <FormSection title="decisions.detail.text" icon="description">
           <p className="whitespace-pre-wrap text-sm text-neutral-800 dark:text-neutral-200">{data.body}</p>
         </FormSection>
       ) : null}
 
       {data.minutes && minutesHref ? (
-        <FormSection title="Linked minutes" icon="meeting_room">
+        <FormSection title="decisions.detail.linkedMinutes" icon="meeting_room">
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
             <Link href={minutesHref} className="font-medium text-primary">
               {data.minutes.title}
@@ -160,48 +162,48 @@ export default function DecisionDetailPage() {
         </FormSection>
       ) : null}
 
-      <FormSection title="Workflow" icon="account_tree" description="Advance the decision and add optional notes for the next step.">
+      <FormSection title="decisions.detail.workflow" icon="account_tree" description="decisions.detail.workflowHint">
         <div className="flex flex-wrap gap-2">
           {data.status === "draft" && (
             <button type="button" className="btn-primary" onClick={() => run.mutate("adopt")} disabled={run.isPending}>
-              Adopt
+              {t("decisions.detail.adopt")}
             </button>
           )}
           {data.status === "adopted" && (
             <button type="button" className="btn-primary" onClick={() => run.mutate("start")} disabled={run.isPending}>
-              Start progress
+              {t("decisions.detail.startProgress")}
             </button>
           )}
           {(data.status === "adopted" || data.status === "in_progress") && (
             <>
               <button type="button" className="btn-secondary" onClick={() => run.mutate("implemented")} disabled={run.isPending}>
-                Mark implemented
+                {t("decisions.detail.markImplemented")}
               </button>
               <button type="button" className="btn-secondary" onClick={() => run.mutate("assignment")} disabled={run.isPending}>
-                Create assignment
+                {t("decisions.detail.createAssignment")}
               </button>
             </>
           )}
           {(data.status === "implemented" || data.status === "in_progress") && (
             <button type="button" className="btn-secondary" onClick={() => run.mutate("close")} disabled={run.isPending}>
-              Close
+              {t("common.close")}
             </button>
           )}
         </div>
-        <FormField label="Workflow notes" htmlFor="decision-notes" className="mt-4 max-w-xl">
+        <FormField label="decisions.detail.notes" htmlFor="decision-notes" className="mt-4 max-w-xl">
           <textarea
             id="decision-notes"
             className="form-input min-h-20 resize-y"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Adoption / implementation / closure notes"
+            placeholder={t("decisions.detail.notesPlaceholder")}
           />
         </FormField>
         {msg ? <p className="mt-2 text-sm text-green-700">{msg}</p> : null}
         {err ? <p className="mt-2 text-sm text-red-600">{err}</p> : null}
       </FormSection>
 
-      <FormSection title="Follow-up actions" icon="task_alt">
+      <FormSection title="decisions.detail.followUp" icon="task_alt">
         <ul className="space-y-2">
           {(data.actions ?? []).map((a) => (
             <li key={a.id} className="flex justify-between gap-3 rounded-lg border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
@@ -215,27 +217,27 @@ export default function DecisionDetailPage() {
               <div className="text-xs text-neutral-500">{a.owner?.name ?? "—"}</div>
             </li>
           ))}
-          {(data.actions ?? []).length === 0 ? <li className="text-sm text-neutral-500">No follow-up actions yet.</li> : null}
+          {(data.actions ?? []).length === 0 ? <li className="text-sm text-neutral-500">{t("decisions.detail.noActions")}</li> : null}
         </ul>
         <div className="mt-4 flex flex-wrap items-end gap-2">
-          <FormField label="New action" htmlFor="decision-action-desc" className="min-w-[220px] flex-1">
+          <FormField label="decisions.detail.newAction" htmlFor="decision-action-desc" className="min-w-[220px] flex-1">
             <input
               id="decision-action-desc"
               className="form-input"
-              placeholder="New action description"
+              placeholder={t("decisions.detail.newActionPlaceholder")}
               value={actionDesc}
               onChange={(e) => setActionDesc(e.target.value)}
             />
           </FormField>
-          <FormField label="Priority" htmlFor="decision-action-priority">
+          <FormField label="decisions.detail.priority" htmlFor="decision-action-priority">
             <select
               id="decision-action-priority"
               className="form-input"
               value={actionPriority}
               onChange={(e) => setActionPriority(e.target.value as "medium" | "critical")}
             >
-              <option value="medium">Medium</option>
-              <option value="critical">Critical</option>
+              <option value="medium">{t("decisions.detail.priorityMedium")}</option>
+              <option value="critical">{t("decisions.detail.priorityCritical")}</option>
             </select>
           </FormField>
           <button
@@ -244,12 +246,12 @@ export default function DecisionDetailPage() {
             disabled={!actionDesc.trim() || run.isPending}
             onClick={() => run.mutate("action")}
           >
-            Add action
+            {t("decisions.detail.addAction")}
           </button>
         </div>
       </FormSection>
 
-      <FormSection title="Audit history" icon="history">
+      <FormSection title="decisions.detail.history" icon="history">
         <ul className="space-y-1 text-sm">
           {(history ?? []).map((h) => (
             <li key={h.id} className="text-neutral-600">
@@ -259,7 +261,7 @@ export default function DecisionDetailPage() {
               {h.created_at ? ` · ${formatDateShort(h.created_at)}` : ""}
             </li>
           ))}
-          {(history ?? []).length === 0 ? <li className="text-neutral-500">No history yet.</li> : null}
+          {(history ?? []).length === 0 ? <li className="text-neutral-500">{t("decisions.detail.noHistory")}</li> : null}
         </ul>
       </FormSection>
     </div>

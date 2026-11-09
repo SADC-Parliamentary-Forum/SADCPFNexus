@@ -6,10 +6,12 @@ import api from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ActionQueuePanel } from "@/components/workqueue/ActionQueuePanel";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type NavItem = { label: string; href: string | null; children?: Array<{ label: string; href: string | null }> };
 
 export default function MyWorkPage() {
+  const { t } = useI18n();
   const [items, setItems] = useState<NavItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,16 +24,16 @@ export default function MyWorkPage() {
         const myWork = (res.data.items ?? []).find((i) => i.label === "My Work");
         setItems(myWork?.children ?? []);
       })
-      .catch(() => setError("Could not load My Work features."))
+      .catch(() => setError(t("myWork.loadFailed")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="My Work"
-        subtitle="Feature-only tasks and assigned work from your effective permissions."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "My Work" }]} />}
+        title={t("nav.my_work")}
+        subtitle={t("myWork.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("nav.my_work") }]} />}
       />
 
       <ActionQueuePanel />
@@ -50,8 +52,8 @@ export default function MyWorkPage() {
         <div className="card">
           <EmptyState
             icon="work"
-            title="No assigned My Work features"
-            description="When you receive feature-only permissions, assigned tasks will appear here."
+            title={t("myWork.emptyTitle")}
+            description={t("myWork.emptyDescription")}
           />
         </div>
       ) : (
@@ -65,7 +67,7 @@ export default function MyWorkPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-neutral-900">{c.label}</p>
-                    <p className="mt-0.5 text-xs text-neutral-500">Open assigned work</p>
+                    <p className="mt-0.5 text-xs text-neutral-500">{t("myWork.openAssigned")}</p>
                   </div>
                   <span className="material-symbols-outlined ml-auto text-[18px] text-neutral-300">chevron_right</span>
                 </Link>

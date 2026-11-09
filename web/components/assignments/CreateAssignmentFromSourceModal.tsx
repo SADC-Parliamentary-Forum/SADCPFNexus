@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { assignmentsApi, tenantUsersApi, type AssignmentPriority, type TenantUserOption } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Props = {
   open: boolean;
@@ -33,6 +34,7 @@ export function CreateAssignmentFromSourceModal({
   sourceReference,
   sourceTitle,
 }: Props) {
+  const { t } = useI18n();
   const router = useRouter();
   const [users, setUsers] = useState<TenantUserOption[]>([]);
   const [title, setTitle] = useState(defaultTitle);
@@ -57,7 +59,7 @@ export function CreateAssignmentFromSourceModal({
 
   async function handleCreate() {
     if (!title.trim() || !description.trim() || !dueDate) {
-      setError("Title, description, and due date are required.");
+      setError(t("assignments.fromSource.required"));
       return;
     }
     setSubmitting(true);
@@ -80,7 +82,7 @@ export function CreateAssignmentFromSourceModal({
       onClose();
       if (id) router.push(`/assignments/${id}`);
     } catch {
-      setError("Could not create assignment from this source.");
+      setError(t("assignments.fromSource.createFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -90,46 +92,46 @@ export function CreateAssignmentFromSourceModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-sm font-semibold text-neutral-900">Create Assignment from Source</h2>
-          <button type="button" onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <h2 className="text-sm font-semibold text-neutral-900">{t("assignments.fromSource.title")}</h2>
+          <button type="button" onClick={onClose} className="text-neutral-400 hover:text-neutral-600" aria-label={t("common.close")}>
             <span className="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>
         <div className="px-6 py-5 space-y-4">
           <p className="text-xs text-neutral-500">
-            Links a tracked assignment via <code className="text-[11px]">POST /assignments/from-source</code> ({sourceType} #{sourceId}).
+            {t("assignments.fromSource.linksVia")} <code className="text-[11px]">POST /assignments/from-source</code> ({sourceType} #{sourceId}). {/* i18n-ignore */}
           </p>
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
           <div>
-            <label htmlFor="assignment-from-title" className="block text-sm font-medium text-neutral-700 mb-1">Title</label>
+            <label htmlFor="assignment-from-title" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.filteredList.col.title")}</label>
             <input id="assignment-from-title" className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="assignment-from-description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
+            <label htmlFor="assignment-from-description" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.fromSource.description")}</label>
             <textarea id="assignment-from-description" className="form-input min-h-[80px]" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="assignment-from-due" className="block text-sm font-medium text-neutral-700 mb-1">Due date</label>
+              <label htmlFor="assignment-from-due" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.filteredList.col.dueDate")}</label>
               <input id="assignment-from-due" type="date" className="form-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
             <div>
-              <label htmlFor="assignment-from-priority" className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
+              <label htmlFor="assignment-from-priority" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.filteredList.col.priority")}</label>
               <select id="assignment-from-priority" className="form-input" value={priority} onChange={(e) => setPriority(e.target.value as AssignmentPriority)}>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-                <option value="critical">Critical</option>
+                <option value="low">{t("assignments.filteredList.priority.low")}</option>
+                <option value="medium">{t("assignments.filteredList.priority.medium")}</option>
+                <option value="high">{t("assignments.filteredList.priority.high")}</option>
+                <option value="urgent">{t("assignments.filteredList.priority.urgent")}</option>
+                <option value="critical">{t("assignments.filteredList.priority.critical")}</option>
               </select>
             </div>
           </div>
           <div>
-            <label htmlFor="assignment-from-assignee" className="block text-sm font-medium text-neutral-700 mb-1">Assignee</label>
+            <label htmlFor="assignment-from-assignee" className="block text-sm font-medium text-neutral-700 mb-1">{t("assignments.filteredList.col.assignee")}</label>
             <select id="assignment-from-assignee" className="form-input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
-              <option value="">— Unassigned / department claim —</option>
+              <option value="">{t("assignments.fromSource.unassigned")}</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
@@ -137,10 +139,10 @@ export function CreateAssignmentFromSourceModal({
           </div>
         </div>
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-neutral-100 bg-neutral-50">
-          <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+          <button type="button" onClick={onClose} className="btn-secondary">{t("common.cancel")}</button>
           <button type="button" onClick={() => void handleCreate()} disabled={submitting} className="btn-primary disabled:opacity-60">
             <span className="material-symbols-outlined text-[16px]">assignment_ind</span>
-            {submitting ? "Creating…" : "Create Assignment"}
+            {submitting ? t("assignments.fromSource.creating") : t("assignments.fromSource.create")}
           </button>
         </div>
       </div>

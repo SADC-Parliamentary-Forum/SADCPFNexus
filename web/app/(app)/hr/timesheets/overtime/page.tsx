@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type OtReq = {
   id: number;
@@ -20,6 +21,7 @@ type OtReq = {
 };
 
 export default function OvertimeRequestsPage() {
+  const { t } = useI18n();
   const [items, setItems] = useState<OtReq[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function OvertimeRequestsPage() {
           : [];
       setItems(rows as OtReq[]);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load overtime requests");
+      setError(e instanceof Error ? e.message : t("hr.timesheets.overtime.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -68,7 +70,7 @@ export default function OvertimeRequestsPage() {
       setForm({ work_date: "", planned_hours: "2", reason: "", day_type: "normal_working_day" });
       await load();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Could not create requisition");
+      setError(err instanceof Error ? err.message : t("hr.timesheets.overtime.createFailed"));
     } finally {
       setSaving(false);
     }
@@ -83,11 +85,11 @@ export default function OvertimeRequestsPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <ModulePageHeader
-        title="My Overtime Requests"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "My Overtime Requests" }]} />}
+        title="hr.timesheets.overtime.title"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "hr.timesheets.overtime.title" }]} />}
       />
         <Link href="/hr/timesheets" className="btn-secondary text-sm py-1 px-2">
-          Back to timesheets
+          {t("hr.timesheets.overtime.back")}
         </Link>
       </div>
 
@@ -97,7 +99,7 @@ export default function OvertimeRequestsPage() {
 
       <form onSubmit={createRequest} className="grid gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 md:grid-cols-2">
         <label htmlFor="hr-timesheets-overtime-work-date-setform-f" className="text-sm">
-          Work date
+          {t("hr.timesheets.overtime.workDate")}
           <input id="hr-timesheets-overtime-work-date-setform-f"
             type="date"
             required
@@ -107,7 +109,7 @@ export default function OvertimeRequestsPage() {
           />
         </label>
         <label htmlFor="hr-timesheets-overtime-planned-hours-setform-f" className="text-sm">
-          Planned hours
+          {t("hr.timesheets.overtime.plannedHours")}
           <input id="hr-timesheets-overtime-planned-hours-setform-f"
             type="number"
             min={0.25}
@@ -119,7 +121,7 @@ export default function OvertimeRequestsPage() {
           />
         </label>
         <label htmlFor="hr-timesheets-overtime-reason-setform-f" className="text-sm md:col-span-2">
-          Reason
+          {t("common.reason")}
           <textarea id="hr-timesheets-overtime-reason-setform-f"
             required
             className="mt-1 w-full rounded border px-3 py-2"
@@ -129,15 +131,15 @@ export default function OvertimeRequestsPage() {
           />
         </label>
         <label htmlFor="hr-timesheets-overtime-day-type-setform-f-normal-working-day-1-5-weeken" className="text-sm">
-          Day type
+          {t("hr.timesheets.overtime.dayType")}
           <select id="hr-timesheets-overtime-day-type-setform-f-normal-working-day-1-5-weeken"
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.day_type}
             onChange={(e) => setForm((f) => ({ ...f, day_type: e.target.value }))}
           >
-            <option value="normal_working_day">Normal working day (1.5Ã—)</option>
-            <option value="weekend">Weekend (rate must be configured)</option>
-            <option value="public_holiday">Public holiday (rate must be configured)</option>
+            <option value="normal_working_day">{t("hr.timesheets.overtime.normalDay")}</option>
+            <option value="weekend">{t("hr.timesheets.overtime.weekendDay")}</option>
+            <option value="public_holiday">{t("hr.timesheets.overtime.holidayDay")}</option>
           </select>
         </label>
         <div className="flex items-end">
@@ -146,7 +148,7 @@ export default function OvertimeRequestsPage() {
             disabled={saving}
             className="rounded bg-[var(--brand)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
-            {saving ? "Saving…" : "Create draft requisition"}
+            {saving ? t("hr.timesheets.saving") : t("hr.timesheets.overtime.create")}
           </button>
         </div>
       </form>
@@ -155,23 +157,23 @@ export default function OvertimeRequestsPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-[var(--surface-muted)] text-left">
             <tr>
-              <th className="px-3 py-2">Reference</th>
-              <th className="px-3 py-2">Date</th>
-              <th className="px-3 py-2">Planned</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Actions</th>
+              <th className="px-3 py-2">{t("hr.timesheets.overtime.reference")}</th>
+              <th className="px-3 py-2">{t("hr.timesheets.col.date")}</th>
+              <th className="px-3 py-2">{t("hr.timesheets.overtime.planned")}</th>
+              <th className="px-3 py-2">{t("hr.timesheets.monthly.status")}</th>
+              <th className="px-3 py-2">{t("hr.timesheets.overtime.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
                 <td colSpan={5} className="px-3 py-6 text-center text-[var(--text-secondary)]">
-                  Loading…
+                  {t("common.loading")}
                 </td>
               </tr>
             )}
             {!loading && items.length === 0 && (
-              <TableEmpty colSpan={5} title="No overtime requisitions yet." />
+              <TableEmpty colSpan={5} title={t("hr.timesheets.overtime.empty")} />
             )}
             {items.map((row) => (
               <tr key={row.id} className="border-t border-[var(--border)]">
@@ -188,7 +190,7 @@ export default function OvertimeRequestsPage() {
                       className="btn-secondary text-xs py-1 px-2"
                       onClick={() => void submitReq(row.id)}
                     >
-                      Submit
+                      {t("common.submit")}
                     </button>
                   )}
                 </td>

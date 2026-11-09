@@ -7,6 +7,7 @@ import { financeApi, type Budget, type BudgetLine } from "@/lib/api";
 import { formatCurrency as formatMoney } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function toNumber(value: unknown): number {
   const n = Number(value);
@@ -22,17 +23,18 @@ function varianceConfig(line: BudgetLine): { barColor: string; textColor: string
   const allocated = toNumber(line.amount_allocated);
   const spent = toNumber(line.amount_spent);
   if (allocated > 0 && spent > allocated) {
-    return { barColor: "bg-red-500", textColor: "text-red-600", label: "Overspent", labelCls: "bg-red-100 text-red-700" };
+    return { barColor: "bg-red-500", textColor: "text-red-600", label: "finance.budget.detail.overspent", labelCls: "bg-red-100 text-red-700" };
   }
   const ratio = allocated > 0 ? spent / allocated : 0;
   if (ratio >= 0.9) {
-    return { barColor: "bg-amber-500", textColor: "text-amber-600", label: "Near limit", labelCls: "bg-amber-100 text-amber-700" };
+    return { barColor: "bg-amber-500", textColor: "text-amber-600", label: "finance.budget.detail.nearLimit", labelCls: "bg-amber-100 text-amber-700" };
   }
-  return { barColor: "bg-green-500", textColor: "text-green-600", label: "Healthy", labelCls: "bg-green-100 text-green-700" };
+  return { barColor: "bg-green-500", textColor: "text-green-600", label: "finance.budget.detail.healthy", labelCls: "bg-green-100 text-green-700" };
 }
 
 /** Horizontal CSS-only bar chart showing expenditure per budget line */
 function ExpenditureChart({ lines, currency }: { lines: BudgetLine[]; currency: string }) {
+  const { t } = useI18n();
   const maxSpent = Math.max(...lines.map((l) => toNumber(l.amount_spent)), 1);
 
   return (
@@ -56,7 +58,7 @@ function ExpenditureChart({ lines, currency }: { lines: BudgetLine[]; currency: 
                 <div
                   className="absolute top-0 bottom-0 w-px bg-neutral-400/60"
                   style={{ left: `${(allocated / (maxSpent === 0 ? 1 : maxSpent)) * 100}%` }}
-                  title={`Allocation: ${formatMoney(allocated, currency)}`}
+                  title={t("finance.budget.detail.allocationTip", { amount: formatMoney(allocated, currency) })}
                 />
               )}
             </div>
@@ -71,28 +73,29 @@ function ExpenditureChart({ lines, currency }: { lines: BudgetLine[]; currency: 
         <div className="flex-1 flex items-center gap-3 text-xs text-neutral-400">
           <span className="flex items-center gap-1">
             <span className="inline-block w-3 h-0.5 bg-neutral-400/60" />
-            Allocation line
+            {t("finance.budget.detail.allocationLine")}
           </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2 w-3 rounded-sm bg-green-500" />
-            Healthy
+            {t("finance.budget.detail.healthy")}
           </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2 w-3 rounded-sm bg-amber-500" />
-            Near limit
+            {t("finance.budget.detail.nearLimit")}
           </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2 w-3 rounded-sm bg-red-500" />
-            Overspent
+            {t("finance.budget.detail.overspent")}
           </span>
         </div>
-        <div className="w-28 text-xs text-neutral-400">Spent</div>
+        <div className="w-28 text-xs text-neutral-400">{t("finance.budget.detail.spent")}</div>
       </div>
     </div>
   );
 }
 
 export default function BudgetDetailPage() {
+  const { t } = useI18n();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = Number(params?.id);
@@ -115,18 +118,18 @@ export default function BudgetDetailPage() {
         const payload = res.data;
         const item = payload && typeof payload === "object" && "data" in payload ? payload.data : null;
         if (!item) {
-          setError("Budget record was not found.");
+          setError(t("finance.budget.detail.recordNotFound"));
           setBudget(null);
           return;
         }
         setBudget(item as Budget);
       })
       .catch(() => {
-        setError("Failed to load budget details.");
+        setError(t("finance.budget.detail.loadFailed"));
         setBudget(null);
       })
       .finally(() => setLoading(false));
-  }, [id, router]);
+  }, [id, router, t]);
 
   const lines: BudgetLine[] = useMemo(() => budget?.lines ?? [], [budget]);
   const totalAllocated = useMemo(() => lines.reduce((acc, line) => acc + toNumber(line.amount_allocated), 0), [lines]);
@@ -163,10 +166,10 @@ export default function BudgetDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error || "Budget was not found."}
+          {error || t("finance.budget.detail.notFound")}
         </div>
         <Link href="/finance/budget" className="btn-secondary inline-flex">
-          Back to Budgets
+          {t("finance.budget.detail.backToBudgets")}
         </Link>
       </div>
     );
@@ -179,17 +182,17 @@ export default function BudgetDetailPage() {
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={budget.name}
-        subtitle={`${budget.type === "core" ? "Core budget" : "Project budget"} · ${budget.year} · ${budget.currency}`}
+        subtitle={`${budget.type === "core" ? t("finance.budget.detail.coreBudget") : t("finance.budget.detail.projectBudget")} · ${budget.year} · ${budget.currency}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.finance", href: "/finance" },
-              { label: "Budgets", href: "/finance/budget" },
+              { label: "finance.budget.budgets", href: "/finance/budget" },
               { label: budget.name },
             ]}
           />
         }
-        actions={<Link href="/finance/budget" className="btn-secondary">Back to List</Link>}
+        actions={<Link href="/finance/budget" className="btn-secondary">{t("finance.budget.detail.backToList")}</Link>}
       />
 
       {error && (
@@ -199,19 +202,19 @@ export default function BudgetDetailPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <div className="card p-4">
-          <p className="text-xs text-neutral-500">Total budget</p>
+          <p className="text-xs text-neutral-500">{t("finance.budget.detail.totalBudget")}</p>
           <p className="mt-1 text-sm font-bold text-neutral-900">{formatMoney(toNumber(budget.total_amount), budget.currency)}</p>
         </div>
         <div className="card p-4">
-          <p className="text-xs text-neutral-500">Total allocated (lines)</p>
+          <p className="text-xs text-neutral-500">{t("finance.budget.detail.totalAllocated")}</p>
           <p className="mt-1 text-sm font-bold text-neutral-900">{formatMoney(totalAllocated, budget.currency)}</p>
         </div>
         <div className="card p-4">
-          <p className="text-xs text-neutral-500">Total spent</p>
+          <p className="text-xs text-neutral-500">{t("finance.budget.detail.totalSpent")}</p>
           <p className="mt-1 text-sm font-bold text-neutral-900">{formatMoney(totalSpent, budget.currency)}</p>
         </div>
         <div className="card p-4">
-          <p className="text-xs text-neutral-500">Remaining</p>
+          <p className="text-xs text-neutral-500">{t("finance.budget.detail.remaining")}</p>
           <p className={`mt-1 text-sm font-bold ${totalRemaining < 0 ? "text-red-600" : "text-green-600"}`}>
             {formatMoney(totalRemaining, budget.currency)}
           </p>
@@ -223,19 +226,19 @@ export default function BudgetDetailPage() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">data_usage</span>
-            <h3 className="text-sm font-semibold text-neutral-900">Overall Budget Utilization</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("finance.budget.detail.overall")}</h3>
           </div>
           <div className="flex items-center gap-3 text-xs">
             {overspentCount > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-red-700 font-medium">
                 <span className="material-symbols-outlined text-[12px]">warning</span>
-                {overspentCount} overspent
+                {t("finance.budget.detail.overspentCount", { count: overspentCount })}
               </span>
             )}
             {nearLimitCount > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 font-medium">
                 <span className="material-symbols-outlined text-[12px]">error_outline</span>
-                {nearLimitCount} near limit
+                {t("finance.budget.detail.nearLimitCount", { count: nearLimitCount })}
               </span>
             )}
           </div>
@@ -244,9 +247,9 @@ export default function BudgetDetailPage() {
           <div className={`h-full rounded-full transition-all ${budgetBarColor}`} style={{ width: `${budgetPct}%` }} />
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-neutral-500">
-          <span>{formatMoney(totalSpent, budget.currency)} spent</span>
-          <span className="font-bold">{budgetPct.toFixed(1)}% utilized</span>
-          <span>{formatMoney(toNumber(budget.total_amount), budget.currency)} total</span>
+          <span>{t("finance.budget.detail.amountSpent", { amount: formatMoney(totalSpent, budget.currency) })}</span>
+          <span className="font-bold">{t("finance.budget.detail.utilized", { pct: budgetPct.toFixed(1) })}</span>
+          <span>{t("finance.budget.detail.amountTotal", { amount: formatMoney(toNumber(budget.total_amount), budget.currency) })}</span>
         </div>
       </div>
 
@@ -255,8 +258,8 @@ export default function BudgetDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-2 mb-5">
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">bar_chart</span>
-            <h3 className="text-sm font-semibold text-neutral-900">Expenditure Breakdown</h3>
-            <span className="text-xs text-neutral-400 ml-1">(spent vs. allocation)</span>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("finance.budget.detail.breakdown")}</h3>
+            <span className="text-xs text-neutral-400 ml-1">{t("finance.budget.detail.breakdownHint")}</span>
           </div>
           <ExpenditureChart lines={lines} currency={budget.currency} />
         </div>
@@ -267,24 +270,24 @@ export default function BudgetDetailPage() {
         <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">table_chart</span>
-            <h2 className="text-sm font-semibold text-neutral-800">Variance Analysis</h2>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("finance.budget.detail.variance")}</h2>
           </div>
-          <span className="text-xs text-neutral-500">{lines.length} lines</span>
+          <span className="text-xs text-neutral-500">{t("finance.budget.detail.linesCount", { count: lines.length })}</span>
         </div>
         {lines.length === 0 ? (
-          <EmptyState icon="table_chart" title="No budget lines available for this budget." className="py-10 min-h-0" />
+          <EmptyState icon="table_chart" title="finance.budget.detail.noLines" className="py-10 min-h-0" />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th className="text-left">Category</th>
-                  <th className="text-left">Account</th>
-                  <th className="text-right">Allocated</th>
-                  <th className="text-right">Spent</th>
-                  <th className="text-right">Remaining</th>
-                  <th className="text-center">Utilization</th>
-                  <th className="text-center">Status</th>
+                  <th className="text-left">{t("finance.budget.detail.col.category")}</th>
+                  <th className="text-left">{t("finance.budget.detail.col.account")}</th>
+                  <th className="text-right">{t("finance.budget.detail.col.allocated")}</th>
+                  <th className="text-right">{t("finance.budget.detail.spent")}</th>
+                  <th className="text-right">{t("finance.budget.detail.remaining")}</th>
+                  <th className="text-center">{t("finance.budget.detail.col.utilization")}</th>
+                  <th className="text-center">{t("finance.budget.col.status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
@@ -322,7 +325,7 @@ export default function BudgetDetailPage() {
                       </td>
                       <td className="text-center">
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${vc.labelCls}`}>
-                          {vc.label}
+                          {t(vc.label)}
                         </span>
                       </td>
                     </tr>
@@ -331,7 +334,7 @@ export default function BudgetDetailPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t border-neutral-200 bg-neutral-50/70">
-                  <td colSpan={2} className="px-4 py-3 text-sm font-semibold text-neutral-700">Totals</td>
+                  <td colSpan={2} className="px-4 py-3 text-sm font-semibold text-neutral-700">{t("finance.budget.detail.totals")}</td>
                   <td className="px-4 py-3 text-right text-sm font-semibold text-neutral-900">{formatMoney(totalAllocated, budget.currency)}</td>
                   <td className="px-4 py-3 text-right text-sm font-semibold text-neutral-900">{formatMoney(totalSpent, budget.currency)}</td>
                   <td className={`px-4 py-3 text-right text-sm font-semibold ${totalRemaining < 0 ? "text-red-600" : "text-neutral-900"}`}>

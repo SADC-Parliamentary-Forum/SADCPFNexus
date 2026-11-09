@@ -5,12 +5,14 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { correspondenceApi, adminApi, type Department } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const ACCEPTED = ".pdf,.doc,.docx";
 const MAX_MB = 25;
 
 export default function IncomingMailPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [file, setFile] = useState<File | null>(null);
@@ -60,11 +62,11 @@ export default function IncomingMailPage() {
   function validateAndSetFile(f: File) {
     const ext = f.name.split(".").pop()?.toLowerCase();
     if (!["pdf", "doc", "docx"].includes(ext ?? "")) {
-      setError("Only PDF, DOC, and DOCX files are allowed.");
+      setError(t("correspondence.fileTypes"));
       return;
     }
     if (f.size > MAX_MB * 1024 * 1024) {
-      setError(`File must be under ${MAX_MB} MB.`);
+      setError(t("correspondence.fileTooLarge", { max: MAX_MB }));
       return;
     }
     setFile(f);
@@ -73,11 +75,11 @@ export default function IncomingMailPage() {
 
   async function handleSave() {
     if (!form.title.trim() || !form.subject.trim()) {
-      setError("Title and Subject are required.");
+      setError(t("correspondence.titleSubjectRequired"));
       return;
     }
     if (!file) {
-      setError("Please upload the incoming document.");
+      setError(t("correspondence.incoming.uploadRequired"));
       return;
     }
 
@@ -92,7 +94,7 @@ export default function IncomingMailPage() {
       const res = await correspondenceApi.registerIncoming(fd);
       router.push(`/correspondence/${res.data.data.id}`);
     } catch {
-      setError("Failed to save. Please try again.");
+      setError(t("correspondence.saveFailed"));
       setSaving(false);
     }
   }
@@ -101,15 +103,15 @@ export default function IncomingMailPage() {
     <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/correspondence" className="hover:text-neutral-700">Correspondence</Link>
+        <Link href="/correspondence" className="hover:text-neutral-700">{t("workflows.simulate.module.correspondence")}</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">Incoming Mail</span>
+        <span className="text-neutral-900 font-medium">{t("correspondence.incoming.crumb")}</span>
       </div>
 
       <ModulePageHeader
-        title="Capture Incoming Mail"
-        subtitle="Upload and register incoming correspondence for tracking and routing."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Capture Incoming Mail" }]} />}
+        title={t("correspondence.incoming.title")}
+        subtitle={t("correspondence.incoming.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("correspondence.incoming.title") }]} />}
       />
 
       {error && (
@@ -121,7 +123,7 @@ export default function IncomingMailPage() {
 
       {/* File Upload */}
       <div className="card p-5 space-y-3">
-        <h3 className="text-sm font-semibold text-neutral-900">Upload Incoming Document</h3>
+        <h3 className="text-sm font-semibold text-neutral-900">{t("correspondence.incoming.upload")}</h3>
         <div
           className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
             dragOver ? "border-primary bg-primary/5" : "border-neutral-200 hover:border-neutral-300"
@@ -138,16 +140,16 @@ export default function IncomingMailPage() {
               <p className="text-sm font-semibold text-neutral-900">{file.name}</p>
               <p className="text-xs text-neutral-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
               <button type="button" onClick={(e) => { e.stopPropagation(); setFile(null); }} className="text-xs text-red-500 hover:text-red-700">
-                Remove
+                {t("correspondence.remove")}
               </button>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
               <span className="material-symbols-outlined text-4xl text-neutral-300">move_to_inbox</span>
               <p className="text-sm text-neutral-600">
-                <span className="font-semibold text-primary">Click to upload</span> or drag and drop
+                {t("correspondence.dropzone")}
               </p>
-              <p className="text-xs text-neutral-400">PDF, DOC, DOCX — max {MAX_MB} MB</p>
+              <p className="text-xs text-neutral-400">{t("correspondence.fileHint", { max: MAX_MB })}</p>
             </div>
           )}
         </div>
@@ -155,93 +157,93 @@ export default function IncomingMailPage() {
 
       {/* Metadata */}
       <div className="card p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-neutral-900">Classification</h3>
+        <h3 className="text-sm font-semibold text-neutral-900">{t("correspondence.classification")}</h3>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label htmlFor="corr-incoming-title" className="block text-xs font-medium text-neutral-600 mb-1">Title / From *</label>
-            <input id="corr-incoming-title" name="title" value={form.title} onChange={handleField} className="form-input w-full" placeholder="e.g. Letter from Ministry of Finance — Budget Queries" />
+            <label htmlFor="corr-incoming-title" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.incoming.titleFrom")}</label>
+            <input id="corr-incoming-title" name="title" value={form.title} onChange={handleField} className="form-input w-full" placeholder={t("correspondence.incoming.titlePlaceholder")} />
           </div>
           <div className="sm:col-span-2">
-            <label htmlFor="corr-incoming-subject" className="block text-xs font-medium text-neutral-600 mb-1">Subject *</label>
-            <input id="corr-incoming-subject" name="subject" value={form.subject} onChange={handleField} className="form-input w-full" placeholder="Subject matter of the incoming letter" />
+            <label htmlFor="corr-incoming-subject" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.field.subjectRequired")}</label>
+            <input id="corr-incoming-subject" name="subject" value={form.subject} onChange={handleField} className="form-input w-full" placeholder={t("correspondence.incoming.subjectPlaceholder")} />
           </div>
 
           <div>
-            <label htmlFor="corr-incoming-type" className="block text-xs font-medium text-neutral-600 mb-1">Type</label>
+            <label htmlFor="corr-incoming-type" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.col.type")}</label>
             <select id="corr-incoming-type" name="type" value={form.type} onChange={handleField} className="form-input w-full">
-              <option value="external">External</option>
-              <option value="internal_memo">Internal Memo</option>
-              <option value="diplomatic_note">Diplomatic Note</option>
-              <option value="procurement">Procurement</option>
+              <option value="external">{t("correspondence.type.external")}</option>
+              <option value="internal_memo">{t("correspondence.type.internalMemo")}</option>
+              <option value="diplomatic_note">{t("correspondence.type.diplomaticNote")}</option>
+              <option value="procurement">{t("nav.procurement")}</option>
             </select>
           </div>
 
           <div>
-            <label htmlFor="corr-incoming-priority" className="block text-xs font-medium text-neutral-600 mb-1">Priority</label>
+            <label htmlFor="corr-incoming-priority" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.field.priority")}</label>
             <select id="corr-incoming-priority" name="priority" value={form.priority} onChange={handleField} className="form-input w-full">
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
+              <option value="low">{t("correspondence.priority.low")}</option>
+              <option value="normal">{t("correspondence.priority.normal")}</option>
+              <option value="high">{t("correspondence.priority.high")}</option>
+              <option value="urgent">{t("correspondence.priority.urgent")}</option>
             </select>
           </div>
 
           <div>
-            <label htmlFor="corr-incoming-language" className="block text-xs font-medium text-neutral-600 mb-1">Language</label>
+            <label htmlFor="corr-incoming-language" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.field.language")}</label>
             <select id="corr-incoming-language" name="language" value={form.language} onChange={handleField} className="form-input w-full">
-              <option value="en">English</option>
-              <option value="fr">French</option>
-              <option value="pt">Portuguese</option>
+              <option value="en">{t("correspondence.lang.en")}</option>
+              <option value="fr">{t("correspondence.lang.fr")}</option>
+              <option value="pt">{t("correspondence.lang.pt")}</option>
             </select>
           </div>
 
           <div>
-            <label htmlFor="corr-incoming-file-code" className="block text-xs font-medium text-neutral-600 mb-1">File Code</label>
-            <input id="corr-incoming-file-code" name="file_code" value={form.file_code} onChange={handleField} className="form-input w-full" placeholder="e.g. SRHR, PROC, FIN" />
+            <label htmlFor="corr-incoming-file-code" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.field.fileCode")}</label>
+            <input id="corr-incoming-file-code" name="file_code" value={form.file_code} onChange={handleField} className="form-input w-full" placeholder={t("correspondence.fileCodePlaceholder")} />
           </div>
 
           <div>
-            <label htmlFor="corr-incoming-sender-name" className="block text-xs font-medium text-neutral-600 mb-1">Sender name</label>
-            <input id="corr-incoming-sender-name" name="sender_name" value={form.sender_name} onChange={handleField} className="form-input w-full" placeholder="Person or office" />
+            <label htmlFor="corr-incoming-sender-name" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.field.senderName")}</label>
+            <input id="corr-incoming-sender-name" name="sender_name" value={form.sender_name} onChange={handleField} className="form-input w-full" placeholder={t("correspondence.incoming.senderPlaceholder")} />
           </div>
           <div>
-            <label htmlFor="corr-incoming-sender-organisation" className="block text-xs font-medium text-neutral-600 mb-1">Sender organisation</label>
+            <label htmlFor="corr-incoming-sender-organisation" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.field.senderOrganisation")}</label>
             <input id="corr-incoming-sender-organisation" name="sender_organisation" value={form.sender_organisation} onChange={handleField} className="form-input w-full" />
           </div>
           <div>
-            <label htmlFor="corr-incoming-channel" className="block text-xs font-medium text-neutral-600 mb-1">Channel</label>
+            <label htmlFor="corr-incoming-channel" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.field.channel")}</label>
             <select id="corr-incoming-channel" name="channel" value={form.channel} onChange={handleField} className="form-input w-full">
-              <option value="post">Post</option>
-              <option value="email">Email</option>
-              <option value="hand">Hand delivery</option>
-              <option value="courier">Courier</option>
-              <option value="fax">Fax</option>
-              <option value="other">Other</option>
+              <option value="post">{t("correspondence.channel.post")}</option>
+              <option value="email">{t("correspondence.channel.email")}</option>
+              <option value="hand">{t("correspondence.channel.hand")}</option>
+              <option value="courier">{t("correspondence.channel.courier")}</option>
+              <option value="fax">{t("correspondence.channel.fax")}</option>
+              <option value="other">{t("correspondence.channel.other")}</option>
             </select>
           </div>
           <div>
-            <label htmlFor="corr-incoming-confidentiality" className="block text-xs font-medium text-neutral-600 mb-1">Confidentiality</label>
+            <label htmlFor="corr-incoming-confidentiality" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.field.confidentiality")}</label>
             <select id="corr-incoming-confidentiality" name="confidentiality" value={form.confidentiality} onChange={handleField} className="form-input w-full">
-              <option value="general_official">General Official</option>
-              <option value="internal">Internal</option>
-              <option value="restricted">Restricted</option>
-              <option value="confidential">Confidential</option>
-              <option value="highly_confidential">Highly Confidential</option>
-              <option value="privileged_legal">Privileged / Legal</option>
-              <option value="hr_confidential">HR Confidential</option>
-              <option value="finance_confidential">Finance Confidential</option>
+              <option value="general_official">{t("correspondence.conf.generalOfficial")}</option>
+              <option value="internal">{t("correspondence.conf.internal")}</option>
+              <option value="restricted">{t("correspondence.conf.restricted")}</option>
+              <option value="confidential">{t("correspondence.conf.confidential")}</option>
+              <option value="highly_confidential">{t("correspondence.conf.highlyConfidential")}</option>
+              <option value="privileged_legal">{t("correspondence.conf.privilegedLegal")}</option>
+              <option value="hr_confidential">{t("correspondence.conf.hrConfidential")}</option>
+              <option value="finance_confidential">{t("correspondence.conf.financeConfidential")}</option>
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label htmlFor="corr-incoming-summary" className="block text-xs font-medium text-neutral-600 mb-1">Summary</label>
+            <label htmlFor="corr-incoming-summary" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.field.summary")}</label>
             <textarea id="corr-incoming-summary" name="summary" value={form.summary} onChange={handleField} className="form-input w-full" rows={2} />
           </div>
 
           <div>
-            <label htmlFor="corr-incoming-department-id" className="block text-xs font-medium text-neutral-600 mb-1">Route to Department</label>
+            <label htmlFor="corr-incoming-department-id" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.incoming.routeDepartment")}</label>
             <select id="corr-incoming-department-id" name="department_id" value={form.department_id} onChange={handleField} className="form-input w-full">
-              <option value="">— No routing —</option>
+              <option value="">{t("correspondence.incoming.noRouting")}</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
@@ -250,16 +252,16 @@ export default function IncomingMailPage() {
         </div>
 
         <div>
-          <label htmlFor="corr-incoming-body" className="block text-xs font-medium text-neutral-600 mb-1">Notes <span className="text-neutral-400 font-normal">(optional)</span></label>
-          <textarea id="corr-incoming-body" name="body" value={form.body} onChange={handleField} rows={3} className="form-input w-full resize-y" placeholder="Any routing instructions or notes…" />
+          <label htmlFor="corr-incoming-body" className="block text-xs font-medium text-neutral-600 mb-1">{t("correspondence.field.notes")} <span className="text-neutral-400 font-normal">{t("correspondence.optional")}</span></label>
+          <textarea id="corr-incoming-body" name="body" value={form.body} onChange={handleField} rows={3} className="form-input w-full resize-y" placeholder={t("correspondence.incoming.notesPlaceholder")} />
         </div>
       </div>
 
       {/* Actions */}
       <div className="flex items-center justify-between pb-4">
-        <Link href="/correspondence" className="btn-secondary">Cancel</Link>
+        <Link href="/correspondence" className="btn-secondary">{t("common.cancel")}</Link>
         <button type="button" disabled={saving} onClick={handleSave} className="btn-primary">
-          {saving ? "Saving…" : "Register Incoming Mail"}
+          {saving ? t("correspondence.saving") : t("correspondence.incoming.submit")}
         </button>
       </div>
     </div>

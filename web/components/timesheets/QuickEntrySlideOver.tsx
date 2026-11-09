@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { hrApi, type TimesheetEntry, type TimesheetProject } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Work type definitions ─────────────────────────────────────────────────
 
@@ -19,7 +20,7 @@ interface WorkType {
 const WORK_TYPES: WorkType[] = [
   {
     id: "task",
-    label: "Assigned Task",
+    label: "timesheets.quickEntry.type.task",
     icon: "task_alt",
     bucket: "delivery",
     iconBg: "bg-blue-50",
@@ -28,7 +29,7 @@ const WORK_TYPES: WorkType[] = [
   },
   {
     id: "project",
-    label: "Project Work",
+    label: "timesheets.quickEntry.type.project",
     icon: "folder_open",
     bucket: "delivery",
     iconBg: "bg-indigo-50",
@@ -37,7 +38,7 @@ const WORK_TYPES: WorkType[] = [
   },
   {
     id: "meeting",
-    label: "Meeting",
+    label: "timesheets.quickEntry.type.meeting",
     icon: "groups",
     bucket: "meeting",
     iconBg: "bg-violet-50",
@@ -46,7 +47,7 @@ const WORK_TYPES: WorkType[] = [
   },
   {
     id: "communication",
-    label: "Communication",
+    label: "timesheets.quickEntry.type.communication",
     icon: "chat_bubble",
     bucket: "communication",
     iconBg: "bg-sky-50",
@@ -55,7 +56,7 @@ const WORK_TYPES: WorkType[] = [
   },
   {
     id: "administration",
-    label: "Administration",
+    label: "timesheets.quickEntry.type.administration",
     icon: "settings",
     bucket: "administration",
     iconBg: "bg-amber-50",
@@ -64,7 +65,7 @@ const WORK_TYPES: WorkType[] = [
   },
   {
     id: "other",
-    label: "Other",
+    label: "timesheets.quickEntry.type.other",
     icon: "category",
     bucket: "other",
     iconBg: "bg-neutral-100",
@@ -72,6 +73,30 @@ const WORK_TYPES: WorkType[] = [
     activities: ["Training", "Mission Prep", "Unplanned Work"],
   },
 ];
+
+const ACTIVITY_LABEL: Record<string, string> = {
+  "Task Execution": "timesheets.quickEntry.activity.taskExecution",
+  "Research": "timesheets.quickEntry.activity.research",
+  "Documentation": "timesheets.quickEntry.activity.documentation",
+  "Review": "timesheets.quickEntry.activity.review",
+  "Planning": "timesheets.quickEntry.activity.planning",
+  "Implementation": "timesheets.quickEntry.activity.implementation",
+  "Coordination": "timesheets.quickEntry.activity.coordination",
+  "Reporting": "timesheets.quickEntry.activity.reporting",
+  "Team Meeting": "timesheets.quickEntry.activity.teamMeeting",
+  "ExCo/Board": "timesheets.quickEntry.activity.excoBoard",
+  "Committee": "timesheets.quickEntry.activity.committee",
+  "External": "timesheets.quickEntry.activity.external",
+  "Email": "timesheets.quickEntry.activity.email",
+  "Stakeholder Liaison": "timesheets.quickEntry.activity.stakeholderLiaison",
+  "External Comms": "timesheets.quickEntry.activity.externalComms",
+  "HR/Leave Admin": "timesheets.quickEntry.activity.hrLeaveAdmin",
+  "Finance Processing": "timesheets.quickEntry.activity.financeProcessing",
+  "Filing": "timesheets.quickEntry.activity.filing",
+  "Training": "timesheets.quickEntry.activity.training",
+  "Mission Prep": "timesheets.quickEntry.activity.missionPrep",
+  "Unplanned Work": "timesheets.quickEntry.activity.unplannedWork",
+};
 
 const QUICK_HOURS = [0.5, 1, 2, 4, 8];
 
@@ -111,12 +136,11 @@ function parseYMDDate(value: string): Date | null {
   return date;
 }
 
-function getWeekDays(weekStart: string): { label: string; value: string }[] {
+function getWeekDays(weekStart: string, dayNames: string[]): { label: string; value: string }[] {
   if (!weekStart) return [];
   const start = parseYMDDate(weekStart);
   if (!start) return [];
   const days = [];
-  const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri"];
   for (let i = 0; i < 5; i++) {
     const date = new Date(start);
     date.setDate(start.getDate() + i);
@@ -178,6 +202,7 @@ interface Props {
 }
 
 export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd, editEntry }: Props) {
+  const { t } = useI18n();
   const [step, setStep] = useState<1 | 2>(editEntry ? 2 : 1);
   const [selectedType, setSelectedType] = useState<WorkType | null>(null);
   const [spanMode, setSpanMode] = useState<SpanMode>("single");
@@ -193,13 +218,13 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
   const [assignments, setAssignments] = useState<{ id: number; title: string; estimated_hours: number | null }[]>([]);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
 
-  const weekDays = getWeekDays(weekStart);
+  const weekDays = getWeekDays(weekStart, [t("timesheets.quickEntry.day.mon"), t("timesheets.quickEntry.day.tue"), t("timesheets.quickEntry.day.wed"), t("timesheets.quickEntry.day.thu"), t("timesheets.quickEntry.day.fri")]);
 
   // Pre-populate when editing
   useEffect(() => {
     if (editEntry) {
       setStep(2);
-      const wt = WORK_TYPES.find((t) => t.bucket === editEntry.work_bucket) ?? WORK_TYPES[5];
+      const wt = WORK_TYPES.find((w) => w.bucket === editEntry.work_bucket) ?? WORK_TYPES[5];
       setSelectedType(wt);
       setWorkDate(editEntry.work_date);
       setHours(editEntry.hours);
@@ -215,7 +240,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
     if (!open) {
       setTimeout(() => {
         setStep(editEntry ? 2 : 1);
-        setSelectedType(editEntry ? WORK_TYPES.find((t) => t.bucket === editEntry.work_bucket) ?? null : null);
+        setSelectedType(editEntry ? WORK_TYPES.find((w) => w.bucket === editEntry.work_bucket) ?? null : null);
         setSpanMode("single");
         setWorkDate(todayInWeek(weekStart));
         setRangeFrom(weekStart);
@@ -318,16 +343,17 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                 type="button"
                 onClick={() => { setStep(1); setSelectedType(null); }}
                 className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100"
+                aria-label={t("common.back")}
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               </button>
             )}
             <div>
               <h2 className="text-sm font-semibold text-neutral-900">
-                {editEntry ? "Edit Entry" : step === 1 ? "New Time Entry" : selectedType?.label ?? "New Entry"}
+                {editEntry ? t("timesheets.quickEntry.editEntry") : step === 1 ? t("timesheets.quickEntry.newTimeEntry") : selectedType ? t(selectedType.label) : t("timesheets.quickEntry.newEntry")}
               </h2>
               <p className="text-xs text-neutral-500">
-                {step === 1 ? "Select the type of work" : "Fill in the details"}
+                {step === 1 ? t("timesheets.quickEntry.selectType") : t("timesheets.quickEntry.fillDetails")}
               </p>
             </div>
           </div>
@@ -335,6 +361,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
             type="button"
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"
+            aria-label={t("common.close")}
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
@@ -354,7 +381,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                   <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", wt.iconBg)}>
                     <span className={cn("material-symbols-outlined text-[20px]", wt.iconColor)}>{wt.icon}</span>
                   </div>
-                  <span className="text-sm font-medium text-neutral-800">{wt.label}</span>
+                  <span className="text-sm font-medium text-neutral-800">{t(wt.label)}</span>
                 </button>
               ))}
             </div>
@@ -369,12 +396,12 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                     {selectedType.icon}
                   </span>
                 </div>
-                <span className="text-sm font-medium text-neutral-700">{selectedType.label}</span>
+                <span className="text-sm font-medium text-neutral-700">{t(selectedType.label)}</span>
               </div>
 
               {/* Date Span */}
               <div>
-                <p className="mb-1.5 block text-xs font-medium text-neutral-700">Date Span</p>
+                <p className="mb-1.5 block text-xs font-medium text-neutral-700">{t("timesheets.quickEntry.dateSpan")}</p>
                 {/* Mode tabs */}
                 <div className="mb-2.5 flex overflow-hidden rounded-lg border border-neutral-200">
                   {(["single", "week", "range"] as SpanMode[]).map((mode) => (
@@ -389,7 +416,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                           : "text-neutral-600 hover:bg-neutral-50"
                       )}
                     >
-                      {mode === "single" ? "Single Day" : mode === "week" ? "Whole Week" : "Date Range"}
+                      {mode === "single" ? t("timesheets.quickEntry.singleDay") : mode === "week" ? t("timesheets.quickEntry.wholeWeek") : t("timesheets.quickEntry.dateRange")}
                     </button>
                   ))}
                 </div>
@@ -397,6 +424,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                 {spanMode === "single" && (
                   <select
                     className="form-input"
+                    aria-label={t("timesheets.quickEntry.day")}
                     value={workDate}
                     onChange={(e) => setWorkDate(e.target.value)}
                   >
@@ -408,7 +436,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
 
                 {spanMode === "week" && (
                   <p className="rounded-lg bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
-                    5 entries will be created — one per working day (Mon–Fri) for this week.
+                    {t("timesheets.quickEntry.weekHint")}
                   </p>
                 )}
 
@@ -417,13 +445,15 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                     <input
                       type="date"
                       className="form-input flex-1"
+                      aria-label={t("fleet.utilisation.from")}
                       value={rangeFrom}
                       onChange={(e) => setRangeFrom(e.target.value)}
                     />
-                    <span className="text-xs text-neutral-400">to</span>
+                    <span className="text-xs text-neutral-400">{t("timesheets.quickEntry.to")}</span>
                     <input
                       type="date"
                       className="form-input flex-1"
+                      aria-label={t("fleet.utilisation.to")}
                       value={rangeTo}
                       onChange={(e) => setRangeTo(e.target.value)}
                     />
@@ -432,14 +462,14 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
 
                 {spanMode === "range" && spannedDates !== null && spannedDates.length > 0 && (
                   <p className="mt-1.5 text-xs text-neutral-500">
-                    {spannedDates.length} working {spannedDates.length === 1 ? "day" : "days"} selected
+                    {spannedDates.length === 1 ? t("timesheets.quickEntry.oneDaySelected") : t("timesheets.quickEntry.daysSelected", { count: spannedDates.length })}
                   </p>
                 )}
               </div>
 
               {/* Hours */}
               <div>
-                <label htmlFor="quick-entry-hours" className="mb-1.5 block text-xs font-medium text-neutral-700">Hours</label>
+                <label htmlFor="quick-entry-hours" className="mb-1.5 block text-xs font-medium text-neutral-700">{t("timesheets.quickEntry.hours")}</label>
                 <div className="flex items-center gap-2">
                   <input
                     id="quick-entry-hours"
@@ -464,7 +494,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                             : "border-neutral-200 text-neutral-600 hover:border-primary/40 hover:text-primary"
                         )}
                       >
-                        {h}h
+                        {t("timesheets.quickEntry.hoursShort", { hours: h })}
                       </button>
                     ))}
                   </div>
@@ -473,22 +503,22 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
 
               {/* Activity type */}
               <div>
-                <label htmlFor="timesheets-QuickEntrySlideOver-activity" className="mb-1.5 block text-xs font-medium text-neutral-700">Activity</label>
+                <label htmlFor="timesheets-QuickEntrySlideOver-activity" className="mb-1.5 block text-xs font-medium text-neutral-700">{t("mande.col.activity")}</label>
                 <select id="timesheets-QuickEntrySlideOver-activity"
                   className="form-input"
                   value={activityType}
                   onChange={(e) => setActivityType(e.target.value)}
                 >
-                  <option value="">— Select activity —</option>
+                  <option value="">{t("timesheets.quickEntry.selectActivity")}</option>
                   {selectedType.activities.map((a) => (
-                    <option key={a} value={a}>{a}</option>
+                    <option key={a} value={a}>{ACTIVITY_LABEL[a] ? t(ACTIVITY_LABEL[a]) : a}</option>
                   ))}
-                  <option value="__custom__">Other (type manually)</option>
+                  <option value="__custom__">{t("timesheets.quickEntry.otherManual")}</option>
                 </select>
                 {activityType === "__custom__" && (
                   <input
                     type="text"
-                    placeholder="Describe the activity..."
+                    placeholder={t("timesheets.quickEntry.describeActivity")}
                     className="form-input mt-2"
                     value={customActivity}
                     onChange={(e) => setCustomActivity(e.target.value)}
@@ -499,7 +529,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
               {projects.length > 0 && (
                 <div>
                   <label htmlFor="quick-entry-project" className="mb-1.5 block text-xs font-medium text-neutral-700">
-                    Project
+                    {t("timesheets.quickEntry.project")}
                   </label>
                   <select
                     id="quick-entry-project"
@@ -507,7 +537,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                     value={projectId ?? ""}
                     onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : null)}
                   >
-                    <option value="">Select project…</option>
+                    <option value="">{t("timesheets.quickEntry.selectProject")}</option>
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>{p.label}</option>
                     ))}
@@ -518,7 +548,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
               {/* Work assignment (for task type) */}
               {selectedType.id === "task" && (
                 <div>
-                  <label htmlFor="quick-entry-assignment" className="mb-1.5 block text-xs font-medium text-neutral-700">Assignment</label>
+                  <label htmlFor="quick-entry-assignment" className="mb-1.5 block text-xs font-medium text-neutral-700">{t("timesheets.quickEntry.assignment")}</label>
                   {loadingAssignments ? (
                     <div className="h-9 animate-pulse rounded-lg bg-neutral-100" />
                   ) : (
@@ -528,10 +558,10 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                       value={workAssignmentId ?? ""}
                       onChange={(e) => setWorkAssignmentId(e.target.value ? Number(e.target.value) : null)}
                     >
-                      <option value="">— None —</option>
+                      <option value="">{t("timesheets.quickEntry.none")}</option>
                       {assignments.map((a) => (
                         <option key={a.id} value={a.id}>
-                          {a.title}{a.estimated_hours ? ` (${a.estimated_hours}h est.)` : ""}
+                          {a.title}{a.estimated_hours ? ` ${t("timesheets.quickEntry.estimated", { hours: a.estimated_hours })}` : ""}
                         </option>
                       ))}
                     </select>
@@ -542,11 +572,11 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
               {/* Description / notes */}
               <div>
                 <label htmlFor="timesheets-QuickEntrySlideOver-notes-optional" className="mb-1.5 block text-xs font-medium text-neutral-700">
-                  Notes <span className="text-neutral-400">(optional)</span>
+                  {t("correspondence.field.notes")} <span className="text-neutral-400">{t("correspondence.optional")}</span>
                 </label>
                 <textarea id="timesheets-QuickEntrySlideOver-notes-optional"
                   rows={3}
-                  placeholder="Add any additional notes..."
+                  placeholder={t("timesheets.quickEntry.notesPlaceholder")}
                   className="form-input resize-none"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -561,7 +591,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
           <div className="border-t border-neutral-200 px-5 py-4">
             <div className="flex items-center gap-3">
               <button type="button" onClick={onClose} className="btn-secondary flex-1">
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -570,12 +600,12 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                 className="btn-primary flex-1 disabled:opacity-50"
               >
                 {editEntry
-                  ? "Update Entry"
+                  ? t("timesheets.quickEntry.updateEntry")
                   : spanMode === "week"
-                  ? "Add 5 Entries"
+                  ? t("timesheets.quickEntry.addFive")
                   : spanMode === "range" && spannedDates && spannedDates.length > 1
-                  ? `Add ${spannedDates.length} Entries`
-                  : "Add Entry"}
+                  ? t("timesheets.quickEntry.addCount", { count: spannedDates.length })
+                  : t("timesheets.quickEntry.addEntry")}
               </button>
             </div>
           </div>

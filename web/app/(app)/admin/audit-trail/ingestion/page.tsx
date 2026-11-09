@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { platformAuditApi } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type IngestionHealth = Record<string, number | null>;
 type DeadLetter = {
@@ -15,6 +16,7 @@ type DeadLetter = {
 };
 
 export default function AuditTrailIngestionPage() {
+  const { t } = useI18n();
   const [health, setHealth] = useState<IngestionHealth | null>(null);
   const [deadLetters, setDeadLetters] = useState<DeadLetter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,11 +45,16 @@ export default function AuditTrailIngestionPage() {
       const response = await platformAuditApi.processOutbox(100);
       const stats = response.data.data;
       setProcessResult(
-        `Processed ${stats.processed}; committed ${stats.committed}; failed ${stats.failed}; dead-lettered ${stats.dead_lettered}.`,
+        t("admin.auditTrail.ingestion.processed", {
+          processed: stats.processed,
+          committed: stats.committed,
+          failed: stats.failed,
+          dead: stats.dead_lettered,
+        }),
       );
       await load();
     } catch {
-      setProcessResult("Outbox processing failed. Check audit-trail.manage-ingestion permission and server logs.");
+      setProcessResult(t("admin.auditTrail.ingestion.processFailed"));
     } finally {
       setProcessing(false);
     }
@@ -56,14 +63,14 @@ export default function AuditTrailIngestionPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Ingestion Health"
-        subtitle="Outbox and dead-letter visibility for the platform audit trail."
+        title={t("admin.auditTrail.ingestion.title")}
+        subtitle={t("admin.auditTrail.ingestion.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Audit Trail", href: "/admin/audit-trail" },
-              { label: "Ingestion" },
+              { label: t("admin.homeLabel"), href: "/admin" },
+              { label: t("admin.crumb.auditTrail"), href: "/admin/audit-trail" },
+              { label: t("admin.auditTrail.ingestion.crumb") },
             ]}
           />
         }
@@ -75,17 +82,17 @@ export default function AuditTrailIngestionPage() {
               disabled={processing}
               className="btn-primary text-sm disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {processing ? "Processing..." : "Process outbox"}
+              {processing ? t("admin.auditTrail.ingestion.processing") : t("admin.auditTrail.ingestion.process")}
             </button>
             <Link href="/admin/audit-trail" className="btn-secondary text-sm">
-              Back to audit trail
+              {t("admin.auditTrail.ingestion.back")}
             </Link>
           </div>
         }
       />
 
       <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        Operational migration and replay actions are restricted to the controlled audit runbook.
+        {t("admin.auditTrail.ingestion.runbookNotice")}
       </div>
 
       {processResult ? (
@@ -107,40 +114,40 @@ export default function AuditTrailIngestionPage() {
               <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
                 {key.replace(/_/g, " ")}
               </p>
-              <p className="text-lg font-semibold text-neutral-900">{value ?? "None"}</p>
+              <p className="text-lg font-semibold text-neutral-900">{value ?? t("admin.auditTrail.ingestion.none")}</p>
             </div>
           ))}
         </div>
       ) : (
         <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-500">
-          Ingestion health is not available.
+          {t("admin.auditTrail.ingestion.unavailable")}
         </div>
       )}
 
       <div className="card overflow-hidden">
-        <div className="border-b border-neutral-100 px-4 py-3 text-sm font-medium">Dead letters</div>
+        <div className="border-b border-neutral-100 px-4 py-3 text-sm font-medium">{t("admin.auditTrail.ingestion.deadLetters")}</div>
         <div className="overflow-x-auto">
           <table className="data-table">
-            <caption className="sr-only">Audit ingestion dead letters</caption>
+            <caption className="sr-only">{t("admin.auditTrail.ingestion.caption")}</caption>
             <thead>
               <tr>
-                <th scope="col">ID</th>
-                <th scope="col">Event</th>
-                <th scope="col">Error</th>
-                <th scope="col">Status</th>
+                <th scope="col">{t("admin.common.id")}</th>
+                <th scope="col">{t("admin.auditTrail.holds.scopeEvent")}</th>
+                <th scope="col">{t("admin.auditTrail.ingestion.error")}</th>
+                <th scope="col">{t("admin.common.status")}</th>
               </tr>
             </thead>
             <tbody>
               {deadLetters.map((item) => (
                 <tr key={item.id}>
                   <td>{item.id}</td>
-                  <td className="text-xs">{item.event_key ?? "Unknown"}</td>
-                  <td className="max-w-xs truncate text-xs">{item.error_message ?? "No error message"}</td>
-                  <td className="text-xs">{item.status ?? "Unknown"}</td>
+                  <td className="text-xs">{item.event_key ?? t("admin.common.unknown")}</td>
+                  <td className="max-w-xs truncate text-xs">{item.error_message ?? t("admin.auditTrail.ingestion.noError")}</td>
+                  <td className="text-xs">{item.status ?? t("admin.common.unknown")}</td>
                 </tr>
               ))}
               {deadLetters.length === 0 ? (
-                <TableEmpty colSpan={4} title="No dead letters." />
+                <TableEmpty colSpan={4} title={t("admin.auditTrail.ingestion.empty")} />
               ) : null}
             </tbody>
           </table>

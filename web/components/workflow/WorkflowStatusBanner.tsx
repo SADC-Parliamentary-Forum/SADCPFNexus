@@ -2,6 +2,7 @@
 
 import { WorkflowTracker } from "@/components/workflow/WorkflowTracker";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Snapshot = {
   status?: string;
@@ -53,6 +54,7 @@ export function WorkflowStatusBanner({
   extras = [],
   className,
 }: WorkflowStatusBannerProps) {
+  const { t } = useI18n();
   if (snapshot) {
     return (
       <div className={className}>
@@ -66,15 +68,15 @@ export function WorkflowStatusBanner({
   }
 
   const cells = [
-    { label: "Status", value: bannerText(status) },
-    { label: "Current stage", value: bannerText(currentStage) },
-    { label: "Currently with", value: bannerText(currentHolder) },
+    { label: t("workflow.tracker.status"), value: bannerText(status) },
+    { label: t("workflow.tracker.currentStage"), value: bannerText(currentStage) },
+    { label: t("workflow.tracker.currentlyWith"), value: bannerText(currentHolder) },
     ...extras.map((extra) => ({ label: extra.label, value: bannerText(extra.value) })),
   ];
 
   return (
     <div className={cn("card space-y-3 p-4 sm:p-5", className)}>
-      <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Workflow tracker</h4>
+      <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("workflow.tracker.title")}</h4>
       <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
         {cells.map((cell) => (
           <div key={cell.label}>

@@ -8,6 +8,7 @@ import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -28,6 +29,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 }
 
 export default function Page() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export default function Page() {
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "sod"] });
     },
-    onError: () => setErr("Could not run the SoD analysis."),
+    onError: () => setErr(t("people.sod.runFailed")),
   });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","sod"],
@@ -72,19 +74,19 @@ return (await peopleAuthorityApi.listSodReports()).data;
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="SoD Analysis"
-        subtitle="People & SoD Analysis"
+        title={t("people.sod.title")}
+        subtitle={t("people.sod.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "SoD Analysis" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.sod.title") },
             ]}
           />
         }
         actions={
           <Link href="/people" className="btn-secondary text-sm">
-            Hub
+            {t("people.common.hub")}
           </Link>
         }
       />
@@ -97,12 +99,12 @@ return (await peopleAuthorityApi.listSodReports()).data;
         }}
       >
         <label htmlFor="people-sod-report-title-settitle-e-target-value-placeholder" className="block text-xs font-medium text-neutral-600">
-          Report title
-          <input id="people-sod-report-title-settitle-e-target-value-placeholder" className="form-input mt-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Optional" />
+          {t("people.sod.reportTitle")}
+          <input id="people-sod-report-title-settitle-e-target-value-placeholder" className="form-input mt-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("people.common.optional")} />
         </label>
         <div className="flex items-end gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={analyse.isPending}>
-            {analyse.isPending ? "Analysing…" : "Run SoD analysis"}
+            {analyse.isPending ? t("people.sod.analysing") : t("people.sod.run")}
           </button>
           {err && <p className="text-sm text-red-700">{err}</p>}
         </div>
@@ -110,12 +112,12 @@ return (await peopleAuthorityApi.listSodReports()).data;
 
       <div className="card p-3">
         <label htmlFor="people-sod-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
+          {t("common.search")}
           <input id="people-sod-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
+            placeholder={t("people.common.filterRows")}
           />
         </label>
       </div>
@@ -130,24 +132,24 @@ return (await peopleAuthorityApi.listSodReports()).data;
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
             action={
               <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
+                {t("common.retry")}
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">SoD Analysis</caption>
+              <caption className="sr-only">{t("people.sod.title")}</caption>
               <thead>
                 <tr>
                   {columns.map((c) => (

@@ -16,6 +16,7 @@ import { Modal } from "@/components/ui/Modal";
 import { TableEmpty } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type GradeBand = { id: number; code: string; label: string; salary_scales?: SalaryScale[] };
 type SalaryScale = { id: number; grade_band_id: number; status: string; notches?: { notch: number; monthly: number }[] };
@@ -25,6 +26,7 @@ function fmt2(n: number) {
 }
 
 export default function SalaryAssignmentsPage() {
+  const { t } = useI18n();
   const { confirm } = useConfirm();
   const toast = useToast();
   const [assignments, setAssignments] = useState<EmployeeSalaryAssignment[]>([]);
@@ -59,7 +61,7 @@ export default function SalaryAssignmentsPage() {
       const res = await salaryAssignmentApi.list(params);
       setAssignments(res.data.data ?? []);
     } catch {
-      setError("Failed to load salary assignments.");
+      setError(t("admin.salary.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -118,13 +120,13 @@ export default function SalaryAssignmentsPage() {
       } else {
         await salaryAssignmentApi.create(payload);
       }
-      toast.success(editId ? "Salary assignment updated" : "Salary assignment created");
+      toast.success(editId ? t("admin.salary.updated") : t("admin.salary.created"));
       setShowModal(false);
       load();
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Save failed.";
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("admin.salary.saveFailed");
       setFormError(msg);
-      toast.error(editId ? "Salary assignment not updated" : "Salary assignment not created", apiErrorMessage(e, "Save failed."));
+      toast.error(editId ? t("admin.salary.notUpdated") : t("admin.salary.notCreated"), apiErrorMessage(e, t("admin.salary.saveFailed")));
     } finally {
       setSubmitting(false);
     }
@@ -133,17 +135,17 @@ export default function SalaryAssignmentsPage() {
   const handleRemove = async (id: number) => {
     if (
       !(await confirm({
-        title: "Remove salary assignment",
-        message: "Remove this salary assignment?",
+        title: t("admin.salary.removeTitle"),
+        message: t("admin.salary.removeMessage"),
         variant: "danger",
       }))
     ) return;
     try {
       await salaryAssignmentApi.remove(id);
-      toast.success("Salary assignment removed");
+      toast.success(t("admin.salary.removed"));
       load();
     } catch (err) {
-      toast.error("Could not remove salary assignment", apiErrorMessage(err, "Failed to remove salary assignment."));
+      toast.error(t("admin.salary.removeFailedTitle"), apiErrorMessage(err, t("admin.salary.removeFailed")));
     }
   };
 
@@ -154,20 +156,20 @@ export default function SalaryAssignmentsPage() {
     <div className="w-full min-w-0 p-6 space-y-5">
       {/* Breadcrumb */}
       <nav className="text-sm text-neutral-500 flex items-center gap-1 flex-wrap">
-        <Link href="/admin" className="hover:text-primary">Admin</Link>
+        <Link href="/admin" className="hover:text-primary">{t("admin.homeLabel")}</Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span className="text-neutral-800 font-medium">Salary Assignments</span>
+        <span className="text-neutral-800 font-medium">{t("admin.salary.crumb")}</span>
       </nav>
 
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Employee Salary Assignments"
-        subtitle="Link each employee to their grade band and notch for payslip auto-fill."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Employee Salary Assignments" }]} />}
+        title={t("admin.salary.title")}
+        subtitle={t("admin.salary.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.salary.title") }]} />}
       />
         <button onClick={openCreate} className="btn-primary text-sm flex items-center gap-2">
           <span className="material-symbols-outlined text-base">add</span>
-          Assign Grade
+          {t("admin.salary.assignGrade")}
         </button>
       </div>
 
@@ -178,10 +180,10 @@ export default function SalaryAssignmentsPage() {
           value={filterUserId}
           onChange={(e) => setFilterUserId(e.target.value)}
         >
-          <option value="">All employees</option>
+          <option value="">{t("admin.salary.allEmployees")}</option>
           {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
-        <button onClick={load} className="btn-secondary text-sm px-3 py-2">Apply</button>
+        <button onClick={load} className="btn-secondary text-sm px-3 py-2">{t("admin.salary.apply")}</button>
       </div>
 
       {error && <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{error}</div>}
@@ -190,13 +192,13 @@ export default function SalaryAssignmentsPage() {
         <table className="data-table w-full">
           <thead>
             <tr>
-              <th>Employee</th>
-              <th>Grade Band</th>
-              <th>Notch</th>
-              <th>Employment Type</th>
-              <th>Effective From</th>
-              <th>Effective To</th>
-              <th>Actions</th>
+              <th>{t("admin.salary.employee")}</th>
+              <th>{t("admin.salary.gradeBand")}</th>
+              <th>{t("admin.salary.notch")}</th>
+              <th>{t("admin.salary.employmentType")}</th>
+              <th>{t("admin.salary.effectiveFrom")}</th>
+              <th>{t("admin.salary.effectiveTo")}</th>
+              <th>{t("admin.common.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -207,19 +209,19 @@ export default function SalaryAssignmentsPage() {
                 </tr>
               ))
             ) : assignments.length === 0 ? (
-              <TableEmpty colSpan={7} title="No salary assignments found." />
+              <TableEmpty colSpan={7} title={t("admin.salary.empty")} />
             ) : assignments.map((a) => (
               <tr key={a.id} className="hover:bg-neutral-50">
                 <td className="text-sm font-medium">{a.employee?.name ?? `#${a.user_id}`}</td>
                 <td className="text-sm">{a.grade_band?.code ?? a.grade_band?.label ?? `#${a.grade_band_id}`}</td>
-                <td className="text-sm">Notch {a.notch_number}</td>
+                <td className="text-sm">{t("admin.salary.notchN", { n: a.notch_number })}</td>
                 <td className="text-sm text-neutral-500">{a.employment_type ?? "—"}</td>
                 <td className="text-sm text-neutral-500">{formatDate(a.effective_from)}</td>
-                <td className="text-sm text-neutral-500">{a.effective_to ? formatDate(a.effective_to) : "Open"}</td>
+                <td className="text-sm text-neutral-500">{a.effective_to ? formatDate(a.effective_to) : t("admin.salary.open")}</td>
                 <td>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => openEdit(a)} className="btn-secondary text-xs py-1 px-2">Edit</button>
-                    <button onClick={() => handleRemove(a.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Remove</button>
+                    <button onClick={() => openEdit(a)} className="btn-secondary text-xs py-1 px-2">{t("common.edit")}</button>
+                    <button onClick={() => handleRemove(a.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">{t("admin.salary.remove")}</button>
                   </div>
                 </td>
               </tr>
@@ -230,59 +232,59 @@ export default function SalaryAssignmentsPage() {
 
       {/* Modal */}
       {showModal && (
-        <Modal open title={`${editId ? "Edit" : "Assign"} Grade Band`} onClose={() => setShowModal(false)} size="lg">
+        <Modal open title={editId ? t("admin.salary.editBand") : t("admin.salary.assignBand")} onClose={() => setShowModal(false)} size="lg">
           <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="admin-salary-assignments-employee" className="block text-sm font-medium text-neutral-700 mb-1">Employee <span className="text-red-500">*</span></label>
+                <label htmlFor="admin-salary-assignments-employee" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.salary.employee")} <span className="text-red-500">*</span></label>
                 <select id="admin-salary-assignments-employee" className="form-input w-full" value={form.user_id} onChange={(e) => setForm((f) => ({ ...f, user_id: e.target.value }))} required disabled={!!editId}>
-                  <option value="">Select employee…</option>
+                  <option value="">{t("admin.salary.selectEmployee")}</option>
                   {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="admin-salary-assignments-grade-band" className="block text-sm font-medium text-neutral-700 mb-1">Grade Band <span className="text-red-500">*</span></label>
+                  <label htmlFor="admin-salary-assignments-grade-band" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.salary.gradeBand")} <span className="text-red-500">*</span></label>
                   <select id="admin-salary-assignments-grade-band" className="form-input w-full" value={form.grade_band_id} onChange={(e) => setForm((f) => ({ ...f, grade_band_id: e.target.value, salary_scale_id: "" }))} required>
-                    <option value="">Select…</option>
+                    <option value="">{t("admin.common.select")}</option>
                     {gradeBands.map((b) => <option key={b.id} value={b.id}>{b.code} — {b.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="admin-salary-assignments-notch" className="block text-sm font-medium text-neutral-700 mb-1">Notch # <span className="text-red-500">*</span></label>
+                  <label htmlFor="admin-salary-assignments-notch" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.salary.notchNo")} <span className="text-red-500">*</span></label>
                   <input id="admin-salary-assignments-notch" type="number" min={1} max={30} className="form-input w-full" value={form.notch_number} onChange={(e) => setForm((f) => ({ ...f, notch_number: e.target.value }))} required />
                 </div>
               </div>
               <div>
-                <label htmlFor="admin-salary-assignments-salary-scale-optional" className="block text-sm font-medium text-neutral-700 mb-1">Salary Scale (optional)</label>
+                <label htmlFor="admin-salary-assignments-salary-scale-optional" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.salary.scaleOptional")}</label>
                 <select id="admin-salary-assignments-salary-scale-optional" className="form-input w-full" value={form.salary_scale_id} onChange={(e) => setForm((f) => ({ ...f, salary_scale_id: e.target.value }))}>
-                  <option value="">None</option>
-                  {availableScales.map((s) => <option key={s.id} value={s.id}>Scale #{s.id}</option>)}
+                  <option value="">{t("admin.auditTrail.ingestion.none")}</option>
+                  {availableScales.map((s) => <option key={s.id} value={s.id}>{t("admin.salary.scaleN", { id: s.id })}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="admin-salary-assignments-employment-type" className="block text-sm font-medium text-neutral-700 mb-1">Employment Type</label>
+                <label htmlFor="admin-salary-assignments-employment-type" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.salary.employmentType")}</label>
                 <select id="admin-salary-assignments-employment-type" className="form-input w-full" value={form.employment_type} onChange={(e) => setForm((f) => ({ ...f, employment_type: e.target.value }))}>
-                  <option value="">Not specified</option>
-                  <option value="local">Local</option>
-                  <option value="regional">Regional</option>
-                  <option value="researcher">Researcher</option>
+                  <option value="">{t("admin.salary.notSpecified")}</option>
+                  <option value="local">{t("admin.salary.local")}</option>
+                  <option value="regional">{t("admin.salary.regional")}</option>
+                  <option value="researcher">{t("admin.salary.researcher")}</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="admin-salary-assignments-effective-from" className="block text-sm font-medium text-neutral-700 mb-1">Effective From <span className="text-red-500">*</span></label>
+                  <label htmlFor="admin-salary-assignments-effective-from" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.salary.effectiveFrom")} <span className="text-red-500">*</span></label>
                   <input id="admin-salary-assignments-effective-from" type="date" className="form-input w-full" value={form.effective_from} onChange={(e) => setForm((f) => ({ ...f, effective_from: e.target.value }))} required />
                 </div>
                 <div>
-                  <label htmlFor="admin-salary-assignments-effective-to" className="block text-sm font-medium text-neutral-700 mb-1">Effective To</label>
+                  <label htmlFor="admin-salary-assignments-effective-to" className="block text-sm font-medium text-neutral-700 mb-1">{t("admin.salary.effectiveTo")}</label>
                   <input id="admin-salary-assignments-effective-to" type="date" className="form-input w-full" value={form.effective_to} onChange={(e) => setForm((f) => ({ ...f, effective_to: e.target.value }))} />
                 </div>
               </div>
               {formError && <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-sm">{formError}</div>}
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary text-sm">Cancel</button>
+                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary text-sm">{t("common.cancel")}</button>
                 <button type="submit" disabled={submitting} className="btn-primary text-sm disabled:opacity-50">
-                  {submitting ? "Saving…" : editId ? "Update" : "Create"}
+                  {submitting ? t("admin.common.saving") : editId ? t("admin.auditTrail.governance.update") : t("common.create")}
                 </button>
               </div>
           </form>

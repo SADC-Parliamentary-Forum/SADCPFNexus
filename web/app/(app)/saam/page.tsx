@@ -14,6 +14,7 @@ import { formatDate } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -22,25 +23,26 @@ function isActiveDelegation(d: DelegatedAuthority): boolean {
   return d.start_date <= today && d.end_date >= today;
 }
 
+/** Returns the catalog key for a signature type; callers translate it. */
 function sigTypeLabel(type: "full" | "initials"): string {
-  return type === "full" ? "Full Signature" : "Initials";
+  return type === "full" ? "saam.sigType.full" : "saam.sigType.initials";
 }
 
 function sigTypeIcon(type: "full" | "initials"): string {
   return type === "full" ? "draw" : "text_fields";
 }
 
-function moduleLabel(signableType: string): string {
+function moduleLabel(signableType: string, t: (key: string) => string): string {
   const map: Record<string, string> = {
-    "App\\Models\\TravelRequest": "Travel",
-    "App\\Models\\LeaveRequest": "Leave",
-    "App\\Models\\ImprestRequest": "Imprest",
-    "App\\Models\\ProcurementRequest": "Procurement",
-    "App\\Models\\FinanceRecord": "Finance",
-    "App\\Models\\Correspondence": "Correspondence",
-    "App\\Models\\HrPersonalFile": "HR",
+    "App\\Models\\TravelRequest": "nav.travel",
+    "App\\Models\\LeaveRequest": "nav.leave",
+    "App\\Models\\ImprestRequest": "nav.imprest",
+    "App\\Models\\ProcurementRequest": "nav.procurement",
+    "App\\Models\\FinanceRecord": "nav.finance",
+    "App\\Models\\Correspondence": "saam.module.correspondence",
+    "App\\Models\\HrPersonalFile": "nav.hr",
   };
-  return map[signableType] ?? signableType.split("\\").pop() ?? signableType;
+  return map[signableType] ? t(map[signableType]) : (signableType.split("\\").pop() ?? signableType);
 }
 
 function moduleColor(signableType: string): string {
@@ -118,6 +120,7 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
   onRevoke: (type: "full" | "initials") => void;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [revokeTarget, setRevokeTarget] = useState<"full" | "initials" | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
@@ -151,7 +154,7 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
             >
               draw
             </span>
-            <h2 className="text-sm font-semibold text-neutral-900">My Signature Profile</h2>
+            <h2 className="text-sm font-semibold text-neutral-900">{t("saam.profile.title")}</h2>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -159,14 +162,14 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
               className="btn-secondary text-xs py-1.5 px-3 gap-1.5"
             >
               <span className="material-symbols-outlined text-[14px]">gesture</span>
-              Draw
+              {t("saam.profile.draw")}
             </button>
             <button
               onClick={() => router.push("/saam/verify/upload")}
               className="btn-secondary text-xs py-1.5 px-3 gap-1.5"
             >
               <span className="material-symbols-outlined text-[14px]">upload</span>
-              Upload
+              {t("common.upload")}
             </button>
           </div>
         </div>
@@ -182,9 +185,9 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
                 signature
               </span>
             </div>
-            <p className="text-sm font-medium text-neutral-700">No signatures on file</p>
+            <p className="text-sm font-medium text-neutral-700">{t("saam.profile.emptyTitle")}</p>
             <p className="text-xs text-neutral-400 mt-1">
-              Draw or upload your signature to start signing documents.
+              {t("saam.profile.emptyDescription")}
             </p>
             <div className="flex items-center justify-center gap-3 mt-4">
               <button
@@ -192,14 +195,14 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
                 className="btn-primary text-sm"
               >
                 <span className="material-symbols-outlined text-[16px]">gesture</span>
-                Draw Signature
+                {t("saam.drawSignature")}
               </button>
               <button
                 onClick={() => router.push("/saam/verify/upload")}
                 className="btn-secondary text-sm"
               >
                 <span className="material-symbols-outlined text-[16px]">upload</span>
-                Upload Signature
+                {t("saam.uploadSignature")}
               </button>
             </div>
           </div>
@@ -233,28 +236,28 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-neutral-900">
-                        {sigTypeLabel(sigType)}
+                        {t(sigTypeLabel(sigType))}
                       </span>
                       {profile ? (
                         isActive ? (
                           <span className="badge-success text-[10px] px-2 py-0.5 rounded-full font-semibold">
-                            Active
+                            {t("saam.active")}
                           </span>
                         ) : (
                           <span className="badge-muted text-[10px] px-2 py-0.5 rounded-full font-semibold">
-                            Revoked
+                            {t("saam.revoked")}
                           </span>
                         )
                       ) : (
                         <span className="badge-muted text-[10px] px-2 py-0.5 rounded-full font-semibold">
-                          Not set
+                          {t("saam.notSet")}
                         </span>
                       )}
                     </div>
 
                     {version && (
                       <p className="text-xs text-neutral-400 mt-0.5">
-                        Version {version.version_no} · Active since {formatDate(version.effective_from)}
+                        {t("saam.profile.version", { version: version.version_no, date: formatDate(version.effective_from) })}
                       </p>
                     )}
 
@@ -263,7 +266,7 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
                       <div className="mt-2 inline-block border border-neutral-200 rounded-lg overflow-hidden bg-neutral-50">
                         <img
                           src={saamApi.signatureImageUrl(version.id)}
-                          alt={`${sigTypeLabel(sigType)} preview`}
+                          alt={t("saam.profile.previewAlt", { type: t(sigTypeLabel(sigType)) })}
                           className="h-14 max-w-[200px] object-contain p-1"
                           onError={() =>
                             setImageErrors((prev) => ({ ...prev, [imageErrorKey]: true }))
@@ -274,7 +277,7 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
                     {version && imageErrors[imageErrorKey] && (
                       <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-neutral-400 border border-dashed border-neutral-200 rounded-lg px-3 py-2">
                         <span className="material-symbols-outlined text-[14px]">broken_image</span>
-                        Preview unavailable
+                        {t("saam.profile.previewUnavailable")}
                       </div>
                     )}
                   </div>
@@ -289,14 +292,14 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
                         className="btn-primary text-xs py-1.5 px-3 gap-1"
                       >
                         <span className="material-symbols-outlined text-[13px]">add</span>
-                        Set up
+                        {t("saam.profile.setUp")}
                       </button>
                     ) : (
                       <button
                         onClick={() => confirmRevoke(sigType)}
                         className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors"
                       >
-                        Revoke
+                        {t("saam.delegations.revoke")}
                       </button>
                     )}
                   </div>
@@ -325,28 +328,26 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
                 </span>
               </div>
               <div>
-                <h3 className="text-sm font-bold text-neutral-900">Revoke Signature</h3>
-                <p className="text-xs text-neutral-500">This action cannot be undone.</p>
+                <h3 className="text-sm font-bold text-neutral-900">{t("saam.revokeDialog.title")}</h3>
+                <p className="text-xs text-neutral-500">{t("saam.revokeDialog.irreversible")}</p>
               </div>
             </div>
             <p className="text-sm text-neutral-600 mb-5">
-              Are you sure you want to revoke your{" "}
-              <span className="font-semibold">{sigTypeLabel(revokeTarget)}</span>? You will need to
-              draw or upload a new one to continue signing documents.
+              {t("saam.revokeDialog.message", { type: t(sigTypeLabel(revokeTarget)) })}
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setRevokeTarget(null)}
                 className="btn-secondary text-sm"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleRevoke}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-600 transition-colors"
               >
                 <span className="material-symbols-outlined text-[15px]">delete</span>
-                Revoke
+                {t("saam.delegations.revoke")}
               </button>
             </div>
           </div>
@@ -359,11 +360,11 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
 // ─── Recent Events ────────────────────────────────────────────────────────────
 
 const ACTION_CONFIG: Record<string, { icon: string; color: string; bg: string; label: string }> = {
-  approve:     { icon: "check_circle", color: "text-green-600",  bg: "bg-green-50",   label: "Approved"     },
-  reject:      { icon: "cancel",       color: "text-red-600",    bg: "bg-red-50",     label: "Rejected"     },
-  review:      { icon: "search",       color: "text-blue-600",   bg: "bg-blue-50",    label: "Reviewed"     },
-  return:      { icon: "undo",         color: "text-amber-600",  bg: "bg-amber-50",   label: "Returned"     },
-  acknowledge: { icon: "done_all",     color: "text-teal-600",   bg: "bg-teal-50",    label: "Acknowledged" },
+  approve:     { icon: "check_circle", color: "text-green-600",  bg: "bg-green-50",   label: "saam.action.approve"     },
+  reject:      { icon: "cancel",       color: "text-red-600",    bg: "bg-red-50",     label: "saam.action.reject"     },
+  review:      { icon: "search",       color: "text-blue-600",   bg: "bg-blue-50",    label: "saam.action.review"     },
+  return:      { icon: "undo",         color: "text-amber-600",  bg: "bg-amber-50",   label: "saam.action.return"     },
+  acknowledge: { icon: "done_all",     color: "text-teal-600",   bg: "bg-teal-50",    label: "saam.action.acknowledge" },
 };
 
 const MORPH_SHORT: Record<string, string> = {
@@ -375,6 +376,7 @@ const MORPH_SHORT: Record<string, string> = {
 };
 
 function RecentEventsCard() {
+  const { t, localeTag } = useI18n();
   const { data, isLoading } = useQuery({
     queryKey: ["saam", "my-events"],
     queryFn: () => saamApi.getMyEvents().then((r) => r.data.data),
@@ -393,13 +395,13 @@ function RecentEventsCard() {
           >
             history
           </span>
-          <h2 className="text-sm font-semibold text-neutral-900">Recent Signature Activity</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">{t("saam.events.title")}</h2>
         </div>
         <Link
           href="/saam/verify"
           className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
         >
-          Verify document
+          {t("saam.events.verifyDocument")}
           <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
         </Link>
       </div>
@@ -420,8 +422,8 @@ function RecentEventsCard() {
       ) : events.length === 0 ? (
         <EmptyState
           icon="history_toggle_off"
-          title="No signature activity yet."
-          description="Your signing history will appear here after you sign your first document."
+          title={t("saam.events.emptyTitle")}
+          description={t("saam.events.emptyDescription")}
           className="py-10 min-h-0"
         />
       ) : (
@@ -429,7 +431,7 @@ function RecentEventsCard() {
           {events.map((evt) => {
             const cfg       = ACTION_CONFIG[evt.action] ?? ACTION_CONFIG.acknowledge;
             const shortType = MORPH_SHORT[evt.signable_type] ?? "document";
-            const modLabel  = moduleLabel(evt.signable_type);
+            const modLabel  = moduleLabel(evt.signable_type, t);
             return (
               <div key={evt.id} className="px-5 py-3 flex items-center gap-3 hover:bg-neutral-50/50 transition-colors">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${cfg.bg}`}>
@@ -442,23 +444,23 @@ function RecentEventsCard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-neutral-800 truncate">
-                    {cfg.label} · <span className="text-neutral-500">{modLabel} #{evt.signable_id}</span>
+                    {t(cfg.label)} · <span className="text-neutral-500">{t("saam.events.record", { module: modLabel, id: evt.signable_id })}</span>
                     {evt.is_delegated && (
                       <span className="ml-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
-                        Delegated
+                        {t("saam.events.delegated")}
                       </span>
                     )}
                   </p>
                   <p className="text-[11px] text-neutral-400 mt-0.5">
-                    {evt.step_key ? `Step: ${evt.step_key} · ` : ""}
-                    {new Date(evt.signed_at).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {evt.step_key ? `${t("saam.events.step", { step: evt.step_key })} · ` : ""}
+                    {new Date(evt.signed_at).toLocaleString(localeTag, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
                 <Link
                   href={`/saam/verify/${shortType}/${evt.signable_id}`}
                   className="btn-secondary text-[11px] py-1 px-2 flex-shrink-0"
                 >
-                  Verify
+                  {t("saam.events.verify")}
                 </Link>
               </div>
             );
@@ -480,6 +482,7 @@ function DelegationSummaryCard({
   incoming: DelegatedAuthority[];
   loading: boolean;
 }) {
+  const { t } = useI18n();
   const activeOut = outgoing.filter(isActiveDelegation);
   const activeIn = incoming.filter(isActiveDelegation);
 
@@ -493,13 +496,13 @@ function DelegationSummaryCard({
           >
             manage_accounts
           </span>
-          <h2 className="text-sm font-semibold text-neutral-900">Delegation Summary</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">{t("saam.summary.title")}</h2>
         </div>
         <Link
           href="/saam/delegations"
           className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
         >
-          Manage all
+          {t("saam.summary.manageAll")}
           <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
         </Link>
       </div>
@@ -529,7 +532,7 @@ function DelegationSummaryCard({
                 >
                   arrow_outward
                 </span>
-                <span className="text-xs font-semibold text-neutral-600">Delegated Out</span>
+                <span className="text-xs font-semibold text-neutral-600">{t("saam.summary.out")}</span>
               </div>
               <p
                 className={`text-2xl font-bold ${
@@ -539,7 +542,7 @@ function DelegationSummaryCard({
                 {activeOut.length}
               </p>
               <p className="text-[11px] text-neutral-400 mt-0.5">
-                {outgoing.length} total · {activeOut.length} active
+                {t("saam.summary.totals", { total: outgoing.length, active: activeOut.length })}
               </p>
             </div>
 
@@ -560,7 +563,7 @@ function DelegationSummaryCard({
                 >
                   south_west
                 </span>
-                <span className="text-xs font-semibold text-neutral-600">Delegated to Me</span>
+                <span className="text-xs font-semibold text-neutral-600">{t("saam.summary.in")}</span>
               </div>
               <p
                 className={`text-2xl font-bold ${
@@ -570,7 +573,7 @@ function DelegationSummaryCard({
                 {activeIn.length}
               </p>
               <p className="text-[11px] text-neutral-400 mt-0.5">
-                {incoming.length} total · {activeIn.length} active
+                {t("saam.summary.totals", { total: incoming.length, active: activeIn.length })}
               </p>
             </div>
           </div>
@@ -579,7 +582,7 @@ function DelegationSummaryCard({
           {activeOut.length > 0 && (
             <div className="border-t border-neutral-100">
               <p className="px-5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                Currently delegated to
+                {t("saam.summary.currentlyTo")}
               </p>
               <div className="divide-y divide-neutral-100">
                 {activeOut.slice(0, 3).map((d) => (
@@ -591,16 +594,16 @@ function DelegationSummaryCard({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-neutral-800 truncate">
-                        {d.delegate?.name ?? `User #${d.delegate_user_id}`}
+                        {d.delegate?.name ?? t("saam.delegations.userNumber", { id: d.delegate_user_id })}
                       </p>
                       <p className="text-[11px] text-neutral-400">
-                        Until {formatDate(d.end_date)}
+                        {t("saam.summary.until", { date: formatDate(d.end_date) })}
                         {d.role_scope && (
                           <> · <span className="font-mono text-[10px]">{d.role_scope}</span></>
                         )}
                       </p>
                     </div>
-                    <span className="badge-warning text-[10px]">Active</span>
+                    <span className="badge-warning text-[10px]">{t("saam.active")}</span>
                   </div>
                 ))}
                 {activeOut.length > 3 && (
@@ -609,7 +612,7 @@ function DelegationSummaryCard({
                       href="/saam/delegations"
                       className="btn-secondary text-xs py-1 px-2"
                     >
-                      +{activeOut.length - 3} more
+                      {t("assignments.calendar.more", { count: activeOut.length - 3 })}
                     </Link>
                   </div>
                 )}
@@ -621,7 +624,7 @@ function DelegationSummaryCard({
           {activeIn.length > 0 && (
             <div className="border-t border-neutral-100">
               <p className="px-5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                Authority granted from
+                {t("saam.summary.grantedFrom")}
               </p>
               <div className="divide-y divide-neutral-100">
                 {activeIn.slice(0, 3).map((d) => (
@@ -633,11 +636,11 @@ function DelegationSummaryCard({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-neutral-800 truncate">
-                        {d.principal?.name ?? `User #${d.principal_user_id}`}
+                        {d.principal?.name ?? t("saam.delegations.userNumber", { id: d.principal_user_id })}
                       </p>
-                      <p className="text-[11px] text-neutral-400">Until {formatDate(d.end_date)}</p>
+                      <p className="text-[11px] text-neutral-400">{t("saam.summary.until", { date: formatDate(d.end_date) })}</p>
                     </div>
-                    <span className="badge-success text-[10px]">Active</span>
+                    <span className="badge-success text-[10px]">{t("saam.active")}</span>
                   </div>
                 ))}
               </div>
@@ -646,11 +649,11 @@ function DelegationSummaryCard({
 
           {activeOut.length === 0 && activeIn.length === 0 && (
             <p className="px-5 pb-5 text-xs text-neutral-400 text-center">
-              No active delegations.{" "}
+              {t("saam.summary.noActive")}{" "}
               <Link href="/saam/delegations" className="btn-secondary text-xs py-1 px-2">
-                Create one
+                {t("saam.summary.createOne")}
               </Link>{" "}
-              if you will be unavailable.
+              {t("saam.summary.ifUnavailable")}
             </p>
           )}
         </>
@@ -663,6 +666,7 @@ function DelegationSummaryCard({
 
 export default function SaamPage() {
   const { success, error } = useToast();
+  const { t } = useI18n();
   const queryClient = useQueryClient();
 
   // ── Data fetching ──
@@ -696,23 +700,23 @@ export default function SaamPage() {
   const revokeMutation = useMutation({
     mutationFn: (type: "full" | "initials") => saamApi.revoke(type),
     onSuccess: (_, type) => {
-      success(`${sigTypeLabel(type)} revoked successfully.`);
+      success(t("saam.toast.revoked", { type: t(sigTypeLabel(type)) }));
       queryClient.invalidateQueries({ queryKey: ["saam", "profile"] });
     },
-    onError: () => error("Failed to revoke signature. Please try again."),
+    onError: () => error(t("saam.toast.revokeFailed")),
   });
 
   return (
     <div className="w-full min-w-0 space-y-6">
       {/* Page header */}
       <ModulePageHeader
-        title="Signatures & Authority"
-        subtitle="Manage your digital signatures and delegate signing authority to colleagues."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Signatures" }]} />}
+        title={t("saam.title")}
+        subtitle={t("saam.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("saam.breadcrumb") }]} />}
         actions={
           <Link href="/saam/delegations" className="btn-secondary text-sm flex-shrink-0">
             <span className="material-symbols-outlined text-[16px]">manage_accounts</span>
-            Delegations
+            {t("saam.delegationsLink")}
           </Link>
         }
       />
@@ -727,7 +731,7 @@ export default function SaamPage() {
             error
           </span>
           <p className="text-sm text-red-700">
-            Unable to load signature profile. Check your connection and try refreshing.
+            {t("saam.profileError")}
           </p>
         </div>
       )}
@@ -736,21 +740,21 @@ export default function SaamPage() {
       <div className="grid grid-cols-3 gap-4">
         <StatCard
           icon="verified"
-          label="Active Signatures"
+          label={t("saam.stats.activeSignatures")}
           value={activeProfiles.length}
           color="bg-primary/10 text-primary"
           loading={profileLoading}
         />
         <StatCard
           icon="supervisor_account"
-          label="Active Delegations"
+          label={t("saam.stats.activeDelegations")}
           value={activeDelegations.length}
           color="bg-amber-100 text-amber-600"
           loading={delegationLoading}
         />
         <StatCard
           icon="pending_actions"
-          label="Pending Documents"
+          label={t("saam.stats.pendingDocuments")}
           value={0}
           color="bg-neutral-100 text-neutral-500"
           loading={false}
@@ -782,31 +786,31 @@ export default function SaamPage() {
       {/* Quick Actions footer strip */}
       <div className="card px-5 py-4">
         <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
-          Quick Actions
+          {t("saam.quickActions")}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             {
               icon: "gesture",
-              label: "Draw Signature",
+              label: "saam.drawSignature",
               href: "/saam/verify/draw",
               color: "text-primary bg-primary/10",
             },
             {
               icon: "upload",
-              label: "Upload Signature",
+              label: "saam.uploadSignature",
               href: "/saam/verify/upload",
               color: "text-indigo-600 bg-indigo-50",
             },
             {
               icon: "add_circle",
-              label: "New Delegation",
+              label: "saam.delegations.new",
               href: "/saam/delegations",
               color: "text-amber-600 bg-amber-50",
             },
             {
               icon: "history",
-              label: "View Delegations",
+              label: "saam.viewDelegations",
               href: "/saam/delegations",
               color: "text-neutral-600 bg-neutral-100",
             },
@@ -827,7 +831,7 @@ export default function SaamPage() {
                 </span>
               </div>
               <span className="text-xs font-medium text-neutral-700 group-hover:text-neutral-900 transition-colors">
-                {action.label}
+                {t(action.label)}
               </span>
             </Link>
           ))}

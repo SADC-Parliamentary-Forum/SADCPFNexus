@@ -17,6 +17,7 @@ import { NexusPicker } from "@/components/ui/NexusPicker";
 import { NexusMoneyInput } from "@/components/ui/NexusMoneyInput";
 import { useFormDraft } from "@/lib/useFormDraft";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Funding items with icons ─────────────────────────────────────────────────
 const FUNDING_ITEMS: { item: string; icon: string }[] = [
@@ -30,7 +31,27 @@ const FUNDING_ITEMS: { item: string; icon: string }[] = [
   { item: "Participation Fees",            icon: "confirmation_number" },
 ];
 
-const STEPS = ["Trip Details", "Itinerary", "Funding Details", "Vehicle & Driver", "Documents", "Review & Submit"];
+/** i18n keys of the funding item labels; `item` itself is the value sent to the API. */
+const FUNDING_ITEM_LABELS: Record<string, string> = {
+  "Air Fare": "travel.create.funding.airFare",
+  "Transport to/from Airport": "travel.create.funding.airportTransport",
+  Accommodation: "travel.create.funding.accommodation",
+  "Per Diems": "travel.create.funding.perDiems",
+  "Visa Fees": "travel.create.funding.visaFees",
+  "Airport Fees": "travel.create.funding.airportFees",
+  "Ground Transport": "travel.create.funding.groundTransport",
+  "Participation Fees": "travel.create.funding.participationFees",
+};
+
+/** i18n keys of the wizard steps. */
+const STEPS = [
+  "travel.create.step.trip",
+  "travel.create.step.itinerary",
+  "travel.create.step.funding",
+  "travel.create.step.vehicle",
+  "travel.create.step.documents",
+  "travel.create.step.review",
+];
 
 interface PendingDoc {
   key: string;
@@ -39,6 +60,8 @@ interface PendingDoc {
 }
 
 const REQUIRED_ON_SUBMIT = ["invitation", "agenda"] as const;
+
+const CURRENCIES = ["USD", "EUR", "ZAR", "NAD", "BWP", "ZMW", "MWK", "TZS", "MZN"] as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Leg = TravelLegDraft;
@@ -97,6 +120,7 @@ function LocationCombobox({
   locations: string[];
   id?: string;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -122,7 +146,7 @@ function LocationCombobox({
       <input
         id={id}
         className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-        placeholder={placeholder ?? "Type or select..."}
+        placeholder={placeholder ?? t("travel.create.typeOrSelect")}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -245,6 +269,7 @@ function TravelCreatePageInner() {
   const searchParams = useSearchParams();
   const { prompt } = useConfirm();
   const toast = useToast();
+  const { t, localeTag } = useI18n();
   const editParam = searchParams.get("edit");
   const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
 
@@ -311,7 +336,7 @@ function TravelCreatePageInner() {
 
   const missingRequiredDocs = (): string[] => {
     const attached = new Set([...existingDocTypes, ...pendingDocs.map((d) => d.documentType)]);
-    return requiredDocTypes().filter((t) => !attached.has(t));
+    return requiredDocTypes().filter((dt) => !attached.has(dt));
   };
 
   // Load approved programmes for PIF dropdown
@@ -356,19 +381,19 @@ function TravelCreatePageInner() {
         const body = reqRes.data as { data?: TravelRequest } | TravelRequest;
         const data = ("data" in body && body.data ? body.data : body) as TravelRequest;
         if (!data || typeof data !== "object" || !("id" in data)) {
-          setSubmitError("Could not load travel request for editing.");
+          setSubmitError(t("travel.create.err.loadEdit"));
           return;
         }
         if (data.status !== "draft" && data.status !== "returned_for_correction") {
-          setSubmitError("Only draft or returned requests can be edited in the wizard.");
+          setSubmitError(t("travel.create.err.notEditable"));
           return;
         }
         setForm(hydrateFormFromRequest(data));
         const docs = getListData<{ document_type?: string | null }>(attRes.data);
-        setExistingDocTypes(docs.map((d) => d.document_type).filter((t): t is string => Boolean(t)));
+        setExistingDocTypes(docs.map((d) => d.document_type).filter((dt): dt is string => Boolean(dt)));
       })
       .catch(() => {
-        if (active) setSubmitError("Failed to load travel request for editing.");
+        if (active) setSubmitError(t("travel.create.err.loadEditFailed"));
       })
       .finally(() => {
         if (active) setLoadingDraft(false);
@@ -376,7 +401,7 @@ function TravelCreatePageInner() {
     return () => {
       active = false;
     };
-  }, [editId]);
+  }, [editId, t]);
 
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -429,7 +454,7 @@ function TravelCreatePageInner() {
     });
 
   const docLabel = (type: string) =>
-    TRAVEL_DOCUMENT_TYPES.find((t) => t.value === type)?.label ?? type.replace(/_/g, " ");
+    TRAVEL_DOCUMENT_TYPES.find((dt) => dt.value === type)?.label ?? type.replace(/_/g, " ");
 
   const canNext = () => {
     if (step === 0) {
@@ -455,21 +480,21 @@ function TravelCreatePageInner() {
   const nextBlockedReason = (): string | null => {
     if (canNext()) return null;
     if (step === 0) {
-      if (!form.purpose) return "Enter the purpose of travel.";
-      if (!form.destination_country) return "Select a destination country.";
-      if (!form.departure_date || !form.return_date) return "Enter departure and return dates.";
-      if (form.return_date < form.departure_date) return "Return date must be on or after departure.";
-      if (!form.pif_type) return "Choose a linked PIF or provide a justification.";
-      if (form.pif_type === "linked" && !form.programme_id) return "Select an approved PIF.";
+      if (!form.purpose) return t("travel.create.hint.purpose");
+      if (!form.destination_country) return t("travel.create.hint.country");
+      if (!form.departure_date || !form.return_date) return t("travel.create.hint.dates");
+      if (form.return_date < form.departure_date) return t("travel.create.hint.returnDate");
+      if (!form.pif_type) return t("travel.create.hint.pifType");
+      if (form.pif_type === "linked" && !form.programme_id) return t("travel.create.hint.pif");
       if (form.pif_type === "justification" && !form.justification.trim()) {
-        return "Provide a justification when no PIF is linked.";
+        return t("travel.create.hint.justification");
       }
     }
-    if (step === 1) return "Complete from, to, and date for each itinerary leg.";
+    if (step === 1) return t("travel.create.hint.legs");
     if (step === 4) {
-      return `Attach required documents: ${missingRequiredDocs().map(docLabel).join(", ")}.`;
+      return t("travel.create.hint.docs", { docs: missingRequiredDocs().map(docLabel).join(", ") });
     }
-    return "Complete the required fields before continuing.";
+    return t("travel.create.hint.generic");
   };
 
   const addPendingDoc = (file: File | undefined) => {
@@ -535,7 +560,7 @@ function TravelCreatePageInner() {
     try {
       if (!asDraft && missingRequiredDocs().length > 0) {
         setSubmitError(
-          `Attach required documents before submit: ${missingRequiredDocs().map(docLabel).join(", ")}.`,
+          t("travel.create.err.docsBeforeSubmit", { docs: missingRequiredDocs().map(docLabel).join(", ") }),
         );
         setStep(4);
         return;
@@ -554,8 +579,8 @@ function TravelCreatePageInner() {
       }
 
       if (!createdId) {
-        setSubmitError("Travel request was saved but no id was returned.");
-        toast.error("Travel request not saved", "Travel request was saved but no id was returned.");
+        setSubmitError(t("travel.create.err.noId"));
+        toast.error(t("travel.create.toast.notSaved"), t("travel.create.err.noId"));
         return;
       }
       // The server now holds the request; the local autosave is no longer needed.
@@ -580,11 +605,11 @@ function TravelCreatePageInner() {
           (Array.isArray(fileMsg) ? fileMsg[0] : typeof fileMsg === "string" ? fileMsg : undefined) ||
           (errors ? Object.values(errors).flat()[0] : undefined) ||
           axiosErr?.response?.data?.message ||
-          "Document upload failed.";
+          t("travel.create.err.upload");
         setStep(4);
-        const uploadMsg = `${first} Request #${createdId} was saved as a draft — re-attach files on Documents, then submit.`;
+        const uploadMsg = t("travel.create.err.uploadSaved", { error: first, id: createdId });
         setSubmitError(uploadMsg);
-        toast.error("Documents not uploaded", uploadMsg);
+        toast.error(t("travel.create.toast.docsNotUploaded"), uploadMsg);
         return;
       }
 
@@ -609,8 +634,8 @@ function TravelCreatePageInner() {
                 conflict_resolution_note: note,
               });
             } else {
-              setSubmitError("Saved as draft due to unresolved conflicts. Open the request to attach docs or resubmit.");
-              toast.warning("Travel request not submitted", "Saved as draft due to unresolved conflicts. Open the request to attach docs or resubmit.");
+              setSubmitError(t("travel.create.err.conflicts"));
+              toast.warning(t("travel.create.toast.notSubmitted"), t("travel.create.err.conflicts"));
               router.push(`/travel/${createdId}`);
               return;
             }
@@ -620,30 +645,30 @@ function TravelCreatePageInner() {
               ? attachMsg.join(" ")
               : typeof attachMsg === "string"
                 ? attachMsg
-                : axiosErr?.response?.data?.message || "Submit failed after upload. Open the draft to finish.";
+                : axiosErr?.response?.data?.message || t("travel.create.err.submitAfterUpload");
             setSubmitError(msg);
-            toast.error("Travel request not submitted", msg);
+            toast.error(t("travel.create.toast.notSubmitted"), msg);
             router.push(`/travel/${createdId}`);
             return;
           }
         }
       }
-      toast.success(asDraft ? "Travel request saved as draft" : "Travel request submitted");
+      toast.success(asDraft ? t("travel.create.toast.savedDraft") : t("travel.create.toast.submitted"));
       router.push(asDraft ? `/travel/${createdId}` : "/travel");
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       if (axiosErr?.response?.data?.message?.includes("Idempotency-Key was already used")) {
         // A previous attempt reached the server (its response was lost) and the form changed since.
-        setSubmitError("This request may already have been saved from an earlier attempt. Check My travel requests before submitting again.");
-        toast.warning("Travel request may already be saved", "Check My travel requests before submitting again.");
+        setSubmitError(t("travel.create.err.idempotency"));
+        toast.warning(t("travel.create.toast.maybeSaved"), t("travel.create.toast.maybeSavedBody"));
         return;
       }
       const first = axiosErr?.response?.data?.errors
         ? Object.values(axiosErr.response.data.errors).flat()[0]
         : undefined;
-      const message = first || axiosErr?.response?.data?.message || "Could not save travel request. Please try again.";
+      const message = first || axiosErr?.response?.data?.message || t("travel.create.err.save");
       setSubmitError(message);
-      toast.error("Travel request not saved", message);
+      toast.error(t("travel.create.toast.notSaved"), message);
     } finally {
       setSubmitting(false);
     }
@@ -658,7 +683,7 @@ function TravelCreatePageInner() {
       <div className="w-full min-w-0 space-y-4">
         <div className="h-6 w-48 animate-pulse rounded bg-neutral-100" />
         <div className="h-40 animate-pulse rounded-xl bg-neutral-50" />
-        <p className="text-sm text-neutral-400">Loading travel request…</p>
+        <p className="text-sm text-neutral-400">{t("travel.create.loadingRequest")}</p>
       </div>
     );
   }
@@ -666,17 +691,13 @@ function TravelCreatePageInner() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title={editId ? "Edit Travel Request" : "New Travel Request"}
-        subtitle={
-          editId
-            ? "Update destinations, dates, funding, documents, then save or submit."
-            : "Submit a travel requisition for approval. DSA will be calculated by Finance Officers."
-        }
+        title={editId ? t("travel.create.titleEdit") : t("travel.create.titleNew")}
+        subtitle={editId ? t("travel.create.subtitleEdit") : t("travel.create.subtitleNew")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Travel", href: "/travel" },
-              { label: editId ? "Edit Request" : "New Request" },
+              { label: "nav.travel", href: "/travel" },
+              { label: editId ? "travel.create.crumbEdit" : "travel.create.crumbNew" },
             ]}
           />
         }
@@ -686,7 +707,7 @@ function TravelCreatePageInner() {
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800" role="status">
           <span className="material-symbols-outlined text-[16px]">history</span>
           <span className="flex-1">
-            You have an unsaved travel request from {new Date(draft.restorable.savedAt).toLocaleString()}. Attached files are not kept and must be re-added.
+            {t("travel.create.draftFound", { date: new Date(draft.restorable.savedAt).toLocaleString(localeTag) })}
           </span>
           <button
             type="button"
@@ -696,17 +717,17 @@ function TravelCreatePageInner() {
               if (restored) setForm(restored);
             }}
           >
-            Restore
+            {t("travel.create.restore")}
           </button>
           <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={draft.discard}>
-            Discard
+            {t("travel.create.discard")}
           </button>
         </div>
       )}
 
       <div className="card p-4">
         <Stepper
-          steps={STEPS.map((label) => ({ label }))}
+          steps={STEPS.map((label) => ({ label: t(label) }))}
           currentStep={step + 1}
         />
       </div>
@@ -718,34 +739,34 @@ function TravelCreatePageInner() {
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
               <span className="material-symbols-outlined text-[14px]">flight_takeoff</span>
             </span>
-            Traveller&apos;s Details
+            {t("travel.create.travellerDetails")}
           </h3>
 
           {canPrepareForOthers && (
             <div className="space-y-1.5 rounded-lg border border-blue-100 bg-blue-50/60 p-3" data-testid="travel-on-behalf-picker">
               <NexusPicker<{ id: number; name: string; email?: string }>
                 id="travel-create-traveller"
-                label="Traveller (prepare on behalf)"
+                label={t("travel.create.onBehalfLabel")}
                 value={
                   form.prepared_on_behalf_of
-                    ? travellers.find((t) => String(t.id) === form.prepared_on_behalf_of) ?? null
+                    ? travellers.find((tr) => String(tr.id) === form.prepared_on_behalf_of) ?? null
                     : null
                 }
-                onSelect={(t) => updateField("prepared_on_behalf_of", t ? String(t.id) : "")}
+                onSelect={(tr) => updateField("prepared_on_behalf_of", tr ? String(tr.id) : "")}
                 fetchOptions={async (search) => {
-                  const eligible = travellers.filter((t) => t.id !== user?.id);
+                  const eligible = travellers.filter((tr) => tr.id !== user?.id);
                   if (!search) return eligible;
                   const q = search.toLowerCase();
-                  return eligible.filter((t) => t.name.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q));
+                  return eligible.filter((tr) => tr.name.toLowerCase().includes(q) || tr.email?.toLowerCase().includes(q));
                 }}
-                getId={(t) => t.id}
-                getLabel={(t) => t.name}
-                getSecondaryLabel={(t) => t.email}
-                placeholder="Myself — I am the traveller (search to prepare for someone else)"
-                clearLabel="Myself — I am the traveller"
+                getId={(tr) => tr.id}
+                getLabel={(tr) => tr.name}
+                getSecondaryLabel={(tr) => tr.email}
+                placeholder={t("travel.create.onBehalfPlaceholder")}
+                clearLabel={t("travel.create.onBehalfClear")}
               />
               <p className="text-[11px] text-neutral-500">
-                Prepared by you. Traveller attribution will show on the request.
+                {t("travel.create.onBehalfHint")}
               </p>
             </div>
           )}
@@ -753,11 +774,11 @@ function TravelCreatePageInner() {
           {/* Purpose */}
           <div className="space-y-1.5">
             <label htmlFor="travel-create-purpose-of-travel" className="block text-xs font-medium text-neutral-700">
-              Purpose of Travel <span className="text-red-500">*</span>
+              {t("travel.create.purpose")} <span className="text-red-500">*</span>
             </label>
             <input id="travel-create-purpose-of-travel"
               className="form-input"
-              placeholder="e.g. Annual Budget Review Meeting"
+              placeholder={t("travel.create.purposePlaceholder")}
               value={form.purpose}
               onChange={(e) => updateField("purpose", e.target.value)}
             />
@@ -777,10 +798,10 @@ function TravelCreatePageInner() {
 
           {/* Host Organization */}
           <div className="space-y-1.5">
-            <label htmlFor="travel-create-host-organization" className="block text-xs font-medium text-neutral-700">Host Organization</label>
+            <label htmlFor="travel-create-host-organization" className="block text-xs font-medium text-neutral-700">{t("travel.create.hostOrg")}</label>
             <input id="travel-create-host-organization"
               className="form-input"
-              placeholder="e.g. African Union Commission"
+              placeholder={t("travel.create.hostOrgPlaceholder")}
               value={form.host_organization}
               onChange={(e) => updateField("host_organization", e.target.value)}
             />
@@ -790,7 +811,7 @@ function TravelCreatePageInner() {
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label htmlFor="travel-create-departure-date" className="block text-xs font-medium text-neutral-700">
-                Departure Date <span className="text-red-500">*</span>
+                {t("travel.create.departureDate")} <span className="text-red-500">*</span>
               </label>
               <input id="travel-create-departure-date"
                 type="date"
@@ -802,7 +823,7 @@ function TravelCreatePageInner() {
             </div>
             <div className="space-y-1.5">
               <label htmlFor="travel-create-return-date" className="block text-xs font-medium text-neutral-700">
-                Return Date <span className="text-red-500">*</span>
+                {t("travel.create.returnDate")} <span className="text-red-500">*</span>
               </label>
               <input id="travel-create-return-date"
                 type="date"
@@ -813,21 +834,15 @@ function TravelCreatePageInner() {
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="travel-create-currency" className="block text-xs font-medium text-neutral-700">Currency</label>
+              <label htmlFor="travel-create-currency" className="block text-xs font-medium text-neutral-700">{t("travel.create.currency")}</label>
               <select id="travel-create-currency"
                 className="form-input"
                 value={form.currency}
                 onChange={(e) => updateField("currency", e.target.value)}
               >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="ZAR">ZAR</option>
-                <option value="NAD">NAD</option>
-                <option value="BWP">BWP</option>
-                <option value="ZMW">ZMW</option>
-                <option value="MWK">MWK</option>
-                <option value="TZS">TZS</option>
-                <option value="MZN">MZN</option>
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -835,7 +850,7 @@ function TravelCreatePageInner() {
           {/* PIF / Mission link */}
           <div className="space-y-3 pt-3 border-t border-neutral-100">
             <p className="block text-xs font-semibold text-neutral-700">
-              Mission / PIF Connection <span className="text-red-500">*</span>
+              {t("travel.create.pifConnection")} <span className="text-red-500">*</span>
             </p>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -848,7 +863,7 @@ function TravelCreatePageInner() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[18px]">link</span>
-                Link to Approved PIF
+                {t("travel.create.linkPif")}
               </button>
               <button
                 type="button"
@@ -860,7 +875,7 @@ function TravelCreatePageInner() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[18px]">edit_note</span>
-                Provide Justification
+                {t("travel.create.provideJustification")}
               </button>
             </div>
 
@@ -871,7 +886,7 @@ function TravelCreatePageInner() {
                   value={form.programme_id}
                   onChange={(e) => updateField("programme_id", e.target.value)}
                 >
-                  <option value="">— Select approved PIF / Programme —</option>
+                  <option value="">{t("travel.create.selectPif")}</option>
                   {programmes.map((p) => (
                     <option key={p.id} value={String(p.id)}>
                       {p.reference_number} — {p.title}
@@ -880,7 +895,7 @@ function TravelCreatePageInner() {
                 </select>
                 {programmes.length === 0 && (
                   <p className="text-xs text-neutral-400">
-                    No approved programmes found. Use &ldquo;Provide Justification&rdquo; instead.
+                    {t("travel.create.noProgrammes")}
                   </p>
                 )}
               </div>
@@ -890,7 +905,7 @@ function TravelCreatePageInner() {
               <textarea
                 rows={3}
                 className="form-input resize-none"
-                placeholder="Provide written justification for this travel (e.g. urgent mission, no linked PIF)..."
+                placeholder={t("travel.create.justificationPlaceholder")}
                 value={form.justification}
                 onChange={(e) => updateField("justification", e.target.value)}
               />
@@ -908,7 +923,7 @@ function TravelCreatePageInner() {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <span className="material-symbols-outlined text-[14px]">route</span>
                 </span>
-                Flight Itinerary
+                {t("travel.create.flightItinerary")}
               </h3>
               <button
                 type="button"
@@ -916,17 +931,17 @@ function TravelCreatePageInner() {
                 className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
               >
                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                Add Leg
+                {t("travel.create.addLeg")}
               </button>
             </div>
 
             <p className="mb-4 text-xs text-neutral-500">
-              Add Leg copies the previous To location into From and keeps the same travel date. Change them if the next hop is later.
+              {t("travel.create.addLegHint")}
             </p>
             <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 flex items-start gap-2 mb-4">
               <span className="material-symbols-outlined text-amber-500 text-[16px] mt-0.5">calculate</span>
               <p className="text-xs text-amber-700">
-                DSA rates are calculated by Finance Officers after submission. Enter travel legs and number of nights only.
+                {t("travel.create.dsaNote")}
               </p>
             </div>
 
@@ -935,12 +950,14 @@ function TravelCreatePageInner() {
                 <div key={i} className="rounded-lg border border-neutral-100 bg-neutral-50 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-                      Leg {i + 1}
+                      {t("travel.create.legN", { n: i + 1 })}
                     </span>
                     {form.legs.length > 1 && (
                       <button
                         onClick={() => removeLeg(i)}
                         className="text-red-400 hover:text-red-600 transition-colors"
+                        aria-label={t("travel.create.removeLeg", { n: i + 1 })}
+                        title={t("travel.create.removeLeg", { n: i + 1 })}
                       >
                         <span className="material-symbols-outlined text-[16px]">delete</span>
                       </button>
@@ -949,31 +966,31 @@ function TravelCreatePageInner() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label htmlFor={`travel-create-from-${i}`} className="block text-[11px] font-medium text-neutral-600">
-                        From <span className="text-red-500">*</span>
+                        {t("travel.create.from")} <span className="text-red-500">*</span>
                       </label>
                       <LocationCombobox
                         id={`travel-create-from-${i}`}
                         value={leg.from_location}
                         onChange={(v) => updateLeg(i, "from_location", v)}
-                        placeholder="Origin city, country"
+                        placeholder={t("travel.create.originPlaceholder")}
                         locations={catalogLocations}
                       />
                     </div>
                     <div className="space-y-1">
                       <label htmlFor={`travel-create-to-${i}`} className="block text-[11px] font-medium text-neutral-600">
-                        To <span className="text-red-500">*</span>
+                        {t("travel.create.to")} <span className="text-red-500">*</span>
                       </label>
                       <LocationCombobox
                         id={`travel-create-to-${i}`}
                         value={leg.to_location}
                         onChange={(v) => updateLeg(i, "to_location", v)}
-                        placeholder="Destination city, country"
+                        placeholder={t("travel.create.destinationPlaceholder")}
                         locations={catalogLocations}
                       />
                     </div>
                     <div className="space-y-1">
                       <label htmlFor={`travel-create-travel-date-${i}`} className="block text-[11px] font-medium text-neutral-600">
-                        Travel Date <span className="text-red-500">*</span>
+                        {t("travel.create.travelDate")} <span className="text-red-500">*</span>
                       </label>
                       <input id={`travel-create-travel-date-${i}`}
                         type="date"
@@ -983,21 +1000,21 @@ function TravelCreatePageInner() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label htmlFor={`travel-create-transport-mode-${i}`} className="block text-[11px] font-medium text-neutral-600">Transport Mode</label>
+                      <label htmlFor={`travel-create-transport-mode-${i}`} className="block text-[11px] font-medium text-neutral-600">{t("travel.create.transportMode")}</label>
                       <select id={`travel-create-transport-mode-${i}`}
                         className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                         value={leg.transport_mode}
                         onChange={(e) => updateLeg(i, "transport_mode", e.target.value)}
                       >
-                        <option value="flight">Flight</option>
-                        <option value="road">Road</option>
-                        <option value="rail">Rail</option>
-                        <option value="sea">Sea</option>
+                        <option value="flight">{t("travel.create.mode.flight")}</option>
+                        <option value="road">{t("travel.create.mode.road")}</option>
+                        <option value="rail">{t("travel.create.mode.rail")}</option>
+                        <option value="sea">{t("travel.create.mode.sea")}</option>
                       </select>
                     </div>
                     <div className="space-y-1 col-span-2 sm:col-span-1">
                       <label htmlFor={`travel-create-nights-${i}`} className="block text-[11px] font-medium text-neutral-600">
-                        Nights at Destination
+                        {t("travel.create.nights")}
                       </label>
                       <input id={`travel-create-nights-${i}`}
                         type="number"
@@ -1009,21 +1026,21 @@ function TravelCreatePageInner() {
                     </div>
                     {leg.transport_mode === "flight" && (
                       <>
-                        <FormField label="Flight name" htmlFor={`leg-${i}-flight-name`}>
+                        <FormField label={t("travel.create.flightName")} htmlFor={`leg-${i}-flight-name`}>
                           <input
                             id={`leg-${i}-flight-name`}
                             className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                            placeholder="e.g. Air Namibia"
+                            placeholder={t("travel.create.flightNamePlaceholder")}
                             maxLength={120}
                             value={leg.flight_name}
                             onChange={(e) => updateLeg(i, "flight_name", e.target.value)}
                           />
                         </FormField>
-                        <FormField label="Flight number" htmlFor={`leg-${i}-flight-number`}>
+                        <FormField label={t("travel.create.flightNumber")} htmlFor={`leg-${i}-flight-number`}>
                           <input
                             id={`leg-${i}-flight-number`}
                             className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                            placeholder="e.g. SW 287"
+                            placeholder={t("travel.create.flightNumberPlaceholder")}
                             maxLength={32}
                             value={leg.flight_number}
                             onChange={(e) => updateLeg(i, "flight_number", e.target.value)}
@@ -1047,18 +1064,17 @@ function TravelCreatePageInner() {
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <span className="material-symbols-outlined text-[14px]">account_balance_wallet</span>
               </span>
-              Funding Details
+              {t("travel.create.step.funding")}
             </h3>
             <p className="text-xs text-neutral-500 mt-1 ml-8">
-              Enter the estimated cost for each applicable category. Use &ldquo;Add details&rdquo; to specify
-              funding agency, project, and budget line.
+              {t("travel.create.fundingHint")}
             </p>
           </div>
 
           <BudgetLinePicker
             value={form.budget_line_id}
             amount={grandTotal > 0 ? grandTotal : null}
-            label="Institutional budget line"
+            label={t("travel.create.budgetLine")}
             onChange={(id, line) => {
               setForm((prev) => ({
                 ...prev,
@@ -1097,7 +1113,9 @@ function TravelCreatePageInner() {
                       >
                         <span className="material-symbols-outlined text-[15px]">{row.icon}</span>
                       </span>
-                      <span className="text-xs font-semibold text-neutral-700">{row.item}</span>
+                      <span className="text-xs font-semibold text-neutral-700">
+                        {FUNDING_ITEM_LABELS[row.item] ? t(FUNDING_ITEM_LABELS[row.item]) : row.item}
+                      </span>
                     </div>
                     {hasAmount && (
                       <span className="text-xs font-bold text-primary">
@@ -1110,14 +1128,14 @@ function TravelCreatePageInner() {
                   <div className="grid grid-cols-2 gap-2">
                     <NexusMoneyInput
                       id={`travel-create-forum-${i}`}
-                      label="Forum"
+                      label={t("travel.create.forum")}
                       currency={form.currency}
                       value={row.forum_amount === "" ? null : Number(row.forum_amount)}
                       onValueChange={(v) => updateFundingRow(i, "forum_amount", v === null ? "" : String(v))}
                     />
                     <NexusMoneyInput
                       id={`travel-create-host-${i}`}
-                      label="Host"
+                      label={t("travel.create.host")}
                       currency={form.currency}
                       value={row.host_amount === "" ? null : Number(row.host_amount)}
                       onValueChange={(v) => updateFundingRow(i, "host_amount", v === null ? "" : String(v))}
@@ -1125,10 +1143,10 @@ function TravelCreatePageInner() {
                   </div>
                   <div className="flex flex-wrap gap-3 text-[10px] text-neutral-600" data-testid="funding-payor-matrix">
                     {([
-                      ["payor_sadc_pf", "SADC PF"],
-                      ["payor_host", "Host"],
-                      ["payor_donor", "Donor"],
-                      ["payor_self", "Self"],
+                      ["payor_sadc_pf", "travel.create.payor.sadcpf"],
+                      ["payor_host", "travel.create.host"],
+                      ["payor_donor", "travel.create.payor.donor"],
+                      ["payor_self", "travel.create.payor.self"],
                     ] as const).map(([key, label]) => (
                       <label htmlFor={`travel-create-payor-${i}-${key}`} key={key} className="inline-flex items-center gap-1">
                         <input id={`travel-create-payor-${i}-${key}`}
@@ -1136,7 +1154,7 @@ function TravelCreatePageInner() {
                           checked={Boolean(row[key])}
                           onChange={(e) => updateFundingRow(i, key, e.target.checked)}
                         />
-                        {label}
+                        {t(label)}
                       </label>
                     ))}
                   </div>
@@ -1150,36 +1168,36 @@ function TravelCreatePageInner() {
                     <span className="material-symbols-outlined text-[13px]">
                       {row.expanded ? "expand_less" : "expand_more"}
                     </span>
-                    {row.expanded ? "Hide details" : "Add funding details"}
+                    {row.expanded ? t("travel.create.hideDetails") : t("travel.create.addFundingDetails")}
                   </button>
 
                   {/* Expanded details */}
                   {row.expanded && (
                     <div className="space-y-2 pt-1 border-t border-neutral-100">
                       <div>
-                        <label htmlFor={`travel-create-funding-agency-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">Funding Agency</label>
+                        <label htmlFor={`travel-create-funding-agency-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">{t("travel.create.fundingAgency")}</label>
                         <input id={`travel-create-funding-agency-${i}`}
                           className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                          placeholder="e.g. SADCPF Core Budget"
+                          placeholder={t("travel.create.fundingAgencyPlaceholder")}
                           value={row.funding_agency}
                           onChange={(e) => updateFundingRow(i, "funding_agency", e.target.value)}
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label htmlFor={`travel-create-project-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">Project</label>
+                          <label htmlFor={`travel-create-project-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">{t("travel.create.project")}</label>
                           <input id={`travel-create-project-${i}`}
                             className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                            placeholder="Project name"
+                            placeholder={t("travel.create.projectPlaceholder")}
                             value={row.project}
                             onChange={(e) => updateFundingRow(i, "project", e.target.value)}
                           />
                         </div>
                         <div>
-                          <label htmlFor={`travel-create-budget-line-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">Budget Line (text note)</label>
+                          <label htmlFor={`travel-create-budget-line-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">{t("travel.create.budgetLineNote")}</label>
                           <input id={`travel-create-budget-line-${i}`}
                             className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                            placeholder="Optional note if no institutional line"
+                            placeholder={t("travel.create.budgetLineNotePlaceholder")}
                             value={row.budget_line}
                             onChange={(e) => updateFundingRow(i, "budget_line", e.target.value)}
                           />
@@ -1196,10 +1214,10 @@ function TravelCreatePageInner() {
           {grandTotal > 0 && (
             <div className="rounded-xl bg-primary/5 border border-primary/20 px-5 py-3.5 flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-neutral-600">Total Estimated Cost</p>
+                <p className="text-xs font-medium text-neutral-600">{t("travel.create.totalCost")}</p>
                 <p className="text-[11px] text-neutral-400 mt-0.5">
-                  Forum: {form.currency} {totalForum.toFixed(2)} &nbsp;·&nbsp;
-                  Host: {form.currency} {totalHost.toFixed(2)}
+                  {t("travel.create.forumTotal", { amount: `${form.currency} ${totalForum.toFixed(2)}` })} &nbsp;·&nbsp;
+                  {t("travel.create.hostTotal", { amount: `${form.currency} ${totalHost.toFixed(2)}` })}
                 </p>
               </div>
               <span className="text-xl font-bold text-primary">
@@ -1217,17 +1235,17 @@ function TravelCreatePageInner() {
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
               <span className="material-symbols-outlined text-[14px]">directions_car</span>
             </span>
-            Vehicle &amp; Driver Details
+            {t("travel.create.vehicleDetails")}
           </h3>
 
           {/* Vehicle type */}
           <div className="space-y-2">
-            <p className="block text-xs font-medium text-neutral-700">Vehicle Required</p>
+            <p className="block text-xs font-medium text-neutral-700">{t("travel.create.vehicleRequired")}</p>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: "sadcpf" as const, label: "SADCPF Vehicle", icon: "directions_car" },
-                { value: "private" as const, label: "Private Vehicle", icon: "car_rental" },
-                { value: "" as const, label: "Not Required", icon: "do_not_disturb" },
+                { value: "sadcpf" as const, label: t("travel.create.vehicle.sadcpf"), icon: "directions_car" },
+                { value: "private" as const, label: t("travel.create.vehicle.private"), icon: "car_rental" },
+                { value: "" as const, label: t("travel.create.vehicle.notRequiredOpt"), icon: "do_not_disturb" },
               ].map((opt) => (
                 <button
                   key={opt.value}
@@ -1250,7 +1268,7 @@ function TravelCreatePageInner() {
             <div className="space-y-4">
               {/* Driver required */}
               <div className="flex items-center gap-4">
-                <p className="text-xs font-medium text-neutral-700 shrink-0">Driver Required?</p>
+                <p className="text-xs font-medium text-neutral-700 shrink-0">{t("travel.create.driverRequired")}</p>
                 <div className="flex gap-2">
                   {[true, false].map((val) => (
                     <button
@@ -1263,7 +1281,7 @@ function TravelCreatePageInner() {
                           : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
                       }`}
                     >
-                      {val ? "Yes" : "No"}
+                      {val ? t("travel.create.yes") : t("travel.create.no")}
                     </button>
                   ))}
                 </div>
@@ -1272,10 +1290,10 @@ function TravelCreatePageInner() {
               {/* Driver name (SADCPF vehicle + driver required) */}
               {form.driver_required && form.vehicle_type === "sadcpf" && (
                 <div className="space-y-1.5">
-                  <label htmlFor="travel-create-driver-name" className="block text-xs font-medium text-neutral-700">Driver Name</label>
+                  <label htmlFor="travel-create-driver-name" className="block text-xs font-medium text-neutral-700">{t("travel.create.driverName")}</label>
                   <input id="travel-create-driver-name"
                     className="form-input"
-                    placeholder="Enter driver's name (if known)"
+                    placeholder={t("travel.create.driverNamePlaceholder")}
                     value={form.driver_name}
                     onChange={(e) => updateField("driver_name", e.target.value)}
                   />
@@ -1284,21 +1302,21 @@ function TravelCreatePageInner() {
 
               {form.vehicle_type === "private" && (
                 <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50/40 p-3" data-testid="private-mileage-fields">
-                  <p className="text-xs text-amber-800">Private vehicle — mileage vs equivalent airfare comparison.</p>
-                  <label htmlFor="travel-create-private-reason" className="block text-xs font-medium text-neutral-700">Reason PF vehicle not used
+                  <p className="text-xs text-amber-800">{t("travel.create.privateNote")}</p>
+                  <label htmlFor="travel-create-private-reason" className="block text-xs font-medium text-neutral-700">{t("travel.create.privateReason")}
                     <textarea id="travel-create-private-reason" className="form-input mt-1" rows={2} value={form.private_vehicle_reason} onChange={(e) => updateField("private_vehicle_reason", e.target.value)} />
                   </label>
-                  <label htmlFor="travel-create-private-route" className="block text-xs font-medium text-neutral-700">Route
+                  <label htmlFor="travel-create-private-route" className="block text-xs font-medium text-neutral-700">{t("travel.create.route")}
                     <input id="travel-create-private-route" className="form-input mt-1" value={form.private_vehicle_route} onChange={(e) => updateField("private_vehicle_route", e.target.value)} />
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    <label htmlFor="travel-create-private-km" className="text-xs font-medium text-neutral-700">Km
+                    <label htmlFor="travel-create-private-km" className="text-xs font-medium text-neutral-700">{t("travel.create.km")}
                       <input id="travel-create-private-km" type="number" className="form-input mt-1" value={form.estimated_kilometres} onChange={(e) => updateField("estimated_kilometres", e.target.value)} />
                     </label>
-                    <label htmlFor="travel-create-private-rate" className="text-xs font-medium text-neutral-700">Rate/km
+                    <label htmlFor="travel-create-private-rate" className="text-xs font-medium text-neutral-700">{t("travel.create.ratePerKm")}
                       <input id="travel-create-private-rate" type="number" className="form-input mt-1" value={form.mileage_rate_per_km} onChange={(e) => updateField("mileage_rate_per_km", e.target.value)} />
                     </label>
-                    <label htmlFor="travel-create-private-airfare" className="text-xs font-medium text-neutral-700">Equiv. airfare
+                    <label htmlFor="travel-create-private-airfare" className="text-xs font-medium text-neutral-700">{t("travel.create.equivAirfare")}
                       <input id="travel-create-private-airfare" type="number" className="form-input mt-1" value={form.equivalent_airfare} onChange={(e) => updateField("equivalent_airfare", e.target.value)} />
                     </label>
                   </div>
@@ -1309,9 +1327,8 @@ function TravelCreatePageInner() {
 
           <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-3">
             <p className="text-xs text-neutral-500">
-              <strong className="text-neutral-700">Note:</strong> Vehicle and driver arrangements are
-              subject to availability and administrative approval. Transport costs should be included
-              in the Funding Details section.
+              <strong className="text-neutral-700">{t("travel.create.noteLabel")}</strong>{" "}
+              {t("travel.create.vehicleNote")}
             </p>
           </div>
         </div>
@@ -1331,10 +1348,10 @@ function TravelCreatePageInner() {
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <span className="material-symbols-outlined text-[14px]">attach_file</span>
               </span>
-              Supporting Documents
+              {t("travel.create.supportingDocs")}
             </h3>
             <p className="text-xs text-neutral-500">
-              Invitation letter and agenda are required before submit. Files upload when you save or submit.
+              {t("travel.create.docsHint")}
             </p>
 
             <div className="flex flex-wrap gap-2">
@@ -1349,8 +1366,11 @@ function TravelCreatePageInner() {
                     }`}
                   >
                     <span className="material-symbols-outlined text-[14px]">{ok ? "check_circle" : "error"}</span>
-                    {docLabel(type)}
-                    {ok ? (existingDocTypes.includes(type) && !pendingDocs.some((d) => d.documentType === type) ? " on file" : "") : " required"}
+                    {ok
+                      ? existingDocTypes.includes(type) && !pendingDocs.some((d) => d.documentType === type)
+                        ? t("travel.create.docOnFile", { doc: docLabel(type) })
+                        : docLabel(type)
+                      : t("travel.create.docRequired", { doc: docLabel(type) })}
                   </span>
                 );
               })}
@@ -1362,13 +1382,13 @@ function TravelCreatePageInner() {
                 value={pendingDocType}
                 onChange={(e) => setPendingDocType(e.target.value)}
               >
-                {TRAVEL_DOCUMENT_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                {TRAVEL_DOCUMENT_TYPES.map((dt) => (
+                  <option key={dt.value} value={dt.value}>{dt.label}</option>
                 ))}
               </select>
               <label htmlFor="travel-create-upload-file-add-file" className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5 cursor-pointer">
                 <span className="material-symbols-outlined text-[15px]">upload_file</span>
-                Add file
+                {t("travel.create.addFile")}
                 <input id="travel-create-upload-file-add-file"
                   type="file"
                   className="hidden"
@@ -1383,7 +1403,7 @@ function TravelCreatePageInner() {
 
             {pendingDocs.length === 0 ? (
               <p className="text-xs text-neutral-400 text-center py-6 border border-dashed border-neutral-200 rounded-xl">
-                No documents selected yet.
+                {t("travel.create.noDocs")}
               </p>
             ) : (
               <div className="space-y-2">
@@ -1398,7 +1418,8 @@ function TravelCreatePageInner() {
                       type="button"
                       className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-300 hover:text-red-500 hover:bg-red-50"
                       onClick={() => setPendingDocs((prev) => prev.filter((d) => d.key !== doc.key))}
-                      title="Remove"
+                      title={t("travel.create.remove")}
+                      aria-label={t("travel.create.remove")}
                     >
                       <span className="material-symbols-outlined text-[17px]">delete</span>
                     </button>
@@ -1418,71 +1439,71 @@ function TravelCreatePageInner() {
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <span className="material-symbols-outlined text-[14px]">fact_check</span>
               </span>
-              Review &amp; Submit
-
+              {t("travel.create.step.review")}
             </h3>
 
             {/* Summary rows */}
             <div className="divide-y divide-neutral-50">
               {[
-                { label: "Purpose", value: form.purpose },
+                { label: t("travel.create.review.purpose"), value: form.purpose },
                 {
-                  label: "Traveller",
+                  label: t("travel.create.review.traveller"),
                   value: form.prepared_on_behalf_of
-                    ? (travellers.find((t) => String(t.id) === form.prepared_on_behalf_of)?.name ?? "Selected principal")
-                    : (user?.name ?? "Myself"),
+                    ? (travellers.find((tr) => String(tr.id) === form.prepared_on_behalf_of)?.name ?? t("travel.create.review.selectedPrincipal"))
+                    : (user?.name ?? t("travel.create.review.myself")),
                 },
                 {
-                  label: "Prepared by",
-                  value: form.prepared_on_behalf_of ? (user?.name ?? "You") : "— (self)",
+                  label: t("travel.create.review.preparedBy"),
+                  value: form.prepared_on_behalf_of ? (user?.name ?? t("travel.create.review.you")) : t("travel.create.review.self"),
                 },
                 {
-                  label: "Destination",
+                  label: t("travel.create.review.destination"),
                   value: `${form.destination_city ? form.destination_city + ", " : ""}${form.destination_country}`,
                 },
-                { label: "Host Organization", value: form.host_organization || "—" },
-                { label: "Travel Dates", value: `${form.departure_date} → ${form.return_date}` },
-                { label: "Currency", value: form.currency },
+                { label: t("travel.create.hostOrg"), value: form.host_organization || "—" },
+                { label: t("travel.create.review.dates"), value: `${form.departure_date} → ${form.return_date}` },
+                { label: t("travel.create.currency"), value: form.currency },
                 {
-                  label: "PIF / Mission",
+                  label: t("travel.create.review.pif"),
                   value:
                     form.pif_type === "linked"
                       ? programmes.find((p) => String(p.id) === form.programme_id)?.title ??
-                        "Linked PIF"
-                      : "Justification provided",
+                        t("travel.create.review.linkedPif")
+                      : t("travel.create.review.justificationProvided"),
                 },
                 {
-                  label: "Itinerary Legs",
+                  label: t("travel.create.review.legs"),
                   value: form.legs
                     .map((l, i) => {
                       const flight = [l.flight_name, l.flight_number].filter(Boolean).join(" ");
-                      return `Leg ${i + 1}: ${l.from_location || "—"} → ${l.to_location || "—"}${flight ? ` (${flight})` : ""}`;
+                      const vars = { n: i + 1, from: l.from_location || "—", to: l.to_location || "—", flight };
+                      return flight ? t("travel.create.review.legFlight", vars) : t("travel.create.review.leg", vars);
                     })
                     .join("; "),
                 },
                 {
-                  label: "Documents",
+                  label: t("travel.create.step.documents"),
                   value: (() => {
                     const labels = [
                       ...existingDocTypes.map(docLabel),
                       ...pendingDocs.map((d) => docLabel(d.documentType)),
                     ];
-                    return labels.length ? Array.from(new Set(labels)).join(", ") : "None";
+                    return labels.length ? Array.from(new Set(labels)).join(", ") : t("travel.create.review.none");
                   })(),
                 },
                 {
-                  label: "Estimated Total",
+                  label: t("travel.create.review.total"),
                   value:
-                    grandTotal > 0 ? `${form.currency} ${grandTotal.toFixed(2)}` : "Not specified",
+                    grandTotal > 0 ? `${form.currency} ${grandTotal.toFixed(2)}` : t("travel.create.review.notSpecified"),
                 },
                 {
-                  label: "Vehicle",
+                  label: t("travel.create.review.vehicle"),
                   value:
                     form.vehicle_type === "sadcpf"
-                      ? "SADCPF Vehicle"
+                      ? t("travel.create.vehicle.sadcpf")
                       : form.vehicle_type === "private"
-                      ? "Private Vehicle"
-                      : "Not required",
+                      ? t("travel.create.vehicle.private")
+                      : t("travel.create.vehicle.notRequired"),
                 },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between py-2.5">
@@ -1498,9 +1519,7 @@ function TravelCreatePageInner() {
           <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 flex items-start gap-2">
             <span className="material-symbols-outlined text-amber-500 text-[16px] mt-0.5">info</span>
             <p className="text-xs text-amber-700">
-              By submitting, this request will be sent for supervisor approval. Finance Officers will
-              complete the DSA calculation (Table 6) and the Finance Director will confirm funding
-              availability. You will be notified at each stage.
+              {t("travel.create.submitNote")}
             </p>
           </div>
         </div>
@@ -1532,7 +1551,7 @@ function TravelCreatePageInner() {
               className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
             >
               <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-              Back
+              {t("common.back")}
             </button>
           )}
         </div>
@@ -1542,7 +1561,7 @@ function TravelCreatePageInner() {
             disabled={submitting || loadingDraft}
             className="rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
           >
-            Save Draft
+            {t("travel.create.saveDraft")}
           </button>
           {step < STEPS.length - 1 ? (
             <button
@@ -1557,7 +1576,7 @@ function TravelCreatePageInner() {
               }}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Next
+              {t("common.next")}
               <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
             </button>
           ) : (
@@ -1566,7 +1585,11 @@ function TravelCreatePageInner() {
               disabled={submitting || missingRequiredDocs().length > 0}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {submitting ? "Submitting…" : editId ? "Update & Submit" : "Submit Request"}
+              {submitting
+                ? t("travel.create.submitting")
+                : editId
+                  ? t("travel.create.updateSubmit")
+                  : t("travel.create.submitRequest")}
               <span className="material-symbols-outlined text-[18px]">send</span>
             </button>
           )}
@@ -1577,8 +1600,9 @@ function TravelCreatePageInner() {
 }
 
 export default function TravelCreatePage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">Loading travel form…</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">{t("travel.create.loadingForm")}</div>}>
       <TravelCreatePageInner />
     </Suspense>
   );

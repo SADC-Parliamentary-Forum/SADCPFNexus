@@ -7,26 +7,28 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { CORRESPONDENCE_HUB_CARDS } from "@/lib/hubs/correspondence";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  draft: { label: "Draft", cls: "badge-muted" },
-  pending_review: { label: "Pending Review", cls: "badge-warning" },
-  pending_approval: { label: "Pending Approval", cls: "badge-warning" },
-  approved: { label: "Approved", cls: "badge-success" },
-  sent: { label: "Sent", cls: "badge-success" },
-  pending_sg_routing: { label: "Pending SG Routing", cls: "badge-warning" },
-  in_progress: { label: "In Progress", cls: "badge-warning" },
-  archived: { label: "Archived", cls: "badge-muted" },
+  draft: { label: "status.draft", cls: "badge-muted" },
+  pending_review: { label: "correspondence.status.pendingReview", cls: "badge-warning" },
+  pending_approval: { label: "correspondence.status.pendingApproval", cls: "badge-warning" },
+  approved: { label: "status.approved", cls: "badge-success" },
+  sent: { label: "correspondence.status.sent", cls: "badge-success" },
+  pending_sg_routing: { label: "correspondence.status.pendingSgRouting", cls: "badge-warning" },
+  in_progress: { label: "correspondence.status.inProgress", cls: "badge-warning" },
+  archived: { label: "correspondence.status.archived", cls: "badge-muted" },
 };
 
 const typeLabel: Record<string, string> = {
-  internal_memo: "Internal Memo",
-  external: "External",
-  diplomatic_note: "Diplomatic Note",
-  procurement: "Procurement",
+  internal_memo: "correspondence.type.internalMemo",
+  external: "correspondence.type.external",
+  diplomatic_note: "correspondence.type.diplomaticNote",
+  procurement: "nav.procurement",
 };
 
 export default function CorrespondencePage() {
+  const { t } = useI18n();
   const [letters, setLetters] = useState<CorrespondenceLetter[]>([]);
   const [summary, setSummary] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,27 +43,27 @@ export default function CorrespondencePage() {
         setLetters(listRes.data.data ?? []);
         setSummary(sumRes.data.data ?? {});
       })
-      .catch(() => setError("Failed to load correspondence."))
+      .catch(() => setError(t("correspondence.loadFailed")))
       .finally(() => setLoading(false));
   }, []);
 
   const kpis = [
-    { label: "Pending SG Routing", value: summary?.incoming_pending_routing ?? 0, href: "/correspondence/pending-routing", icon: "route", color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "My Open Actions", value: summary?.my_open_actions ?? 0, href: "/correspondence/my-actions", icon: "assignment_ind", color: "text-orange-600", bg: "bg-orange-50" },
-    { label: "Ready for Dispatch", value: summary?.ready_for_dispatch ?? 0, href: "/correspondence/registry?direction=outgoing", icon: "outbox", color: "text-green-600", bg: "bg-green-50" },
-    { label: "Overdue", value: summary?.overdue ?? 0, href: "/correspondence/reports", icon: "schedule", color: "text-red-600", bg: "bg-red-50" },
+    { label: t("correspondence.status.pendingSgRouting"), value: summary?.incoming_pending_routing ?? 0, href: "/correspondence/pending-routing", icon: "route", color: "text-amber-600", bg: "bg-amber-50" },
+    { label: t("correspondence.hub.myOpenActions"), value: summary?.my_open_actions ?? 0, href: "/correspondence/my-actions", icon: "assignment_ind", color: "text-orange-600", bg: "bg-orange-50" },
+    { label: t("correspondence.hub.readyForDispatch"), value: summary?.ready_for_dispatch ?? 0, href: "/correspondence/registry?direction=outgoing", icon: "outbox", color: "text-green-600", bg: "bg-green-50" },
+    { label: t("correspondence.hub.overdue"), value: summary?.overdue ?? 0, href: "/correspondence/reports", icon: "schedule", color: "text-red-600", bg: "bg-red-50" },
   ];
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Correspondence Register"
-        subtitle="Institutional action-and-record register — Registry → SG routing → ownership → dispatch."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Correspondence" }]} />}
+        title={t("correspondence.hub.title")}
+        subtitle={t("correspondence.hub.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("workflows.simulate.module.correspondence") }]} />}
         actions={
           <Link href="/correspondence/create" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">edit_note</span>
-            New correspondence
+            {t("correspondence.hub.new")}
           </Link>
         }
       />
@@ -96,19 +98,19 @@ export default function CorrespondencePage() {
       <div className="flex flex-wrap gap-3">
         <Link href="/correspondence/incoming" className="btn-primary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">move_to_inbox</span>
-          Register Incoming
+          {t("correspondence.hub.registerIncoming")}
         </Link>
         <Link href="/correspondence/create" className="btn-secondary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">edit_square</span>
-          Draft Outgoing
+          {t("correspondence.hub.draftOutgoing")}
         </Link>
         <Link href="/correspondence/master-register" className="btn-secondary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">menu_book</span>
-          Master Register
+          {t("correspondence.masterRegister.title")}
         </Link>
         <Link href="/correspondence/subject-files" className="btn-secondary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">folder_open</span>
-          Subject Files
+          {t("correspondence.subjectFiles.title")}
         </Link>
       </div>
 
@@ -116,17 +118,18 @@ export default function CorrespondencePage() {
         <div className="card-header flex items-center justify-between px-5 py-3">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">mark_email_read</span>
-            <h3 className="text-sm font-semibold text-neutral-900">Recent Correspondence</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("correspondence.hub.recent")}</h3>
           </div>
-          <Link href="/correspondence/registry" className="btn-secondary text-xs py-1 px-2">View register</Link>
+          <Link href="/correspondence/registry" className="btn-secondary text-xs py-1 px-2">{t("correspondence.hub.viewRegister")}</Link>
         </div>
         <div className="divide-y divide-neutral-100">
-          {loading && <div className="p-6 text-center text-sm text-neutral-400">Loading…</div>}
+          {loading && <div className="p-6 text-center text-sm text-neutral-400">{t("common.loading")}</div>}
           {!loading && letters.length === 0 && (
-            <EmptyState icon="mail" title="No correspondence yet" description="Register incoming mail or draft an outgoing letter to get started." />
+            <EmptyState icon="mail" title={t("correspondence.hub.empty")} description={t("correspondence.hub.emptyHint")} />
           )}
           {letters.map((l) => {
-            const st = statusConfig[l.status] ?? { label: l.status, cls: "badge-muted" };
+            const cfg = statusConfig[l.status];
+            const st = cfg ? { label: t(cfg.label), cls: cfg.cls } : { label: l.status, cls: "badge-muted" };
             return (
               <Link
                 key={l.id}
@@ -136,7 +139,7 @@ export default function CorrespondencePage() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-neutral-900 truncate">{l.subject}</p>
                   <p className="text-xs text-neutral-500 font-mono mt-0.5">
-                    {l.registry_reference || l.reference_number || `#${l.id}`} · {typeLabel[l.type] ?? l.type}
+                    {l.registry_reference || l.reference_number || `#${l.id}`} · {typeLabel[l.type] ? t(typeLabel[l.type]) : l.type}
                   </p>
                 </div>
                 <span className={st.cls}>{st.label}</span>

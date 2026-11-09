@@ -37,7 +37,7 @@ export default function AccessSimulatorPage() {
       const res = await api.post<{ data: Record<string, unknown> }>(`/admin/access/users/${userId}/simulate`);
       setResult(res.data.data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Simulation failed");
+      setError(e instanceof Error ? e.message : t("workflows.simulate.failed"));
     } finally {
       setBusy(false);
     }
@@ -46,20 +46,20 @@ export default function AccessSimulatorPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Access simulator"
-        subtitle="Preview what a user can see and do. Does not create a live impersonation session."
+        title="admin.access.links.simulator"
+        subtitle="admin.accessSimulator.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Access", href: "/admin/access" },
-              { label: "Simulator" },
+              { label: "admin.homeLabel", href: "/admin" },
+              { label: "admin.crumb.access", href: "/admin/access" },
+              { label: "admin.accessSimulator.crumb" },
             ]}
           />
         }
       />
 
-      <FormSection title="Simulate user" description="Choose a person to compute effective navigation and permissions." icon="science" dense>
+      <FormSection title="admin.accessSimulator.section" description="admin.accessSimulator.sectionHint" icon="science" dense>
         <div className="flex flex-wrap items-end gap-3">
           <FormField label={t("admin.simulator.user")} htmlFor="sim-user-select" required className="min-w-[16rem] flex-1">
             <select
@@ -78,14 +78,14 @@ export default function AccessSimulatorPage() {
             </select>
           </FormField>
           <button type="button" className="btn-primary text-sm" onClick={run} disabled={!userId || busy}>
-            {busy ? "Running…" : "Simulate"}
+            {busy ? t("people.m365.running") : t("admin.accessSimulator.run")}
           </button>
         </div>
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
       </FormSection>
 
       {result ? (
-        <FormSection title="Simulation result" icon="fact_check">
+        <FormSection title="admin.accessSimulator.result" icon="fact_check">
           <ObjectSummary value={result} />
         </FormSection>
       ) : null}

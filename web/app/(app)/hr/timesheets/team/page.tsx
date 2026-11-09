@@ -8,6 +8,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -33,10 +34,10 @@ function toYMD(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function formatWeekLabel(weekStart: string): string {
+function formatWeekLabel(weekStart: string, localeTag = "en-GB"): string {
   const start = new Date(weekStart + "T00:00:00");
   const end   = addDays(start, 4);
-  return `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+  return `${start.toLocaleDateString(localeTag, { day: "numeric", month: "short" })} – ${end.toLocaleDateString(localeTag, { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
 function avatarColor(name: string): string {
@@ -51,17 +52,17 @@ function initials(name: string): string {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }> = {
-  draft:     { label: "Draft",            cls: "badge-muted",    icon: "edit_note"    },
-  submitted: { label: "Pending Review",   cls: "badge-warning",  icon: "pending"      },
-  approved:  { label: "Approved",         cls: "badge-success",  icon: "check_circle" },
-  rejected:  { label: "Rejected",         cls: "badge-danger",   icon: "cancel"       },
+  draft:     { label: "hr.timesheets.status.draft", cls: "badge-muted",    icon: "edit_note"    },
+  submitted: { label: "hr.timesheets.team.pendingReview", cls: "badge-warning",  icon: "pending"      },
+  approved:  { label: "hr.timesheets.team.approved", cls: "badge-success",  icon: "check_circle" },
+  rejected:  { label: "hr.timesheets.status.rejected", cls: "badge-danger",   icon: "cancel"       },
 };
 
 const FILTER_TABS = [
-  { label: "All",            value: ""          },
-  { label: "Pending Review", value: "submitted" },
-  { label: "Approved",       value: "approved"  },
-  { label: "Rejected",       value: "rejected"  },
+  { label: "timesheet.import.filterAll", value: "" },
+  { label: "hr.timesheets.team.pendingReview", value: "submitted" },
+  { label: "hr.timesheets.team.approved", value: "approved" },
+  { label: "hr.timesheets.status.rejected", value: "rejected" },
 ];
 
 // ─── Export CSV ────────────────────────────────────────────────────────────
@@ -110,6 +111,7 @@ function hoursOnDate(ts: Timesheet, date: Date): number {
 }
 
 export default function TeamTimesheetsPage() {
+  const { t, localeTag } = useI18n();
   const [weekStartDate, setWeekStartDate] = useState<Date | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
@@ -178,9 +180,9 @@ export default function TeamTimesheetsPage() {
       setTotal(data.total ?? 0);
     } catch (err: unknown) {
       if ((err as { response?: { status?: number } })?.response?.status === 403) {
-        setError("Access restricted. You need HR supervisor or admin permissions to view team timesheets.");
+        setError(t("hr.timesheets.team.accessRestricted"));
       } else {
-        setError("Failed to load team timesheets.");
+        setError(t("hr.timesheets.team.loadFailed"));
       }
     } finally {
       setLoading(false);
@@ -195,10 +197,10 @@ export default function TeamTimesheetsPage() {
     setActionLoading((prev) => ({ ...prev, [ts.id]: true }));
     try {
       await hrApi.approveTimesheet(ts.id);
-      showToast(`${ts.user?.name ?? "Timesheet"} approved.`);
+      showToast(t("hr.timesheets.team.approvedToast", { name: ts.user?.name ?? t("hr.timesheets.team.timesheet") }));
       await load();
     } catch (err) {
-      toast.error("Could not approve timesheet", apiErrorMessage(err, "Failed to approve timesheet."));
+      toast.error(t("hr.timesheets.notApproved"), apiErrorMessage(err, t("hr.timesheets.approveFailed")));
     } finally {
       setActionLoading((prev) => ({ ...prev, [ts.id]: false }));
     }
@@ -208,17 +210,17 @@ export default function TeamTimesheetsPage() {
     setActionLoading((prev) => ({ ...prev, [ts.id]: true }));
     try {
       await hrApi.rejectTimesheet(ts.id, "Returned for revision.");
-      showToast(`${ts.user?.name ?? "Timesheet"} returned for revision.`);
+      showToast(t("hr.timesheets.team.returnedToast", { name: ts.user?.name ?? t("hr.timesheets.team.timesheet") }));
       await load();
     } catch (err) {
-      toast.error("Could not reject timesheet", apiErrorMessage(err, "Failed to reject timesheet."));
+      toast.error(t("hr.timesheets.notRejected"), apiErrorMessage(err, t("hr.timesheets.rejectFailed")));
     } finally {
       setActionLoading((prev) => ({ ...prev, [ts.id]: false }));
     }
   };
 
   const handleBulkApprove = async () => {
-    const pending = timesheets.filter((t) => t.status === "submitted");
+    const pending = timesheets.filter((x) => x.status === "submitted");
     if (pending.length === 0) return;
     setBulkLoading(true);
     let successCount = 0;
@@ -235,15 +237,15 @@ export default function TeamTimesheetsPage() {
     setShowBulkConfirm(false);
     await load();
     if (errorCount === 0) {
-      showToast(`All ${successCount} timesheet${successCount !== 1 ? "s" : ""} approved.`);
+      showToast(t(successCount === 1 ? "hr.timesheets.team.bulkApprovedOne" : "hr.timesheets.team.bulkApprovedMany", { count: successCount }));
     } else {
-      showToast(`${successCount} approved, ${errorCount} failed.`, "error");
+      showToast(t("hr.timesheets.team.bulkPartial", { approved: successCount, failed: errorCount }), "error");
     }
   };
 
   const handleStagePayroll = async () => {
     if (!selectedPeriodId) {
-      showToast("Select a timesheet period first.", "error");
+      showToast(t("hr.timesheets.payroll.selectPeriodFirst"), "error");
       return;
     }
     setPayrollStaging(true);
@@ -257,18 +259,18 @@ export default function TeamTimesheetsPage() {
       const batch = (res.data as { data?: { id: number; batch_reference: string } }).data;
       if (batch?.id) {
         setLastBatch({ id: batch.id, batch_reference: batch.batch_reference });
-        showToast(`Payroll staged & period locked: ${batch.batch_reference}. TOIL payable hours stay 0.`);
+        showToast(t("hr.timesheets.team.payrollStaged", { reference: batch.batch_reference }));
         await load();
         await loadExportHistory();
       } else {
-        showToast("Payroll export staged.");
+        showToast(t("hr.timesheets.team.payrollStagedPlain"));
       }
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data
           ?.message ||
         (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors?.period_id?.[0] ||
-        "Failed to stage payroll export.";
+        t("hr.timesheets.payroll.stageFailed");
       showToast(msg, "error");
     } finally {
       setPayrollStaging(false);
@@ -286,29 +288,29 @@ export default function TeamTimesheetsPage() {
       a.download = `payroll-${lastBatch.batch_reference}.${format === "xlsx" ? "xlsx" : "csv"}`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast(`Downloaded ${format.toUpperCase()} for ${lastBatch.batch_reference}.`);
+      showToast(t("hr.timesheets.team.downloaded", { format: format.toUpperCase(), reference: lastBatch.batch_reference }));
     } catch {
-      showToast("Failed to download payroll export.", "error");
+      showToast(t("hr.timesheets.team.downloadFailed"), "error");
     }
   };
 
-  const pendingCount = timesheets.filter((t) => t.status === "submitted").length;
-  const weekLabel    = weekStart ? formatWeekLabel(weekStart) : "";
-  const totalHours   = timesheets.reduce((s, t) => s + Number(t.total_hours ?? 0), 0);
-  const overtimeHrs  = timesheets.reduce((s, t) => s + Number(t.overtime_hours ?? 0), 0);
+  const pendingCount = timesheets.filter((x) => x.status === "submitted").length;
+  const weekLabel    = weekStart ? formatWeekLabel(weekStart, localeTag) : "";
+  const totalHours   = timesheets.reduce((s, x) => s + Number(x.total_hours ?? 0), 0);
+  const overtimeHrs  = timesheets.reduce((s, x) => s + Number(x.overtime_hours ?? 0), 0);
   const weekDays     = weekStart ? getWeekDays(weekStart) : [];
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Team Timesheets"
-        subtitle="Review and approve your team's weekly submissions"
+        title="hr.timesheets.team.title"
+        subtitle="hr.timesheets.team.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Timesheets", href: "/hr/timesheets" },
-              { label: "Team" },
+              { label: "nav.timesheets", href: "/hr/timesheets" },
+              { label: "hr.timesheets.team.crumb" },
             ]}
           />
         }
@@ -326,7 +328,7 @@ export default function TeamTimesheetsPage() {
             <button
               type="button"
               onClick={() => setViewMode("cards")}
-              title="Card view"
+              title={t("hr.timesheets.team.cardView")}
               className={cn(
                 "flex h-8 w-8 items-center justify-center transition-colors",
                 viewMode === "cards" ? "bg-primary text-white" : "text-neutral-500 hover:bg-neutral-100"
@@ -337,7 +339,7 @@ export default function TeamTimesheetsPage() {
             <button
               type="button"
               onClick={() => setViewMode("grid")}
-              title="Grid view"
+              title={t("hr.timesheets.team.gridView")}
               className={cn(
                 "flex h-8 w-8 items-center justify-center transition-colors",
                 viewMode === "grid" ? "bg-primary text-white" : "text-neutral-500 hover:bg-neutral-100"
@@ -353,7 +355,7 @@ export default function TeamTimesheetsPage() {
               className="btn-primary py-2 px-3 text-sm flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">done_all</span>
-              Bulk Approve ({pendingCount})
+              {t("hr.timesheets.team.bulkApproveCount", { count: pendingCount })}
             </button>
           )}
           {timesheets.length > 0 && (
@@ -363,7 +365,7 @@ export default function TeamTimesheetsPage() {
               className="btn-secondary py-2 px-3 text-sm flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">download</span>
-              Export Week
+              {t("hr.timesheets.team.exportWeek")}
             </button>
           )}
           <div
@@ -374,10 +376,10 @@ export default function TeamTimesheetsPage() {
               className="form-input text-xs py-1.5 max-w-[180px] border-0 shadow-none"
               value={selectedPeriodId}
               onChange={(e) => setSelectedPeriodId(e.target.value)}
-              aria-label="Timesheet period for payroll"
+              aria-label={t("hr.timesheets.team.periodForPayroll")}
               data-testid="team-payroll-period"
             >
-              <option value="">Period…</option>
+              <option value="">{t("hr.timesheets.team.periodPlaceholder")}</option>
               {periods.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.label || `${p.period_start} → ${p.period_end}`}
@@ -390,12 +392,12 @@ export default function TeamTimesheetsPage() {
               disabled={payrollStaging || !selectedPeriodId}
               className="btn-primary py-1.5 px-2.5 text-xs flex items-center gap-1 disabled:opacity-50"
               data-testid="team-payroll-stage-btn"
-              title="Stage HR-validated approved timesheets for payroll (TOIL payable_hours = 0)"
+              title={t("hr.timesheets.team.stageHint")}
             >
               <span className="material-symbols-outlined text-[14px]">
                 {payrollStaging ? "progress_activity" : "account_balance_wallet"}
               </span>
-              {payrollStaging ? "Staging…" : "Stage payroll"}
+              {payrollStaging ? t("hr.timesheets.payroll.staging") : t("hr.timesheets.team.stagePayroll")}
             </button>
             {lastBatch && (
               <>
@@ -406,7 +408,7 @@ export default function TeamTimesheetsPage() {
                   data-testid="team-payroll-download-csv"
                 >
                   <span className="material-symbols-outlined text-[14px]">download</span>
-                  CSV
+                  CSV {/* i18n-ignore */}
                 </button>
                 <button
                   type="button"
@@ -414,7 +416,7 @@ export default function TeamTimesheetsPage() {
                   className="btn-secondary py-1.5 px-2.5 text-xs flex items-center gap-1"
                   data-testid="team-payroll-download-xlsx"
                 >
-                  XLSX
+                  XLSX {/* i18n-ignore */}
                 </button>
               </>
             )}
@@ -429,17 +431,19 @@ export default function TeamTimesheetsPage() {
           type="button"
           onClick={() => setWeekStartDate((d) => addDays(d ?? new Date(), -7))}
           disabled={!weekStartDate}
+          aria-label={t("hr.timesheets.previousWeek")}
           className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40"
         >
           <span className="material-symbols-outlined text-[18px]">chevron_left</span>
         </button>
         <span className="text-sm font-medium text-neutral-700">
-          {weekStart ? `Week of ${weekLabel}` : "Loading…"}
+          {weekStart ? t("hr.timesheets.detail.weekOf", { week: weekLabel }) : t("common.loading")}
         </span>
         <button
           type="button"
           onClick={() => setWeekStartDate((d) => addDays(d ?? new Date(), 7))}
           disabled={!weekStartDate}
+          aria-label={t("hr.timesheets.nextWeek")}
           className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40"
         >
           <span className="material-symbols-outlined text-[18px]">chevron_right</span>
@@ -449,27 +453,27 @@ export default function TeamTimesheetsPage() {
           onClick={() => setWeekStartDate(getWeekStart(new Date()))}
           className="ml-2 btn-secondary text-xs"
         >
-          Current week
+          {t("hr.timesheets.team.currentWeek")}
         </button>
       </div>
 
       {exportHistory.length > 0 && (
         <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900" data-testid="team-payroll-export-history">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-800">Payroll export history</h2>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("hr.timesheets.team.exportHistory")}</h2>
             <button type="button" className="btn-secondary text-xs" onClick={() => void loadExportHistory()}>
-              Refresh
+              {t("hr.timesheets.team.refresh")}
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-xs">
               <thead className="bg-neutral-50 text-left text-neutral-600">
                 <tr>
-                  <th className="px-2 py-1.5">Batch</th>
-                  <th className="px-2 py-1.5">Period</th>
-                  <th className="px-2 py-1.5">Status</th>
-                  <th className="px-2 py-1.5">Exported</th>
-                  <th className="px-2 py-1.5">Lines</th>
+                  <th className="px-2 py-1.5">{t("hr.timesheets.payroll.batch")}</th>
+                  <th className="px-2 py-1.5">{t("hr.timesheets.team.period")}</th>
+                  <th className="px-2 py-1.5">{t("hr.timesheets.monthly.status")}</th>
+                  <th className="px-2 py-1.5">{t("hr.timesheets.team.exported")}</th>
+                  <th className="px-2 py-1.5">{t("hr.timesheets.team.lines")}</th>
                   <th className="px-2 py-1.5" />
                 </tr>
               </thead>
@@ -479,7 +483,7 @@ export default function TeamTimesheetsPage() {
                     <td className="px-2 py-1.5 font-medium">{b.batch_reference}</td>
                     <td className="px-2 py-1.5">{b.period?.label ?? "—"} ({b.period?.status ?? "—"})</td>
                     <td className="px-2 py-1.5">{b.status}</td>
-                    <td className="px-2 py-1.5">{b.exported_at ? new Date(b.exported_at).toLocaleString() : "—"}</td>
+                    <td className="px-2 py-1.5">{b.exported_at ? new Date(b.exported_at).toLocaleString(localeTag) : "—"}</td>
                     <td className="px-2 py-1.5">{b.lines_count ?? "—"}</td>
                     <td className="px-2 py-1.5 text-right">
                       <button
@@ -490,7 +494,7 @@ export default function TeamTimesheetsPage() {
                           void handleDownloadPayroll("csv");
                         }}
                       >
-                        CSV
+                        CSV {/* i18n-ignore */}
                       </button>
                     </td>
                   </tr>
@@ -510,11 +514,11 @@ export default function TeamTimesheetsPage() {
             onClick={() => setStatusFilter(tab.value)}
             className={cn("filter-tab", statusFilter === tab.value && "active")}
           >
-            {tab.label}
+            {t(tab.label)}
           </button>
         ))}
         {!loading && (
-          <span className="ml-auto text-xs text-neutral-400">{total} timesheet{total !== 1 ? "s" : ""}</span>
+          <span className="ml-auto text-xs text-neutral-400">{t(total === 1 ? "hr.timesheets.team.countOne" : "hr.timesheets.team.countMany", { count: total })}</span>
         )}
       </div>
 
@@ -541,11 +545,11 @@ export default function TeamTimesheetsPage() {
         <div className="card">
           <EmptyState
             icon="group"
-            title="No timesheets found"
+            title={t("hr.timesheets.history.emptyTitle")}
             description={
               statusFilter
-                ? `No ${STATUS_CONFIG[statusFilter]?.label.toLowerCase() ?? statusFilter} timesheets for this week`
-                : "No team timesheets for the selected week"
+                ? t(`hr.timesheets.team.emptyFiltered.${statusFilter}`)
+                : t("hr.timesheets.team.emptyHint")
             }
           />
         </div>
@@ -554,7 +558,7 @@ export default function TeamTimesheetsPage() {
           {viewMode === "cards" ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {timesheets.map((ts) => {
-                const name     = ts.user?.name ?? "Team Member";
+                const name     = ts.user?.name ?? t("hr.timesheets.team.member");
                 const sc       = STATUS_CONFIG[ts.status] ?? STATUS_CONFIG.draft;
                 const totalH   = Number(ts.total_hours ?? 0);
                 const isLoading = actionLoading[ts.id];
@@ -572,21 +576,21 @@ export default function TeamTimesheetsPage() {
                       </div>
                       <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold", sc.cls)}>
                         <span className="material-symbols-outlined text-[11px]">{sc.icon}</span>
-                        {sc.label}
+                        {t(sc.label)}
                       </span>
                     </div>
 
                     {/* Week label */}
                     <p className="text-xs text-neutral-400">
-                      Week of {formatWeekLabel(ts.week_start)}
+                      {t("hr.timesheets.detail.weekOf", { week: formatWeekLabel(ts.week_start, localeTag) })}
                     </p>
 
                     {/* Hours bar */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-neutral-500">Hours logged</span>
+                        <span className="text-xs text-neutral-500">{t("hr.timesheets.history.hoursLogged")}</span>
                         <span className={cn("text-xs font-semibold", totalH >= 40 ? "text-green-600" : totalH > 0 ? "text-amber-600" : "text-neutral-400")}>
-                          {totalH.toFixed(1)}h / 40h
+                          {t("hr.timesheets.history.hoursOf", { hours: totalH.toFixed(1), expected: 40 })}
                         </span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
@@ -603,7 +607,7 @@ export default function TeamTimesheetsPage() {
                         href={`/hr/timesheets/${ts.id}`}
                         className="btn-secondary flex-1 text-center text-xs"
                       >
-                        View Details →
+                        {t("hr.timesheets.team.viewDetails")}
                       </Link>
                       {ts.status === "submitted" && (
                         <>
@@ -618,13 +622,13 @@ export default function TeamTimesheetsPage() {
                             ) : (
                               <span className="material-symbols-outlined text-[14px]">check</span>
                             )}
-                            Approve
+                            {t("common.approve")}
                           </button>
                           <button
                             type="button"
                             onClick={() => handleReject(ts)}
                             disabled={isLoading}
-                            title="Return for revision"
+                            title={t("hr.timesheets.team.returnForRevision")}
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-40 transition-colors"
                           >
                             <span className="material-symbols-outlined text-[15px]">undo</span>
@@ -644,33 +648,33 @@ export default function TeamTimesheetsPage() {
                   <thead>
                     <tr className="border-b border-neutral-100 bg-neutral-50">
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500 w-52">
-                        Employee
+                        {t("hr.timesheets.detail.employee")}
                       </th>
                       {weekDays.map((day) => (
                         <th
                           key={day.toISOString()}
                           className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500 w-20"
                         >
-                          <div>{day.toLocaleDateString("en-GB", { weekday: "short" })}</div>
+                          <div>{day.toLocaleDateString(localeTag, { weekday: "short" })}</div>
                           <div className="text-[10px] font-normal text-neutral-400 normal-case tracking-normal">
                             {formatDateShort(day.toISOString())}
                           </div>
                         </th>
                       ))}
                       <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500 w-20">
-                        Total
+                        {t("hr.timesheets.detail.total")}
                       </th>
                       <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500 w-28">
-                        Status
+                        {t("hr.timesheets.monthly.status")}
                       </th>
                       <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500 w-32">
-                        Actions
+                        {t("hr.timesheets.overtime.actions")}
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
                     {timesheets.map((ts) => {
-                      const name      = ts.user?.name ?? "Team Member";
+                      const name      = ts.user?.name ?? t("hr.timesheets.team.member");
                       const sc        = STATUS_CONFIG[ts.status] ?? STATUS_CONFIG.draft;
                       const totalH    = Number(ts.total_hours ?? 0);
                       const isLoading = actionLoading[ts.id];
@@ -734,7 +738,7 @@ export default function TeamTimesheetsPage() {
                           <td className="px-3 py-3 text-center">
                             <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold", sc.cls)}>
                               <span className="material-symbols-outlined text-[11px]">{sc.icon}</span>
-                              {sc.label}
+                              {t(sc.label)}
                             </span>
                           </td>
 
@@ -745,7 +749,7 @@ export default function TeamTimesheetsPage() {
                                 href={`/hr/timesheets/${ts.id}`}
                                 className="flex h-7 items-center rounded-lg border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-600 hover:border-primary hover:text-primary transition-colors dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
                               >
-                                View
+                                {t("hr.timesheets.team.view")}
                               </Link>
                               {ts.status === "submitted" && (
                                 <>
@@ -753,7 +757,7 @@ export default function TeamTimesheetsPage() {
                                     type="button"
                                     onClick={() => handleApprove(ts)}
                                     disabled={isLoading}
-                                    title="Approve"
+                                    title={t("common.approve")}
                                     className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-green-600 hover:bg-green-100 disabled:opacity-40 border border-green-200 transition-colors"
                                   >
                                     {isLoading ? (
@@ -766,7 +770,7 @@ export default function TeamTimesheetsPage() {
                                     type="button"
                                     onClick={() => handleReject(ts)}
                                     disabled={isLoading}
-                                    title="Return for revision"
+                                    title={t("hr.timesheets.team.returnForRevision")}
                                     className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-40 border border-red-200 transition-colors"
                                   >
                                     <span className="material-symbols-outlined text-[13px]">undo</span>
@@ -783,7 +787,7 @@ export default function TeamTimesheetsPage() {
                   <tfoot className="border-t-2 border-neutral-200 bg-neutral-50">
                     <tr>
                       <td className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-neutral-500">
-                        Team Total
+                        {t("hr.timesheets.team.teamTotal")}
                       </td>
                       {weekDays.map((day) => {
                         const dayTotal = timesheets.reduce((s, ts) => s + hoursOnDate(ts, day), 0);
@@ -801,7 +805,7 @@ export default function TeamTimesheetsPage() {
                         <span className="text-sm font-bold text-primary tabular-nums">{totalHours.toFixed(1)}h</span>
                       </td>
                       <td colSpan={2} className="px-3 py-3 text-right text-xs text-neutral-400">
-                        {timesheets.length} member{timesheets.length !== 1 ? "s" : ""} · {overtimeHrs.toFixed(1)}h overtime
+                        {t(timesheets.length === 1 ? "hr.timesheets.team.membersOvertimeOne" : "hr.timesheets.team.membersOvertimeMany", { count: timesheets.length, hours: overtimeHrs.toFixed(1) })}
                       </td>
                     </tr>
                   </tfoot>
@@ -816,15 +820,15 @@ export default function TeamTimesheetsPage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                 <span className="material-symbols-outlined text-[18px] text-primary">summarize</span>
               </div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Week Summary</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("hr.timesheets.team.weekSummary")}</h3>
               <span className="text-xs text-neutral-400 ml-auto">
-                {timesheets.length} team member{timesheets.length !== 1 ? "s" : ""}
+                {t(timesheets.length === 1 ? "hr.timesheets.team.teamMembersOne" : "hr.timesheets.team.teamMembersMany", { count: timesheets.length })}
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 {
-                  label:     "Total Hours",
+                  label:     t("hr.timesheets.monthly.totalHours"),
                   value:     `${totalHours.toFixed(1)}h`,
                   icon:      "schedule",
                   color:     "text-neutral-900",
@@ -832,7 +836,7 @@ export default function TeamTimesheetsPage() {
                   bg:        "bg-neutral-50",
                 },
                 {
-                  label:     "Avg per Staff",
+                  label:     t("hr.timesheets.team.avgPerStaff"),
                   value:     timesheets.length > 0 ? `${(totalHours / timesheets.length).toFixed(1)}h` : "—",
                   icon:      "person",
                   color:     "text-primary",
@@ -840,7 +844,7 @@ export default function TeamTimesheetsPage() {
                   bg:        "bg-primary/5",
                 },
                 {
-                  label:     "Overtime",
+                  label:     t("hr.timesheets.detail.overtime"),
                   value:     `${overtimeHrs.toFixed(1)}h`,
                   icon:      "more_time",
                   color:     overtimeHrs > 0 ? "text-amber-700" : "text-neutral-400",
@@ -848,7 +852,7 @@ export default function TeamTimesheetsPage() {
                   bg:        overtimeHrs > 0 ? "bg-amber-50" : "bg-neutral-50",
                 },
                 {
-                  label:     "Pending Approval",
+                  label:     t("hr.timesheets.status.submitted"),
                   value:     pendingCount,
                   icon:      "pending",
                   color:     pendingCount > 0 ? "text-amber-700" : "text-neutral-400",
@@ -880,15 +884,12 @@ export default function TeamTimesheetsPage() {
                 <span className="material-symbols-outlined text-primary text-[22px]">done_all</span>
               </div>
               <div>
-                <h3 className="text-base font-bold text-neutral-900">Bulk Approve</h3>
-                <p className="text-xs text-neutral-400">This action cannot be undone</p>
+                <h3 className="text-base font-bold text-neutral-900">{t("hr.timesheets.team.bulkApprove")}</h3>
+                <p className="text-xs text-neutral-400">{t("hr.timesheets.team.cannotUndo")}</p>
               </div>
             </div>
             <p className="text-sm text-neutral-600 mb-5">
-              You are about to approve{" "}
-              <strong className="text-neutral-900">{pendingCount} pending timesheet{pendingCount !== 1 ? "s" : ""}</strong>{" "}
-              for the week of <strong className="text-neutral-900">{weekLabel}</strong>.
-              All submissions will be marked as approved.
+              {t(pendingCount === 1 ? "hr.timesheets.team.bulkConfirmOne" : "hr.timesheets.team.bulkConfirmMany", { count: pendingCount, week: weekLabel })}
             </p>
             <div className="flex gap-3">
               <button
@@ -897,7 +898,7 @@ export default function TeamTimesheetsPage() {
                 disabled={bulkLoading}
                 className="btn-secondary flex-1 justify-center py-2.5 text-sm"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -908,12 +909,12 @@ export default function TeamTimesheetsPage() {
                 {bulkLoading ? (
                   <>
                     <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                    Approving…
+                    {t("hr.timesheets.team.approving")}
                   </>
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-[16px]">done_all</span>
-                    Approve All
+                    {t("hr.timesheets.team.approveAll")}
                   </>
                 )}
               </button>

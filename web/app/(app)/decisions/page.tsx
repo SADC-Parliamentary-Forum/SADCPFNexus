@@ -11,31 +11,33 @@ import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RegisterMobileCards } from "@/components/ui/RegisterMobileCards";
 import { Badge } from "@/components/ui/Badge";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string; variant: "muted" | "success" | "primary" | "warning" }> = {
-  draft: { label: "Draft", cls: "badge-muted", variant: "muted" },
-  adopted: { label: "Adopted", cls: "badge-success", variant: "success" },
-  in_progress: { label: "In Progress", cls: "badge-primary", variant: "primary" },
-  implemented: { label: "Implemented", cls: "badge-success", variant: "success" },
-  closed: { label: "Closed", cls: "badge-muted", variant: "muted" },
-  superseded: { label: "Superseded", cls: "badge-warning", variant: "warning" },
+  draft: { label: "decisions.status.draft", cls: "badge-muted", variant: "muted" },
+  adopted: { label: "decisions.status.adopted", cls: "badge-success", variant: "success" },
+  in_progress: { label: "decisions.status.in_progress", cls: "badge-primary", variant: "primary" },
+  implemented: { label: "decisions.status.implemented", cls: "badge-success", variant: "success" },
+  closed: { label: "decisions.status.closed", cls: "badge-muted", variant: "muted" },
+  superseded: { label: "decisions.status.superseded", cls: "badge-warning", variant: "warning" },
 };
 
 const TYPE_LABEL: Record<string, string> = {
-  resolution: "Resolution",
-  management_decision: "Management decision",
+  resolution: "decisions.type.resolution",
+  management_decision: "decisions.type.management_decision",
 };
 
 const STATUS_FILTERS = [
-  { key: "All", value: undefined },
-  { key: "Draft", value: "draft" },
-  { key: "Adopted", value: "adopted" },
-  { key: "In Progress", value: "in_progress" },
-  { key: "Implemented", value: "implemented" },
-  { key: "Closed", value: "closed" },
+  { key: "All", label: "decisions.filter.all", value: undefined },
+  { key: "Draft", label: "decisions.status.draft", value: "draft" },
+  { key: "Adopted", label: "decisions.status.adopted", value: "adopted" },
+  { key: "In Progress", label: "decisions.status.in_progress", value: "in_progress" },
+  { key: "Implemented", label: "decisions.status.implemented", value: "implemented" },
+  { key: "Closed", label: "decisions.status.closed", value: "closed" },
 ] as const;
 
 export default function DecisionsRegisterPage() {
+  const { t } = useI18n();
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [typeFilter, setTypeFilter] = useState<string>("All");
   const [q, setQ] = useState("");
@@ -69,9 +71,9 @@ export default function DecisionsRegisterPage() {
 
   return (
     <RegisterShell
-      title="Decision Register"
-      subtitle="Resolutions and management decisions captured from meetings, with owners and follow-up."
-      breadcrumbs={<PageBreadcrumbs items={[{ label: "Governance", href: "/governance" }, { label: "Decision Register" }]} />}
+      title="decisions.register.title"
+      subtitle="decisions.register.subtitle"
+      breadcrumbs={<PageBreadcrumbs items={[{ label: "decisions.crumb.governance", href: "/governance" }, { label: "decisions.register.title" }]} />}
       density={density}
       onDensityChange={setDensity}
       page={Math.min(page, lastPage)}
@@ -83,21 +85,21 @@ export default function DecisionsRegisterPage() {
         <>
           <Link href="/decisions/dashboard" className="btn-secondary text-sm">
             <span className="material-symbols-outlined text-[18px]">dashboard</span>
-            Dashboard
+            {t("nav.dashboard")}
           </Link>
           <Link href="/decisions/create" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New decision
+            {t("decisions.new")}
           </Link>
         </>
       }
       stats={
         dash ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="Total" value={dash.total} />
-            <Stat label="Overdue" value={dash.overdue} />
-            <Stat label="Open critical actions" value={dash.open_critical_actions} />
-            <Stat label="In progress" value={dash.by_status.in_progress ?? 0} />
+            <Stat label={t("decisions.stat.total")} value={dash.total} />
+            <Stat label={t("decisions.stat.overdue")} value={dash.overdue} />
+            <Stat label={t("decisions.stat.openCritical")} value={dash.open_critical_actions} />
+            <Stat label={t("decisions.status.inProgress")} value={dash.by_status.in_progress ?? 0} />
           </div>
         ) : undefined
       }
@@ -114,8 +116,8 @@ export default function DecisionsRegisterPage() {
                 setQ(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search reference or title…"
-              aria-label="Search decisions"
+              placeholder={t("decisions.register.searchPlaceholder")}
+              aria-label={t("decisions.register.searchAria")}
             />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -129,15 +131,15 @@ export default function DecisionsRegisterPage() {
                 }}
                 className={`filter-tab${statusFilter === f.key ? " active" : ""}`}
               >
-                {f.key}
+                {t(f.label)}
               </button>
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
             {[
-              { key: "All", value: "All" },
-              { key: "Resolutions", value: "resolution" },
-              { key: "Management", value: "management_decision" },
+              { key: "decisions.filter.all", value: "All" },
+              { key: "decisions.filter.resolutions", value: "resolution" },
+              { key: "decisions.filter.management", value: "management_decision" },
             ].map((f) => (
               <button
                 key={f.value}
@@ -148,7 +150,7 @@ export default function DecisionsRegisterPage() {
                 }}
                 className={`filter-tab${typeFilter === f.value ? " active" : ""}`}
               >
-                {f.key}
+                {t(f.key)}
               </button>
             ))}
           </div>
@@ -160,22 +162,22 @@ export default function DecisionsRegisterPage() {
             {isError ? (
               <EmptyState
                 icon="error"
-                title="Failed to load the decision register"
-                description="Refresh the page or try again in a moment."
+                title="decisions.register.loadFailed"
+                description="decisions.register.loadFailedHint"
               />
             ) : (
               <EmptyState
                 icon="gavel"
-                title="No decisions yet"
+                title="decisions.register.empty"
                 description={
                   q || statusFilter !== "All" || typeFilter !== "All"
-                    ? "No rows match the current filters."
-                    : "Create the first resolution or management decision."
+                    ? "decisions.register.noMatch"
+                    : "decisions.register.emptyHint"
                 }
                 action={
                   <Link href="/decisions/create" className="btn-primary text-sm">
                     <span className="material-symbols-outlined text-[18px]">add</span>
-                    New decision
+                    {t("decisions.new")}
                   </Link>
                 }
               />
@@ -192,30 +194,30 @@ export default function DecisionsRegisterPage() {
           subtitle={(d) => d.title}
           badge={(d) => {
             const st = STATUS_CONFIG[d.status] ?? STATUS_CONFIG.draft;
-            return <Badge variant={st.variant}>{st.label}</Badge>;
+            return <Badge variant={st.variant}>{t(st.label)}</Badge>;
           }}
           fields={(d) => [
-            { label: "Type", value: TYPE_LABEL[d.decision_type] ?? d.decision_type },
-            { label: "Owner", value: d.owner?.name ?? "—" },
-            { label: "Due", value: d.due_date ? formatDateShort(d.due_date) : "—" },
+            { label: t("decisions.col.type"), value: TYPE_LABEL[d.decision_type] ? t(TYPE_LABEL[d.decision_type]) : d.decision_type },
+            { label: t("decisions.col.owner"), value: d.owner?.name ?? "—" },
+            { label: t("decisions.col.due"), value: d.due_date ? formatDateShort(d.due_date) : "—" },
           ]}
           actions={(d) => (
             <Link href={`/decisions/${d.id}`} className="btn-secondary text-xs py-1 px-2">
-              View
+              {t("decisions.view")}
             </Link>
           )}
         />
         <div className="hidden overflow-x-auto md:block">
           <table className="data-table w-full">
-            <caption className="sr-only">Decision register</caption>
+            <caption className="sr-only">{t("decisions.register.caption")}</caption>
             <thead>
               <tr>
-                <th>Reference</th>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Owner</th>
-                <th>Due</th>
-                <th>Status</th>
+                <th>{t("decisions.col.reference")}</th>
+                <th>{t("decisions.col.title")}</th>
+                <th>{t("decisions.col.type")}</th>
+                <th>{t("decisions.col.owner")}</th>
+                <th>{t("decisions.col.due")}</th>
+                <th>{t("decisions.col.status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -228,7 +230,7 @@ export default function DecisionsRegisterPage() {
                         {d.reference_number}
                       </Link>
                       {d.is_confidential ? (
-                        <span className="ml-2 text-[10px] font-semibold uppercase text-amber-600">Confidential</span>
+                        <span className="ml-2 text-[10px] font-semibold uppercase text-amber-600">{t("decisions.confidential")}</span>
                       ) : null}
                     </td>
                     <td>
@@ -236,11 +238,11 @@ export default function DecisionsRegisterPage() {
                         {d.title}
                       </Link>
                     </td>
-                    <td className="text-neutral-600">{TYPE_LABEL[d.decision_type] ?? d.decision_type}</td>
+                    <td className="text-neutral-600">{TYPE_LABEL[d.decision_type] ? t(TYPE_LABEL[d.decision_type]) : d.decision_type}</td>
                     <td className="text-neutral-600">{d.owner?.name ?? "—"}</td>
                     <td className="text-neutral-600">{d.due_date ? formatDateShort(d.due_date) : "—"}</td>
                     <td>
-                      <span className={st.cls}>{st.label}</span>
+                      <span className={st.cls}>{t(st.label)}</span>
                     </td>
                   </tr>
                 );

@@ -5,8 +5,10 @@ import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { PEOPLE_HUB_CARDS } from "@/lib/hubs/people";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function PeopleAuthorityHubPage() {
+  const { t } = useI18n();
   const { data: me } = useQuery({
     queryKey: ["people-authority", "me"],
     queryFn: async () => (await peopleAuthorityApi.me()).data.data,
@@ -27,14 +29,15 @@ export default function PeopleAuthorityHubPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="People & Authority"
-        subtitle="Institutional identity, organisation chart, authority and signing."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "People & Authority" }]} />}
+        title={t("people.hub.title")}
+        subtitle={t("people.hub.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("people.hub.title") }]} />}
       />
 
       {meName ? (
         <p className="text-sm text-neutral-600">
-          Signed in as <span className="font-medium text-neutral-800">{meName}</span>
+          {t("people.hub.signedInAs")}{" "}
+          <span className="font-medium text-neutral-800">{meName}</span>
         </p>
       ) : null}
 

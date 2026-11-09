@@ -38,21 +38,21 @@ export default function AssetTransfersPage() {
     <div className="w-full min-w-0 space-y-5">
       <div className="page-header">
         <ModulePageHeader
-        title="Asset Transfers"
-        subtitle="Custody transfers and movement log. Assignment history is immutable on the API."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Asset Transfers" }]} />}
+        title="assets.transfers.title"
+        subtitle="assets.transfers.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "assets.transfers.title" }]} />}
       />
-        <Link href="/assets/movement/new" className="btn-primary">Record movement</Link>
+        <Link href="/assets/movement/new" className="btn-primary">{t("assets.movement.submit")}</Link>
       </div>
       <section className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
         <h2 className="px-4 pt-4 text-sm font-semibold">{t("assets.transfer.pending")}</h2>
         <table className="data-table">
           <thead>
             <tr>
-              <th>Asset</th>
-              <th>From</th>
-              <th>To</th>
-              <th>Status</th>
+              <th>{t("assets.picker.asset")}</th>
+              <th>{t("assets.transfers.colFrom")}</th>
+              <th>{t("assets.transfers.colTo")}</th>
+              <th>{t("assets.view.fieldStatus")}</th>
               <th />
             </tr>
           </thead>
@@ -87,11 +87,11 @@ export default function AssetTransfersPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Asset</th>
-              <th>From</th>
-              <th>To</th>
-              <th>Reason</th>
+              <th>{t("assets.transfers.colDate")}</th>
+              <th>{t("assets.picker.asset")}</th>
+              <th>{t("assets.transfers.colFrom")}</th>
+              <th>{t("assets.transfers.colTo")}</th>
+              <th>{t("common.reason")}</th>
             </tr>
           </thead>
           <tbody>
@@ -104,7 +104,7 @@ export default function AssetTransfersPage() {
                 <td>{m.reason ?? "—"}</td>
               </tr>
             ))}
-            {rows.length === 0 && <TableEmpty colSpan={5} title="No transfer movements yet. Use Register → assign/transfer actions." />}
+            {rows.length === 0 && <TableEmpty colSpan={5} title={t("assets.transfers.empty")} />}
           </tbody>
         </table>
       </div>

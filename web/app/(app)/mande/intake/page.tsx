@@ -8,10 +8,12 @@ import { mandeApi, type PifLinkage } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function MandeIntakePage() {
   const qc = useQueryClient();
   const user = getStoredUser();
+  const { t } = useI18n();
   const canReview = isSystemAdmin(user) || hasPermission(user, ["mande.review", "mande.admin"]);
   const [unlinkedOnly, setUnlinkedOnly] = useState(true);
   const [notReportableId, setNotReportableId] = useState<number | null>(null);
@@ -39,9 +41,9 @@ export default function MandeIntakePage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <ModulePageHeader
-        title="Intake Queue"
-        subtitle="Approved PIFs awaiting an M&amp;E activity report shell."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Intake Queue" }]} />}
+        title={t("mande.activityReports.intakeQueue")}
+        subtitle={t("mande.intake.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("mande.activityReports.intakeQueue") }]} />}
       />
         <div className="flex items-center gap-2">
           <button
@@ -49,41 +51,41 @@ export default function MandeIntakePage() {
             onClick={() => setUnlinkedOnly(true)}
             className={`filter-tab ${unlinkedOnly ? "active" : ""}`}
           >
-            Unlinked
+            {t("mande.intake.unlinked")}
           </button>
           <button
             type="button"
             onClick={() => setUnlinkedOnly(false)}
             className={`filter-tab ${!unlinkedOnly ? "active" : ""}`}
           >
-            All approved
+            {t("mande.intake.allApproved")}
           </button>
         </div>
       </div>
 
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          Failed to load intake queue.
+          {t("mande.intake.loadFailed")}
         </div>
       )}
 
       <div className="card overflow-x-auto">
         {isLoading ? (
-          <div className="px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
+          <div className="px-5 py-10 text-center text-sm text-neutral-400">{t("common.loading")}</div>
         ) : rows.length === 0 ? (
           <EmptyState
             icon="inbox"
-            title={unlinkedOnly ? "No unlinked approved PIFs." : "No approved PIFs found."}
+            title={unlinkedOnly ? t("mande.intake.emptyUnlinked") : t("mande.intake.empty")}
           />
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>PIF</th>
-                <th>Title</th>
-                <th>Pillar</th>
-                <th>Dates</th>
-                <th>Report</th>
+                <th>{t("mande.col.pif")}</th>
+                <th>{t("mande.col.title")}</th>
+                <th>{t("mande.intake.pillar")}</th>
+                <th>{t("mande.intake.dates")}</th>
+                <th>{t("mande.intake.report")}</th>
                 <th></th>
               </tr>
             </thead>
@@ -102,9 +104,9 @@ export default function MandeIntakePage() {
                   </td>
                   <td>
                     {p.has_report ? (
-                      <span className="badge badge-success">Linked</span>
+                      <span className="badge badge-success">{t("mande.intake.linked")}</span>
                     ) : (
-                      <span className="badge badge-warning">Pending</span>
+                      <span className="badge badge-warning">{t("status.pending")}</span>
                     )}
                   </td>
                   <td className="whitespace-nowrap">
@@ -114,7 +116,7 @@ export default function MandeIntakePage() {
                           href={`/mande/activity-reports/create?programme_id=${p.id}`}
                           className="btn-secondary text-xs py-1 px-2 mr-3"
                         >
-                          Create report
+                          {t("mande.intake.createReport")}
                         </Link>
                         {canReview && (
                           <button
@@ -125,14 +127,14 @@ export default function MandeIntakePage() {
                             }}
                             className="btn-secondary text-xs py-1 px-2"
                           >
-                            Not reportable
+                            {t("mande.intake.notReportable")}
                           </button>
                         )}
                       </>
                     )}
                     {p.has_report && (
                       <Link href="/mande/activity-reports" className="btn-secondary text-xs py-1 px-2">
-                        View reports
+                        {t("mande.intake.viewReports")}
                       </Link>
                     )}
                   </td>
@@ -147,29 +149,29 @@ export default function MandeIntakePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setNotReportableId(null)}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-neutral-100">
-              <h2 className="font-semibold text-neutral-800">Mark not reportable</h2>
+              <h2 className="font-semibold text-neutral-800">{t("mande.intake.markTitle")}</h2>
             </div>
             <div className="p-5 space-y-3">
-              <p className="text-sm text-neutral-600">Provide a reason (min 5 characters). This creates/updates the M&amp;E shell as not reportable.</p>
+              <p className="text-sm text-neutral-600">{t("mande.intake.markHint")}</p>
               <textarea
                 className="form-input min-h-[100px]"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Reason…"
+                placeholder={t("mande.intake.reasonPlaceholder")}
               />
               {notReportableMut.isError && (
-                <p className="text-xs text-red-600">Could not mark as not reportable.</p>
+                <p className="text-xs text-red-600">{t("mande.intake.markFailed")}</p>
               )}
             </div>
             <div className="px-5 py-4 border-t border-neutral-100 flex justify-end gap-2">
-              <button type="button" className="btn-secondary" onClick={() => setNotReportableId(null)}>Cancel</button>
+              <button type="button" className="btn-secondary" onClick={() => setNotReportableId(null)}>{t("common.cancel")}</button>
               <button
                 type="button"
                 className="btn-primary disabled:opacity-40"
                 disabled={reason.trim().length < 5 || notReportableMut.isPending}
                 onClick={() => notReportableMut.mutate({ id: notReportableId, reason: reason.trim() })}
               >
-                {notReportableMut.isPending ? "Saving…" : "Confirm"}
+                {notReportableMut.isPending ? t("correspondence.saving") : t("common.confirm")}
               </button>
             </div>
           </div>

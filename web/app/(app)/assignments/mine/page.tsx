@@ -1,12 +1,14 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { AssignmentFilteredList, assignmentsApi } from "@/components/assignments/AssignmentFilteredList";
 
 export default function MyAssignmentsPage() {
+  const { t } = useI18n();
   return (
     <AssignmentFilteredList
-      title="My Assignments"
-      subtitle="Work where you are primary assignee, creator, or participant."
+      title={t("assignments.mine.title")}
+      subtitle={t("assignments.mine.subtitle")}
       queryKey="mine"
       fetcher={(params) => assignmentsApi.mine(params)}
     />

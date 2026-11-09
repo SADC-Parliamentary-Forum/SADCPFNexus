@@ -14,14 +14,14 @@ import { useToast } from "@/components/ui/Toast";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending capitalisation",
-  active: "Active",
-  assigned: "Assigned",
-  available: "Available",
-  service_due: "Service due",
-  loan_out: "Loan out",
-  retired: "Retired",
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  pending: "assets.print.status.pending",
+  active: "assets.register.active",
+  assigned: "assets.print.status.assigned",
+  available: "assets.print.status.available",
+  service_due: "assets.register.serviceDue",
+  loan_out: "assets.register.loanOut",
+  retired: "assets.register.retiredStatus",
 };
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -38,14 +38,17 @@ function money(value: number | string | null | undefined): string {
   return Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function formatDuration(seconds: number | null | undefined): string {
+function formatDuration(
+  seconds: number | null | undefined,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string {
   if (seconds == null) return "—";
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h`;
+  if (days > 0) return t("assets.detail.durationDaysHours", { days, hours });
+  if (hours > 0) return t("assets.detail.durationHours", { hours });
   const minutes = Math.max(1, Math.floor(seconds / 60));
-  return `${minutes}m`;
+  return t("assets.detail.durationMinutes", { minutes });
 }
 
 export default function AssetViewPage() {
@@ -61,7 +64,7 @@ export default function AssetViewPage() {
   const [labelFocus, setLabelFocus] = useState(false);
   const [timeline, setTimeline] = useState<AssetTimelineEvent[]>([]);
   const [custody, setCustody] = useState<{ owner: string; history: AssetCustodyPeriod[] }>({
-    owner: "SADC Parliamentary Forum",
+    owner: "",
     history: [],
   });
   const [docs, setDocs] = useState<GenericAssetAttachment[]>([]);
@@ -99,7 +102,7 @@ export default function AssetViewPage() {
         void assetsApi.custodyHistory(numericId).then((r) => {
           if (!cancelled) {
             setCustody({
-              owner: r.data.data.owner || "SADC Parliamentary Forum",
+              owner: r.data.data.owner || "",
               history: r.data.data.history ?? [],
             });
           }
@@ -166,7 +169,7 @@ export default function AssetViewPage() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Field label={t("assets.view.fieldCode")} value={asset.asset_code} />
-            <Field label={t("assets.view.fieldStatus")} value={STATUS_LABELS[asset.status] ?? asset.status} />
+            <Field label={t("assets.view.fieldStatus")} value={STATUS_LABEL_KEYS[asset.status] ? t(STATUS_LABEL_KEYS[asset.status]) : asset.status} />
             <Field label={t("assets.view.fieldCategory")} value={asset.category} />
             <Field label={t("assets.handover.owner")} value={asset.owner_name || custody.owner || t("assets.handover.ownerValue")} />
             <Field label={t("assets.view.fieldLocation")} value={asset.location?.name || asset.legacy_location || "—"} />
@@ -207,11 +210,11 @@ export default function AssetViewPage() {
                 try {
                   const updated = await assetsApi.setParent(asset.id, parentId ? Number(parentId) : null);
                   setAsset((cur) => cur ? { ...cur, parent_asset_id: updated.data.data.parent_asset_id } : cur);
-                  toast.success("Parent asset updated");
+                  toast.success(t("assets.detail.parentUpdated"));
                 } catch (err) {
                   const message = apiErrorMessage(err, t("assets.mine.actionFailed"));
                   setError(message);
-                  toast.error("Could not update parent asset", message);
+                  toast.error(t("assets.detail.parentUpdateFailed"), message);
                 } finally {
                   setParentBusy(false);
                 }
@@ -243,9 +246,9 @@ export default function AssetViewPage() {
                     const updated = await assetsApi.setParent(asset.id, null);
                     setParentId("");
                     setAsset((cur) => cur ? { ...cur, parent_asset_id: updated.data.data.parent_asset_id } : cur);
-                    toast.success("Parent asset cleared");
+                    toast.success(t("assets.detail.parentCleared"));
                   } catch (err) {
-                    toast.error("Could not clear parent asset", apiErrorMessage(err, t("assets.mine.actionFailed")));
+                    toast.error(t("assets.detail.parentClearFailed"), apiErrorMessage(err, t("assets.mine.actionFailed")));
                   } finally {
                     setParentBusy(false);
                   }
@@ -281,7 +284,7 @@ export default function AssetViewPage() {
                       <tr key={row.id}>
                         <td>{row.custodian_name || row.custodian_type || "—"}</td>
                         <td>{row.custodian_type || "—"}{row.open ? ` · ${t("assets.handover.needsAttention")}` : ""}</td>
-                        <td>{formatDuration(row.duration_seconds)}</td>
+                        <td>{formatDuration(row.duration_seconds, t)}</td>
                         <td>
                           {row.certificate_available && row.handover_id ? (
                             <a className="text-xs font-semibold text-primary hover:opacity-80" href={assetsApi.handoverCertificateUrl(row.handover_id)}>
@@ -314,14 +317,14 @@ export default function AssetViewPage() {
           <GenericDocumentsPanel
             documents={docs}
             documentTypes={[
-              { value: "invoice", label: "Invoice" },
-              { value: "warranty", label: "Warranty" },
-              { value: "police_report", label: "Police report" },
-              { value: "photo_primary", label: "Primary photo" },
-              { value: "photo_serial", label: "Serial plate" },
-              { value: "photo_label", label: "Label placement" },
-              { value: "photo_damage", label: "Damage" },
-              { value: "other", label: "Other" },
+              { value: "invoice", label: t("assets.detail.docType.invoice") },
+              { value: "warranty", label: t("assets.maintenance.warranty") },
+              { value: "police_report", label: t("assets.detail.docType.policeReport") },
+              { value: "photo_primary", label: t("assets.detail.docType.photoPrimary") },
+              { value: "photo_serial", label: t("assets.detail.docType.photoSerial") },
+              { value: "photo_label", label: t("assets.detail.docType.photoLabel") },
+              { value: "photo_damage", label: t("assets.detail.docType.photoDamage") },
+              { value: "other", label: t("assets.detail.docType.other") },
             ]}
             defaultType="invoice"
             loading={docsLoading}
@@ -332,9 +335,9 @@ export default function AssetViewPage() {
               try {
                 const res = await assetsApi.uploadDocument(numericId, file, type);
                 if (res.data.data) setDocs((prev) => [res.data.data, ...prev]);
-                toast.success("Document uploaded");
+                toast.success(t("assets.detail.docUploaded"));
               } catch (err) {
-                toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload document."));
+                toast.error(t("assets.detail.docNotUploaded"), apiErrorMessage(err, t("assets.detail.docUploadFailed")));
               } finally {
                 setUploading(false);
               }
@@ -343,9 +346,9 @@ export default function AssetViewPage() {
               try {
                 await assetsApi.deleteDocument(numericId, id);
                 setDocs((prev) => prev.filter((d) => d.id !== id));
-                toast.success("Document deleted");
+                toast.success(t("assets.detail.docDeleted"));
               } catch (err) {
-                toast.error("Could not delete document", apiErrorMessage(err, "Failed to delete document."));
+                toast.error(t("assets.detail.docDeleteFailedTitle"), apiErrorMessage(err, t("assets.detail.docDeleteFailed")));
               }
             }}
             downloadUrl={(id) => assetsApi.documentDownloadUrl(numericId, id)}

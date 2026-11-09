@@ -24,26 +24,27 @@ import {
 } from "@/lib/procurementRegisterBulk";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
-  draft: { label: "Draft", badge: "badge-muted" },
-  submitted: { label: "Submitted", badge: "badge-warning" },
-  approved: { label: "Approved", badge: "badge-success" },
-  rejected: { label: "Rejected", badge: "badge-danger" },
-  cancelled: { label: "Cancelled", badge: "badge-muted" },
-  awarded: { label: "Awarded", badge: "badge-success" },
-  in_progress: { label: "In progress", badge: "badge-primary" },
-  completed: { label: "Completed", badge: "badge-success" },
-  returned_for_correction: { label: "Returned", badge: "badge-warning" },
+  draft: { label: "status.draft", badge: "badge-muted" },
+  submitted: { label: "status.submitted", badge: "badge-warning" },
+  approved: { label: "status.approved", badge: "badge-success" },
+  rejected: { label: "status.rejected", badge: "badge-danger" },
+  cancelled: { label: "status.cancelled", badge: "badge-muted" },
+  awarded: { label: "procurement.status.awarded", badge: "badge-success" },
+  in_progress: { label: "procurement.status.inProgress", badge: "badge-primary" },
+  completed: { label: "procurement.status.completed", badge: "badge-success" },
+  returned_for_correction: { label: "procurement.status.returned", badge: "badge-warning" },
 };
 
 const FILTER_TABS = [
-  { key: "all", label: "All" },
-  { key: "draft", label: "Draft" },
-  { key: "submitted", label: "Submitted" },
-  { key: "approved", label: "Approved" },
-  { key: "awarded", label: "Awarded" },
-  { key: "completed", label: "Completed" },
+  { key: "all", label: "procurement.filter.all" },
+  { key: "draft", label: "status.draft" },
+  { key: "submitted", label: "status.submitted" },
+  { key: "approved", label: "status.approved" },
+  { key: "awarded", label: "procurement.status.awarded" },
+  { key: "completed", label: "procurement.status.completed" },
 ] as const;
 
 type FilterKey = (typeof FILTER_TABS)[number]["key"];
@@ -61,6 +62,7 @@ export default function ProcurementRegisterPage() {
   const { success, error, info } = useToast();
   const qc = useQueryClient();
   const { confirm } = useConfirm();
+  const { t } = useI18n();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -149,25 +151,25 @@ export default function ProcurementRegisterPage() {
     onSuccess: (results) => {
       const ok = results.filter((r) => r.status === "fulfilled").length;
       const fail = results.length - ok;
-      error(fail ? `Cancelled ${ok} draft(s); ${fail} failed.` : `Cancelled ${ok} draft(s).`);
+      error(fail ? t("procurement.register.cancelPartial", { ok, fail }) : t("procurement.register.cancelDone", { count: ok }));
       selection.clear();
       void qc.invalidateQueries({ queryKey: ["procurement", "register"] });
     },
-    onError: () => setBulkError("Bulk cancel failed."),
+    onError: () => setBulkError(t("procurement.tenders.bulkFailed")),
     onSettled: () => setBulkLoading(false),
   });
 
   const handleBulkCancelDrafts = async () => {
     const ids = draftIdsForBulkCancel(filtered, selection.selectedIds);
     if (ids.length === 0) {
-      setBulkError("Select at least one draft to cancel. Non-draft rows can only be exported.");
+      setBulkError(t("procurement.register.selectDraft"));
       return;
     }
     if (
       !(await confirm({
-        title: "Cancel draft requests",
-        message: `Permanently delete ${ids.length} selected draft(s)? This cannot be undone.`,
-        confirmText: "Cancel drafts",
+        title: t("procurement.register.confirmTitle"),
+        message: t("procurement.register.confirmMessage", { count: ids.length }),
+        confirmText: t("procurement.register.confirmButton"),
         variant: "danger",
       }))
     ) {
@@ -181,15 +183,15 @@ export default function ProcurementRegisterPage() {
 
   return (
     <RegisterShell
-      title="Procurement Register"
-      subtitle="Full tenant register of procurement requests."
+      title={t("procurement.register.title")}
+      subtitle={t("procurement.register.subtitle")}
       breadcrumbs={
         <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
           <Link href="/procurement" className="transition-colors hover:text-neutral-700">
-            Procurement
+            {t("nav.procurement")}
           </Link>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700">Register</span>
+          <span className="text-neutral-700">{t("procurement.register.crumb")}</span>
         </div>
       }
       actions={
@@ -201,11 +203,11 @@ export default function ProcurementRegisterPage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("procurement.exportCsv")}
           </button>
           <Link href="/procurement/create" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New request
+            {t("procurement.register.newRequest")}
           </Link>
         </>
       }
@@ -223,17 +225,17 @@ export default function ProcurementRegisterPage() {
         <>
 {bulkError || isError ? (
             <ErrorBanner
-              message={bulkError ?? "Failed to load register."}
+              message={bulkError ?? t("procurement.register.loadError")}
               onRetry={isError ? () => void refetch() : undefined}
             />
           ) : null}
           {!isLoading && rows.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { label: "Register rows", value: stats.total, icon: "menu_book", color: "text-primary", bg: "bg-primary/10" },
-                { label: "Submitted", value: stats.submitted, icon: "pending_actions", color: "text-amber-600", bg: "bg-amber-50" },
-                { label: "Approved / Awarded", value: stats.approved, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
-                { label: "Drafts", value: stats.drafts, icon: "edit_note", color: "text-neutral-600", bg: "bg-neutral-100" },
+                { label: t("procurement.register.kpi.rows"), value: stats.total, icon: "menu_book", color: "text-primary", bg: "bg-primary/10" },
+                { label: t("status.submitted"), value: stats.submitted, icon: "pending_actions", color: "text-amber-600", bg: "bg-amber-50" },
+                { label: t("procurement.register.kpi.approvedAwarded"), value: stats.approved, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
+                { label: t("procurement.intake.kpi.drafts"), value: stats.drafts, icon: "edit_note", color: "text-neutral-600", bg: "bg-neutral-100" },
               ].map((s) => (
                 <div key={s.label} className="card p-4">
                   <div className="flex items-center justify-between">
@@ -260,7 +262,7 @@ export default function ProcurementRegisterPage() {
             <input
               type="search"
               className="form-input pl-10"
-              placeholder="Search reference, title, PIF, requester…"
+              placeholder={t("procurement.register.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -281,7 +283,7 @@ export default function ProcurementRegisterPage() {
                 }}
                 className={`filter-tab ${filter === tab.key ? "active" : ""}`}
               >
-                {tab.label}
+                {t(tab.label)}
               </button>
             ))}
           </div>
@@ -295,7 +297,7 @@ export default function ProcurementRegisterPage() {
             disabled={selection.selectedCount === 0 || bulkLoading}
             onClick={handleExportSelected}
           >
-            Export selected
+            {t("procurement.register.exportSelected")}
           </button>
           <button
             type="button"
@@ -303,7 +305,7 @@ export default function ProcurementRegisterPage() {
             onClick={() => void handleBulkCancelDrafts()}
             className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
           >
-            {bulkLoading ? "Cancelling…" : "Cancel selected drafts"}
+            {bulkLoading ? t("procurement.tenders.cancelling") : t("procurement.register.cancelSelected")}
           </button>
         </BulkSelectionBar>
       }
@@ -312,11 +314,11 @@ export default function ProcurementRegisterPage() {
           <div className="card">
             <EmptyState
               icon="shopping_cart"
-              title="No procurement requests found"
+              title={t("procurement.index.empty")}
               description={
                 rows.length === 0
-                  ? "No procurement requests recorded yet."
-                  : "No rows match the current filters."
+                  ? t("procurement.register.emptyNone")
+                  : t("procurement.register.emptyFiltered")
               }
             />
           </div>
@@ -326,7 +328,7 @@ export default function ProcurementRegisterPage() {
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="data-table w-full">
-              <caption className="sr-only">Procurement requests register</caption>
+              <caption className="sr-only">{t("procurement.register.caption")}</caption>
             <thead>
               <tr>
                 <th className={selectionColumnClass.th}>
@@ -336,30 +338,31 @@ export default function ProcurementRegisterPage() {
                     onChange={selection.toggleAllSelectable}
                   />
                 </th>
-                <th>Reference</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Method</th>
-                <th>Status</th>
-                <th>Value</th>
-                <th>PIF</th>
-                <th>Submitted</th>
+                <th>{t("procurement.col.reference")}</th>
+                <th>{t("procurement.col.title")}</th>
+                <th>{t("procurement.certificate.category")}</th>
+                <th>{t("procurement.col.method")}</th>
+                <th>{t("procurement.col.status")}</th>
+                <th>{t("procurement.col.value")}</th>
+                <th>PIF</th>{/* i18n-ignore */}
+                <th>{t("procurement.col.submitted")}</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {paged.map((row) => {
                 const sc = STATUS_CONFIG[row.status] ?? {
-                  label: row.status.replace(/_/g, " "),
+                  label: "",
                   badge: "badge-muted",
                 };
+                const statusLabel = sc.label ? t(sc.label) : row.status.replace(/_/g, " ");
                 return (
                   <tr key={row.id}>
                     <td className={selectionColumnClass.td}>
                       <RowCheckbox
                         checked={selection.isSelected(row.id)}
                         onChange={() => selection.toggle(row.id)}
-                        label={`Select ${row.reference_number}`}
+                        label={t("procurement.selectRow", { ref: row.reference_number })}
                       />
                     </td>
                     <td className="font-mono text-xs">{row.reference_number}</td>
@@ -367,7 +370,7 @@ export default function ProcurementRegisterPage() {
                     <td className="text-xs capitalize">{row.category}</td>
                     <td className="text-xs">{row.procurement_method}</td>
                     <td>
-                      <span className={`badge text-xs capitalize ${sc.badge}`}>{sc.label}</span>
+                      <span className={`badge text-xs capitalize ${sc.badge}`}>{statusLabel}</span>
                     </td>
                     <td className="whitespace-nowrap font-mono text-sm">
                       {row.currency} {Number(row.estimated_value ?? 0).toLocaleString()}
@@ -382,14 +385,14 @@ export default function ProcurementRegisterPage() {
                           href={`/procurement/${row.id}`}
                           className="btn-secondary text-xs py-1 px-2"
                         >
-                          View
+                          {t("procurement.view")}
                         </Link>
                         {row.status === "draft" && (
                           <Link
                             href={`/procurement/${row.id}`}
                             className="btn-secondary text-xs py-1 px-2"
                           >
-                            Edit
+                            {t("common.edit")}
                           </Link>
                         )}
                       </div>

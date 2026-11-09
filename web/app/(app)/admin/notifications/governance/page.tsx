@@ -8,14 +8,16 @@ import {
   type NotificationGovernanceDecision,
 } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  decided: "Decided",
-  not_applicable: "Not Applicable",
+  pending: "admin.auditTrail.governance.statusPending",
+  decided: "admin.auditTrail.governance.statusDecided",
+  not_applicable: "admin.auditTrail.governance.statusNotApplicable",
 };
 
 export default function NotificationsGovernancePage() {
+  const { t } = useI18n();
   const { success, error, info } = useToast();
   const [rows, setRows] = useState<NotificationGovernanceDecision[]>([]);
   const [channelStatus, setChannelStatus] = useState<{ sms?: string; whatsapp?: string }>({});
@@ -33,7 +35,7 @@ export default function NotificationsGovernancePage() {
         setRows(r.data?.data ?? r.data ?? []);
         setChannelStatus(r.data?.meta?.channel_status ?? r.meta?.channel_status ?? {});
       })
-      .catch(() => error("Could not load governance checklist"))
+      .catch(() => error(t("admin.auditTrail.governance.loadFailed")))
       .finally(() => setLoading(false));
   };
 
@@ -54,11 +56,11 @@ export default function NotificationsGovernancePage() {
         status,
         decision_notes: notes || null,
       });
-      success("Decision saved");
+      success(t("admin.auditTrail.governance.saved"));
       setEditing(null);
       load();
     } catch {
-      error("Save failed");
+      error(t("admin.auditTrail.governance.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -68,30 +70,29 @@ export default function NotificationsGovernancePage() {
     <div className="w-full min-w-0 p-6 space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <ModulePageHeader
-        title="Notifications governance checklist"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Notifications governance checklist" }]} />}
+        title={t("admin.notifications.governance.title")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.notifications.governance.title") }]} />}
       />
         <Link href="/admin/notifications" className="btn-secondary text-sm">
-          Back to notifications admin
+          {t("admin.notifications.governance.back")}
         </Link>
       </div>
 
       <div className="rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm space-y-1">
         <div>
-          <span className="font-medium">SMS:</span>{" "}
-          {channelStatus.sms ?? "Governance Configuration Pending"}
+          <span className="font-medium">{t("admin.notifications.governance.sms")}</span>{" "}
+          {channelStatus.sms ?? t("admin.auditTrail.governance.configPending")}
         </div>
         <div>
-          <span className="font-medium">WhatsApp:</span>{" "}
-          {channelStatus.whatsapp ?? "Governance Configuration Pending"}
+          <span className="font-medium">{t("admin.notifications.governance.whatsapp")}</span>{" "}
+          {channelStatus.whatsapp ?? t("admin.auditTrail.governance.configPending")}
         </div>
         <p className="text-[var(--muted-foreground)]">
-          Live SMS/WhatsApp remain Null stubs until this checklist records an approved decision
-          and credentials are provisioned through governance — never invent secrets.
+          {t("admin.notifications.governance.stubNotice")}
         </p>
       </div>
 {loading ? (
-        <p className="text-sm text-[var(--muted-foreground)]">Loading…</p>
+        <p className="text-sm text-[var(--muted-foreground)]">{t("common.loading")}</p>
       ) : (
         <div className="space-y-3">
           {rows.map((row) => (
@@ -118,7 +119,7 @@ export default function NotificationsGovernancePage() {
                         : "bg-amber-500/15 text-amber-800 dark:text-amber-200"
                   }`}
                 >
-                  {STATUS_LABELS[row.status] ?? row.status}
+                  {STATUS_LABELS[row.status] ? t(STATUS_LABELS[row.status]) : row.status}
                 </span>
               </div>
 
@@ -127,33 +128,37 @@ export default function NotificationsGovernancePage() {
               )}
               {(row.decided_by || row.decided_at) && editing !== row.id && (
                 <p className="text-xs text-[var(--muted-foreground)]">
-                  Decided
-                  {row.decided_by_user?.name ? ` by ${row.decided_by_user.name}` : ""}
-                  {row.decided_at ? ` at ${new Date(row.decided_at).toLocaleString()}` : ""}
+                  {row.decided_by_user?.name && row.decided_at
+                    ? t("admin.notifications.governance.decidedByAt", { name: row.decided_by_user.name, at: new Date(row.decided_at).toLocaleString() })
+                    : row.decided_by_user?.name
+                      ? t("admin.notifications.governance.decidedBy", { name: row.decided_by_user.name })
+                      : row.decided_at
+                        ? t("admin.notifications.governance.decidedAt", { at: new Date(row.decided_at).toLocaleString() })
+                        : t("admin.auditTrail.governance.statusDecided")}
                 </p>
               )}
 
               {editing === row.id ? (
                 <div className="space-y-2 pt-2 border-t border-[var(--border)]">
                   <label htmlFor={`admin-notifications-governance-status-${row.id}`} className="block text-sm">
-                    Status
+                    {t("admin.common.status")}
                     <select id={`admin-notifications-governance-status-${row.id}`}
                       className="mt-1 w-full border border-[var(--border)] rounded-md px-2 py-1.5 bg-[var(--background)]"
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
                     >
-                      <option value="pending">Pending</option>
-                      <option value="decided">Decided</option>
-                      <option value="not_applicable">Not Applicable</option>
+                      <option value="pending">{t("admin.auditTrail.governance.statusPending")}</option>
+                      <option value="decided">{t("admin.auditTrail.governance.statusDecided")}</option>
+                      <option value="not_applicable">{t("admin.auditTrail.governance.statusNotApplicable")}</option>
                     </select>
                   </label>
                   <label htmlFor={`admin-notifications-governance-decision-notes-${row.id}`} className="block text-sm">
-                    Decision notes
+                    {t("admin.access.governance.decisionNotes")}
                     <textarea id={`admin-notifications-governance-decision-notes-${row.id}`}
                       className="mt-1 w-full border border-[var(--border)] rounded-md px-2 py-1.5 bg-[var(--background)] min-h-[80px]"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Record the institutional decision when available — leave empty while Pending."
+                      placeholder={t("admin.notifications.governance.notesPlaceholder")}
                     />
                   </label>
                   <div className="flex gap-2">
@@ -163,14 +168,14 @@ export default function NotificationsGovernancePage() {
                       onClick={() => save(row.id)}
                       className="px-3 py-1.5 text-sm rounded-md bg-primary text-white disabled:opacity-50"
                     >
-                      {saving ? "Saving…" : "Save"}
+                      {saving ? t("admin.common.saving") : t("common.save")}
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditing(null)}
                       className="px-3 py-1.5 text-sm rounded-md bg-[var(--muted)]"
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </button>
                   </div>
                 </div>
@@ -180,7 +185,7 @@ export default function NotificationsGovernancePage() {
                   onClick={() => startEdit(row)}
                   className="btn-secondary text-sm"
                 >
-                  Update status
+                  {t("admin.notifications.governance.updateStatus")}
                 </button>
               )}
             </div>

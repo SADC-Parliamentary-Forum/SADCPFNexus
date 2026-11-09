@@ -14,6 +14,7 @@ import {
   scrollRoleBuilderIntoView,
   suggestedCopyName,
 } from "@/lib/access-role-starting-point";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Role = {
   id: number;
@@ -54,6 +55,7 @@ function apiErrorMessage(error: unknown, fallback: string): string {
 }
 
 export default function AccessRolesPage() {
+  const { t } = useI18n();
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<PermissionRow[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -83,7 +85,7 @@ export default function AccessRolesPage() {
       setPermissions(rows);
       setExpandedModules(new Set(rows.map((row) => row.module)));
     } catch (error: any) {
-      setMessage(error?.response?.data?.message ?? error?.message ?? "Failed to load access registry.");
+      setMessage(error?.response?.data?.message ?? error?.message ?? t("admin.access.roles.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -130,7 +132,7 @@ export default function AccessRolesPage() {
   const startFromRole = (role: Role) => {
     const rolePermissions = extractRolePermissions(role);
     if (rolePermissions.length === 0) {
-      setMessage(`${role.name} has no published permissions to copy.`);
+      setMessage(t("admin.access.roles.noPermsToCopy", { role: role.name }));
       scrollRoleBuilderIntoView();
       return;
     }
@@ -143,13 +145,13 @@ export default function AccessRolesPage() {
     setExpandedModules(new Set(
       permissions.filter((permission) => rolePermissions.includes(permission.key)).map((permission) => permission.module),
     ));
-    setMessage(`${role.name}: ${rolePermissions.length} permission${rolePermissions.length === 1 ? "" : "s"} copied into the draft builder.`);
+    setMessage(t(rolePermissions.length === 1 ? "admin.access.roles.copiedOne" : "admin.access.roles.copiedMany", { role: role.name, count: rolePermissions.length }));
     scrollRoleBuilderIntoView();
   };
 
   const createDraft = async () => {
     if (!name.trim() || selected.size === 0) {
-      setMessage("Enter a role name and select at least one feature permission.");
+      setMessage(t("admin.access.roles.nameAndPermRequired"));
       return;
     }
     setSaving(true);
@@ -167,10 +169,10 @@ export default function AccessRolesPage() {
       setName("");
       setPurpose("");
       setSelected(new Set());
-      setMessage("Draft role created with the selected feature permissions.");
+      setMessage(t("admin.access.roles.draftCreated"));
       await load();
     } catch (error: unknown) {
-      setMessage(apiErrorMessage(error, "Unable to create the draft role."));
+      setMessage(apiErrorMessage(error, t("admin.access.roles.createFailed")));
     } finally {
       setSaving(false);
     }
@@ -186,10 +188,10 @@ export default function AccessRolesPage() {
         permissions: draft.permissions,
         changelog: "Published from the governed role catalogue",
       });
-      setMessage(`${role.name} was published as an active role version.`);
+      setMessage(t("admin.access.roles.published", { role: role.name }));
       await load();
     } catch (error: unknown) {
-      setMessage(apiErrorMessage(error, "Unable to publish this role. Independent approval may be required."));
+      setMessage(apiErrorMessage(error, t("admin.access.roles.publishFailed")));
     } finally {
       setSaving(false);
     }
@@ -198,34 +200,34 @@ export default function AccessRolesPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Role catalogue"
-        subtitle="Build roles from precise module, feature, action, and scope permissions. A role can grant read without edit, edit without delete, or any other approved combination."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Admin", href: "/admin" }, { label: "Access", href: "/admin/access" }, { label: "Roles" }]} />}
-        actions={<Link href="/admin/access/roles/matrix" className="btn-secondary text-sm">Open permission matrix</Link>}
+        title={t("admin.access.roles.title")}
+        subtitle={t("admin.access.roles.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.homeLabel"), href: "/admin" }, { label: t("admin.crumb.access"), href: "/admin/access" }, { label: t("admin.crumb.roles") }]} />}
+        actions={<Link href="/admin/access/roles/matrix" className="btn-secondary text-sm">{t("admin.access.roles.openMatrix")}</Link>}
       />
 
       <div id="role-draft">
-      <FormSection title="Create feature-based role" description="Select only the capabilities this role needs. Permissions are versioned and reviewed before publication." icon="badge">
+      <FormSection title={t("admin.access.roles.createSection")} description={t("admin.access.roles.createSectionDesc")} icon="badge">
         <div className="grid gap-3 md:grid-cols-4">
-          <FormField label="Role name" htmlFor="role-name" required className="md:col-span-1">
-            <Input id="role-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Programme Read-only" />
+          <FormField label={t("admin.access.roles.roleName")} htmlFor="role-name" required className="md:col-span-1">
+            <Input id="role-name" value={name} onChange={(event) => setName(event.target.value)} placeholder={t("admin.access.roles.roleNamePlaceholder")} />
           </FormField>
-          <FormField label="Purpose" htmlFor="role-purpose" className="md:col-span-2">
-            <Input id="role-purpose" value={purpose} onChange={(event) => setPurpose(event.target.value)} placeholder="Who uses this role and why?" />
+          <FormField label={t("admin.access.roles.purpose")} htmlFor="role-purpose" className="md:col-span-2">
+            <Input id="role-purpose" value={purpose} onChange={(event) => setPurpose(event.target.value)} placeholder={t("admin.access.roles.purposePlaceholder")} />
           </FormField>
-          <FormField label="Risk level" htmlFor="role-risk">
+          <FormField label={t("admin.access.roles.riskLevel")} htmlFor="role-risk">
             <select id="role-risk" value={risk} onChange={(event) => setRisk(event.target.value)} className="form-input">
-              <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
+              <option value="low">{t("admin.common.low")}</option><option value="medium">{t("admin.common.medium")}</option><option value="high">{t("admin.common.high")}</option><option value="critical">{t("admin.common.critical")}</option>
             </select>
           </FormField>
         </div>
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-neutral-700">
-          <label htmlFor="admin-access-roles-setreadonly-event-target-checked-read-only-role" className="inline-flex items-center gap-2"><input id="admin-access-roles-setreadonly-event-target-checked-read-only-role" type="checkbox" checked={readOnly} onChange={(event) => setReadOnly(event.target.checked)} /> Read-only role</label>
-          <label htmlFor="admin-access-roles-setnobusinessapprove-event-target-checked-no-bus" className="inline-flex items-center gap-2"><input id="admin-access-roles-setnobusinessapprove-event-target-checked-no-bus" type="checkbox" checked={noBusinessApprove} onChange={(event) => setNoBusinessApprove(event.target.checked)} /> No business approvals</label>
-          <span className="text-neutral-500">{selected.size} permission{selected.size === 1 ? "" : "s"} selected</span>
+          <label htmlFor="admin-access-roles-setreadonly-event-target-checked-read-only-role" className="inline-flex items-center gap-2"><input id="admin-access-roles-setreadonly-event-target-checked-read-only-role" type="checkbox" checked={readOnly} onChange={(event) => setReadOnly(event.target.checked)} /> {t("admin.access.roles.readOnlyRole")}</label>
+          <label htmlFor="admin-access-roles-setnobusinessapprove-event-target-checked-no-bus" className="inline-flex items-center gap-2"><input id="admin-access-roles-setnobusinessapprove-event-target-checked-no-bus" type="checkbox" checked={noBusinessApprove} onChange={(event) => setNoBusinessApprove(event.target.checked)} /> {t("admin.access.roles.noBusinessApprovals")}</label>
+          <span className="text-neutral-500">{t(selected.size === 1 ? "admin.access.roles.selectedOne" : "admin.access.roles.selectedMany", { count: selected.size })}</span>
         </div>
         <div className="mt-4 flex items-center gap-3">
-          <Button type="button" onClick={createDraft} disabled={saving}>{saving ? "Creating..." : "Create draft role"}</Button>
+          <Button type="button" onClick={createDraft} disabled={saving}>{saving ? t("admin.access.roles.creating") : t("admin.access.roles.createDraft")}</Button>
           {message ? <p className="text-sm text-neutral-600" role="status">{message}</p> : null}
         </div>
       </FormSection>
@@ -234,17 +236,17 @@ export default function AccessRolesPage() {
       <div id="role-builder" className="card p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="font-semibold text-neutral-900">Feature permission builder</h2>
-            <p className="text-xs text-neutral-500">Every checkbox is one governed permission. Module access is never implied by selecting one feature.</p>
+            <h2 className="font-semibold text-neutral-900">{t("admin.access.roles.builderTitle")}</h2>
+            <p className="text-xs text-neutral-500">{t("admin.access.roles.builderDesc")}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Input aria-label="Search permissions" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search feature or action" />
-            <select aria-label="Filter by module" value={moduleFilter} onChange={(event) => setModuleFilter(event.target.value)} className="form-input min-w-44">
-              <option value="all">All modules</option>{modules.map((module) => <option key={module} value={module}>{title(module)}</option>)}
+            <Input aria-label={t("admin.access.matrix.searchLabel")} value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("admin.access.roles.searchPlaceholder")} />
+            <select aria-label={t("admin.access.roles.filterByModule")} value={moduleFilter} onChange={(event) => setModuleFilter(event.target.value)} className="form-input min-w-44">
+              <option value="all">{t("admin.access.matrix.allModules")}</option>{modules.map((module) => <option key={module} value={module}>{title(module)}</option>)}
             </select>
           </div>
         </div>
-        {loading ? <div className="mt-4 h-32 animate-pulse rounded bg-neutral-100" /> : groupedPermissions.length === 0 ? <div className="mt-4"><EmptyState icon="search_off" title="No matching permissions" description="Change the search or module filter." /></div> : (
+        {loading ? <div className="mt-4 h-32 animate-pulse rounded bg-neutral-100" /> : groupedPermissions.length === 0 ? <div className="mt-4"><EmptyState icon="search_off" title={t("admin.access.roles.noMatch")} description={t("admin.access.roles.noMatchDesc")} /></div> : (
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
             {groupedPermissions.map(([module, rows]) => {
               const moduleSelected = rows.filter((row) => selected.has(row.key)).length;
@@ -254,9 +256,9 @@ export default function AccessRolesPage() {
                   <button type="button" onClick={() => setExpandedModules((current) => { const next = new Set(current); next.has(module) ? next.delete(module) : next.add(module); return next; })} className="flex items-center gap-2 text-left">
                     <span className="material-symbols-outlined text-[18px]">{open ? "expand_more" : "chevron_right"}</span><span className="font-semibold text-neutral-900">{title(module)}</span><span className="text-xs text-neutral-500">{moduleSelected}/{rows.length}</span>
                   </button>
-                  <label htmlFor={`admin-access-roles-select-module-${module}`} className="text-xs font-medium text-primary"><input id={`admin-access-roles-select-module-${module}`} type="checkbox" checked={moduleSelected === rows.length} onChange={(event) => selectModule(module, event.target.checked)} /> <span className="ml-1">Select module</span></label>
+                  <label htmlFor={`admin-access-roles-select-module-${module}`} className="text-xs font-medium text-primary"><input id={`admin-access-roles-select-module-${module}`} type="checkbox" checked={moduleSelected === rows.length} onChange={(event) => selectModule(module, event.target.checked)} /> <span className="ml-1">{t("admin.access.roles.selectModule")}</span></label>
                 </div>
-                {open ? <div className="divide-y divide-neutral-100">{rows.map((permission) => <label htmlFor={`admin-access-roles-toggle-${permission.key}`} key={permission.key} className="flex cursor-pointer items-start gap-3 px-4 py-3 hover:bg-neutral-50"><input id={`admin-access-roles-toggle-${permission.key}`} type="checkbox" checked={selected.has(permission.key)} onChange={() => togglePermission(permission.key)} className="mt-1" /><span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2 text-sm font-medium text-neutral-900"><span>{permission.display_name || title(permission.feature)}</span><Badge variant={riskVariant(permission.risk_level)}>{permission.action}</Badge>{permission.mfa_required ? <Badge variant="muted">MFA</Badge> : null}</span><span className="mt-0.5 block text-xs text-neutral-500">{permission.description || permission.key}</span><span className="mt-1 block text-[11px] text-neutral-400">Feature: {title(permission.feature)} · Scope: {(permission.supported_scopes ?? []).join(", ") || "defined by policy"}</span></span></label>)}</div> : null}
+                {open ? <div className="divide-y divide-neutral-100">{rows.map((permission) => <label htmlFor={`admin-access-roles-toggle-${permission.key}`} key={permission.key} className="flex cursor-pointer items-start gap-3 px-4 py-3 hover:bg-neutral-50"><input id={`admin-access-roles-toggle-${permission.key}`} type="checkbox" checked={selected.has(permission.key)} onChange={() => togglePermission(permission.key)} className="mt-1" /><span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2 text-sm font-medium text-neutral-900"><span>{permission.display_name || title(permission.feature)}</span><Badge variant={riskVariant(permission.risk_level)}>{permission.action}</Badge>{permission.mfa_required ? <Badge variant="muted">{"MFA"}</Badge> : null}</span><span className="mt-0.5 block text-xs text-neutral-500">{permission.description || permission.key}</span><span className="mt-1 block text-[11px] text-neutral-400">{t("admin.access.roles.featureScope", { feature: title(permission.feature), scope: (permission.supported_scopes ?? []).join(", ") || t("admin.access.roles.definedByPolicy") })}</span></span></label>)}</div> : null}
               </section>;
             })}
           </div>
@@ -264,8 +266,8 @@ export default function AccessRolesPage() {
       </div>
 
       <div className="card overflow-hidden">
-        <div className="border-b border-neutral-200 px-4 py-3"><h2 className="font-semibold text-neutral-900">Governed roles</h2><p className="text-xs text-neutral-500">Copy an existing role into the builder to create a narrower variant.</p></div>
-        {roles.length === 0 ? <EmptyState icon="badge" title="No roles found" description="The canonical role catalogue is unavailable." /> : <div className="divide-y divide-neutral-100">{roles.map((role) => <div key={role.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"><div><div className="flex items-center gap-2"><span className="font-medium text-neutral-900">{role.name}</span>{protectedNames.has(role.name) ? <Badge variant="danger">protected</Badge> : null}{role.read_only ? <Badge variant="muted">read-only</Badge> : null}{role.latest_version?.status === "draft" ? <Badge variant="warning">draft</Badge> : null}</div><p className="text-xs text-neutral-500">{role.purpose || "No purpose recorded"} · {role.latest_version?.permissions?.length ?? role.current_version?.permissions?.length ?? 0} permissions · v{role.latest_version?.version ?? role.current_version?.version ?? "-"}</p></div><div className="flex items-center gap-2"><Button type="button" size="sm" variant="secondary" onClick={() => startFromRole(role)}>Use as starting point</Button>{role.latest_version?.status === "draft" ? <Button type="button" size="sm" onClick={() => publishDraft(role)} disabled={saving}>Publish</Button> : null}</div></div>)}</div>}
+        <div className="border-b border-neutral-200 px-4 py-3"><h2 className="font-semibold text-neutral-900">{t("admin.access.roles.governedTitle")}</h2><p className="text-xs text-neutral-500">{t("admin.access.roles.governedDesc")}</p></div>
+        {roles.length === 0 ? <EmptyState icon="badge" title={t("admin.access.roles.empty")} description={t("admin.access.roles.emptyDesc")} /> : <div className="divide-y divide-neutral-100">{roles.map((role) => <div key={role.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"><div><div className="flex items-center gap-2"><span className="font-medium text-neutral-900">{role.name}</span>{protectedNames.has(role.name) ? <Badge variant="danger">{t("admin.access.roles.badgeProtected")}</Badge> : null}{role.read_only ? <Badge variant="muted">{t("admin.access.roles.badgeReadOnly")}</Badge> : null}{role.latest_version?.status === "draft" ? <Badge variant="warning">{t("admin.access.roles.badgeDraft")}</Badge> : null}</div><p className="text-xs text-neutral-500">{role.purpose || t("admin.access.roles.noPurpose")} · {t("admin.access.roles.permCount", { count: role.latest_version?.permissions?.length ?? role.current_version?.permissions?.length ?? 0 })} · v{role.latest_version?.version ?? role.current_version?.version ?? "-"}</p></div><div className="flex items-center gap-2"><Button type="button" size="sm" variant="secondary" onClick={() => startFromRole(role)}>{t("admin.access.roles.useAsStart")}</Button>{role.latest_version?.status === "draft" ? <Button type="button" size="sm" onClick={() => publishDraft(role)} disabled={saving}>{t("admin.access.roles.publish")}</Button> : null}</div></div>)}</div>}
       </div>
     </div>
   );

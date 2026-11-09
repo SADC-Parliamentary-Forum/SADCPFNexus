@@ -73,11 +73,11 @@ export default function LoginPage() {
           <div className="flex items-center gap-3 mb-12">
             <img
               src="/sadcpf-logo.jpg"
-              alt="SADC Parliamentary Forum"
+              alt="SADC Parliamentary Forum" // i18n-ignore
               className="h-10 w-auto object-contain flex-shrink-0"
             />
             <div>
-              <h1 className="text-lg font-bold leading-tight">SADC-PF Nexus</h1>
+              <h1 className="text-lg font-bold leading-tight">SADC-PF Nexus</h1>{/* i18n-ignore */}
               <p className="text-xs text-white/70">{t("auth.platform")}</p>
             </div>
           </div>
@@ -117,11 +117,11 @@ export default function LoginPage() {
           <div className="flex items-center gap-3 mb-8 lg:hidden">
             <img
               src="/sadcpf-logo.jpg"
-              alt="SADC Parliamentary Forum"
+              alt="SADC Parliamentary Forum" // i18n-ignore
               className="h-9 w-auto object-contain flex-shrink-0"
             />
             <div>
-              <h1 className="text-base font-bold text-neutral-900">SADC-PF Nexus</h1>
+              <h1 className="text-base font-bold text-neutral-900">SADC-PF Nexus</h1>{/* i18n-ignore */}
               <p className="text-xs text-neutral-600">{t("auth.platform")}</p>
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function LoginPage() {
           {idleNotice && (
             <div className="mb-5 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
               <span className="material-symbols-outlined text-[16px] mt-0.5">timer</span>
-              You were signed out after a period of inactivity.
+              {t("login.idleSignedOut")}
             </div>
           )}
 
@@ -152,7 +152,7 @@ export default function LoginPage() {
                 className="flex items-center gap-1.5 text-xs font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
               >
                 <span className="material-symbols-outlined text-[14px]">info</span>
-                {showDemo ? "Hide" : "Show"} demo login credentials
+                {showDemo ? t("login.demoHide") : t("login.demoShow")}
               </button>
               {showDemo && (
                 <div className="mt-3 grid grid-cols-2 gap-2">

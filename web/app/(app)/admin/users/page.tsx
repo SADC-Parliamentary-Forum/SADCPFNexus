@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { invitationState } from "@/lib/userInvitation";
 import { formatDateShort } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const classColors: Record<string, string> = {
   UNCLASSIFIED: "badge-muted",
@@ -43,18 +44,41 @@ function roleNames(user: User): string[] {
 
 function isProtectedUser(user: User, currentUserId: number | null): { ok: false; reason: string } | { ok: true } {
   if (currentUserId != null && user.id === currentUserId) {
-    return { ok: false, reason: "Cannot deactivate yourself" };
+    return { ok: false, reason: "admin.users.reason.self" };
   }
   if (roleNames(user).some((r) => ADMIN_ROLE_NAMES.has(r))) {
-    return { ok: false, reason: "System Admin accounts cannot be deactivated here" };
+    return { ok: false, reason: "admin.users.reason.sysAdmin" };
   }
   if (!user.is_active) {
-    return { ok: false, reason: "Already inactive" };
+    return { ok: false, reason: "admin.users.reason.inactive" };
   }
   return { ok: true };
 }
 
+/** Translated status label and invitation action for a user row. */
+function invitationText(
+  inv: ReturnType<typeof invitationState>,
+  t: (key: string) => string,
+): { label: string; action: string | null } {
+  const action = inv.action
+    ? t(inv.kind === "not_invited" ? "admin.users.inv.send" : "admin.users.inv.resend")
+    : null;
+  switch (inv.kind) {
+    case "expired":
+      return { label: t("admin.users.inv.expired"), action };
+    case "sent":
+      return { label: t("admin.users.inv.sent"), action };
+    case "not_invited":
+      return { label: t("admin.users.inv.notInvited"), action };
+    case "active":
+      return { label: t("admin.common.active"), action };
+    default:
+      return { label: inv.label === "Inactive" ? t("admin.common.inactive") : inv.label, action };
+  }
+}
+
 export default function AdminUsersPage() {
+  const { t } = useI18n();
   const { success, error: showErrorToast, info } = useToast();
   const { confirm } = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
@@ -98,9 +122,9 @@ export default function AdminUsersPage() {
         setUsers((res.data as { data?: User[] }).data ?? []);
         setTotal(res.data.total ?? 0);
       })
-      .catch(() => setError("Failed to load users."))
+      .catch(() => setError(t("admin.users.loadFailed")))
       .finally(() => setLoading(false));
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, t]);
 
   useEffect(() => {
     reload();
@@ -115,14 +139,14 @@ export default function AdminUsersPage() {
   const handleDeactivate = async (user: User) => {
     const gate = isProtectedUser(user, currentUserId);
     if (!gate.ok) {
-      setError(gate.reason);
+      setError(t(gate.reason));
       return;
     }
     if (
       !(await confirm({
-        title: "Deactivate user",
-        message: `Deactivate ${user.name}? They will lose access until reactivated.`,
-        confirmText: "Deactivate",
+        title: t("admin.users.deactivateTitle"),
+        message: t("admin.users.deactivateMessage", { name: user.name }),
+        confirmText: t("admin.users.deactivate"),
         variant: "danger",
       }))
     ) {
@@ -134,9 +158,9 @@ export default function AdminUsersPage() {
       await adminApi.deactivateUser(user.id);
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, is_active: false } : u)));
       selection.clear();
-      success("User deactivated.");
+      success(t("admin.users.deactivated"));
     } catch {
-      setError("Failed to deactivate user.");
+      setError(t("admin.users.deactivateFailed"));
     } finally {
       setActionLoading(null);
     }
@@ -149,9 +173,9 @@ export default function AdminUsersPage() {
       const res = await adminApi.resendUserInvitation(user.id);
       const updated = res.data.user;
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, latest_account_invitation: updated.latest_account_invitation } : u)));
-      success(resend ? "Invitation resent" : "Invitation sent", `${user.email} can now complete registration.`);
+      success(resend ? t("admin.users.inv.resentToast") : t("admin.users.inv.sent"), t("admin.users.inv.canRegister", { email: user.email }));
     } catch (err) {
-      showErrorToast("Invitation not sent", apiErrorMessage(err, "Could not send the invitation."));
+      showErrorToast(t("admin.users.inv.notSent"), apiErrorMessage(err, t("admin.users.inv.sendFailed")));
     } finally {
       setActionLoading(null);
     }
@@ -164,9 +188,9 @@ export default function AdminUsersPage() {
     try {
       await adminApi.reactivateUser(user.id);
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, is_active: true } : u)));
-      success("User reactivated.");
+      success(t("admin.users.reactivated"));
     } catch {
-      setError("Failed to reactivate user.");
+      setError(t("admin.users.reactivateFailed"));
     } finally {
       setActionLoading(null);
     }
@@ -177,9 +201,9 @@ export default function AdminUsersPage() {
     if (ids.length === 0) return;
     if (
       !(await confirm({
-        title: "Deactivate selected users",
-        message: `Deactivate ${ids.length} selected user(s)? They will lose access until reactivated. System Admin accounts and your own account are skipped.`,
-        confirmText: "Deactivate",
+        title: t("admin.users.bulkTitle"),
+        message: t("admin.users.bulkMessage", { count: ids.length }),
+        confirmText: t("admin.users.deactivate"),
         variant: "danger",
       }))
     ) {
@@ -193,12 +217,12 @@ export default function AdminUsersPage() {
       selection.clear();
       reload();
       if (skipped_count > 0) {
-        success(`Deactivated ${deactivated_count}; skipped ${skipped_count}.`);
+        success(t("admin.users.bulkDoneSkipped", { done: deactivated_count, skipped: skipped_count }));
       } else {
-        success(`Deactivated ${deactivated_count} user(s).`);
+        success(t("admin.users.bulkDone", { count: deactivated_count }));
       }
     } catch {
-      setError("Bulk deactivate failed.");
+      setError(t("admin.users.bulkFailed"));
     } finally {
       setBulkLoading(false);
     }
@@ -211,14 +235,14 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="User Management"
-        subtitle="Manage system access, roles, and security compliance for all personnel."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "User Management" }]} />}
+        title={t("admin.home.userManagement")}
+        subtitle={t("admin.users.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.home.userManagement") }]} />}
       />
         {isAdmin && (
           <Link href="/admin/users/create" className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Add User
+            {t("admin.users.add")}
           </Link>
         )}
       </div>
@@ -227,24 +251,24 @@ export default function AdminUsersPage() {
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error}</span>
           <button type="button" className="btn-secondary text-xs" onClick={() => setError(null)}>
-            Dismiss
+            {t("admin.users.dismiss")}
           </button>
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total Users", value: total, icon: "people", color: "text-primary", bg: "bg-primary/10" },
-          { label: "Active", value: activeCount, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
+          { label: t("admin.weeklySummary.totalUsers"), value: total, icon: "people", color: "text-primary", bg: "bg-primary/10" },
+          { label: t("admin.common.active"), value: activeCount, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
           {
-            label: "Inactive",
+            label: t("admin.common.inactive"),
             value: Math.max(0, total - activeCount),
             icon: "block",
             color: "text-red-500",
             bg: "bg-red-50",
           },
           {
-            label: "MFA Enabled",
+            label: t("admin.users.mfaEnabled"),
             value: users.filter((u) => u.mfa_enabled).length,
             icon: "security",
             color: "text-primary",
@@ -278,7 +302,7 @@ export default function AdminUsersPage() {
                 }}
                 className={`filter-tab capitalize ${statusFilter === f ? "active" : ""}`}
               >
-                {f}
+                {t(`admin.users.filter.${f}`)}
               </button>
             ))}
           </div>
@@ -288,7 +312,7 @@ export default function AdminUsersPage() {
             </span>
             <input
               className="form-input pl-9"
-              placeholder="Search users…"
+              placeholder={t("admin.users.search")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -306,7 +330,7 @@ export default function AdminUsersPage() {
               className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[14px]">person_off</span>
-              {bulkLoading ? "Deactivating…" : "Deactivate selected"}
+              {bulkLoading ? t("admin.users.deactivating") : t("admin.users.deactivateSelected")}
             </button>
           </BulkSelectionBar>
         )}
@@ -317,14 +341,14 @@ export default function AdminUsersPage() {
           <div className="py-16 text-center">
             <div className="flex items-center justify-center gap-2 text-neutral-400">
               <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-              <span className="text-sm">Loading…</span>
+              <span className="text-sm">{t("common.loading")}</span>
             </div>
           </div>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="data-table">
-              <caption className="sr-only">Users register</caption>
+              <caption className="sr-only">{t("admin.users.caption")}</caption>
                 <thead>
                   <tr>
                     {isAdmin && (
@@ -339,18 +363,20 @@ export default function AdminUsersPage() {
                         />
                       </th>
                     )}
-                    <th>User</th>
-                    <th className="hidden md:table-cell">Department</th>
-                    <th className="hidden lg:table-cell">Classification</th>
-                    <th>Status</th>
-                    <th className="hidden sm:table-cell">MFA</th>
-                    {isAdmin && <th className="text-right">Actions</th>}
+                    <th>{t("admin.common.user")}</th>
+                    <th className="hidden md:table-cell">{t("admin.common.department")}</th>
+                    <th className="hidden lg:table-cell">{t("admin.users.classification")}</th>
+                    <th>{t("admin.common.status")}</th>
+                    <th className="hidden sm:table-cell">{"MFA"}</th>
+                    {isAdmin && <th className="text-right">{t("admin.common.actions")}</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => {
                     const gate = isProtectedUser(user, currentUserId);
+                    const gateReason = !gate.ok ? t(gate.reason) : undefined;
                     const selectable = isAdmin && gate.ok;
+                    const invText = invitationText(invitationState(user), t);
                     return (
                       <tr
                         key={user.id}
@@ -362,8 +388,8 @@ export default function AdminUsersPage() {
                               checked={selection.isSelected(user.id)}
                               onChange={() => selection.toggle(user.id)}
                               disabled={!selectable || bulkLoading}
-                              title={!gate.ok ? gate.reason : undefined}
-                              label={`Select ${user.name}`}
+                              title={gateReason}
+                              label={t("admin.users.selectName", { name: user.name })}
                             />
                           </td>
                         )}
@@ -401,9 +427,9 @@ export default function AdminUsersPage() {
                             const inv = invitationState(user);
                             return (
                               <>
-                                <span className={`badge ${inv.badge}`} data-testid={`user-status-${user.id}`}>{inv.label}</span>
+                                <span className={`badge ${inv.badge}`} data-testid={`user-status-${user.id}`}>{invText.label}</span>
                                 {inv.kind === "sent" && inv.expiresAt && (
-                                  <p className="text-[11px] text-neutral-400 mt-0.5">Expires {formatDateShort(inv.expiresAt)}</p>
+                                  <p className="text-[11px] text-neutral-400 mt-0.5">{t("admin.users.expires", { date: formatDateShort(inv.expiresAt) })}</p>
                                 )}
                               </>
                             );
@@ -418,7 +444,7 @@ export default function AdminUsersPage() {
                             <span className="material-symbols-outlined text-[14px]">
                               {user.mfa_enabled ? "verified_user" : "security"}
                             </span>
-                            {user.mfa_enabled ? "Enabled" : "Off"}
+                            {user.mfa_enabled ? t("admin.users.mfaOn") : t("admin.users.mfaOff")}
                           </span>
                         </td>
                         {isAdmin && (
@@ -428,7 +454,7 @@ export default function AdminUsersPage() {
                                 href={`/admin/users/${user.id}`}
                                 className="btn-secondary text-xs py-1 px-2"
                               >
-                                Edit
+                                {t("common.edit")}
                               </Link>
                               {invitationState(user).action ? (
                                 <button
@@ -438,17 +464,17 @@ export default function AdminUsersPage() {
                                   className="btn-secondary text-xs py-1 px-2 text-primary disabled:opacity-50"
                                   data-testid={`user-invite-${user.id}`}
                                 >
-                                  {actionLoading === user.id ? "â€¦" : invitationState(user).action}
+                                  {actionLoading === user.id ? "…" : invText.action}
                                 </button>
                               ) : user.is_active ? (
                                 <button
                                   type="button"
                                   onClick={() => void handleDeactivate(user)}
                                   disabled={actionLoading === user.id || !gate.ok}
-                                  title={!gate.ok ? gate.reason : undefined}
+                                  title={gateReason}
                                   className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50"
                                 >
-                                  {actionLoading === user.id ? "…" : "Deactivate"}
+                                  {actionLoading === user.id ? "…" : t("admin.users.deactivate")}
                                 </button>
                               ) : (
                                 <button
@@ -457,7 +483,7 @@ export default function AdminUsersPage() {
                                   disabled={actionLoading === user.id}
                                   className="btn-secondary text-xs py-1 px-2 text-green-700 disabled:opacity-50"
                                 >
-                                  {actionLoading === user.id ? "…" : "Reactivate"}
+                                  {actionLoading === user.id ? "…" : t("admin.users.reactivate")}
                                 </button>
                               )}
                             </div>
@@ -473,14 +499,14 @@ export default function AdminUsersPage() {
             {users.length === 0 && (
               <EmptyState
                 icon="person_search"
-                title="No users found"
-                description="Try adjusting your search or filters."
+                title={t("admin.users.empty")}
+                description={t("admin.users.emptyDesc")}
               />
             )}
 
             <div className="border-t border-neutral-100 px-5 py-3 flex items-center justify-between">
               <p className="text-xs text-neutral-400">
-                {users.length} of {total} users
+                {t("admin.users.countOf", { shown: users.length, total })}
               </p>
               <div className="flex items-center gap-1">
                 <button
@@ -489,10 +515,10 @@ export default function AdminUsersPage() {
                   disabled={page <= 1}
                   className="btn-secondary py-1.5 px-3 text-xs disabled:opacity-40"
                 >
-                  ← Prev
+                  {t("admin.users.prev")}
                 </button>
                 <span className="px-3 py-1.5 text-xs text-neutral-600 font-medium">
-                  Page {page} of {lastPage}
+                  {t("common.pageOf", { page, total: lastPage })}
                 </span>
                 <button
                   type="button"
@@ -500,7 +526,7 @@ export default function AdminUsersPage() {
                   disabled={page >= lastPage}
                   className="btn-secondary py-1.5 px-3 text-xs disabled:opacity-40"
                 >
-                  Next →
+                  {t("admin.users.next")}
                 </button>
               </div>
             </div>

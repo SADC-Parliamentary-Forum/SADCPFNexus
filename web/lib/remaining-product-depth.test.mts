@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { existsSync, readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 import { formatDateShort } from "./utils.ts";
 import { readApiSource } from "./apiSourceForTests.mts";
@@ -8,14 +9,14 @@ import { readApiSource } from "./apiSourceForTests.mts";
 const webRoot = join(process.cwd());
 
 test("stocktake detail applies the browser offline queue from localStorage", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/stock/stocktakes/[id]/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/stock/stocktakes/[id]/page.tsx"));
   assert.match(source, /sadcpf\.stocktake\.offlineQueue/);
   assert.match(source, /Apply browser queue/);
   assert.match(source, /client_line_key/);
 });
 
 test("scan page points operators at apply-from-stocktake, not a paste-only path", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/stock/scan/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/stock/scan/page.tsx"));
   assert.match(source, /Apply browser queue/);
 });
 
@@ -139,7 +140,7 @@ test("people access reviews page uses createAccessReview instead of an API hint"
 });
 
 test("people privilege alerts can detect and acknowledge without auto-revoke", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/people/privilege-alerts/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/people/privilege-alerts/page.tsx"));
   assert.match(source, /detectPrivilegeAlerts/);
   assert.match(source, /acknowledgePrivilegeAlert/);
   assert.match(source, /never auto-revoke/i);
@@ -344,7 +345,7 @@ test("cashflow generates optimistic and pessimistic overlays from a selected sce
 });
 
 test("weekly summary shows assignment feed and Word export", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/weekly-summaries/page.tsx"));
   assert.match(source, /weeklySummaryFeed/);
   assert.match(source, /exportUrl\(report\.id, "word"\)/);
   assert.match(source, /htmlFor="weekly-item-title"/);
@@ -504,7 +505,7 @@ test("weekly summaries review page links queue items to report detail", () => {
 });
 
 test("weekly summaries review page has empty, error, and loading copy", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/review/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/weekly-summaries/review/page.tsx"));
   assert.match(source, /EmptyState/);
   assert.match(source, /Loading/);
   assert.match(source, /Failed to load/);
@@ -630,7 +631,7 @@ test("weekly summaries compliance page does not dump JSON", () => {
 });
 
 test("weekly summaries compliance page has empty, error, and loading copy", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"));
   assert.match(source, /EmptyState/);
   assert.match(source, /Loading/);
   assert.match(source, /Failed to load/);
@@ -653,7 +654,7 @@ test("weekly summaries compliance page formats period dates with formatDateShort
 });
 
 test("weekly summaries compliance page shows staff and department names, not department_id cells", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"));
   assert.match(source, /personLabel|ownerLabel/);
   assert.match(source, /employee_name/);
   assert.match(source, /department_name|departmentLabel/);
@@ -666,7 +667,7 @@ test("weekly summaries compliance page shows staff and department names, not dep
 });
 
 test("weekly summaries compliance page has labelled counts, department name combobox, and days late", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"));
   assert.match(source, /ModulePageHeader/);
   assert.match(source, /EmptyState/);
   assert.match(source, /\/weekly-summaries\/\$\{/);
@@ -719,7 +720,7 @@ test("weekly summaries department page links reports to weekly-summaries detail"
 });
 
 test("weekly summaries department page has empty, error, and loading copy", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"));
   assert.match(source, /EmptyState/);
   assert.match(source, /Loading/);
   assert.match(source, /Failed to load|Unable to load/);
@@ -818,7 +819,7 @@ test("institutional weekly summary uses ModulePageHeader, FormSection, and label
 });
 
 test("institutional weekly summary has empty, error, and loading copy", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/institutional/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/weekly-summaries/institutional/page.tsx"));
   assert.match(source, /EmptyState/);
   assert.match(source, /Loading|animate-pulse/);
   assert.match(source, /Failed to load|Could not load/);
@@ -837,7 +838,7 @@ test("weekly summary detail uses labelled chrome instead of a stub header", () =
 });
 
 test("weekly summary detail return reason is a labelled field, not sr-only", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/[id]/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/weekly-summaries/[id]/page.tsx"));
   assert.match(source, /htmlFor=["']weekly-return-reason["']/);
   assert.match(source, /weeklyReportsApi\.returnReport/);
   assert.match(source, /weeklyReportsApi\.accept/);
@@ -871,8 +872,8 @@ test("travel API exposes destination catalog list and create endpoints", () => {
 });
 
 test("travel create country picker loads the catalog and can add a missing country", () => {
-  const page = readFileSync(join(webRoot, "app/(app)/travel/create/page.tsx"), "utf8");
-  const pickers = readFileSync(join(webRoot, "components/travel/DestinationPickers.tsx"), "utf8");
+  const page = readEnglishSource(join(webRoot, "app/(app)/travel/create/page.tsx"));
+  const pickers = readEnglishSource(join(webRoot, "components/travel/DestinationPickers.tsx"));
   const source = page + pickers;
   assert.match(source, /travelApi\.listDestinations/);
   assert.match(source, /travelApi\.createCountry/);
@@ -881,8 +882,8 @@ test("travel create country picker loads the catalog and can add a missing count
 });
 
 test("travel create city picker is a catalog dropdown that can add a missing city", () => {
-  const page = readFileSync(join(webRoot, "app/(app)/travel/create/page.tsx"), "utf8");
-  const pickers = readFileSync(join(webRoot, "components/travel/DestinationPickers.tsx"), "utf8");
+  const page = readEnglishSource(join(webRoot, "app/(app)/travel/create/page.tsx"));
+  const pickers = readEnglishSource(join(webRoot, "components/travel/DestinationPickers.tsx"));
   const source = page + pickers;
   assert.match(source, /travelApi\.createCity/);
   assert.match(source, /as a city/);
@@ -929,7 +930,7 @@ test("next travel leg keeps an empty from/date when the previous leg is blank", 
 });
 
 test("travel create itinerary has labelled flight name and number fields", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/travel/create/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/travel/create/page.tsx"));
   const itinerary = source.slice(source.indexOf("Step 1: Itinerary"), source.indexOf("Step 2: Funding"));
   assert.match(itinerary, /FormField/);
   assert.match(itinerary, /label=["']Flight name["']/);
@@ -1005,7 +1006,7 @@ test("travel reports page uses module chrome and the reports pack API", () => {
 });
 
 test("travel reports page formats dates and currency and has empty loading error states", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/travel/reports/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/travel/reports/page.tsx"));
   assert.match(source, /formatDateShort/);
   assert.match(source, /formatCurrency/);
   assert.match(source, /EmptyState/);
@@ -1023,7 +1024,7 @@ test("travel reports page shows named programmes not raw IDs", () => {
 });
 
 test("travel reports page renders labelled analytics slices with tables", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/travel/reports/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/travel/reports/page.tsx"));
   assert.match(source, /by_status/);
   assert.match(source, /cost_by_programme/);
   assert.match(source, /cost_by_funding_agency/);
@@ -1071,7 +1072,7 @@ test("travel hub page uses ModulePageHeader and labelled feature cards", () => {
 });
 
 test("travel hub page keeps live dashboard counts and permission-filters cards", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/travel/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/travel/page.tsx"));
   assert.match(source, /travelApi\.dashboardTraveller/);
   assert.match(source, /travelApi\.dashboardAdmin/);
   assert.match(source, /travelApi\.dashboardFinance/);
@@ -1126,8 +1127,8 @@ test("former travel routes remain reachable as pages", () => {
 });
 
 test("travel settings and calendar breadcrumbs link back to the hub", () => {
-  const settings = readFileSync(join(webRoot, "app/(app)/travel/settings/page.tsx"), "utf8");
-  const calendar = readFileSync(join(webRoot, "app/(app)/travel/calendar/page.tsx"), "utf8");
+  const settings = readEnglishSource(join(webRoot, "app/(app)/travel/settings/page.tsx"));
+  const calendar = readEnglishSource(join(webRoot, "app/(app)/travel/calendar/page.tsx"));
   assert.match(settings, /href:\s*["']\/travel["']/);
   assert.match(settings, /data-testid=["']travel-dsa-settings["']/);
   assert.match(settings, /Type 1 — Acc \+ meals \+ incidentals/);
@@ -1135,7 +1136,7 @@ test("travel settings and calendar breadcrumbs link back to the hub", () => {
 });
 
 test("travel calendar is a month grid with human dates, not ISO day headings", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/travel/calendar/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/travel/calendar/page.tsx"));
   assert.match(source, /grid-cols-7/);
   assert.match(source, /Month grid/);
   assert.match(source, /formatDateShort/);
@@ -1155,7 +1156,7 @@ function leaveSidebarChildren(source: string): string[] {
 }
 
 test("workplan event types page can delete system types", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/workplan/event-types/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/workplan/event-types/page.tsx"));
   assert.match(source, /workplanEventTypesApi\.delete/);
   assert.match(source, />\s*Delete\s*</);
   assert.doesNotMatch(source, /!et\.is_system/);
@@ -1717,11 +1718,11 @@ test("overcrowded sidebars are shortened and hub cards keep every former destina
 });
 
 test("timesheet capture collapses extra tools and hides specialist destinations from staff", () => {
-  const page = readFileSync(join(webRoot, "app/(app)/hr/timesheets/page.tsx"), "utf8");
+  const page = readEnglishSource(join(webRoot, "app/(app)/hr/timesheets/page.tsx"));
   const hub = readFileSync(join(webRoot, "lib/hubs/timesheets.ts"), "utf8");
   const auth = readFileSync(join(webRoot, "lib/authAccess.ts"), "utf8");
-  const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
-  const cards = readFileSync(join(webRoot, "components/ui/ModuleHubCards.tsx"), "utf8");
+  const sidebar = readEnglishSource(join(webRoot, "components/layout/Sidebar.tsx"));
+  const cards = readEnglishSource(join(webRoot, "components/ui/ModuleHubCards.tsx"));
   assert.match(page, /ModulePageHeader/);
   assert.match(page, /More timesheet tools/);
   assert.match(page, /<details/);
@@ -1738,7 +1739,7 @@ test("timesheet capture collapses extra tools and hides specialist destinations 
 });
 
 test("assignment dashboard collapses extra tools and hides specialist queues from staff", () => {
-  const page = readFileSync(join(webRoot, "app/(app)/assignments/page.tsx"), "utf8");
+  const page = readEnglishSource(join(webRoot, "app/(app)/assignments/page.tsx"));
   const hub = readFileSync(join(webRoot, "lib/hubs/assignments.ts"), "utf8");
   const auth = readFileSync(join(webRoot, "lib/authAccess.ts"), "utf8");
   assert.match(page, /More assignment tools/);
@@ -1752,9 +1753,9 @@ test("assignment dashboard collapses extra tools and hides specialist queues fro
 });
 
 test("salary advance dashboard collapses finance tools away from the employee summary", () => {
-  const page = readFileSync(join(webRoot, "app/(app)/salary-advances/page.tsx"), "utf8");
+  const page = readEnglishSource(join(webRoot, "app/(app)/salary-advances/page.tsx"));
   const hub = readFileSync(join(webRoot, "lib/hubs/salaryAdvances.ts"), "utf8");
-  const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
+  const sidebar = readEnglishSource(join(webRoot, "components/layout/Sidebar.tsx"));
   assert.match(page, /More salary-advance tools/);
   assert.match(page, /<details/);
   assert.match(page, /ModuleHubCards/);
@@ -1766,10 +1767,10 @@ test("salary advance dashboard collapses finance tools away from the employee su
 });
 
 test("weekly summary compose collapses specialist tools and hides them from staff", () => {
-  const page = readFileSync(join(webRoot, "app/(app)/weekly-summaries/page.tsx"), "utf8");
+  const page = readEnglishSource(join(webRoot, "app/(app)/weekly-summaries/page.tsx"));
   const hub = readFileSync(join(webRoot, "lib/hubs/weeklySummaries.ts"), "utf8");
   const auth = readFileSync(join(webRoot, "lib/authAccess.ts"), "utf8");
-  const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
+  const sidebar = readEnglishSource(join(webRoot, "components/layout/Sidebar.tsx"));
   assert.match(page, /More weekly-summary tools/);
   assert.match(page, /<details/);
   assert.match(hub, /title:\s*["']Team review["']/);
@@ -1792,7 +1793,7 @@ test("PIF detail does not render a responsible-officer user object as a React ch
 });
 
 test("PIF edit uses labelled sections, catalogues, need-toggles, and a sticky save bar", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/pif/[id]/edit/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/pif/[id]/edit/page.tsx"));
   assert.match(source, /FormSection/);
   assert.match(source, /FormField/);
   assert.match(source, /NeedToggle/);
@@ -1806,7 +1807,7 @@ test("PIF edit uses labelled sections, catalogues, need-toggles, and a sticky sa
   assert.match(source, /Save this page/);
   assert.match(source, /data-testid=["']pif-edit-actions["']/);
   assert.match(source, /sticky/);
-  const toggle = readFileSync(join(webRoot, "app/(app)/pif/[id]/edit/NeedToggle.tsx"), "utf8");
+  const toggle = readEnglishSource(join(webRoot, "app/(app)/pif/[id]/edit/NeedToggle.tsx"));
   assert.match(toggle, /data-testid=["']pif-need-toggle["']/);
 });
 
@@ -1834,7 +1835,7 @@ test("Administration sidebar and hub keep every control-plane destination", () =
 });
 
 test("workflow analytics page normalizes API payload and offers reload on failure", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/admin/workflows/analytics/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/admin/workflows/analytics/page.tsx"));
   assert.match(source, /data-testid="workflow-analytics-page"/);
   assert.match(source, /normalizeAnalyticsSummary/);
   assert.match(source, /workflowEngineApi/);

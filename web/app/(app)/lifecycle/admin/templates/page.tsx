@@ -5,8 +5,10 @@ import { lifecycleApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function LifecycleTemplatesAdminPage() {
+  const { t } = useI18n();
   const templatesQuery = useQuery({
     queryKey: ["lifecycle", "templates"],
     queryFn: async () => (await lifecycleApi.listTemplates()).data.data,
@@ -15,24 +17,24 @@ export default function LifecycleTemplatesAdminPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Journey templates"
-        subtitle="Operational stages and tasks only — notice, probation, and terminal-payment gates stay in HR settings."
+        title={t("lifecycle.templates.title")}
+        subtitle={t("lifecycle.templates.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Employee Lifecycle", href: "/lifecycle" },
-              { label: "Administration" },
-              { label: "Templates" },
+              { label: t("lifecycle.common.breadcrumb"), href: "/lifecycle" },
+              { label: t("lifecycle.templates.crumbAdmin") },
+              { label: t("lifecycle.templates.crumbTemplates") },
             ]}
           />
         }
       />
 
-      <FormSection title="Published journeys">
-        {templatesQuery.isLoading ? <p className="text-sm text-neutral-500">Loading templates…</p> : null}
-        {templatesQuery.isError ? <p className="text-sm text-red-600">Failed to load templates.</p> : null}
+      <FormSection title={t("lifecycle.templates.published")}>
+        {templatesQuery.isLoading ? <p className="text-sm text-neutral-500">{t("lifecycle.templates.loading")}</p> : null}
+        {templatesQuery.isError ? <p className="text-sm text-red-600">{t("lifecycle.templates.loadFailed")}</p> : null}
         {!templatesQuery.isLoading && (templatesQuery.data ?? []).length === 0 ? (
-          <EmptyState title="No templates seeded" description="Run LifecycleJourneyTemplateSeeder for this tenant." />
+          <EmptyState title={t("lifecycle.templates.empty")} description={t("lifecycle.templates.emptyHint")} />
         ) : (
           <ul className="space-y-3">
             {(templatesQuery.data ?? []).map((tpl) => (
@@ -42,7 +44,7 @@ export default function LifecycleTemplatesAdminPage() {
                   {String(tpl.code)} · {String(tpl.lifecycle_type)}
                   {tpl.published_version
                     ? ` · v${String((tpl.published_version as { version_number?: number }).version_number ?? "")}`
-                    : " · no published version"}
+                    : ` · ${t("lifecycle.templates.noVersion")}`}
                 </p>
               </li>
             ))}

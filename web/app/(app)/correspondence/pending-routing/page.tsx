@@ -4,8 +4,10 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { correspondenceApi, adminApi, type CorrespondenceLetter } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function PendingSgRoutingPage() {
+  const { t } = useI18n();
   const [items, setItems] = useState<CorrespondenceLetter[]>([]);
   const [users, setUsers] = useState<Array<{ id: number; name: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,7 @@ export default function PendingSgRoutingPage() {
 
   async function route(id: number) {
     if (!ownerId) {
-      setError("Select a Primary Action Owner.");
+      setError(t("correspondence.pendingRouting.selectOwner"));
       return;
     }
     setError(null);
@@ -44,30 +46,30 @@ export default function PendingSgRoutingPage() {
         primary_owner_id: Number(ownerId),
         instruction,
       });
-      setMsg("Routed with primary owner.");
+      setMsg(t("correspondence.pendingRouting.routed"));
       setRoutingId(null);
       setOwnerId("");
       setInstruction("");
       load();
     } catch {
-      setError("Routing failed — ensure you have correspondence.route permission.");
+      setError(t("correspondence.pendingRouting.failed"));
     }
   }
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Pending SG Routing"
-        subtitle="Registered incoming items awaiting Secretary General routing and primary ownership."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Pending SG Routing" }]} />}
+        title={t("correspondence.pendingRouting.title")}
+        subtitle={t("correspondence.pendingRouting.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("correspondence.pendingRouting.title") }]} />}
       />
 
       {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>}
       {msg && <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">{msg}</div>}
 
       <div className="card divide-y divide-neutral-100">
-        {loading && <div className="p-8 text-center text-neutral-400">Loading…</div>}
-        {!loading && items.length === 0 && <div className="p-8 text-center text-neutral-400">Queue clear.</div>}
+        {loading && <div className="p-8 text-center text-neutral-400">{t("common.loading")}</div>}
+        {!loading && items.length === 0 && <div className="p-8 text-center text-neutral-400">{t("correspondence.pendingRouting.empty")}</div>}
         {items.map((item) => (
           <div key={item.id} className="p-4 space-y-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -76,29 +78,29 @@ export default function PendingSgRoutingPage() {
                   {item.subject}
                 </Link>
                 <p className="text-xs text-neutral-500 mt-1 font-mono">
-                  {item.registry_reference || `#${item.id}`} · {item.sender_name || item.sender_organisation || "Unknown sender"}
+                  {item.registry_reference || `#${item.id}`} · {item.sender_name || item.sender_organisation || t("correspondence.unknownSender")}
                 </p>
               </div>
               <button type="button" className="btn-secondary text-xs" onClick={() => setRoutingId(item.id)}>
-                Route
+                {t("correspondence.pendingRouting.route")}
               </button>
             </div>
             {routingId === item.id && (
               <div className="grid gap-3 sm:grid-cols-2 rounded-xl bg-neutral-50 p-3">
                 <div>
-                  <label htmlFor={`correspondence-pending-owner-${item.id}`} className="text-xs text-neutral-600">Primary Action Owner *</label>
+                  <label htmlFor={`correspondence-pending-owner-${item.id}`} className="text-xs text-neutral-600">{t("correspondence.primaryOwnerRequired")}</label>
                   <select id={`correspondence-pending-owner-${item.id}`} className="form-input w-full mt-1" value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
-                    <option value="">Select officer…</option>
+                    <option value="">{t("correspondence.selectOfficer")}</option>
                     {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label htmlFor={`correspondence-pending-instruction-${item.id}`} className="text-xs text-neutral-600">Instruction</label>
+                  <label htmlFor={`correspondence-pending-instruction-${item.id}`} className="text-xs text-neutral-600">{t("correspondence.instruction")}</label>
                   <textarea id={`correspondence-pending-instruction-${item.id}`} className="form-input w-full mt-1" rows={2} value={instruction} onChange={(e) => setInstruction(e.target.value)} />
                 </div>
                 <div className="sm:col-span-2 flex gap-2">
-                  <button type="button" className="btn-primary text-xs" onClick={() => route(item.id)}>Confirm route</button>
-                  <button type="button" className="btn-secondary text-xs" onClick={() => setRoutingId(null)}>Cancel</button>
+                  <button type="button" className="btn-primary text-xs" onClick={() => route(item.id)}>{t("correspondence.pendingRouting.confirm")}</button>
+                  <button type="button" className="btn-secondary text-xs" onClick={() => setRoutingId(null)}>{t("common.cancel")}</button>
                 </div>
               </div>
             )}

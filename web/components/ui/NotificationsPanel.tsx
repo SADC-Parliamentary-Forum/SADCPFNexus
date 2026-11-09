@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   alertsApi,
   AlertsSummary,
@@ -9,6 +9,8 @@ import {
   AlertsDeadline,
 } from "@/lib/api";
 import { formatDateShort, formatDateRelative } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { TranslateVars } from "@/lib/i18n/messages";
 
 export interface NotificationsPanelProps {
   onClose: () => void;
@@ -24,7 +26,7 @@ interface NotificationItem {
   timeLabel: string;
 }
 
-function buildNotifications(data: AlertsSummary): NotificationItem[] {
+function buildNotifications(data: AlertsSummary, t: (key: string, vars?: TranslateVars) => string): NotificationItem[] {
   const items: NotificationItem[] = [];
 
   // Active missions away
@@ -34,9 +36,9 @@ function buildNotifications(data: AlertsSummary): NotificationItem[] {
       iconName: "flight_takeoff",
       iconColor: "text-orange-600 dark:text-orange-300",
       iconBg: "bg-orange-100 dark:bg-orange-950",
-      title: `Active mission: ${m.requester_name}`,
-      subtitle: `in ${m.destination_country}`,
-      timeLabel: `Returns ${formatDateShort(m.return_date)}`,
+      title: t("ui.notifications.activeMission", { name: m.requester_name }),
+      subtitle: t("ui.notifications.inCountry", { country: m.destination_country }),
+      timeLabel: t("ui.notifications.returns", { date: formatDateShort(m.return_date) }),
     });
   });
 
@@ -49,8 +51,8 @@ function buildNotifications(data: AlertsSummary): NotificationItem[] {
         iconName: "event_busy",
         iconColor: "text-blue-600 dark:text-blue-300",
         iconBg: "bg-blue-100 dark:bg-blue-950",
-        title: `On leave: ${e.name}`,
-        subtitle: `until ${formatDateShort(e.to_date)}`,
+        title: t("ui.notifications.onLeave", { name: e.name }),
+        subtitle: t("ui.notifications.until", { date: formatDateShort(e.to_date) }),
         timeLabel: formatDateRelative(e.to_date),
       });
     });
@@ -64,11 +66,11 @@ function buildNotifications(data: AlertsSummary): NotificationItem[] {
       iconColor: "text-red-600 dark:text-red-300",
       iconBg: "bg-red-100 dark:bg-red-950",
       title: isImprest
-        ? `Imprest ${d.reference_number ?? d.id} due`
-        : `Deadline: ${d.title}`,
+        ? t("ui.notifications.imprestDue", { reference: d.reference_number ?? d.id })
+        : t("ui.notifications.deadline", { title: d.title }),
       subtitle: isImprest
-        ? `Due ${formatDateShort(d.deadline_date)}`
-        : `on ${formatDateShort(d.deadline_date)}`,
+        ? t("ui.notifications.dueOn", { date: formatDateShort(d.deadline_date) })
+        : t("ui.notifications.onDate", { date: formatDateShort(d.deadline_date) }),
       timeLabel: formatDateRelative(d.deadline_date),
     });
   });
@@ -77,8 +79,10 @@ function buildNotifications(data: AlertsSummary): NotificationItem[] {
 }
 
 export default function NotificationsPanel({ onClose }: NotificationsPanelProps) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [summary, setSummary] = useState<AlertsSummary | null>(null);
+  const notifications = useMemo(() => (summary ? buildNotifications(summary, t) : []), [summary, t]);
   const [allRead, setAllRead] = useState(false);
   const [error, setError] = useState(false);
 
@@ -91,7 +95,7 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
       .getSummary()
       .then((res) => {
         if (cancelled) return;
-        setNotifications(buildNotifications(res.data));
+        setSummary(res.data);
       })
       .catch(() => {
         if (!cancelled) setError(true);
@@ -118,7 +122,7 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
       <aside
         className="fixed right-0 top-0 z-50 flex h-full w-80 flex-col bg-white shadow-xl dark:bg-neutral-950 dark:shadow-black/40"
         role="dialog"
-        aria-label="Notifications"
+        aria-label={t("ui.notifications.title")}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
@@ -127,7 +131,7 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
               notifications
             </span>
             <h2 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-              Notifications
+              {t("ui.notifications.title")}
             </h2>
             {!allRead && notifications.length > 0 && (
               <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
@@ -138,7 +142,7 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
           <button
             onClick={onClose}
             className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-900 dark:hover:text-neutral-200"
-            aria-label="Close notifications"
+            aria-label={t("ui.notifications.close")}
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
@@ -156,7 +160,7 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
               }`}
               disabled={allRead}
             >
-              {allRead ? "All caught up" : "Mark all as read"}
+              {allRead ? t("ui.notifications.allCaughtUp") : t("ui.notifications.markAllRead")}
             </button>
           </div>
         )}
@@ -185,9 +189,9 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
                 error_outline
               </span>
               <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
-                Failed to load notifications
+                {t("ui.notifications.loadFailed")}
               </p>
-              <p className="text-xs text-neutral-400 dark:text-neutral-500">Please try again later.</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500">{t("ui.notifications.tryLater")}</p>
             </div>
           )}
 
@@ -198,9 +202,9 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
                 notifications_none
               </span>
               <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
-                You&apos;re all caught up
+                {t("ui.notifications.emptyTitle")}
               </p>
-              <p className="text-xs text-neutral-400 dark:text-neutral-500">No new notifications.</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500">{t("ui.notifications.empty")}</p>
             </div>
           )}
 
@@ -251,7 +255,7 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
         {/* Footer */}
         <div className="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
           <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500">
-            Showing alerts &amp; upcoming deadlines
+            {t("ui.notifications.footer")}
           </p>
         </div>
       </aside>

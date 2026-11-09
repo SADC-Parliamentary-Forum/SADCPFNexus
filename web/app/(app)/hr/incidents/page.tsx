@@ -8,6 +8,7 @@ import { hrIncidentsApi, type HrIncident } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type FilterTab = "all" | "mine" | "open" | "resolved";
 
@@ -25,19 +26,20 @@ const STATUS_BADGE: Record<HrIncident["status"], string> = {
 };
 
 const STATUS_LABEL: Record<HrIncident["status"], string> = {
-  reported: "Reported",
-  under_review: "Under review",
-  resolved: "Resolved",
-  closed: "Closed",
+  reported: "hr.incidents.status.reported",
+  under_review: "hr.incidents.status.under_review",
+  resolved: "hr.incidents.status.resolved",
+  closed: "hr.incidents.status.closed",
 };
 
 const SEVERITY_LABEL: Record<HrIncident["severity"], string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
+  low: "hr.incidents.severity.low",
+  medium: "hr.incidents.severity.medium",
+  high: "hr.incidents.severity.high",
 };
 
 export default function HrIncidentsPage() {
+  const { t } = useI18n();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
@@ -59,22 +61,22 @@ export default function HrIncidentsPage() {
     (data?.data as unknown as { data?: HrIncident[] })?.data ?? [];
 
   const TABS: { key: FilterTab; label: string }[] = [
-    { key: "all", label: "All" },
-    { key: "mine", label: "My Reports" },
-    { key: "open", label: "Open" },
-    { key: "resolved", label: "Resolved" },
+    { key: "all", label: t("timesheet.import.filterAll") },
+    { key: "mine", label: t("hr.incidents.tabMine") },
+    { key: "open", label: t("hr.incidents.tabOpen") },
+    { key: "resolved", label: t("hr.incidents.status.resolved") },
   ];
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="HR Incidents"
-        subtitle="Report workplace incidents and track their status."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Incidents" }]} />}
+        title="hr.incidents.title"
+        subtitle="hr.incidents.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "hr.incidents.crumb" }]} />}
         actions={
           <Link href="/hr/incidents/new" className="btn-primary py-2 px-3 text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Report Incident
+            {t("hr.incidents.report")}
           </Link>
         }
       />
@@ -97,7 +99,7 @@ export default function HrIncidentsPage() {
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          Failed to load incident reports.
+          {t("hr.incidents.loadFailed")}
         </div>
       )}
 
@@ -106,13 +108,13 @@ export default function HrIncidentsPage() {
         {isLoading ? (
           <div className="card p-5 flex items-center justify-center py-16 text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[28px]">progress_activity</span>
-            <span className="ml-2">Loading…</span>
+            <span className="ml-2">{t("common.loading")}</span>
           </div>
         ) : incidents.length === 0 ? (
           <EmptyState
             icon="report_off"
-            title="No incident reports found."
-            description={activeTab !== "all" ? "Try switching to the All tab." : "Reported incidents will appear here."}
+            title={t("hr.incidents.empty")}
+            description={activeTab !== "all" ? t("hr.incidents.emptyFiltered") : t("hr.incidents.emptyHint")}
           />
         ) : (
           incidents.map((incident) => (
@@ -124,10 +126,10 @@ export default function HrIncidentsPage() {
                       {incident.reference_number}
                     </span>
                     <span className={SEVERITY_BADGE[incident.severity]}>
-                      {SEVERITY_LABEL[incident.severity]}
+                      {t(SEVERITY_LABEL[incident.severity])}
                     </span>
                     <span className={STATUS_BADGE[incident.status]}>
-                      {STATUS_LABEL[incident.status]}
+                      {t(STATUS_LABEL[incident.status])}
                     </span>
                   </div>
                   <p className="font-semibold text-neutral-900 text-sm truncate">{incident.subject}</p>
@@ -148,7 +150,7 @@ export default function HrIncidentsPage() {
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
-                  <Link href={`/hr/incidents/${incident.id}`} onClick={(e) => e.stopPropagation()} className="btn-secondary text-xs">View</Link>
+                  <Link href={`/hr/incidents/${incident.id}`} onClick={(e) => e.stopPropagation()} className="btn-secondary text-xs">{t("hr.timesheets.team.view")}</Link>
                   <span
                     className={`inline-flex items-center justify-center w-9 h-9 rounded-full ${
                       incident.severity === "high"

@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type AccessRequest = {
   id: number;
@@ -22,6 +23,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function AccessRequestsPage() {
+  const { t } = useI18n();
   const [rows, setRows] = useState<AccessRequest[]>([]);
   const [permission, setPermission] = useState("procurement.evaluation.read.assigned");
   const [reason, setReason] = useState("");
@@ -33,7 +35,7 @@ export default function AccessRequestsPage() {
       .get<{ data: AccessRequest[] }>("/admin/access/requests")
       .then((r) => r.data)
       .then((r) => setRows(r.data ?? []))
-      .catch(() => setMessage("Failed to load access requests."))
+      .catch(() => setMessage(t("admin.access.requests.loadFailed")))
       .finally(() => setLoading(false));
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function AccessRequestsPage() {
       scope_type: "assigned",
     });
     setReason("");
-    setMessage("Access request submitted.");
+    setMessage(t("admin.access.requests.submitted"));
     load();
   };
 
@@ -60,22 +62,22 @@ export default function AccessRequestsPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Access requests"
-        subtitle="Request elevated permissions and route supervisor / approver decisions."
+        title={t("admin.access.links.requests")}
+        subtitle={t("admin.access.requests.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Access", href: "/admin/access" },
-              { label: "Requests" },
+              { label: t("admin.homeLabel"), href: "/admin" },
+              { label: t("admin.crumb.access"), href: "/admin/access" },
+              { label: t("admin.access.requests.crumb") },
             ]}
           />
         }
       />
 
-      <FormSection title="New request" icon="how_to_reg" dense>
+      <FormSection title={t("admin.access.requests.new")} icon="how_to_reg" dense>
         <div className="flex flex-wrap items-end gap-3">
-          <FormField label="Permission" htmlFor="req-perm" required className="min-w-[260px]">
+          <FormField label={t("admin.common.permission")} htmlFor="req-perm" required className="min-w-[260px]">
             <input
               id="req-perm"
               className="form-input"
@@ -83,7 +85,7 @@ export default function AccessRequestsPage() {
               onChange={(e) => setPermission(e.target.value)}
             />
           </FormField>
-          <FormField label="Business reason" htmlFor="req-reason" required className="min-w-[240px] flex-1">
+          <FormField label={t("admin.access.requests.businessReason")} htmlFor="req-reason" required className="min-w-[240px] flex-1">
             <input
               id="req-reason"
               className="form-input"
@@ -92,7 +94,7 @@ export default function AccessRequestsPage() {
             />
           </FormField>
           <button type="button" className="btn-primary text-sm" onClick={submit} disabled={!reason}>
-            Request access
+            {t("access.request")}
           </button>
         </div>
         {message ? <p className="mt-3 text-sm text-neutral-600">{message}</p> : null}
@@ -106,7 +108,7 @@ export default function AccessRequestsPage() {
         </div>
       ) : rows.length === 0 ? (
         <div className="card">
-          <EmptyState icon="how_to_reg" title="No access requests" description="Submitted requests will appear in this register." />
+          <EmptyState icon="how_to_reg" title={t("admin.access.requests.empty")} description={t("admin.access.requests.emptyDesc")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -114,11 +116,11 @@ export default function AccessRequestsPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Permission</th>
-                  <th>Reason</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th>{t("admin.common.id")}</th>
+                  <th>{t("admin.common.permission")}</th>
+                  <th>{t("admin.common.reason")}</th>
+                  <th>{t("admin.common.status")}</th>
+                  <th>{t("admin.common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -133,13 +135,13 @@ export default function AccessRequestsPage() {
                     <td>
                       <div className="flex flex-wrap gap-2">
                         <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => decide(r.id, "approve", "supervisor")}>
-                          Supervisor OK
+                          {t("admin.access.requests.supervisorOk")}
                         </button>
                         <button type="button" className="btn-secondary text-xs py-1 px-2 text-emerald-700" onClick={() => decide(r.id, "approve", "approver")}>
-                          Approve
+                          {t("admin.common.approve")}
                         </button>
                         <button type="button" className="btn-secondary text-xs py-1 px-2 text-red-600" onClick={() => decide(r.id, "reject", "approver")}>
-                          Reject
+                          {t("admin.common.reject")}
                         </button>
                       </div>
                     </td>

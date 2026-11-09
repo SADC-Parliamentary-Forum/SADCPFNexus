@@ -281,7 +281,7 @@ export function CaptchaGate({ value, onChange }: Props) {
         </div>
       )}
       <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
-        <label htmlFor={honeypotId}>Website</label>
+        <label htmlFor={honeypotId}>{t("auth.captcha.website")}</label>
         <input
           id={honeypotId}
           type="text"

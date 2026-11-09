@@ -7,8 +7,10 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function MeetingTypesPage() {
+  const { t } = useI18n();
   const { confirm } = useConfirm();
   const toast = useToast();
   const [list, setList] = useState<MeetingType[]>([]);
@@ -28,11 +30,12 @@ export default function MeetingTypesPage() {
       const res = await workplanMeetingTypesApi.list();
       setList(res.data?.data ?? []);
     } catch {
-      setError("Failed to load meeting types.");
+      setError(t("workplan.meetingTypes.loadFailed"));
       setList([]);
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -74,12 +77,12 @@ export default function MeetingTypesPage() {
           sort_order: sortOrder ? Number(sortOrder) : undefined,
         });
       }
-      toast.success(editingId ? "Meeting type updated" : "Meeting type created", name.trim());
+      toast.success(editingId ? t("workplan.meetingTypes.updated") : t("workplan.meetingTypes.created"), name.trim());
       resetForm();
       loadList();
     } catch (err: unknown) {
-      setError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Failed to save.");
-      toast.error(editingId ? "Meeting type not updated" : "Meeting type not created", apiErrorMessage(err, "Failed to save."));
+      setError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : t("workplan.types.saveFailed"));
+      toast.error(editingId ? t("workplan.meetingTypes.notUpdated") : t("workplan.meetingTypes.notCreated"), apiErrorMessage(err, t("workplan.types.saveFailed")));
     } finally {
       setSaving(false);
     }
@@ -88,28 +91,28 @@ export default function MeetingTypesPage() {
   const handleDelete = async (mt: MeetingType) => {
     if (
       !(await confirm({
-        title: "Delete meeting type",
-        message: `Delete meeting type "${mt.name}"? This will fail if any event uses it.`,
+        title: t("workplan.meetingTypes.deleteTitle"),
+        message: t("workplan.meetingTypes.deleteMessage", { name: mt.name }),
         variant: "danger",
       }))
     ) return; // ship-safe-ignore: confirm dialog string, not SQL
     setError(null);
     try {
       await workplanMeetingTypesApi.delete(mt.id);
-      toast.success("Meeting type deleted", mt.name);
+      toast.success(t("workplan.meetingTypes.deleted"), mt.name);
       loadList();
     } catch (err: unknown) {
-      setError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Cannot delete (may be in use).");
-      toast.error("Meeting type not deleted", apiErrorMessage(err, "Cannot delete (may be in use)."));
+      setError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : t("workplan.meetingTypes.deleteFailed"));
+      toast.error(t("workplan.meetingTypes.notDeleted"), apiErrorMessage(err, t("workplan.meetingTypes.deleteFailed")));
     }
   };
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Meeting types"
-        subtitle='Add and edit meeting types used when creating workplan events of type "Meeting".'
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.workplan", href: "/workplan" }, { label: "Meeting types" }]} />}
+        title={t("workplan.meetingTypes.title")}
+        subtitle={t("workplan.meetingTypes.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.workplan", href: "/workplan" }, { label: t("workplan.meetingTypes.title") }]} />}
         actions={
           <button
             type="button"
@@ -117,7 +120,7 @@ export default function MeetingTypesPage() {
             className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Add meeting type
+            {t("workplan.meetingTypes.add")}
           </button>
         }
       />
@@ -131,29 +134,29 @@ export default function MeetingTypesPage() {
 
       {showForm && (
         <form onSubmit={handleSubmit} className="card p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-neutral-900">{editingId ? "Edit meeting type" : "New meeting type"}</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">{editingId ? t("workplan.meetingTypes.edit") : t("workplan.meetingTypes.new")}</h2>
           <div>
-            <label htmlFor="workplan-meeting-types-name" className="block text-sm font-semibold text-neutral-700 mb-1">Name *</label>
+            <label htmlFor="workplan-meeting-types-name" className="block text-sm font-semibold text-neutral-700 mb-1">{t("workplan.types.nameLabel")}</label>
             <input id="workplan-meeting-types-name"
               type="text"
               className="form-input w-full"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Executive Committee"
+              placeholder={t("workplan.meetingTypes.namePlaceholder")}
               required
             />
           </div>
           <div>
-            <label htmlFor="workplan-meeting-types-description" className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
+            <label htmlFor="workplan-meeting-types-description" className="block text-sm font-semibold text-neutral-700 mb-1">{t("workplan.meetingTypes.description")}</label>
             <textarea id="workplan-meeting-types-description"
               className="form-input w-full min-h-[80px] resize-y"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional"
+              placeholder={t("workplan.meetingTypes.optional")}
             />
           </div>
           <div>
-            <label htmlFor="workplan-meeting-types-sort-order" className="block text-sm font-semibold text-neutral-700 mb-1">Sort order</label>
+            <label htmlFor="workplan-meeting-types-sort-order" className="block text-sm font-semibold text-neutral-700 mb-1">{t("workplan.types.sortOrder")}</label>
             <input id="workplan-meeting-types-sort-order"
               type="number"
               min={0}
@@ -165,33 +168,33 @@ export default function MeetingTypesPage() {
           </div>
           <div className="flex gap-3">
             <button type="submit" disabled={saving} className="btn-primary px-4 py-2 text-sm disabled:opacity-50">
-              {saving ? "Saving…" : editingId ? "Update" : "Create"}
+              {saving ? t("workplan.types.saving") : editingId ? t("workplan.types.update") : t("common.create")}
             </button>
-            <button type="button" onClick={resetForm} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+            <button type="button" onClick={resetForm} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
           </div>
         </form>
       )}
 
       <div className="card overflow-hidden">
         <div className="card-header">
-          <h3 className="text-sm font-semibold text-neutral-900">Meeting types</h3>
+          <h3 className="text-sm font-semibold text-neutral-900">{t("workplan.meetingTypes.title")}</h3>
         </div>
         {loading ? (
           <div className="flex items-center justify-center py-12 text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
-            <span className="ml-2">Loading…</span>
+            <span className="ml-2">{t("common.loading")}</span>
           </div>
         ) : list.length === 0 ? (
-          <EmptyState icon="groups" title="No meeting types yet. Add one to use when creating meeting events." />
+          <EmptyState icon="groups" title={t("workplan.meetingTypes.empty")} />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Sort</th>
-                  <th className="text-right">Actions</th>
+                  <th>{t("workplan.meetingTypes.col.name")}</th>
+                  <th>{t("workplan.meetingTypes.description")}</th>
+                  <th>{t("workplan.types.col.sort")}</th>
+                  <th className="text-right">{t("workplan.types.col.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -202,10 +205,10 @@ export default function MeetingTypesPage() {
                     <td className="text-sm text-neutral-600">{mt.sort_order ?? "—"}</td>
                     <td className="text-right">
                       <button type="button" onClick={() => handleEdit(mt)} className="btn-secondary text-xs py-1 px-2 mr-2">
-                        Edit
+                        {t("common.edit")}
                       </button>
                       <button type="button" onClick={() => handleDelete(mt)} className="btn-secondary text-xs py-1 px-2 text-red-600">
-                        Delete
+                        {t("common.delete")}
                       </button>
                     </td>
                   </tr>

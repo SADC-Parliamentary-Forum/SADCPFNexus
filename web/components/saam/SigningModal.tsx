@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { saamApi, type SignatureProfile, type SignatureEvent } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface Props {
   isOpen: boolean;
@@ -22,11 +23,11 @@ interface Props {
 }
 
 const actionLabel: Record<Props["action"], string> = {
-  approve:     "Sign & Approve",
-  reject:      "Sign & Reject",
-  review:      "Sign & Forward",
-  return:      "Sign & Return",
-  acknowledge: "Sign & Acknowledge",
+  approve:     "saam.signingModal.action.approve",
+  reject:      "saam.signingModal.action.reject",
+  review:      "saam.signingModal.action.review",
+  return:      "saam.signingModal.action.return",
+  acknowledge: "saam.signingModal.action.acknowledge",
 };
 
 const actionColor: Record<Props["action"], string> = {
@@ -41,6 +42,7 @@ export function SigningModal({
   isOpen, onClose, onSigned, onWorkflowApprove, signableType, signableId,
   action, stepKey, requirePassword = true, title,
 }: Props) {
+  const { t } = useI18n();
   const [profile, setProfile] = useState<SignatureProfile | null>(null);
   const [comment, setComment] = useState("");
   const [password, setPassword] = useState("");
@@ -67,15 +69,15 @@ export function SigningModal({
 
   async function handleSign() {
     if (requirePassword && !password.trim()) {
-      setError("Please enter your password to sign.");
+      setError(t("saam.signingModal.passwordRequired"));
       return;
     }
     if (onWorkflowApprove && !profile?.active_version) {
-      setError("Enrol your signature specimen in SAAM before approving this step.");
+      setError(t("saam.signingModal.enrolFirst"));
       return;
     }
     if ((action === "reject" || action === "return") && !comment.trim()) {
-      setError("Please add a comment.");
+      setError(t("saam.signingModal.commentRequired"));
       return;
     }
     setLoading(true);
@@ -102,7 +104,7 @@ export function SigningModal({
       const fieldError = data?.errors
         ? Object.values(data.errors).flat()[0]
         : undefined;
-      setError(fieldError || data?.message || "Failed to sign. Please try again.");
+      setError(fieldError || data?.message || t("saam.signingModal.signFailed"));
     } finally {
       setLoading(false);
     }
@@ -120,17 +122,17 @@ export function SigningModal({
               <span className="material-symbols-outlined text-primary text-[18px]">draw</span>
             </div>
             <h2 className="text-base font-semibold text-neutral-900">
-              {title ?? actionLabel[action]}
+              {title ?? t(actionLabel[action])}
             </h2>
           </div>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600" aria-label={t("common.close")}>
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
         {/* Signature preview */}
         <div>
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">Your Signature</p>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">{t("saam.signingModal.yourSignature")}</p>
           {profileLoading ? (
             <div className="h-16 bg-neutral-100 rounded-xl animate-pulse" />
           ) : profile?.active_version ? (
@@ -139,30 +141,30 @@ export function SigningModal({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={`/api/v1/saam/signature-image/${profile.active_version.id}`}
-                  alt="signature"
+                  alt={t("saam.signingModal.signatureAlt")}
                   className="max-h-12 max-w-[140px] object-contain"
                   onError={() => setImgError(true)}
                 />
               ) : (
                 <div className="h-12 flex items-center px-2">
-                  <span className="text-xs text-neutral-400 italic">Preview unavailable</span>
+                  <span className="text-xs text-neutral-400 italic">{t("saam.signingModal.previewUnavailable")}</span>
                 </div>
               )}
               <div className="flex-1 text-right">
-                <p className="text-[10px] text-neutral-400">Version {profile.active_version.version_no}</p>
+                <p className="text-[10px] text-neutral-400">{t("saam.signingModal.version", { version: profile.active_version.version_no })}</p>
               </div>
             </div>
           ) : (
             <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-sm text-amber-700 flex items-center gap-2">
               <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
               <span>
-                No signature set up.{" "}
+                {t("saam.signingModal.noSignature")}{" "}
                 <a href="/profile/signature" target="_blank" className="font-semibold underline">
-                  Set up now
+                  {t("saam.signingModal.setUpNow")}
                 </a>
                 {onWorkflowApprove
-                  ? ". This step cannot be approved until your specimen is enrolled."
-                  : ". You can still sign without a graphical signature."}
+                  ? t("saam.signingModal.cannotApprove")
+                  : t("saam.signingModal.canStillSign")}
               </span>
             </div>
           )}
@@ -171,7 +173,7 @@ export function SigningModal({
         {/* Comment */}
         <div>
           <label htmlFor="saam-SigningModal-comment" className="block text-xs font-semibold text-neutral-700 mb-1">
-            Comment {action === "reject" || action === "return" ? "*" : "(optional)"}
+            {action === "reject" || action === "return" ? t("saam.signingModal.commentRequiredLabel") : t("correspondence.detail.commentOptional")}
           </label>
           <textarea id="saam-SigningModal-comment"
             value={comment}
@@ -180,8 +182,8 @@ export function SigningModal({
             className="form-input w-full resize-none"
             placeholder={
               action === "reject" || action === "return"
-                ? "Explain what needs to change…"
-                : "Optional notes…"
+                ? t("correspondence.detail.explainChanges")
+                : t("saam.signingModal.optionalNotes")
             }
           />
         </div>
@@ -190,18 +192,18 @@ export function SigningModal({
         {requirePassword && (
           <div>
             <label htmlFor="saam-SigningModal-your-password" className="block text-xs font-semibold text-neutral-700 mb-1">
-              Your Password <span className="text-red-500">*</span>
+              {t("saam.signingModal.yourPassword")} <span className="text-red-500">*</span>
             </label>
             <input id="saam-SigningModal-your-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="form-input w-full"
-              placeholder="Re-enter your password to authenticate…"
+              placeholder={t("saam.signingModal.passwordPlaceholder")}
               onKeyDown={(e) => { if (e.key === "Enter") handleSign(); }}
             />
             <p className="text-[10px] text-neutral-400 mt-1">
-              Required to authenticate your digital signature.
+              {t("saam.signingModal.passwordHint")}
             </p>
           </div>
         )}
@@ -217,7 +219,7 @@ export function SigningModal({
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-1">
           <button onClick={onClose} className="btn-secondary text-sm" disabled={loading}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleSign}
@@ -229,7 +231,7 @@ export function SigningModal({
             ) : (
               <span className="material-symbols-outlined text-[16px]">gesture</span>
             )}
-            {loading ? "Signing…" : actionLabel[action]}
+            {loading ? t("saam.signingModal.signing") : t(actionLabel[action])}
           </button>
         </div>
       </div>

@@ -15,15 +15,16 @@ import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  approved:                { label: "Approved",               cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle" },
-  submitted:               { label: "Pending",                cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "pending"      },
-  rejected:                { label: "Rejected",               cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"       },
-  draft:                   { label: "Draft",                  cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"    },
-  liquidated:              { label: "Liquidated",             cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "task_alt"     },
-  returned_for_correction: { label: "Returned for Correction", cls: "text-amber-700 bg-amber-50 border-amber-200",       icon: "undo"         },
-  withdrawn:               { label: "Withdrawn",              cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block"        },
+  approved:                { label: "status.approved",               cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle" },
+  submitted:               { label: "status.pending",                cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "pending"      },
+  rejected:                { label: "status.rejected",               cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"       },
+  draft:                   { label: "status.draft",                  cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"    },
+  liquidated:              { label: "imprest.status.liquidated",             cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "task_alt"     },
+  returned_for_correction: { label: "imprest.status.returnedForCorrection", cls: "text-amber-700 bg-amber-50 border-amber-200",       icon: "undo"         },
+  withdrawn:               { label: "imprest.status.withdrawn",              cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block"        },
 };
 
 function SectionIcon({ icon, color, bg }: { icon: string; color: string; bg: string }) {
@@ -46,6 +47,7 @@ function SkeletonCard() {
 
 export default function ImprestDetailPage() {
   const { success, error: showErrorToast, info } = useToast();
+  const { t } = useI18n();
   const { fmt } = useFormatDate();
   const params = useParams();
   const id = Number(params?.id);
@@ -69,14 +71,14 @@ export default function ImprestDetailPage() {
   useEffect(() => {
     if (!id || Number.isNaN(id)) {
       setLoading(false);
-      setError("Invalid request ID.");
+      setError(t("imprest.certificate.invalidId"));
       return;
     }
     imprestApi.get(id)
       .then((res) => setRequest((res.data as any).data ?? res.data))
-      .catch(() => setError("Failed to load imprest request."))
+      .catch(() => setError(t("imprest.detail.loadFailed")))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   const refreshRequest = async () => {
     const res = await imprestApi.get(id);
@@ -92,12 +94,12 @@ export default function ImprestDetailPage() {
       const notified: string[] = (res.data as any).notified_approvers ?? [];
       await refreshRequest();
       if (notified.length > 0) {
-        success(`Approved. Notified: ${notified.join(", ")}`);
+        success(t("imprest.detail.approvedNotified", { names: notified.join(", ") }));
       } else {
-        success("Request fully approved.");
+        success(t("imprest.detail.fullyApproved"));
       }
     } catch {
-      setError("Failed to approve request.");
+      setError(t("imprest.detail.approveFailed"));
     } finally {
       setActionLoading(false);
     }
@@ -106,7 +108,7 @@ export default function ImprestDetailPage() {
   const handleRetire = async () => {
     if (!request) return;
     const amount = parseFloat(retireAmount);
-    if (isNaN(amount) || amount <= 0) { setRetireError("Please enter a valid amount."); return; }
+    if (isNaN(amount) || amount <= 0) { setRetireError(t("imprest.detail.invalidAmount")); return; }
     setActionLoading(true);
     setRetireError(null);
     try {
@@ -119,7 +121,7 @@ export default function ImprestDetailPage() {
       setRetireNotes("");
       setRetireReceipts(true);
     } catch (e: unknown) {
-      const msg = (e as any)?.response?.data?.message ?? "Failed to submit retirement.";
+      const msg = (e as any)?.response?.data?.message ?? t("imprest.detail.retireFailed");
       setRetireError(msg);
     } finally {
       setActionLoading(false);
@@ -144,7 +146,7 @@ export default function ImprestDetailPage() {
       setShowRejectModal(false);
       setRejectReason("");
     } catch {
-      setError("Failed to reject request.");
+      setError(t("imprest.detail.rejectFailed"));
     } finally {
       setActionLoading(false);
     }
@@ -157,9 +159,9 @@ export default function ImprestDetailPage() {
       await imprestApi.returnForCorrection(request.id, comment);
       await refreshRequest();
       setShowReturnModal(false);
-      success("Request returned to requester for correction.");
+      success(t("imprest.detail.returned"));
     } catch {
-      setError("Failed to return request.");
+      setError(t("imprest.detail.returnFailed"));
     } finally {
       setReturnLoading(false);
     }
@@ -167,14 +169,14 @@ export default function ImprestDetailPage() {
 
   const handleWithdraw = async () => {
     if (!request) return;
-    if (!(await confirm({ title: "Withdraw Request", message: "Withdraw this imprest request? This cannot be undone.", variant: "danger" }))) return;
+    if (!(await confirm({ title: t("imprest.detail.withdrawTitle"), message: t("imprest.detail.withdrawMessage"), variant: "danger" }))) return;
     setActionLoading(true);
     try {
       await imprestApi.withdraw(request.id);
       await refreshRequest();
-      success("Request withdrawn.");
+      success(t("imprest.list.withdrawn"));
     } catch {
-      setError("Failed to withdraw request.");
+      setError(t("imprest.list.withdrawFailed"));
     } finally {
       setActionLoading(false);
     }
@@ -182,14 +184,14 @@ export default function ImprestDetailPage() {
 
   const handleResubmit = async () => {
     if (!request) return;
-    if (!(await confirm({ title: "Resubmit Request", message: "Resubmit this imprest request for approval? It will restart from the first step.", variant: "primary" }))) return;
+    if (!(await confirm({ title: t("imprest.detail.resubmitTitle"), message: t("imprest.detail.resubmitMessage"), variant: "primary" }))) return;
     setActionLoading(true);
     try {
       await imprestApi.resubmit(request.id);
       await refreshRequest();
-      success("Request resubmitted for approval.");
+      success(t("imprest.detail.resubmitted"));
     } catch {
-      setError("Failed to resubmit request.");
+      setError(t("imprest.detail.resubmitFailed"));
     } finally {
       setActionLoading(false);
     }
@@ -215,19 +217,20 @@ export default function ImprestDetailPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-4 flex items-start gap-3">
           <span className="material-symbols-outlined text-red-500 text-[20px] flex-shrink-0 mt-0.5">error_outline</span>
           <div>
-            <p className="text-sm font-semibold text-red-700">Error loading request</p>
-            <p className="text-sm text-red-600 mt-0.5">{error ?? "Request not found."}</p>
+            <p className="text-sm font-semibold text-red-700">{t("imprest.detail.errorLoading")}</p>
+            <p className="text-sm text-red-600 mt-0.5">{error ?? t("imprest.detail.notFound")}</p>
           </div>
         </div>
         <Link href="/imprest" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary transition-colors">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Imprest Requests
+          {t("imprest.backToList")}
         </Link>
       </div>
     );
   }
 
-  const s = statusConfig[request.status] ?? statusConfig.draft;
+  const sBase = statusConfig[request.status] ?? statusConfig.draft;
+  const s = { ...sBase, label: t(sBase.label) };
   const approvalRequest = (request as any).approval_request;
   const currentStep = approvalRequest?.workflow?.steps?.[approvalRequest?.current_step_index];
   const canReturn = approvalRequest?.status === "pending" && currentStep?.allow_return;
@@ -246,7 +249,7 @@ export default function ImprestDetailPage() {
       />
 
       <ModulePageHeader
-        title="Imprest Request"
+        title={t("imprest.detail.title")}
         subtitle={request.purpose}
         breadcrumbs={
           <PageBreadcrumbs
@@ -271,7 +274,7 @@ export default function ImprestDetailPage() {
                 className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
               >
                 <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
-                Certificate
+                {t("imprest.certificate.crumb")}
               </Link>
             )}
             {request.status === "submitted" && approvalRequest?.status === "pending" && (
@@ -281,7 +284,7 @@ export default function ImprestDetailPage() {
                 className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[14px]">block</span>
-                Withdraw
+                {t("imprest.list.withdraw")}
               </button>
             )}
             {isReturnedForCorrection && (
@@ -291,7 +294,7 @@ export default function ImprestDetailPage() {
                 className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[14px]">refresh</span>
-                Resubmit
+                {t("imprest.detail.resubmit")}
               </button>
             )}
           </div>
@@ -303,8 +306,8 @@ export default function ImprestDetailPage() {
         <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
           <span className="material-symbols-outlined text-[18px] text-amber-600 flex-shrink-0 mt-0.5">undo</span>
           <div>
-            <p className="text-sm font-semibold text-amber-800">Returned for Correction</p>
-            <p className="text-xs text-amber-700 mt-0.5">Make the required corrections and resubmit this request.</p>
+            <p className="text-sm font-semibold text-amber-800">{t("imprest.status.returnedForCorrection")}</p>
+            <p className="text-xs text-amber-700 mt-0.5">{t("imprest.detail.returnedHint")}</p>
           </div>
         </div>
       )}
@@ -314,16 +317,16 @@ export default function ImprestDetailPage() {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <SectionIcon icon="timeline" color="text-primary" bg="bg-primary/10" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Request Progress</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("imprest.detail.progress")}</h3>
           </div>
           <PrintButton className="text-xs" />
         </div>
         <StatusTimeline
           steps={[
-            { key: "draft",      label: "Draft",      icon: "edit_note",       completedAt: request.submitted_at ?? undefined },
-            { key: "submitted",  label: "Submitted",  icon: "send",            completedAt: request.submitted_at },
-            { key: "approved",   label: "Approved",   icon: "check_circle",    completedAt: request.approved_at },
-            { key: "liquidated", label: "Liquidated", icon: "receipt_long",    completedAt: request.liquidated_at },
+            { key: "draft",      label: t("status.draft"),      icon: "edit_note",       completedAt: request.submitted_at ?? undefined },
+            { key: "submitted",  label: t("status.submitted"),  icon: "send",            completedAt: request.submitted_at },
+            { key: "approved",   label: t("status.approved"),   icon: "check_circle",    completedAt: request.approved_at },
+            { key: "liquidated", label: t("imprest.status.liquidated"), icon: "receipt_long",    completedAt: request.liquidated_at },
           ]}
           currentStatus={request.status}
           rejectedAt={request.status === "rejected" ? (request.approved_at ?? request.submitted_at) : null}
@@ -338,7 +341,7 @@ export default function ImprestDetailPage() {
       <div className="grid grid-cols-3 gap-3">
         {[
           {
-            label: "Requested",
+            label: t("imprest.detail.requested"),
             value: `${request.currency} ${request.amount_requested.toLocaleString()}`,
             icon: "account_balance_wallet",
             color: "text-neutral-700",
@@ -346,20 +349,20 @@ export default function ImprestDetailPage() {
             bg: "bg-neutral-50",
           },
           {
-            label: "Approved",
+            label: t("status.approved"),
             value: request.amount_approved != null
               ? `${request.currency} ${request.amount_approved.toLocaleString()}`
-              : "Pending",
+              : t("status.pending"),
             icon: "check_circle",
             color: "text-green-600",
             iconColor: "text-green-500",
             bg: "bg-green-50",
           },
           {
-            label: "Liquidated",
+            label: t("imprest.status.liquidated"),
             value: request.amount_liquidated != null
               ? `${request.currency} ${request.amount_liquidated.toLocaleString()}`
-              : "Pending",
+              : t("status.pending"),
             icon: "receipt_long",
             color: "text-blue-600",
             iconColor: "text-blue-500",
@@ -380,7 +383,7 @@ export default function ImprestDetailPage() {
       {request.status === "approved" || request.status === "liquidated" ? (
         <div className="card p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-neutral-500">Liquidation Progress</p>
+            <p className="text-xs font-semibold text-neutral-500">{t("imprest.detail.liquidationProgress")}</p>
             <p className="text-xs font-bold text-neutral-700">{liquidationPct.toFixed(0)}%</p>
           </div>
           <div className="h-2 w-full rounded-full bg-neutral-100 overflow-hidden">
@@ -391,13 +394,13 @@ export default function ImprestDetailPage() {
           </div>
           <div className="flex items-center justify-between mt-2">
             <p className="text-[10px] text-neutral-400">
-              Due: {request.expected_liquidation_date}
+              {t("imprest.detail.due", { date: request.expected_liquidation_date })}
             </p>
             {daysLeft > 0 && daysLeft <= 5 && (
-              <span className="badge badge-warning text-[10px]">{daysLeft}d left</span>
+              <span className="badge badge-warning text-[10px]">{t("imprest.detail.daysLeft", { days: daysLeft })}</span>
             )}
             {daysLeft <= 0 && request.status !== "liquidated" && (
-              <span className="badge badge-danger text-[10px]">Overdue</span>
+              <span className="badge badge-danger text-[10px]">{t("correspondence.hub.overdue")}</span>
             )}
           </div>
         </div>
@@ -408,7 +411,7 @@ export default function ImprestDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="badge" color="text-primary" bg="bg-primary/10" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Submitted By</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("imprest.detail.submittedBy")}</h3>
             {request.submitted_at && (
               <span className="ml-auto text-xs text-neutral-400">
                 {fmt(request.submitted_at)}
@@ -433,28 +436,28 @@ export default function ImprestDetailPage() {
       <div className="card p-5">
         <div className="flex items-center gap-3 mb-4">
           <SectionIcon icon="account_balance_wallet" color="text-amber-600" bg="bg-amber-50" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Request Details</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("imprest.detail.details")}</h3>
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
           <div>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[14px] text-neutral-300">account_tree</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Budget Line</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("imprest.create.budgetLine")}</p>
             </div>
             <p className="font-mono text-xs text-neutral-900">{request.budget_line}</p>
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[14px] text-neutral-300">calendar_today</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Liquidation Deadline</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("imprest.liquidate.deadline")}</p>
             </div>
             <div className="flex items-center gap-2">
               <p className="font-medium text-neutral-900">{request.expected_liquidation_date}</p>
               {daysLeft > 0 && daysLeft <= 5 && (
-                <span className="badge badge-warning text-[10px]">{daysLeft}d left</span>
+                <span className="badge badge-warning text-[10px]">{t("imprest.detail.daysLeft", { days: daysLeft })}</span>
               )}
               {daysLeft <= 0 && request.status !== "liquidated" && (
-                <span className="badge badge-danger text-[10px]">Overdue</span>
+                <span className="badge badge-danger text-[10px]">{t("correspondence.hub.overdue")}</span>
               )}
             </div>
           </div>
@@ -462,7 +465,7 @@ export default function ImprestDetailPage() {
         <div className="mt-4 pt-4 border-t border-neutral-50">
           <div className="flex items-center gap-1.5 mb-2">
             <span className="material-symbols-outlined text-[14px] text-neutral-300">description</span>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Purpose</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("imprest.create.purposeLabel")}</p>
           </div>
           <p className="text-sm text-neutral-700 leading-relaxed">{request.purpose}</p>
         </div>
@@ -470,7 +473,7 @@ export default function ImprestDetailPage() {
           <div className="mt-3 pt-3 border-t border-neutral-50">
             <div className="flex items-center gap-1.5 mb-2">
               <span className="material-symbols-outlined text-[14px] text-neutral-300">chat_bubble</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Justification</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("imprest.create.step.justification")}</p>
             </div>
             <p className="text-sm text-neutral-700 leading-relaxed">{request.justification}</p>
           </div>
@@ -487,7 +490,7 @@ export default function ImprestDetailPage() {
               bg={request.status === "approved" ? "bg-green-50" : "bg-red-50"}
             />
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-              {request.status === "approved" ? "Approved By" : "Reviewed By"}
+              {request.status === "approved" ? t("imprest.detail.approvedBy") : t("imprest.detail.reviewedBy")}
             </h3>
             {request.approved_at && (
               <span className="ml-auto text-xs text-neutral-400">
@@ -520,12 +523,12 @@ export default function ImprestDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-3">
             <SectionIcon icon="receipt_long" color="text-blue-600" bg="bg-blue-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Retire / Liquidate Imprest</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("imprest.detail.retireTitle")}</h3>
             {!showWizard && (
               <div className="ml-auto">
                 <button type="button" onClick={openWizard} className="btn-primary text-sm py-1.5 px-3 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[16px]">receipt_long</span>
-                  Submit Retirement
+                  {t("imprest.detail.submitRetirement")}
                 </button>
               </div>
             )}
@@ -533,19 +536,16 @@ export default function ImprestDetailPage() {
 
           {!showWizard ? (
             <p className="text-sm text-neutral-600">
-              This imprest has been approved for{" "}
-              <strong>{request.currency} {(request.amount_approved ?? 0).toLocaleString()}</strong>.
-              Submit your retirement with receipts before{" "}
-              <strong>{fmt(request.expected_liquidation_date)}</strong>.
+              {t("imprest.detail.retireIntro", { amount: `${request.currency} ${(request.amount_approved ?? 0).toLocaleString()}`, date: fmt(request.expected_liquidation_date) })}
             </p>
           ) : (
             <div className="space-y-6">
               {/* Stepper */}
               <Stepper
                 steps={[
-                  { label: "Summary",   description: "Review details"   },
-                  { label: "Receipts",  description: "Expenditure info" },
-                  { label: "Confirm",   description: "Submit"           },
+                  { label: t("imprest.detail.wizard.summary"),   description: t("imprest.detail.wizard.summaryDesc")   },
+                  { label: t("imprest.detail.wizard.receipts"),  description: t("imprest.detail.wizard.receiptsDesc") },
+                  { label: t("imprest.detail.wizard.confirm"),   description: t("common.submit")           },
                 ]}
                 currentStep={wizardStep}
               />
@@ -554,28 +554,28 @@ export default function ImprestDetailPage() {
               {wizardStep === 1 && (
                 <div className="space-y-4">
                   <div className="rounded-xl bg-blue-50 border border-blue-100 p-4 space-y-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-2">Original Imprest Details</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-2">{t("imprest.detail.originalDetails")}</p>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">Reference</p>
+                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">{t("correspondence.col.reference")}</p>
                         <p className="font-mono font-semibold text-neutral-800">{request.reference_number}</p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">Purpose</p>
+                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">{t("imprest.create.purposeLabel")}</p>
                         <p className="font-medium text-neutral-800">{request.purpose}</p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">Amount Approved</p>
+                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">{t("imprest.certificate.amountApproved")}</p>
                         <p className="text-lg font-bold text-green-700">{request.currency} {(request.amount_approved ?? 0).toLocaleString()}</p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">Liquidation Deadline</p>
+                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">{t("imprest.liquidate.deadline")}</p>
                         <p className={cn("font-semibold", daysLeft <= 0 ? "text-red-600" : daysLeft <= 5 ? "text-amber-600" : "text-neutral-800")}>
                           {fmt(request.expected_liquidation_date)}
                           {daysLeft <= 0
-                            ? " — Overdue"
+                            ? ` — ${t("correspondence.hub.overdue")}`
                             : daysLeft <= 5
-                              ? ` — ${daysLeft}d left`
+                              ? ` — ${t("imprest.detail.daysLeft", { days: daysLeft })}`
                               : ""}
                         </p>
                       </div>
@@ -583,7 +583,7 @@ export default function ImprestDetailPage() {
                   </div>
                   <div className="flex justify-end">
                     <button type="button" onClick={() => setWizardStep(2)} className="btn-primary py-2 px-5 text-sm flex items-center gap-2">
-                      Next: Receipts
+                      {t("imprest.detail.nextReceipts")}
                       <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </button>
                   </div>
@@ -596,7 +596,7 @@ export default function ImprestDetailPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="imprest-retire-amount" className="block text-xs font-semibold text-neutral-700 mb-1">
-                        Amount Spent ({request.currency}) <span className="text-red-500">*</span>
+                        {t("imprest.liquidate.amountSpent", { currency: request.currency })} <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="imprest-retire-amount"
@@ -604,26 +604,26 @@ export default function ImprestDetailPage() {
                         step="0.01"
                         min="0"
                         className="form-input w-full"
-                        placeholder={`Max: ${request.amount_approved ?? request.amount_requested}`}
+                        placeholder={t("imprest.detail.max", { amount: request.amount_approved ?? request.amount_requested })}
                         value={retireAmount}
                         onChange={(e) => setRetireAmount(e.target.value)}
                       />
                       {request.amount_approved && retireAmount && Number(retireAmount) > request.amount_approved && (
-                        <p className="text-xs text-amber-600 mt-1">Amount exceeds approved value</p>
+                        <p className="text-xs text-amber-600 mt-1">{t("imprest.detail.exceeds")}</p>
                       )}
                       {request.amount_approved && retireAmount && Number(retireAmount) < request.amount_approved && Number(retireAmount) > 0 && (
                         <p className="text-xs text-blue-600 mt-1">
-                          Surplus: {request.currency} {(request.amount_approved - Number(retireAmount)).toLocaleString()} to be returned
+                          {t("imprest.detail.surplusReturn", { amount: `${request.currency} ${(request.amount_approved - Number(retireAmount)).toLocaleString()}` })}
                         </p>
                       )}
                     </div>
                     <div>
-                      <label htmlFor="imprest-retire-notes" className="block text-xs font-semibold text-neutral-700 mb-1">Notes / Explanation</label>
+                      <label htmlFor="imprest-retire-notes" className="block text-xs font-semibold text-neutral-700 mb-1">{t("imprest.liquidate.notes")}</label>
                       <input
                         id="imprest-retire-notes"
                         type="text"
                         className="form-input w-full"
-                        placeholder="Optional: notes on expenditure"
+                        placeholder={t("imprest.detail.notesPlaceholder")}
                         value={retireNotes}
                         onChange={(e) => setRetireNotes(e.target.value)}
                       />
@@ -631,7 +631,7 @@ export default function ImprestDetailPage() {
                   </div>
 
                   <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4">
-                    <p className="text-xs font-semibold text-neutral-600 mb-2">Receipt Upload</p>
+                    <p className="text-xs font-semibold text-neutral-600 mb-2">{t("imprest.detail.receiptUpload")}</p>
                     <label htmlFor="imprest-retire-receipts" className="flex items-center gap-3 cursor-pointer select-none">
                       <input
                         id="imprest-retire-receipts"
@@ -641,7 +641,7 @@ export default function ImprestDetailPage() {
                         className="h-4 w-4 rounded border-neutral-300 text-primary accent-primary"
                       />
                       <span className="text-sm text-neutral-700">
-                        I confirm receipts / supporting documents are attached or will be submitted to Finance
+                        {t("imprest.detail.confirmReceipts")}
                       </span>
                     </label>
                   </div>
@@ -649,7 +649,7 @@ export default function ImprestDetailPage() {
                   <div className="flex justify-between">
                     <button type="button" onClick={() => setWizardStep(1)} className="btn-secondary py-2 px-4 text-sm flex items-center gap-2">
                       <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                      Back
+                      {t("common.back")}
                     </button>
                     <button
                       type="button"
@@ -657,7 +657,7 @@ export default function ImprestDetailPage() {
                       disabled={!retireAmount || Number(retireAmount) <= 0}
                       className="btn-primary py-2 px-5 text-sm flex items-center gap-2 disabled:opacity-50"
                     >
-                      Next: Confirm
+                      {t("imprest.detail.nextConfirm")}
                       <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </button>
                   </div>
@@ -676,17 +676,17 @@ export default function ImprestDetailPage() {
 
                   <div className="rounded-xl border border-neutral-200 overflow-hidden">
                     <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-100">
-                      <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Retirement Summary</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("imprest.detail.retirementSummary")}</p>
                     </div>
                     <div className="p-4 space-y-3 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-neutral-500">Approved amount</span>
+                        <span className="text-neutral-500">{t("imprest.detail.approvedAmount")}</span>
                         <span className="font-semibold text-neutral-800">
                           {request.currency} {(request.amount_approved ?? 0).toLocaleString()}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-neutral-500">Amount spent</span>
+                        <span className="text-neutral-500">{t("imprest.detail.amountSpent")}</span>
                         <span className="font-bold text-neutral-900">
                           {request.currency} {Number(retireAmount).toLocaleString()}
                         </span>
@@ -694,7 +694,7 @@ export default function ImprestDetailPage() {
                       {request.amount_approved && Number(retireAmount) !== request.amount_approved && (
                         <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
                           <span className={cn("text-sm font-semibold", Number(retireAmount) > (request.amount_approved ?? 0) ? "text-red-600" : "text-blue-600")}>
-                            {Number(retireAmount) > (request.amount_approved ?? 0) ? "Over by" : "Surplus to return"}
+                            {Number(retireAmount) > (request.amount_approved ?? 0) ? t("imprest.detail.overBy") : t("imprest.detail.surplusToReturn")}
                           </span>
                           <span className={cn("font-bold", Number(retireAmount) > (request.amount_approved ?? 0) ? "text-red-600" : "text-blue-600")}>
                             {request.currency} {Math.abs((request.amount_approved ?? 0) - Number(retireAmount)).toLocaleString()}
@@ -702,14 +702,14 @@ export default function ImprestDetailPage() {
                         </div>
                       )}
                       <div className="flex items-center justify-between">
-                        <span className="text-neutral-500">Receipts attached</span>
+                        <span className="text-neutral-500">{t("imprest.detail.receiptsAttached")}</span>
                         <span className={cn("font-semibold", retireReceipts ? "text-green-700" : "text-amber-600")}>
-                          {retireReceipts ? "Yes" : "No — to be submitted separately"}
+                          {retireReceipts ? t("imprest.detail.yes") : t("imprest.detail.noSeparately")}
                         </span>
                       </div>
                       {retireNotes && (
                         <div className="pt-2 border-t border-neutral-100">
-                          <span className="text-neutral-400 text-xs">Notes: </span>
+                          <span className="text-neutral-400 text-xs">{t("imprest.detail.notesLabel")} </span>
                           <span className="text-neutral-700 text-sm">{retireNotes}</span>
                         </div>
                       )}
@@ -719,14 +719,14 @@ export default function ImprestDetailPage() {
                   <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 flex items-start gap-2">
                     <span className="material-symbols-outlined text-amber-500 text-[18px] flex-shrink-0 mt-0.5">info</span>
                     <p className="text-xs text-amber-700">
-                      Once submitted, this retirement cannot be modified. Ensure all figures are correct before proceeding.
+                      {t("imprest.detail.retireWarning")}
                     </p>
                   </div>
 
                   <div className="flex justify-between">
                     <button type="button" onClick={() => setWizardStep(2)} disabled={actionLoading} className="btn-secondary py-2 px-4 text-sm flex items-center gap-2">
                       <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                      Back
+                      {t("common.back")}
                     </button>
                     <div className="flex gap-3">
                       <button
@@ -735,7 +735,7 @@ export default function ImprestDetailPage() {
                         disabled={actionLoading}
                         className="btn-secondary py-2 px-4 text-sm"
                       >
-                        Cancel
+                        {t("common.cancel")}
                       </button>
                       <button
                         type="button"
@@ -747,7 +747,7 @@ export default function ImprestDetailPage() {
                           ? <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                           : <span className="material-symbols-outlined text-[16px]">check_circle</span>
                         }
-                        {actionLoading ? "Submitting…" : "Submit Retirement"}
+                        {actionLoading ? t("imprest.create.submitting") : t("imprest.detail.submitRetirement")}
                       </button>
                     </div>
                   </div>
@@ -763,9 +763,9 @@ export default function ImprestDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="gavel" color="text-amber-600" bg="bg-amber-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Approval Decision</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("imprest.detail.decision")}</h3>
           </div>
-          <p className="text-sm text-neutral-500 mb-4">Review the imprest request details above and take an action.</p>
+          <p className="text-sm text-neutral-500 mb-4">{t("imprest.detail.decisionHint")}</p>
           <div className="flex gap-3 flex-wrap">
             <button
               onClick={handleApprove}
@@ -773,7 +773,7 @@ export default function ImprestDetailPage() {
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 shadow-sm"
             >
               <span className="material-symbols-outlined text-[18px]">check_circle</span>
-              {actionLoading ? "Processing…" : "Approve Request"}
+              {actionLoading ? t("correspondence.detail.processing") : t("imprest.detail.approve")}
             </button>
             {canReturn && (
               <button
@@ -782,7 +782,7 @@ export default function ImprestDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">undo</span>
-                Return
+                {t("common.return")}
               </button>
             )}
             <button
@@ -791,7 +791,7 @@ export default function ImprestDetailPage() {
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">cancel</span>
-              Reject
+              {t("common.reject")}
             </button>
           </div>
         </div>
@@ -800,7 +800,7 @@ export default function ImprestDetailPage() {
       {/* Back link */}
       <Link href="/imprest" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary transition-colors">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-        Back to Imprest Requests
+        {t("imprest.backToList")}
       </Link>
 
       {/* Return for Correction Modal */}
@@ -820,14 +820,14 @@ export default function ImprestDetailPage() {
                 <span className="material-symbols-outlined text-red-600 text-[20px]">cancel</span>
               </div>
               <div>
-                <h3 className="text-base font-bold text-neutral-900">Reject Imprest Request</h3>
-                <p className="text-xs text-neutral-400">A reason is required</p>
+                <h3 className="text-base font-bold text-neutral-900">{t("imprest.detail.rejectTitle")}</h3>
+                <p className="text-xs text-neutral-400">{t("imprest.detail.reasonRequired")}</p>
               </div>
             </div>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Enter your reason for rejection…"
+              placeholder={t("imprest.detail.rejectPlaceholder")}
               rows={3}
               className="form-input resize-none"
             />
@@ -836,14 +836,14 @@ export default function ImprestDetailPage() {
                 onClick={() => { setShowRejectModal(false); setRejectReason(""); }}
                 className="btn-secondary flex-1 justify-center"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleReject}
                 disabled={actionLoading || !rejectReason.trim()}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                {actionLoading ? "Rejecting…" : "Confirm Rejection"}
+                {actionLoading ? t("imprest.detail.rejecting") : t("imprest.detail.confirmRejection")}
               </button>
             </div>
           </div>

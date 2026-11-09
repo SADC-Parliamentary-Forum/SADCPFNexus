@@ -6,15 +6,16 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { conductApi, tenantUsersApi, type TenantUserOption } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const RECORD_TYPES = [
-  { id: "commendation",          label: "Commendation",           icon: "stars",              color: "text-green-700 bg-green-50 border-green-200",   activeColor: "bg-green-600 text-white border-green-600" },
-  { id: "verbal_counseling",     label: "Verbal Counseling",      icon: "record_voice_over",  color: "text-amber-700 bg-amber-50 border-amber-200",   activeColor: "bg-amber-500 text-white border-amber-500" },
-  { id: "written_warning",       label: "Written Warning",        icon: "warning",            color: "text-orange-700 bg-orange-50 border-orange-200", activeColor: "bg-orange-500 text-white border-orange-500" },
-  { id: "final_warning",         label: "Final Warning",          icon: "report",             color: "text-red-700 bg-red-50 border-red-200",         activeColor: "bg-red-600 text-white border-red-600" },
-  { id: "performance_improvement", label: "Performance Improvement", icon: "trending_up",    color: "text-blue-700 bg-blue-50 border-blue-200",      activeColor: "bg-blue-600 text-white border-blue-600" },
-  { id: "suspension",            label: "Suspension",             icon: "block",              color: "text-red-700 bg-red-50 border-red-200",         activeColor: "bg-red-600 text-white border-red-600" },
-  { id: "dismissal",             label: "Dismissal",              icon: "person_off",         color: "text-neutral-700 bg-neutral-50 border-neutral-200", activeColor: "bg-neutral-800 text-white border-neutral-800" },
+  { id: "commendation",          label: "hr.conduct.type.commendation",           icon: "stars",              color: "text-green-700 bg-green-50 border-green-200",   activeColor: "bg-green-600 text-white border-green-600" },
+  { id: "verbal_counseling",     label: "hr.conduct.type.verbalCounseling",      icon: "record_voice_over",  color: "text-amber-700 bg-amber-50 border-amber-200",   activeColor: "bg-amber-500 text-white border-amber-500" },
+  { id: "written_warning",       label: "hr.conduct.type.writtenWarning",        icon: "warning",            color: "text-orange-700 bg-orange-50 border-orange-200", activeColor: "bg-orange-500 text-white border-orange-500" },
+  { id: "final_warning",         label: "hr.conduct.type.finalWarning",          icon: "report",             color: "text-red-700 bg-red-50 border-red-200",         activeColor: "bg-red-600 text-white border-red-600" },
+  { id: "performance_improvement", label: "hr.conduct.type.performanceImprovement", icon: "trending_up",    color: "text-blue-700 bg-blue-50 border-blue-200",      activeColor: "bg-blue-600 text-white border-blue-600" },
+  { id: "suspension",            label: "hr.conduct.type.suspension",             icon: "block",              color: "text-red-700 bg-red-50 border-red-200",         activeColor: "bg-red-600 text-white border-red-600" },
+  { id: "dismissal",             label: "hr.conduct.type.dismissal",              icon: "person_off",         color: "text-neutral-700 bg-neutral-50 border-neutral-200", activeColor: "bg-neutral-800 text-white border-neutral-800" },
 ];
 
 function UserAutocomplete({
@@ -25,6 +26,7 @@ function UserAutocomplete({
   onSelect: (u: TenantUserOption | null) => void;
   required?: boolean;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState(value?.name ?? "");
   const [options, setOptions] = useState<TenantUserOption[]>([]);
   const [open, setOpen] = useState(false);
@@ -32,14 +34,14 @@ function UserAutocomplete({
 
   useEffect(() => {
     if (!query.trim() || (value && query === value.name)) { setOptions([]); return; }
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       try {
         const r = await tenantUsersApi.list({ search: query });
         setOptions(r.data.data ?? []);
         setOpen(true);
       } catch { setOptions([]); }
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [query, value]);
 
   useEffect(() => {
@@ -53,7 +55,7 @@ function UserAutocomplete({
       <label htmlFor="hr-conduct-new-field" className="block text-xs font-semibold text-neutral-700 mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
       <input id="hr-conduct-new-field"
         className="form-input"
-        placeholder="Search by name or email…"
+        placeholder={t("hr.conduct.new.searchUser")}
         value={query}
         onChange={(e) => { setQuery(e.target.value); onSelect(null); }}
         autoComplete="off"
@@ -78,6 +80,7 @@ function UserAutocomplete({
 }
 
 export default function NewConductRecordPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -110,19 +113,19 @@ export default function NewConductRecordPage() {
         outcome: outcome || undefined,
         is_confidential: isConfidential,
       });
-      toast.success("Conduct record created");
+      toast.success(t("hr.conduct.new.created"));
       router.push("/hr/conduct");
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string };
-      const msg = Object.values(ax.response?.data?.errors ?? {}).flat()[0] ?? ax.response?.data?.message ?? "Failed to create record.";
+      const msg = Object.values(ax.response?.data?.errors ?? {}).flat()[0] ?? ax.response?.data?.message ?? t("hr.conduct.new.createFailed");
       setError(msg);
-      toast.error("Conduct record not created", msg);
+      toast.error(t("hr.conduct.new.notCreated"), msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const selectedType = RECORD_TYPES.find((t) => t.id === recordType)!;
+  const selectedType = RECORD_TYPES.find((rt) => rt.id === recordType)!;
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -132,9 +135,9 @@ export default function NewConductRecordPage() {
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
         </Link>
         <ModulePageHeader
-        title="New Conduct Record"
-        subtitle="Create a formal conduct, performance, or commendation record for a staff member."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "New Conduct Record" }]} />}
+        title={t("hr.conduct.new.title")}
+        subtitle={t("hr.conduct.new.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("hr.conduct.new.title") }]} />}
       />
       </div>
 
@@ -145,14 +148,14 @@ export default function NewConductRecordPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <span className="material-symbols-outlined text-primary text-[18px]">label</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900">Record Type</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("hr.conduct.new.recordType")}</h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {RECORD_TYPES.map((t) => (
-              <button key={t.id} type="button" onClick={() => setRecordType(t.id)}
-                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all text-sm font-medium ${recordType === t.id ? t.activeColor : "bg-white border-neutral-200 hover:border-neutral-300 text-neutral-700"}`}>
-                <span className={`material-symbols-outlined text-[18px] ${recordType === t.id ? "" : t.color.split(" ")[0]}`} style={{ fontVariationSettings: "'FILL' 1" }}>{t.icon}</span>
-                {t.label}
+            {RECORD_TYPES.map((rt) => (
+              <button key={rt.id} type="button" onClick={() => setRecordType(rt.id)}
+                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all text-sm font-medium ${recordType === rt.id ? rt.activeColor : "bg-white border-neutral-200 hover:border-neutral-300 text-neutral-700"}`}>
+                <span className={`material-symbols-outlined text-[18px] ${recordType === rt.id ? "" : rt.color.split(" ")[0]}`} style={{ fontVariationSettings: "'FILL' 1" }}>{rt.icon}</span>
+                {t(rt.label)}
               </button>
             ))}
           </div>
@@ -164,45 +167,45 @@ export default function NewConductRecordPage() {
             <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${selectedType.color.split(" ").slice(1).join(" ")}`}>
               <span className={`material-symbols-outlined text-[18px] ${selectedType.color.split(" ")[0]}`} style={{ fontVariationSettings: "'FILL' 1" }}>{selectedType.icon}</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900">Record Details</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("hr.conduct.new.recordDetails")}</h3>
           </div>
 
-          <UserAutocomplete label="Employee" value={employee} onSelect={setEmployee} required />
+          <UserAutocomplete label={t("hr.conduct.employee")} value={employee} onSelect={setEmployee} required />
 
           <div>
-            <label htmlFor="hr-conduct-new-title" className="block text-xs font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
-            <input id="hr-conduct-new-title" className="form-input" placeholder="Brief summary of this record…" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <label htmlFor="hr-conduct-new-title" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.conduct.titleLabel")} <span className="text-red-500">*</span></label>
+            <input id="hr-conduct-new-title" className="form-input" placeholder={t("hr.conduct.new.titlePlaceholder")} value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
           <div>
-            <label htmlFor="hr-conduct-new-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description <span className="text-red-500">*</span></label>
+            <label htmlFor="hr-conduct-new-description" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.conduct.description")} <span className="text-red-500">*</span></label>
             <textarea id="hr-conduct-new-description" rows={5} className="form-input resize-none"
-              placeholder="Detailed account of the conduct issue or commendation — include context, specific actions, dates, and impact…"
+              placeholder={t("hr.conduct.new.descriptionPlaceholder")}
               value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="hr-conduct-new-issue-date" className="block text-xs font-semibold text-neutral-700 mb-1">Issue Date <span className="text-red-500">*</span></label>
+              <label htmlFor="hr-conduct-new-issue-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.conduct.issueDate")} <span className="text-red-500">*</span></label>
               <input id="hr-conduct-new-issue-date" type="date" className="form-input" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
             </div>
             <div>
-              <label htmlFor="hr-conduct-new-incident-date-if-applicable" className="block text-xs font-semibold text-neutral-700 mb-1">Incident Date (if applicable)</label>
+              <label htmlFor="hr-conduct-new-incident-date-if-applicable" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.conduct.new.incidentDate")}</label>
               <input id="hr-conduct-new-incident-date-if-applicable" type="date" className="form-input" value={incidentDate} onChange={(e) => setIncidentDate(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label htmlFor="hr-conduct-new-outcome-decision-optional" className="block text-xs font-semibold text-neutral-700 mb-1">Outcome / Decision (optional)</label>
-            <input id="hr-conduct-new-outcome-decision-optional" className="form-input" placeholder="e.g. First written warning issued; further action on recurrence" value={outcome} onChange={(e) => setOutcome(e.target.value)} />
+            <label htmlFor="hr-conduct-new-outcome-decision-optional" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.conduct.new.outcome")}</label>
+            <input id="hr-conduct-new-outcome-decision-optional" className="form-input" placeholder={t("hr.conduct.new.outcomePlaceholder")} value={outcome} onChange={(e) => setOutcome(e.target.value)} />
           </div>
 
           <label htmlFor="hr-conduct-new-setisconfidential-e-target-checked-classname-h-4" className="flex items-center gap-3 cursor-pointer select-none">
             <input id="hr-conduct-new-setisconfidential-e-target-checked-classname-h-4" type="checkbox" checked={isConfidential} onChange={(e) => setIsConfidential(e.target.checked)}
               className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary" />
             <div>
-              <p className="text-sm font-medium text-neutral-900">Mark as Confidential</p>
-              <p className="text-xs text-neutral-400">Only HR administrators and the reviewer will be able to view this record.</p>
+              <p className="text-sm font-medium text-neutral-900">{t("hr.conduct.new.confidential")}</p>
+              <p className="text-xs text-neutral-400">{t("hr.conduct.new.confidentialHint")}</p>
             </div>
           </label>
         </div>
@@ -217,12 +220,12 @@ export default function NewConductRecordPage() {
         <div className="flex justify-between">
           <Link href="/hr/conduct" className="btn-secondary px-5 py-2.5 text-sm flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">close</span>
-            Cancel
+            {t("common.cancel")}
           </Link>
           <button type="submit" disabled={!canSubmit || submitting}
             className="btn-primary px-6 py-2.5 text-sm flex items-center gap-2 disabled:opacity-40">
             <span className="material-symbols-outlined text-[18px]">save</span>
-            {submitting ? "Saving…" : "Create Record"}
+            {submitting ? t("hr.conduct.saving") : t("hr.conduct.new.create")}
           </button>
         </div>
       </form>

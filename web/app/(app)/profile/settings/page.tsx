@@ -20,11 +20,11 @@ import { readStoredUser } from "@/lib/session";
 
 const SETTINGS_KEY = PREFS_KEY;
 
-function accountNav(profileHref: string) {
+function accountNav(profileHref: string, t: (key: string) => string) {
   return [
-    { label: "Profile", href: profileHref, icon: "person" },
-    { label: "Preferences", href: "/profile/settings", icon: "tune" },
-    { label: "Security", href: "/profile/security", icon: "lock" },
+    { label: t("profile.account.profile"), href: profileHref, icon: "person" },
+    { label: t("profile.account.preferences"), href: "/profile/settings", icon: "tune" },
+    { label: t("profile.account.security"), href: "/profile/security", icon: "lock" },
   ];
 }
 
@@ -82,7 +82,7 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 export default function ProfileSettingsPage() {
   const { success, error, info } = useToast();
   const { theme, setTheme } = useTheme();
-  const { locale, setLocale } = useI18n();
+  const { locale, setLocale, t } = useI18n();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [inboxPrefs, setInboxPrefs] = useState<NotificationPreference[]>([]);
   const [inboxBusy, setInboxBusy] = useState(false);
@@ -115,7 +115,7 @@ export default function ProfileSettingsPage() {
     e.preventDefault();
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(prefs));
     window.dispatchEvent(new Event("sadcpf:prefs-updated"));
-    success("Preferences saved.");
+    success(t("profile.settings.saved"));
   };
 
   const saveInboxPrefs = async () => {
@@ -133,9 +133,9 @@ export default function ProfileSettingsPage() {
       });
       const res = await userNotificationsApi.updatePreferences(payload);
       setInboxPrefs(res.data.data ?? payload);
-      success("Inbox delivery saved. Mandatory notices still deliver.");
+      success(t("profile.settings.inboxSaved"));
     } catch {
-      error("Could not save inbox delivery preferences.");
+      error(t("profile.settings.inboxFailed"));
     } finally {
       setInboxBusy(false);
     }
@@ -148,7 +148,7 @@ export default function ProfileSettingsPage() {
       const payload = (res.data as { data?: { suggestion?: unknown } }).data;
       setSuggestion(payload?.suggestion ?? payload);
     } catch {
-      error("Could not load a digest suggestion.");
+      error(t("profile.settings.suggestionFailed"));
     } finally {
       setInboxBusy(false);
     }
@@ -171,20 +171,20 @@ export default function ProfileSettingsPage() {
       }
       return next;
     });
-    info("Suggested digest applied to the form. Save to persist. Mandatory categories stay on.");
+    info(t("profile.settings.suggestionApplied"));
   };
 
   return (
     <div className="w-full min-w-0 space-y-6">
 <ModulePageHeader
-        title="Preferences & Settings"
-        subtitle="Customise notifications, display format, language, and accessibility options."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Preferences & Settings" }]} />}
+        title={t("header.preferences")}
+        subtitle={t("profile.settings.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("header.preferences") }]} />}
       />
 
       {/* Sub nav */}
       <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-700">
-        {accountNav(profileHref).map((n) => (
+        {accountNav(profileHref, t).map((n) => (
           <Link key={n.href} href={n.href}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${n.href === "/profile/settings" ? "border-primary text-primary" : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"}`}>
             <span className="material-symbols-outlined text-[16px]">{n.icon}</span>
@@ -200,12 +200,12 @@ export default function ProfileSettingsPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <span className="material-symbols-outlined text-primary text-[18px]">notifications</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Notification Triggers</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("profile.settings.triggersTitle")}</h3>
           </div>
-          <Toggle checked={prefs.notifyTravelApproved} onChange={(v) => set("notifyTravelApproved", v)} label="Travel request approved or rejected" />
-          <Toggle checked={prefs.notifyLeaveApproved} onChange={(v) => set("notifyLeaveApproved", v)} label="Leave request approved or rejected" />
-          <Toggle checked={prefs.notifyImprestDue} onChange={(v) => set("notifyImprestDue", v)} label="Imprest retirement due reminder" description="Notified 3 days before deadline" />
-          <Toggle checked={prefs.notifySystemAlerts} onChange={(v) => set("notifySystemAlerts", v)} label="System alerts and announcements" />
+          <Toggle checked={prefs.notifyTravelApproved} onChange={(v) => set("notifyTravelApproved", v)} label={t("profile.settings.notifyTravel")} />
+          <Toggle checked={prefs.notifyLeaveApproved} onChange={(v) => set("notifyLeaveApproved", v)} label={t("profile.settings.notifyLeave")} />
+          <Toggle checked={prefs.notifyImprestDue} onChange={(v) => set("notifyImprestDue", v)} label={t("profile.settings.notifyImprest")} description={t("profile.settings.notifyImprestHint")} />
+          <Toggle checked={prefs.notifySystemAlerts} onChange={(v) => set("notifySystemAlerts", v)} label={t("profile.settings.notifySystem")} />
         </div>
 
         {/* Delivery channels */}
@@ -214,10 +214,10 @@ export default function ProfileSettingsPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50">
               <span className="material-symbols-outlined text-teal-600 text-[18px]">send</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Delivery Channels</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("profile.settings.channelsTitle")}</h3>
           </div>
-          <Toggle checked={prefs.notifyEmail} onChange={(v) => set("notifyEmail", v)} label="Email notifications" description="Receive notifications to your registered email" />
-          <Toggle checked={prefs.notifyInApp} onChange={(v) => set("notifyInApp", v)} label="In-app notifications" description="Show notification badge and bell alerts" />
+          <Toggle checked={prefs.notifyEmail} onChange={(v) => set("notifyEmail", v)} label={t("setup.emailNotifications")} description={t("profile.settings.emailHint")} />
+          <Toggle checked={prefs.notifyInApp} onChange={(v) => set("notifyInApp", v)} label={t("setup.inAppNotifications")} description={t("profile.settings.inAppHint")} />
         </div>
 
         <div className="card p-6 space-y-3">
@@ -225,16 +225,16 @@ export default function ProfileSettingsPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <span className="material-symbols-outlined text-primary text-[18px]">inbox</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Inbox delivery (server)</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("profile.settings.inboxTitle")}</h3>
           </div>
           <p className="text-xs text-neutral-500">
-            Digest applies to optional categories only. Workflow, security, and compliance notices cannot be switched off.
+            {t("profile.settings.inboxHint")}
           </p>
           {inboxPrefs.length === 0 ? (
             <EmptyState
               icon="inbox"
-              title="No server preference rows yet."
-              description="Request a suggestion or save after the first notice arrives."
+              title={t("profile.settings.inboxEmpty")}
+              description={t("profile.settings.inboxEmptyHint")}
               className="py-6 min-h-0"
             />
           ) : (
@@ -243,9 +243,9 @@ export default function ProfileSettingsPage() {
                 const mandatory = MANDATORY_CATEGORIES.has(row.category);
                 return (
                   <div key={`${row.category}-${idx}`} className="rounded-lg border border-neutral-100 p-3">
-                    <p className="text-sm font-medium capitalize">{row.category.replace(/_/g, " ")}{mandatory ? " (mandatory)" : ""}</p>
+                    <p className="text-sm font-medium capitalize">{mandatory ? t("profile.settings.categoryMandatory", { category: row.category.replace(/_/g, " ") }) : row.category.replace(/_/g, " ")}</p>
                     <label htmlFor={`profile-settings-digest-item-immediate-daily-weekly-off-optional--${idx}`} className="mt-2 block text-xs font-medium text-neutral-500">
-                      Digest
+                      {t("profile.settings.digest")}
                       <select id={`profile-settings-digest-item-immediate-daily-weekly-off-optional--${idx}`}
                         className="form-input mt-1"
                         value={row.digest_mode ?? "immediate"}
@@ -255,10 +255,10 @@ export default function ProfileSettingsPage() {
                           setInboxPrefs((rows) => rows.map((item, i) => (i === idx ? { ...item, digest_mode } : item)));
                         }}
                       >
-                        <option value="immediate">Immediate</option>
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="off">Off (optional only)</option>
+                        <option value="immediate">{t("profile.settings.digest.immediate")}</option>
+                        <option value="daily">{t("profile.settings.digest.daily")}</option>
+                        <option value="weekly">{t("profile.settings.digest.weekly")}</option>
+                        <option value="off">{t("profile.settings.digest.off")}</option>
                       </select>
                     </label>
                   </div>
@@ -268,13 +268,13 @@ export default function ProfileSettingsPage() {
           )}
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-secondary text-sm" disabled={inboxBusy} onClick={() => void loadSuggestions()}>
-              {inboxBusy ? "Working…" : "Suggest digest"}
+              {inboxBusy ? t("profile.settings.working") : t("profile.settings.suggest")}
             </button>
             <button type="button" className="btn-secondary text-sm" disabled={inboxBusy || !suggestion} onClick={() => applySuggestedDigest()}>
-              Apply optional suggestion
+              {t("profile.settings.applySuggestion")}
             </button>
             <button type="button" className="btn-primary text-sm" disabled={inboxBusy} onClick={() => void saveInboxPrefs()}>
-              Save inbox delivery
+              {t("profile.settings.saveInbox")}
             </button>
           </div>
           {suggestion ? <LabelledRecord value={suggestion} /> : null}
@@ -286,11 +286,11 @@ export default function ProfileSettingsPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
               <span className="material-symbols-outlined text-amber-600 text-[18px]">language</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Display & Locale</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("profile.settings.displayTitle")}</h3>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="profile-settings-language" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Language</label>
+              <label htmlFor="profile-settings-language" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">{t("common.language")}</label>
               <select id="profile-settings-language"
                 className="form-input"
                 value={prefs.language}
@@ -306,18 +306,18 @@ export default function ProfileSettingsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="profile-settings-timezone" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Timezone</label>
+              <label htmlFor="profile-settings-timezone" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">{t("profile.settings.timezone")}</label>
               <select id="profile-settings-timezone" className="form-input" value={prefs.timezone} onChange={(e) => set("timezone", e.target.value)}>
-                {TIMEZONES.map((t) => <option key={t}>{t}</option>)}
+                {TIMEZONES.map((tz) => <option key={tz}>{tz}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="profile-settings-date-format" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Date Format</label>
+              <label htmlFor="profile-settings-date-format" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">{t("profile.settings.dateFormat")}</label>
               <select id="profile-settings-date-format" className="form-input" value={prefs.dateFormat} onChange={(e) => set("dateFormat", e.target.value)}>
                 {DATE_FORMATS.map((f) => <option key={f}>{f}</option>)}
               </select>
               <p className="text-[11px] text-neutral-400 mt-1">
-                Preview: {(() => {
+                {t("profile.settings.preview", { date: (() => {
                   const d = new Date(2026, 2, 22); // 22 Mar 2026
                   const dd = String(d.getDate()).padStart(2, "0");
                   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -329,11 +329,11 @@ export default function ProfileSettingsPage() {
                     case "DD-MMM-YYYY": return `${dd}-${mmm}-${yyyy}`;
                     default:            return `${dd}/${mm}/${yyyy}`;
                   }
-                })()}
+                })() })}
               </p>
             </div>
             <div>
-              <label htmlFor="profile-settings-display-currency" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Display Currency</label>
+              <label htmlFor="profile-settings-display-currency" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">{t("profile.settings.currency")}</label>
               <select id="profile-settings-display-currency" className="form-input" value={prefs.currency} onChange={(e) => set("currency", e.target.value)}>
                 {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </select>
@@ -347,12 +347,12 @@ export default function ProfileSettingsPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-700">
               <span className="material-symbols-outlined text-neutral-600 dark:text-neutral-300 text-[18px]">dark_mode</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Appearance</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("profile.settings.appearance")}</h3>
           </div>
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Dark Mode</p>
-              <p className="text-xs text-neutral-400 mt-0.5">Switch between light and dark interface theme</p>
+              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{t("profile.settings.darkMode")}</p>
+              <p className="text-xs text-neutral-400 mt-0.5">{t("profile.settings.darkModeHint")}</p>
             </div>
             <button
               type="button"
@@ -370,8 +370,8 @@ export default function ProfileSettingsPage() {
             >
               <span className={`material-symbols-outlined text-[20px] ${theme === "light" ? "text-primary" : "text-neutral-400"}`} style={{ fontVariationSettings: "'FILL' 1" }}>light_mode</span>
               <div className="text-left">
-                <p className={`text-xs font-semibold ${theme === "light" ? "text-primary" : "text-neutral-600 dark:text-neutral-300"}`}>Light</p>
-                <p className="text-[10px] text-neutral-400">Default theme</p>
+                <p className={`text-xs font-semibold ${theme === "light" ? "text-primary" : "text-neutral-600 dark:text-neutral-300"}`}>{t("setup.light")}</p>
+                <p className="text-[10px] text-neutral-400">{t("profile.settings.lightHint")}</p>
               </div>
             </button>
             <button
@@ -381,8 +381,8 @@ export default function ProfileSettingsPage() {
             >
               <span className={`material-symbols-outlined text-[20px] ${theme === "dark" ? "text-primary" : "text-neutral-400"}`} style={{ fontVariationSettings: "'FILL' 1" }}>dark_mode</span>
               <div className="text-left">
-                <p className={`text-xs font-semibold ${theme === "dark" ? "text-primary" : "text-neutral-600 dark:text-neutral-300"}`}>Dark</p>
-                <p className="text-[10px] text-neutral-400">Easy on the eyes</p>
+                <p className={`text-xs font-semibold ${theme === "dark" ? "text-primary" : "text-neutral-600 dark:text-neutral-300"}`}>{t("setup.dark")}</p>
+                <p className="text-[10px] text-neutral-400">{t("profile.settings.darkHint")}</p>
               </div>
             </button>
           </div>
@@ -394,16 +394,16 @@ export default function ProfileSettingsPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <span className="material-symbols-outlined text-primary text-[18px]">accessibility</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Accessibility</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("profile.settings.accessibility")}</h3>
           </div>
-          <Toggle checked={prefs.compactMode} onChange={(v) => set("compactMode", v)} label="Compact view" description="Reduce spacing for a denser layout" />
-          <Toggle checked={prefs.highContrast} onChange={(v) => set("highContrast", v)} label="High contrast" description="Increase text contrast for better readability" />
+          <Toggle checked={prefs.compactMode} onChange={(v) => set("compactMode", v)} label={t("profile.settings.compact")} description={t("profile.settings.compactHint")} />
+          <Toggle checked={prefs.highContrast} onChange={(v) => set("highContrast", v)} label={t("profile.settings.contrast")} description={t("profile.settings.contrastHint")} />
         </div>
 
         <div className="flex justify-end">
           <button type="submit" className="btn-primary px-6 py-2.5 text-sm flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">save</span>
-            Save Preferences
+            {t("profile.settings.save")}
           </button>
         </div>
       </form>

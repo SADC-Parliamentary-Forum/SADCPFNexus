@@ -9,27 +9,28 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { ASSIGNMENTS_HUB_CARDS } from "@/lib/hubs/assignments";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const priorityConfig: Record<string, { label: string; cls: string; dot: string }> = {
-  low:      { label: "Low",      cls: "badge-muted",    dot: "bg-neutral-400" },
-  medium:   { label: "Medium",   cls: "badge-primary",  dot: "bg-blue-400" },
-  high:     { label: "High",     cls: "badge-warning",  dot: "bg-amber-400" },
-  critical: { label: "Critical", cls: "badge-danger",   dot: "bg-red-500" },
+  low:      { label: "assignments.priority.low",      cls: "badge-muted",    dot: "bg-neutral-400" },
+  medium:   { label: "assignments.priority.medium",   cls: "badge-primary",  dot: "bg-blue-400" },
+  high:     { label: "assignments.priority.high",     cls: "badge-warning",  dot: "bg-amber-400" },
+  critical: { label: "assignments.priority.critical", cls: "badge-danger",   dot: "bg-red-500" },
 };
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  draft:               { label: "Draft",              cls: "badge-muted" },
-  issued:              { label: "Issued",             cls: "badge-primary" },
-  awaiting_acceptance: { label: "Awaiting Acceptance",cls: "badge-warning" },
-  accepted:            { label: "Accepted",           cls: "badge-primary" },
-  active:              { label: "Active",             cls: "badge-success" },
-  at_risk:             { label: "At Risk",            cls: "badge-warning" },
-  blocked:             { label: "Blocked",            cls: "badge-danger" },
-  delayed:             { label: "Delayed",            cls: "badge-danger" },
-  completed:           { label: "Completed",          cls: "badge-success" },
-  closed:              { label: "Closed",             cls: "badge-muted" },
-  returned:            { label: "Returned",           cls: "badge-warning" },
-  cancelled:           { label: "Cancelled",          cls: "badge-muted" },
+  draft:               { label: "assignments.status.draft",              cls: "badge-muted" },
+  issued:              { label: "assignments.status.issued",             cls: "badge-primary" },
+  awaiting_acceptance: { label: "assignments.status.awaiting_acceptance",cls: "badge-warning" },
+  accepted:            { label: "assignments.status.accepted",           cls: "badge-primary" },
+  active:              { label: "assignments.status.active",             cls: "badge-success" },
+  at_risk:             { label: "assignments.status.at_risk",            cls: "badge-warning" },
+  blocked:             { label: "assignments.status.blocked",            cls: "badge-danger" },
+  delayed:             { label: "assignments.status.delayed",            cls: "badge-danger" },
+  completed:           { label: "assignments.status.completed",          cls: "badge-success" },
+  closed:              { label: "assignments.status.closed",             cls: "badge-muted" },
+  returned:            { label: "assignments.status.returned",           cls: "badge-warning" },
+  cancelled:           { label: "assignments.status.cancelled",          cls: "badge-muted" },
 };
 
 function KpiCard({ label, value, icon, color, href }: {
@@ -50,8 +51,11 @@ function KpiCard({ label, value, icon, color, href }: {
 }
 
 function AssignmentRow({ a }: { a: Assignment }) {
-  const p = priorityConfig[a.priority] ?? { label: a.priority, cls: "badge-muted", dot: "bg-neutral-400" };
-  const s = statusConfig[a.status] ?? { label: a.status, cls: "badge-muted" };
+  const { t } = useI18n();
+  const pc = priorityConfig[a.priority];
+  const sc = statusConfig[a.status];
+  const p = pc ? { ...pc, label: t(pc.label) } : { label: a.priority, cls: "badge-muted", dot: "bg-neutral-400" };
+  const s = sc ? { ...sc, label: t(sc.label) } : { label: a.status, cls: "badge-muted" };
   const isOverdue = !["closed", "cancelled"].includes(a.status) && new Date(a.due_date) < new Date();
 
   return (
@@ -69,7 +73,7 @@ function AssignmentRow({ a }: { a: Assignment }) {
               <span className="text-[10px] font-mono text-neutral-400">{a.reference_number}</span>
               <span className={`badge ${s.cls}`}>{s.label}</span>
               <span className={`badge ${p.cls}`}>{p.label}</span>
-              {isOverdue && <span className="badge badge-danger">Overdue</span>}
+              {isOverdue && <span className="badge badge-danger">{t("assignments.overdueBadge")}</span>}
             </div>
             <p className="text-sm font-semibold text-neutral-900 truncate">{a.title}</p>
             <div className="flex flex-wrap items-center gap-4 mt-1.5 text-xs text-neutral-500">
@@ -81,7 +85,7 @@ function AssignmentRow({ a }: { a: Assignment }) {
               )}
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-[13px]">calendar_today</span>
-                Due {formatDateShort(a.due_date)}
+                {t("assignments.dueOn", { date: formatDateShort(a.due_date) })}
               </span>
               {a.department && (
                 <span className="flex items-center gap-1">
@@ -105,7 +109,7 @@ function AssignmentRow({ a }: { a: Assignment }) {
           {a.blocker_type && (
             <span className="flex items-center gap-1 text-[10px] text-red-500">
               <span className="material-symbols-outlined text-[12px]">block</span>
-              Blocked
+              {t("assignments.status.blocked")}
             </span>
           )}
         </div>
@@ -115,6 +119,7 @@ function AssignmentRow({ a }: { a: Assignment }) {
 }
 
 export default function AssignmentsDashboard() {
+  const { t } = useI18n();
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["assignments", "stats"],
     queryFn: () => assignmentsApi.stats().then((r) => r.data),
@@ -136,13 +141,13 @@ export default function AssignmentsDashboard() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Assignments & Oversight"
-        subtitle="Monitor accountability, task progress, and team performance."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Assignments" }]} />}
+        title={t("assignments.hub.title")}
+        subtitle={t("assignments.hub.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("nav.assignments") }]} />}
         actions={
           <Link href="/assignments/create" className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">add_task</span>
-            New Assignment
+            {t("assignments.newAssignment")}
           </Link>
         }
       />
@@ -156,14 +161,14 @@ export default function AssignmentsDashboard() {
         </div>
       ) : stats ? (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <KpiCard label="My pending" value={stats.my_pending} icon="assignment_late" color="bg-orange-50 text-orange-600" href="/assignments/mine" />
-          <KpiCard label="Active" value={stats.active} icon="play_circle" color="bg-green-50 text-green-600" href="/assignments/all?status=active" />
-          <KpiCard label="Due this week" value={stats.due_soon} icon="schedule" color="bg-amber-50 text-amber-600" />
+          <KpiCard label={t("assignments.hub.kpi.myPending")} value={stats.my_pending} icon="assignment_late" color="bg-orange-50 text-orange-600" href="/assignments/mine" />
+          <KpiCard label={t("assignments.status.active")} value={stats.active} icon="play_circle" color="bg-green-50 text-green-600" href="/assignments/all?status=active" />
+          <KpiCard label={t("assignments.hub.kpi.dueThisWeek")} value={stats.due_soon} icon="schedule" color="bg-amber-50 text-amber-600" />
           {canOversee ? (
             <>
-              <KpiCard label="Overdue" value={stats.overdue} icon="event_busy" color="bg-red-50 text-red-600" href="/assignments/overdue" />
-              <KpiCard label="Awaiting acceptance" value={stats.awaiting} icon="pending_actions" color="bg-primary/10 text-primary" href="/assignments/pending" />
-              <KpiCard label="Blocked" value={stats.blocked} icon="block" color="bg-red-50 text-red-600" href="/assignments/blocked" />
+              <KpiCard label={t("assignments.overdueBadge")} value={stats.overdue} icon="event_busy" color="bg-red-50 text-red-600" href="/assignments/overdue" />
+              <KpiCard label={t("assignments.hub.kpi.awaitingAcceptance")} value={stats.awaiting} icon="pending_actions" color="bg-primary/10 text-primary" href="/assignments/pending" />
+              <KpiCard label={t("assignments.status.blocked")} value={stats.blocked} icon="block" color="bg-red-50 text-red-600" href="/assignments/blocked" />
             </>
           ) : null}
         </div>
@@ -172,9 +177,9 @@ export default function AssignmentsDashboard() {
       {/* Recent Assignments */}
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-neutral-700">Recent Assignments</h2>
+          <h2 className="text-sm font-semibold text-neutral-700">{t("assignments.hub.recent")}</h2>
           <Link href="/assignments/all" className="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
-            View all
+            {t("assignments.hub.viewAll")}
             <span className="material-symbols-outlined text-[13px]">chevron_right</span>
           </Link>
         </div>
@@ -193,12 +198,12 @@ export default function AssignmentsDashboard() {
           <div className="card">
             <EmptyState
               icon="task_alt"
-              title="No assignments yet"
-              description="Create your first assignment to get started."
+              title={t("assignments.hub.emptyTitle")}
+              description={t("assignments.hub.emptyDescription")}
               action={
                 <Link href="/assignments/create" className="btn-primary inline-flex">
                   <span className="material-symbols-outlined text-[18px]">add_task</span>
-                  New Assignment
+                  {t("assignments.newAssignment")}
                 </Link>
               }
             />
@@ -207,7 +212,7 @@ export default function AssignmentsDashboard() {
       </div>
 
       <details className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
-        <summary className="cursor-pointer text-sm font-semibold text-neutral-700">More assignment tools</summary>
+        <summary className="cursor-pointer text-sm font-semibold text-neutral-700">{t("assignments.hub.moreTools")}</summary>
         <div className="mt-3">
           <ModuleHubCards cards={ASSIGNMENTS_HUB_CARDS.filter((card) => card.href !== "/assignments/create")} />
         </div>

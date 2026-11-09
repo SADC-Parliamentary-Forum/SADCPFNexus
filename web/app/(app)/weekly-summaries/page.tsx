@@ -12,6 +12,10 @@ import { useToast } from "@/components/ui/Toast";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { WEEKLY_SUMMARIES_HUB_CARDS } from "@/lib/hubs/weeklySummaries";
 import { canReviewWeeklySummaries, getStoredUser } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { TranslateVars } from "@/lib/i18n/messages";
+
+type Translate = (key: string, vars?: TranslateVars) => string;
 
 type AssignmentFeedItem = {
   id: number;
@@ -35,21 +39,21 @@ type WeeklyAssignmentFeed = {
 type FeedTab = "completed" | "active" | "overdue" | "blocked" | "upcoming";
 
 const ITEM_SECTIONS = [
-  { value: "achievement", label: "Achievement" },
-  { value: "wip", label: "Work in progress" },
-  { value: "meeting", label: "Meeting" },
-  { value: "note", label: "Note" },
+  { value: "achievement", label: "weeklySummaries.mine.section.achievement" },
+  { value: "wip", label: "weeklySummaries.mine.section.wip" },
+  { value: "meeting", label: "weeklySummaries.mine.section.meeting" },
+  { value: "note", label: "weeklySummaries.mine.section.note" },
 ] as const;
 
 const STATUS_LABEL: Record<string, string> = {
-  draft: "Draft",
-  in_progress: "In progress",
-  pending_review: "Submitted",
-  returned_for_correction: "Returned for correction",
-  accepted: "Accepted",
-  exempted: "Exempted",
-  no_report_required: "Not required",
-  published: "Published",
+  draft: "weeklySummaries.status.draft",
+  in_progress: "weeklySummaries.status.in_progress",
+  pending_review: "weeklySummaries.status.submitted",
+  returned_for_correction: "weeklySummaries.mine.status.returnedForCorrection",
+  accepted: "weeklySummaries.status.accepted",
+  exempted: "weeklySummaries.status.exempted",
+  no_report_required: "weeklySummaries.mine.status.notRequired",
+  published: "weeklySummaries.status.published",
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -65,15 +69,14 @@ const STATUS_BADGE: Record<string, string> = {
 
 const LOCKED_STATUSES = ["pending_review", "accepted", "exempted", "no_report_required", "published"];
 
-const DECLARATION =
-  "I confirm that this weekly summary is accurate to the best of my knowledge and is ready for my supervisor to review.";
+const DECLARATION = "weeklySummaries.mine.declaration";
 
 const FEED_TABS: { key: FeedTab; label: string; rows: (feed: WeeklyAssignmentFeed) => unknown }[] = [
-  { key: "completed", label: "Completed", rows: (feed) => feed.completed },
-  { key: "active", label: "Active", rows: (feed) => feed.active },
-  { key: "overdue", label: "Overdue", rows: (feed) => feed.overdue },
-  { key: "blocked", label: "Blocked", rows: (feed) => feed.blocked },
-  { key: "upcoming", label: "Upcoming", rows: (feed) => feed.upcoming_deadlines },
+  { key: "completed", label: "weeklySummaries.mine.feed.completed", rows: (feed) => feed.completed },
+  { key: "active", label: "weeklySummaries.mine.feed.active", rows: (feed) => feed.active },
+  { key: "overdue", label: "weeklySummaries.mine.feed.overdue", rows: (feed) => feed.overdue },
+  { key: "blocked", label: "weeklySummaries.mine.feed.blocked", rows: (feed) => feed.blocked },
+  { key: "upcoming", label: "weeklySummaries.mine.feed.upcoming", rows: (feed) => feed.upcoming_deadlines },
 ];
 
 function asFeedItems(value: unknown): AssignmentFeedItem[] {
@@ -88,21 +91,23 @@ function errorMessage(e: unknown, fallback: string): string {
   return ax.response?.data?.message ?? (e instanceof Error ? e.message : fallback);
 }
 
-function sectionLabel(value: unknown): string {
+function sectionLabel(value: unknown, t: Translate): string {
   const key = typeof value === "string" ? value : "";
-  return ITEM_SECTIONS.find((s) => s.value === key)?.label ?? (key ? key.replace(/_/g, " ") : "—");
+  const known = ITEM_SECTIONS.find((s) => s.value === key);
+  return known ? t(known.label) : key ? key.replace(/_/g, " ") : "—";
 }
 
-function sourceLabel(value: unknown): string {
+function sourceLabel(value: unknown, t: Translate): string {
   const key = String(value ?? "");
-  if (key === "calendar_meeting") return "Meeting";
-  if (key === "meeting_decision") return "Decision";
-  if (key === "assignment") return "Assignment";
-  return key.replace(/_/g, " ") || "Suggestion";
+  if (key === "calendar_meeting") return t("weeklySummaries.mine.section.meeting");
+  if (key === "meeting_decision") return t("weeklySummaries.mine.source.decision");
+  if (key === "assignment") return t("weeklySummaries.mine.source.assignment");
+  return key.replace(/_/g, " ") || t("weeklySummaries.mine.source.suggestion");
 }
 
 export default function WeeklySummariesPage() {
   const { success, error: showError } = useToast();
+  const { t } = useI18n();
   const [report, setReport] = useState<WeeklyOpsReport | null>(null);
   const [feed, setFeed] = useState<WeeklyAssignmentFeed | null>(null);
   const [feedTab, setFeedTab] = useState<FeedTab>("overdue");
@@ -156,7 +161,7 @@ export default function WeeklySummariesPage() {
       setSuggestions(sug.data.suggestions ?? []);
       setDeferred(sug.data.deferred_hooks ?? []);
     } catch (e: unknown) {
-      setError(errorMessage(e, "Failed to load weekly summary"));
+      setError(errorMessage(e, t("weeklySummaries.mine.loadFailed")));
     } finally {
       setBusy(false);
     }
@@ -172,7 +177,7 @@ export default function WeeklySummariesPage() {
 
   const feedRows = useMemo(() => {
     if (!feed) return [];
-    const tab = FEED_TABS.find((t) => t.key === feedTab);
+    const tab = FEED_TABS.find((ft) => ft.key === feedTab);
     return asFeedItems(tab ? tab.rows(feed) : []);
   }, [feed, feedTab]);
 
@@ -190,7 +195,7 @@ export default function WeeklySummariesPage() {
 
   const addItem = async () => {
     if (!report || !title.trim()) return;
-    await run("Entry added.", async () => {
+    await run(t("weeklySummaries.mine.toast.entryAdded"), async () => {
       await weeklyReportsApi.addItem(report.id, {
         section_type: sectionType,
         title: title.trim(),
@@ -204,7 +209,7 @@ export default function WeeklySummariesPage() {
 
   const saveDonorTemplate = async () => {
     if (!report) return;
-    await run("Donor and template saved.", async () => {
+    await run(t("weeklySummaries.mine.toast.donorSaved"), async () => {
       await weeklyReportsApi.update(report.id, {
         donor_code: donorCode || null,
         donor_name: donorName || null,
@@ -216,7 +221,7 @@ export default function WeeklySummariesPage() {
 
   const saveNotes = async () => {
     if (!report) return;
-    await run("Notes saved.", async () => {
+    await run(t("weeklySummaries.mine.toast.notesSaved"), async () => {
       await weeklyReportsApi.update(report.id, { additional_notes: notes.trim() || null });
       await reload();
     });
@@ -224,7 +229,7 @@ export default function WeeklySummariesPage() {
 
   const submit = async () => {
     if (!report || !declared) return;
-    await run("Weekly summary submitted.", async () => {
+    await run(t("weeklySummaries.mine.toast.submitted"), async () => {
       await weeklyReportsApi.submit(report.id);
       setDeclared(false);
       await reload();
@@ -233,7 +238,7 @@ export default function WeeklySummariesPage() {
 
   const include = async (s: Record<string, unknown>) => {
     if (!report) return;
-    await run("Suggestion included.", async () => {
+    await run(t("weeklySummaries.mine.toast.included"), async () => {
       await weeklyReportsApi.includeSuggestion(report.id, {
         source_type: s.source_type,
         source_id: s.source_id,
@@ -249,7 +254,7 @@ export default function WeeklySummariesPage() {
 
   const skip = async (s: Record<string, unknown>) => {
     if (!report) return;
-    await run("Suggestion skipped.", async () => {
+    await run(t("weeklySummaries.mine.toast.skipped"), async () => {
       await weeklyReportsApi.excludeSuggestion(report.id, {
         source_type: s.source_type,
         source_id: s.source_id,
@@ -261,7 +266,7 @@ export default function WeeklySummariesPage() {
 
   const generateDraft = async () => {
     if (!report) return;
-    await run("Draft generated. Confirm it before it is added to notes.", async () => {
+    await run(t("weeklySummaries.mine.toast.draftGenerated"), async () => {
       const res = await weeklyReportsApi.generateAiDraft(report.id);
       setAiDraft(res.data.data.draft);
       await reload();
@@ -270,7 +275,7 @@ export default function WeeklySummariesPage() {
 
   const confirmDraft = async () => {
     if (!report) return;
-    await run("Draft added to notes.", async () => {
+    await run(t("weeklySummaries.mine.toast.draftAdded"), async () => {
       await weeklyReportsApi.confirmAiDraft(report.id);
       await reload();
     });
@@ -278,20 +283,20 @@ export default function WeeklySummariesPage() {
 
   const periodLabel = report?.period
     ? formatDateRange(report.period.start_date, report.period.end_date)
-    : "Current period";
+    : t("weeklySummaries.currentPeriod");
 
   return (
     <div className="w-full min-w-0 space-y-6 pb-8">
       <ModulePageHeader
-        title="My Weekly Summary"
-        subtitle="Add what you did this week, confirm suggested items, then submit for review. Nothing is sent until you declare and submit."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Weekly Summaries" }]} />}
+        title="weeklySummaries.mine.title"
+        subtitle="weeklySummaries.mine.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "weeklySummaries.crumb" }]} />}
         meta={
           report ? (
             <>
               <span className="font-mono text-xs text-neutral-400">{report.reference}</span>
               <span className={`badge ${STATUS_BADGE[report.status] ?? "badge-muted"}`}>
-                {STATUS_LABEL[report.status] ?? report.status.replace(/_/g, " ")}
+                {STATUS_LABEL[report.status] ? t(STATUS_LABEL[report.status]) : report.status.replace(/_/g, " ")}
               </span>
             </>
           ) : null
@@ -300,10 +305,10 @@ export default function WeeklySummariesPage() {
           report ? (
             <>
               <Link href={`/weekly-summaries/${report.id}`} className="btn-secondary text-sm">
-                Open detail
+                {t("weeklySummaries.institutional.openDetail")}
               </Link>
               <a href={weeklyReportsApi.exportUrl(report.id, "word")} className="btn-secondary text-sm">
-                Export Word
+                {t("weeklySummaries.mine.exportWord")}
               </a>
             </>
           ) : null
@@ -323,23 +328,23 @@ export default function WeeklySummariesPage() {
 
       {report ? (
         <FormSection
-          title="This week"
-          description={`${periodLabel}${report.period?.employee_due_at ? ` · due ${formatDateShort(report.period.employee_due_at)}` : ""}`}
+          title="weeklySummaries.mine.thisWeek"
+          description={report.period?.employee_due_at ? t("weeklySummaries.mine.periodDue", { period: periodLabel, date: formatDateShort(report.period.employee_due_at) }) : periodLabel}
           icon="edit_calendar"
         >
           <dl className="grid gap-3 text-sm sm:grid-cols-3">
             <div>
-              <dt className="text-xs text-neutral-400">Period</dt>
+              <dt className="text-xs text-neutral-400">{t("weeklySummaries.col.period")}</dt>
               <dd className="mt-0.5 font-medium text-neutral-800">{periodLabel}</dd>
             </div>
             <div>
-              <dt className="text-xs text-neutral-400">Status</dt>
+              <dt className="text-xs text-neutral-400">{t("weeklySummaries.col.status")}</dt>
               <dd className="mt-0.5 font-medium text-neutral-800">
-                {STATUS_LABEL[report.status] ?? report.status.replace(/_/g, " ")}
+                {STATUS_LABEL[report.status] ? t(STATUS_LABEL[report.status]) : report.status.replace(/_/g, " ")}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-neutral-400">Entries</dt>
+              <dt className="text-xs text-neutral-400">{t("weeklySummaries.mine.entries")}</dt>
               <dd className="mt-0.5 font-medium text-neutral-800">{items.length}</dd>
             </div>
           </dl>
@@ -348,30 +353,30 @@ export default function WeeklySummariesPage() {
 
       {report ? (
         <FormSection
-          title="Your entries"
+          title="weeklySummaries.mine.yourEntries"
           description={
             editable
-              ? "Add achievements, work in progress, meetings, or notes. They stay on this draft until you submit."
-              : "This summary is no longer editable."
+              ? "weeklySummaries.mine.entriesHint"
+              : "weeklySummaries.mine.notEditable"
           }
           icon="list"
         >
           {items.length === 0 ? (
-            <p className="mb-4 text-sm text-neutral-500">Nothing added yet. Start with one entry below, or include a suggestion.</p>
+            <p className="mb-4 text-sm text-neutral-500">{t("weeklySummaries.mine.noEntries")}</p>
           ) : (
             <div className="mb-5 overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-neutral-100 text-neutral-500">
-                    <th className="py-2 pr-3 font-medium">Section</th>
-                    <th className="py-2 pr-3 font-medium">Title</th>
-                    <th className="py-2 font-medium">Detail</th>
+                    <th className="py-2 pr-3 font-medium">{t("weeklySummaries.detail.col.section")}</th>
+                    <th className="py-2 pr-3 font-medium">{t("weeklySummaries.detail.field.title")}</th>
+                    <th className="py-2 font-medium">{t("weeklySummaries.mine.detail")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, index) => (
                     <tr key={String(item.id ?? index)} className="border-b border-neutral-50 align-top">
-                      <td className="py-2 pr-3 capitalize">{sectionLabel(item.section_type)}</td>
+                      <td className="py-2 pr-3 capitalize">{sectionLabel(item.section_type, t)}</td>
                       <td className="py-2 pr-3 font-medium">{labelledObjectCell(item.title)}</td>
                       <td className="py-2 text-neutral-600">{labelledObjectCell(item.narrative)}</td>
                     </tr>
@@ -384,7 +389,7 @@ export default function WeeklySummariesPage() {
           {editable ? (
             <div className="space-y-3 rounded-xl border border-neutral-200 bg-neutral-50/60 p-4">
               <div className="grid gap-3 sm:grid-cols-[11rem_1fr]">
-                <FormField label="Section" htmlFor="weekly-item-section">
+                <FormField label="weeklySummaries.detail.col.section" htmlFor="weekly-item-section">
                   <select
                     id="weekly-item-section"
                     className="form-input"
@@ -394,16 +399,16 @@ export default function WeeklySummariesPage() {
                   >
                     {ITEM_SECTIONS.map((s) => (
                       <option key={s.value} value={s.value}>
-                        {s.label}
+                        {t(s.label)}
                       </option>
                     ))}
                   </select>
                 </FormField>
-                <FormField label="Title" htmlFor="weekly-item-title" required>
+                <FormField label="weeklySummaries.detail.field.title" htmlFor="weekly-item-title" required>
                   <input
                     id="weekly-item-title"
                     className="form-input"
-                    placeholder="Short description of what happened"
+                    placeholder={t("weeklySummaries.mine.titlePlaceholder")}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     disabled={saving}
@@ -417,9 +422,9 @@ export default function WeeklySummariesPage() {
                 </FormField>
               </div>
               <FormField
-                label="Detail"
+                label="weeklySummaries.mine.detail"
                 htmlFor="weekly-item-narrative"
-                hint="Optional. Outcome, next step, or context for your supervisor."
+                hint="weeklySummaries.mine.detailHint"
               >
                 <textarea
                   id="weekly-item-narrative"
@@ -435,7 +440,7 @@ export default function WeeklySummariesPage() {
                 className="btn-primary text-sm disabled:opacity-50"
                 disabled={saving || !title.trim()}
               >
-                Add entry
+                {t("weeklySummaries.mine.addEntry")}
               </button>
             </div>
           ) : null}
@@ -443,13 +448,13 @@ export default function WeeklySummariesPage() {
       ) : null}
 
       <FormSection
-        title="Suggested from your work"
-        description="Include items from assignments, meetings, and decisions. Skipping hides them from this week."
+        title="weeklySummaries.mine.suggested"
+        description="weeklySummaries.mine.suggestedHint"
         icon="tips_and_updates"
       >
         {pendingSuggestions.length === 0 ? (
           <p className="text-sm text-neutral-500">
-            {suggestions.length === 0 ? "No suggestions for this period." : "All suggestions have been included or skipped."}
+            {suggestions.length === 0 ? t("weeklySummaries.mine.noSuggestions") : t("weeklySummaries.mine.allHandled")}
           </p>
         ) : (
           <ul className="space-y-2">
@@ -460,10 +465,10 @@ export default function WeeklySummariesPage() {
               >
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                    {sourceLabel(s.chip_label ?? s.source_type)}
-                    {s.suggested_section ? ` · ${sectionLabel(s.suggested_section)}` : ""}
+                    {sourceLabel(s.chip_label ?? s.source_type, t)}
+                    {s.suggested_section ? ` · ${sectionLabel(s.suggested_section, t)}` : ""}
                   </p>
-                  <p className="mt-0.5 text-sm font-medium text-neutral-900">{String(s.title ?? "Untitled")}</p>
+                  <p className="mt-0.5 text-sm font-medium text-neutral-900">{String(s.title ?? t("weeklySummaries.mine.untitled"))}</p>
                   {s.reference ? (
                     <p className="mt-0.5 text-xs text-neutral-500">{String(s.reference)}</p>
                   ) : null}
@@ -476,7 +481,7 @@ export default function WeeklySummariesPage() {
                       disabled={saving}
                       onClick={() => void skip(s)}
                     >
-                      Skip
+                      {t("weeklySummaries.mine.skip")}
                     </button>
                     <button
                       type="button"
@@ -484,7 +489,7 @@ export default function WeeklySummariesPage() {
                       disabled={saving}
                       onClick={() => void include(s)}
                     >
-                      Include
+                      {t("weeklySummaries.mine.include")}
                     </button>
                   </div>
                 ) : null}
@@ -493,14 +498,14 @@ export default function WeeklySummariesPage() {
           </ul>
         )}
         {deferred.length > 0 ? (
-          <p className="mt-3 text-xs text-amber-800">Some source hooks are deferred.</p>
+          <p className="mt-3 text-xs text-amber-800">{t("weeklySummaries.mine.deferred")}</p>
         ) : null}
       </FormSection>
 
       {feed ? (
         <FormSection
-          title="Assignments this week"
-          description={`${feed.period_start ? formatDateShort(feed.period_start) : "This period"} → ${feed.period_end ? formatDateShort(feed.period_end) : "now"}. Open a row to see the assignment.`}
+          title="weeklySummaries.mine.assignmentsThisWeek"
+          description={t("weeklySummaries.mine.feedRange", { start: feed.period_start ? formatDateShort(feed.period_start) : t("weeklySummaries.mine.thisPeriod"), end: feed.period_end ? formatDateShort(feed.period_end) : t("weeklySummaries.mine.now") })}
           icon="task_alt"
         >
           <div data-testid="weekly-assignment-feed" className="space-y-4">
@@ -518,23 +523,23 @@ export default function WeeklySummariesPage() {
                       active ? "border-primary bg-primary/5 text-primary" : "border-neutral-200 text-neutral-700"
                     }`}
                   >
-                    <span className="block text-[11px] uppercase tracking-wide opacity-70">{tab.label}</span>
+                    <span className="block text-[11px] uppercase tracking-wide opacity-70">{t(tab.label)}</span>
                     <span className="text-base font-semibold">{count}</span>
                   </button>
                 );
               })}
             </div>
             {feedRows.length === 0 ? (
-              <p className="text-sm text-neutral-500">None in this list.</p>
+              <p className="text-sm text-neutral-500">{t("weeklySummaries.mine.noneInList")}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-neutral-100 text-neutral-500">
-                      <th className="py-2 pr-3 font-medium">Reference</th>
-                      <th className="py-2 pr-3 font-medium">Title</th>
-                      <th className="py-2 pr-3 font-medium">Status</th>
-                      <th className="py-2 font-medium">Due</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.reference")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.detail.field.title")}</th>
+                      <th className="py-2 pr-3 font-medium">{t("weeklySummaries.col.status")}</th>
+                      <th className="py-2 font-medium">{t("weeklySummaries.department.due")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -562,20 +567,20 @@ export default function WeeklySummariesPage() {
         <div className="card">
           <EmptyState
             icon="edit_calendar"
-            title="No weekly summary"
-            description="Your current period summary will appear here when available."
+            title="weeklySummaries.mine.empty"
+            description="weeklySummaries.mine.emptyHint"
           />
         </div>
       ) : null}
 
       {report ? (
         <FormSection
-          title="Donor and template"
-          description="Optional. Use when this week should follow a donor or project format."
+          title="weeklySummaries.mine.donorTemplate"
+          description="weeklySummaries.mine.donorTemplateHint"
           icon="handshake"
         >
           <div className="grid gap-3 md:grid-cols-3">
-            <FormField label="Donor code" htmlFor="donor-code">
+            <FormField label="weeklySummaries.mine.donorCode" htmlFor="donor-code">
               <input
                 id="donor-code"
                 className="form-input"
@@ -584,7 +589,7 @@ export default function WeeklySummariesPage() {
                 disabled={!editable || saving}
               />
             </FormField>
-            <FormField label="Donor / project name" htmlFor="donor-name">
+            <FormField label="weeklySummaries.mine.donorName" htmlFor="donor-name">
               <input
                 id="donor-name"
                 className="form-input"
@@ -593,7 +598,7 @@ export default function WeeklySummariesPage() {
                 disabled={!editable || saving}
               />
             </FormField>
-            <FormField label="Template" htmlFor="template-key">
+            <FormField label="weeklySummaries.mine.template" htmlFor="template-key">
               <select
                 id="template-key"
                 className="form-input"
@@ -601,10 +606,10 @@ export default function WeeklySummariesPage() {
                 onChange={(e) => setTemplateKey(e.target.value)}
                 disabled={!editable || saving}
               >
-                <option value="">None</option>
-                <option value="standard">Standard</option>
-                <option value="donor_progress">Donor progress</option>
-                <option value="project_update">Project update</option>
+                <option value="">{t("weeklySummaries.mine.template.none")}</option>
+                <option value="standard">{t("weeklySummaries.mine.template.standard")}</option>
+                <option value="donor_progress">{t("weeklySummaries.mine.template.donorProgress")}</option>
+                <option value="project_update">{t("weeklySummaries.mine.template.projectUpdate")}</option>
               </select>
             </FormField>
           </div>
@@ -615,15 +620,15 @@ export default function WeeklySummariesPage() {
               className="btn-secondary mt-4 text-sm disabled:opacity-50"
               disabled={saving}
             >
-              Save donor and template
+              {t("weeklySummaries.mine.saveDonor")}
             </button>
           ) : null}
         </FormSection>
       ) : null}
 
       {report ? (
-        <FormSection title="Notes" description="Anything else your supervisor should see." icon="notes">
-          <FormField label="Additional notes" htmlFor="weekly-notes">
+        <FormSection title="finance.bcre.update.notes" description="weeklySummaries.mine.notesHint" icon="notes">
+          <FormField label="weeklySummaries.mine.additionalNotes" htmlFor="weekly-notes">
             <textarea
               id="weekly-notes"
               className="form-input min-h-[96px]"
@@ -639,7 +644,7 @@ export default function WeeklySummariesPage() {
               className="btn-secondary mt-3 text-sm disabled:opacity-50"
               disabled={saving}
             >
-              Save notes
+              {t("weeklySummaries.mine.saveNotes")}
             </button>
           ) : null}
         </FormSection>
@@ -647,8 +652,8 @@ export default function WeeklySummariesPage() {
 
       {report ? (
         <FormSection
-          title="Submit for review"
-          description="Submitting sends this digest to your supervisor. You can still export a Word copy afterwards."
+          title="weeklySummaries.mine.submitTitle"
+          description="weeklySummaries.mine.submitHint"
           icon="send"
         >
           {editable ? (
@@ -661,7 +666,7 @@ export default function WeeklySummariesPage() {
                   onChange={(e) => setDeclared(e.target.checked)}
                   disabled={saving}
                 />
-                <span className="text-sm text-neutral-800">{DECLARATION}</span>
+                <span className="text-sm text-neutral-800">{t(DECLARATION)}</span>
               </label>
               <button
                 type="button"
@@ -670,12 +675,12 @@ export default function WeeklySummariesPage() {
                 className="btn-primary text-sm disabled:opacity-50"
                 disabled={saving || !declared}
               >
-                Submit with declaration
+                {t("weeklySummaries.mine.submitWithDeclaration")}
               </button>
             </div>
           ) : (
             <p className="text-sm text-neutral-600">
-              This summary is {STATUS_LABEL[report.status] ?? report.status.replace(/_/g, " ")}. It cannot be submitted again.
+              {t("weeklySummaries.mine.cannotResubmit", { status: STATUS_LABEL[report.status] ? t(STATUS_LABEL[report.status]) : report.status.replace(/_/g, " ") })}
             </p>
           )}
         </FormSection>
@@ -683,14 +688,14 @@ export default function WeeklySummariesPage() {
 
       {report ? (
         <FormSection
-          title="Optional AI draft"
-          description="Never auto-submits. Confirming appends draft text to notes only."
+          title="weeklySummaries.mine.aiDraft"
+          description="weeklySummaries.mine.aiDraftHint"
           icon="smart_toy"
           actions={
             editable ? (
               <div className="flex gap-2">
                 <button type="button" className="btn-secondary text-sm" disabled={saving} onClick={() => void generateDraft()}>
-                  Generate draft
+                  {t("weeklySummaries.mine.generateDraft")}
                 </button>
                 <button
                   type="button"
@@ -698,7 +703,7 @@ export default function WeeklySummariesPage() {
                   onClick={() => void confirmDraft()}
                   disabled={!aiDraft || saving}
                 >
-                  Confirm draft
+                  {t("weeklySummaries.mine.confirmDraft")}
                 </button>
               </div>
             ) : null
@@ -709,14 +714,14 @@ export default function WeeklySummariesPage() {
               {aiDraft}
             </pre>
           ) : (
-            <p className="text-sm text-neutral-500">No draft generated yet.</p>
+            <p className="text-sm text-neutral-500">{t("weeklySummaries.mine.noDraft")}</p>
           )}
         </FormSection>
       ) : null}
 
       {showSpecialistTools ? (
         <details className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
-          <summary className="cursor-pointer text-sm font-semibold text-neutral-700">More weekly-summary tools</summary>
+          <summary className="cursor-pointer text-sm font-semibold text-neutral-700">{t("weeklySummaries.mine.moreTools")}</summary>
           <div className="mt-3">
             <ModuleHubCards cards={WEEKLY_SUMMARIES_HUB_CARDS} />
           </div>

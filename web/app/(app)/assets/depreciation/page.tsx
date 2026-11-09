@@ -11,6 +11,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Runner = { id: number; name: string };
 
@@ -47,17 +48,17 @@ type RunDetail = DepreciationRun & {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
-  completed: { label: "Completed", badge: "badge-success" },
-  draft: { label: "Draft", badge: "badge-muted" },
-  locked: { label: "Locked", badge: "badge-info" },
-  failed: { label: "Failed", badge: "badge-danger" },
+  completed: { label: "assets.depreciation.status.completed", badge: "badge-success" },
+  draft: { label: "assets.depreciation.status.draft", badge: "badge-muted" },
+  locked: { label: "assets.depreciation.status.locked", badge: "badge-info" },
+  failed: { label: "assets.depreciation.status.failed", badge: "badge-danger" },
 };
 
 const FILTER_TABS = [
-  { key: "all", label: "All" },
-  { key: "completed", label: "Completed" },
-  { key: "draft", label: "Draft" },
-  { key: "locked", label: "Locked" },
+  { key: "all", label: "assets.depreciation.filter.all" },
+  { key: "completed", label: "assets.depreciation.status.completed" },
+  { key: "draft", label: "assets.depreciation.status.draft" },
+  { key: "locked", label: "assets.depreciation.status.locked" },
 ] as const;
 
 type FilterKey = (typeof FILTER_TABS)[number]["key"];
@@ -69,10 +70,12 @@ function money(value: number | string | null | undefined): string {
   return formatCurrency(n, "NAD");
 }
 
-function statusMeta(status: string | null | undefined) {
+function statusMeta(status: string | null | undefined, t: (key: string) => string) {
   const key = (status ?? "").toLowerCase();
-  return STATUS_CONFIG[key] ?? {
-    label: status ? status.replace(/_/g, " ") : "Unknown",
+  const known = STATUS_CONFIG[key];
+  if (known) return { label: t(known.label), badge: known.badge };
+  return {
+    label: status ? status.replace(/_/g, " ") : t("assets.depreciation.unknown"),
     badge: "badge-muted",
   };
 }
@@ -95,6 +98,7 @@ function apiErrorMessage(err: unknown, fallback: string): string {
 export default function AssetDepreciationPage() {
   const { success, error: showErrorToast, info } = useToast();
   const { confirm } = useConfirm();
+  const { t } = useI18n();
   const [runs, setRuns] = useState<DepreciationRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,11 +133,11 @@ export default function AssetDepreciationPage() {
       setRuns([]);
       setLastPage(1);
       setTotal(0);
-      setError(apiErrorMessage(err, "Failed to load depreciation runs."));
+      setError(apiErrorMessage(err, t("assets.depreciation.loadFailed")));
     } finally {
       setLoading(false);
     }
-  }, [page, filter]);
+  }, [page, filter, t]);
 
   useEffect(() => {
     setCanRun(canRunDepreciation());
@@ -195,7 +199,7 @@ export default function AssetDepreciationPage() {
       const res = await api.get<{ data: RunDetail }>(`/assets-meta/depreciation-runs/${run.id}`);
       setDetail(res.data.data ?? null);
     } catch (err) {
-      setDetailError(apiErrorMessage(err, "Unable to load run lines."));
+      setDetailError(apiErrorMessage(err, t("assets.depreciation.linesFailed")));
     } finally {
       setDetailLoading(false);
     }
@@ -203,14 +207,13 @@ export default function AssetDepreciationPage() {
 
   const runNow = async () => {
     if (!canRun) {
-      setError("You need assets.admin or finance.approve to run depreciation.");
+      setError(t("assets.depreciation.noPermission"));
       return;
     }
     const ok = await confirm({
-      title: "Run monthly depreciation?",
-      message:
-        "This updates book values for monitoring/reports. Official GL remains the accounting system.",
-      confirmText: "Run depreciation",
+      title: t("assets.depreciation.confirmTitle"),
+      message: t("assets.depreciation.confirmMessage"),
+      confirmText: t("assets.depreciation.run"),
       variant: "primary",
     });
     if (!ok) return;
@@ -221,7 +224,7 @@ export default function AssetDepreciationPage() {
       const res = await api.post<{ data: RunDetail; message?: string }>("/assets-meta/depreciation-runs", {
         as_of: asOf || undefined,
       });
-      success(res.data.message ?? "Depreciation run completed (monitoring only).");
+      success(res.data.message ?? t("assets.depreciation.runCompleted"));
       if (page !== 1) setPage(1);
       await load(1);
       if (res.data.data?.id) {
@@ -229,7 +232,7 @@ export default function AssetDepreciationPage() {
         setDetail(res.data.data);
       }
     } catch (err) {
-      setError(apiErrorMessage(err, "Unable to run depreciation."));
+      setError(apiErrorMessage(err, t("assets.depreciation.runFailed")));
     } finally {
       setBusy(false);
     }
@@ -237,7 +240,7 @@ export default function AssetDepreciationPage() {
 
   const handleExport = () => {
     if (!filteredRuns.length) {
-      success("No runs to export.");
+      success(t("assets.depreciation.noRunsExport"));
       return;
     }
     exportToCsv(
@@ -253,29 +256,29 @@ export default function AssetDepreciationPage() {
         run_by: r.runner?.name ?? "",
       })),
       [
-        { key: "id", header: "Run ID" },
-        { key: "run_date", header: "Run date" },
-        { key: "period_start", header: "Period start" },
-        { key: "period_end", header: "Period end" },
-        { key: "asset_count", header: "Assets" },
-        { key: "total_depreciation", header: "Total depreciation" },
-        { key: "status", header: "Status" },
-        { key: "run_by", header: "Run by" },
+        { key: "id", header: t("assets.depreciation.col.runId") },
+        { key: "run_date", header: t("assets.depreciation.col.runDate") },
+        { key: "period_start", header: t("assets.depreciation.col.periodStart") },
+        { key: "period_end", header: t("assets.depreciation.col.periodEnd") },
+        { key: "asset_count", header: t("assets.depreciation.col.assets") },
+        { key: "total_depreciation", header: t("assets.depreciation.col.total") },
+        { key: "status", header: t("assets.depreciation.col.status") },
+        { key: "run_by", header: t("assets.depreciation.col.runBy") },
       ],
     );
-    success(`Exported ${filteredRuns.length} run(s).`);
+    success(t("assets.depreciation.exported", { count: filteredRuns.length }));
   };
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Depreciation"
-        subtitle="Monthly monitoring runs for capital assets. Nexus calculates book values for reports — official GL remains the accounting system."
+        title={t("assets.depreciation.title")}
+        subtitle={t("assets.depreciation.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.assets", href: "/assets" },
-              { label: "Depreciation" },
+              { label: "assets.depreciation.title" },
             ]}
           />
         }
@@ -283,7 +286,7 @@ export default function AssetDepreciationPage() {
         <div className="flex flex-wrap items-end gap-2">
           <div>
             <label htmlFor="as_of" className="mb-1 block text-xs font-semibold text-neutral-600">
-              As of
+              {t("assets.depreciation.asOf")}
             </label>
             <input
               id="as_of"
@@ -296,12 +299,12 @@ export default function AssetDepreciationPage() {
           </div>
           <button type="button" className="btn-secondary text-sm" onClick={handleExport} disabled={loading || filteredRuns.length === 0}>
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("assets.depreciation.exportCsv")}
           </button>
           {canRun && (
             <button type="button" className="btn-primary text-sm disabled:opacity-50" disabled={busy} onClick={() => void runNow()}>
               <span className="material-symbols-outlined text-[18px]">calculate</span>
-              {busy ? "Running…" : "Run depreciation"}
+              {busy ? t("assets.depreciation.running") : t("assets.depreciation.run")}
             </button>
           )}
         </div>
@@ -313,10 +316,10 @@ export default function AssetDepreciationPage() {
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error}</span>
           <button type="button" className="btn-secondary text-xs" onClick={() => void load()}>
-            Retry
+            {t("common.retry")}
           </button>
           <button type="button" className="btn-secondary text-xs" onClick={() => setError(null)}>
-            Dismiss
+            {t("assets.depreciation.dismiss")}
           </button>
         </div>
       )}
@@ -324,10 +327,10 @@ export default function AssetDepreciationPage() {
       {!loading && filteredRuns.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: "Runs (page)", value: stats.total, icon: "history", color: "text-primary", bg: "bg-primary/10" },
-            { label: "Completed (page)", value: stats.completed, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
-            { label: "Assets touched", value: stats.assetsTouched, icon: "inventory_2", color: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Depreciation (page)", value: money(stats.depreciationSum), icon: "trending_down", color: "text-neutral-700", bg: "bg-neutral-100" },
+            { label: t("assets.depreciation.stat.runs"), value: stats.total, icon: "history", color: "text-primary", bg: "bg-primary/10" },
+            { label: t("assets.depreciation.stat.completed"), value: stats.completed, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
+            { label: t("assets.depreciation.stat.assets"), value: stats.assetsTouched, icon: "inventory_2", color: "text-amber-600", bg: "bg-amber-50" },
+            { label: t("assets.depreciation.stat.depreciation"), value: money(stats.depreciationSum), icon: "trending_down", color: "text-neutral-700", bg: "bg-neutral-100" },
           ].map((s) => (
             <div key={s.label} className="card p-4">
               <div className="flex items-center justify-between gap-2">
@@ -347,7 +350,7 @@ export default function AssetDepreciationPage() {
       <div className="card flex flex-wrap items-end gap-3 p-3">
         <div className="min-w-[180px] flex-1">
             <label htmlFor="depr-search" className="mb-1 block text-xs font-semibold text-neutral-600">
-            Search
+            {t("assets.depreciation.search")}
           </label>
           <div className="relative">
             <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-[18px] text-neutral-400">
@@ -356,7 +359,7 @@ export default function AssetDepreciationPage() {
             <input
               id="depr-search"
               className="form-input pl-8 text-sm"
-              placeholder="Status, run date, period, runner…"
+              placeholder={t("assets.depreciation.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -373,7 +376,7 @@ export default function AssetDepreciationPage() {
               }}
               className={`filter-tab ${filter === tab.key ? "active" : ""}`}
             >
-              {tab.label}
+              {t(tab.label)}
             </button>
           ))}
         </div>
@@ -391,19 +394,19 @@ export default function AssetDepreciationPage() {
             icon="trending_down"
             title={
               error
-                ? "Could not load depreciation runs"
+                ? t("assets.depreciation.errorTitle")
                 : runs.length === 0
-                  ? "No depreciation runs yet"
-                  : "No runs match your search"
+                  ? t("assets.depreciation.empty")
+                  : t("assets.depreciation.noMatch")
             }
             description={
               error
-                ? "Check your connection or permissions, then retry."
+                ? t("assets.depreciation.errorHint")
                 : runs.length === 0
                   ? canRun
-                    ? "Run the first monthly calculation to populate this register."
-                    : "An assets or finance administrator can run the first calculation."
-                  : "Try another status filter or clear the search."
+                    ? t("assets.depreciation.emptyHintCanRun")
+                    : t("assets.depreciation.emptyHint")
+                  : t("assets.depreciation.noMatchHint")
             }
             action={
               runs.length > 0 ? (
@@ -415,13 +418,13 @@ export default function AssetDepreciationPage() {
                     setFilter("all");
                   }}
                 >
-                  Clear filters
+                  {t("assets.depreciation.clearFilters")}
                 </button>
               ) : (
                 canRun &&
                 !error && (
                   <button type="button" className="btn-primary text-sm" disabled={busy} onClick={() => void runNow()}>
-                    Run depreciation
+                    {t("assets.depreciation.run")}
                   </button>
                 )
               )
@@ -435,17 +438,17 @@ export default function AssetDepreciationPage() {
               <thead>
                 <tr>
                   <th className="w-10" />
-                  <th>Run date</th>
-                  <th>Period</th>
-                  <th className="text-right">Assets</th>
-                  <th className="text-right">Total depreciation</th>
-                  <th>Status</th>
-                  <th>Run by</th>
+                  <th>{t("assets.depreciation.col.runDate")}</th>
+                  <th>{t("assets.depreciation.col.period")}</th>
+                  <th className="text-right">{t("assets.depreciation.col.assets")}</th>
+                  <th className="text-right">{t("assets.depreciation.col.total")}</th>
+                  <th>{t("assets.depreciation.col.status")}</th>
+                  <th>{t("assets.depreciation.col.runBy")}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRuns.map((r) => {
-                  const meta = statusMeta(r.status);
+                  const meta = statusMeta(r.status, t);
                   const open = expandedId === r.id;
                   return (
                     <Fragment key={r.id}>
@@ -455,7 +458,7 @@ export default function AssetDepreciationPage() {
                             type="button"
                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
                             aria-expanded={open}
-                            aria-label={open ? "Hide run lines" : "Show run lines"}
+                            aria-label={open ? t("assets.depreciation.hideLines") : t("assets.depreciation.showLines")}
                             onClick={() => void toggleExpand(r)}
                           >
                             <span className="material-symbols-outlined text-[20px]">
@@ -491,26 +494,26 @@ export default function AssetDepreciationPage() {
                               <div className="space-y-3">
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                   <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                                    Run #{detail.id} lines
-                                    {detail.policy?.version ? ` · Policy ${detail.policy.version}` : ""}
+                                    {t("assets.depreciation.runLines", { id: detail.id })}
+                                    {detail.policy?.version ? ` ${t("assets.depreciation.policy", { version: detail.policy.version })}` : ""}
                                   </p>
                                   <p className="text-xs text-neutral-500">
-                                    {(detail.lines ?? []).length} asset line(s)
+                                    {t("assets.depreciation.lineCount", { count: (detail.lines ?? []).length })}
                                   </p>
                                 </div>
                                 {(detail.lines ?? []).length === 0 ? (
-                                  <p className="text-sm text-neutral-500">No asset lines on this run.</p>
+                                  <p className="text-sm text-neutral-500">{t("assets.depreciation.noLines")}</p>
                                 ) : (
                                   <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
                                     <table className="data-table text-sm">
                                       <thead>
                                         <tr>
-                                          <th>Asset</th>
-                                          <th>Tag</th>
-                                          <th className="text-right">Opening BV</th>
-                                          <th className="text-right">Depreciation</th>
-                                          <th className="text-right">Closing BV</th>
-                                          <th className="text-right">Accumulated</th>
+                                          <th>{t("assets.depreciation.col.asset")}</th>
+                                          <th>{t("assets.depreciation.col.tag")}</th>
+                                          <th className="text-right">{t("assets.depreciation.col.openingBv")}</th>
+                                          <th className="text-right">{t("assets.depreciation.col.depreciation")}</th>
+                                          <th className="text-right">{t("assets.depreciation.col.closingBv")}</th>
+                                          <th className="text-right">{t("assets.depreciation.col.accumulated")}</th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -518,7 +521,7 @@ export default function AssetDepreciationPage() {
                                           <tr key={line.id}>
                                             <td>
                                               <div className="font-medium text-neutral-900">
-                                                {line.asset?.asset_code ?? `Asset #${line.asset?.id ?? "—"}`}
+                                                {line.asset?.asset_code ?? t("assets.depreciation.assetNumber", { id: line.asset?.id ?? "—" })}
                                               </div>
                                               <div className="text-xs text-neutral-500">{line.asset?.name ?? "—"}</div>
                                             </td>

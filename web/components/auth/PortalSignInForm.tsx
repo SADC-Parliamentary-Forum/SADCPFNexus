@@ -161,7 +161,7 @@ export function PortalSignInForm({ portal, emailPlaceholder, prefillEmail }: Pro
             <button
               type="button"
               onClick={() => setShowPw(!showPw)}
-              aria-label={showPw ? "Hide password" : "Show password"}
+              aria-label={showPw ? t("auth.reset.hide") : t("auth.reset.show")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-neutral-800"
             >
               <span className="material-symbols-outlined text-[18px]">{showPw ? "visibility_off" : "visibility"}</span>
@@ -200,7 +200,7 @@ export function PortalSignInForm({ portal, emailPlaceholder, prefillEmail }: Pro
           {loading ? (
             <>
               <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-              Signing in…
+              {t("auth.portalSignIn.signingIn")}
             </>
           ) : mfaRequired ? t("login.verify") : t("login.submit")}
         </button>

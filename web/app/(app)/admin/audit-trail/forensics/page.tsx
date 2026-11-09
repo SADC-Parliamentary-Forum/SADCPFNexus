@@ -32,10 +32,10 @@ export default function AuditTrailForensicsPage() {
     try {
       await platformAuditApi.createForensicCase({ title });
       setTitle("");
-      success("Forensic case opened");
+      success(t("admin.auditForensics.opened"));
       load();
     } catch {
-      error("Could not create case");
+      error(t("admin.auditForensics.createFailed"));
     }
   };
 
@@ -43,20 +43,20 @@ export default function AuditTrailForensicsPage() {
     if (!linkCaseId || !eventId) return;
     try {
       await platformAuditApi.linkForensicEvent(Number(linkCaseId), { audit_event_id: Number(eventId) });
-      success("Event linked");
+      success(t("admin.auditForensics.linked"));
       setEventId("");
       load();
     } catch {
-      error("Link failed");
+      error(t("admin.auditForensics.linkFailed"));
     }
   };
 
   const hold = async (id: number) => {
     try {
       await platformAuditApi.forensicApplyHold(id, { hold_type: "investigation", reason: `Hold for forensic case ${id}` });
-      success("Investigation hold placed");
+      success(t("admin.auditForensics.holdPlaced"));
     } catch {
-      error("Hold failed");
+      error(t("admin.auditForensics.holdFailed"));
     }
   };
 
@@ -64,9 +64,9 @@ export default function AuditTrailForensicsPage() {
     try {
       const r = await platformAuditApi.sealEvidencePackage(id);
       const pkg = (r as any).data?.data ?? (r as any).data;
-      success(`Evidence sealed: ${pkg?.reference ?? "ok"} hash ${String(pkg?.manifest_hash ?? "").slice(0, 12)}…`);
+      success(t("admin.auditForensics.sealed", { reference: pkg?.reference ?? "ok", hash: String(pkg?.manifest_hash ?? "").slice(0, 12) }));
     } catch {
-      error("Seal failed — link events first");
+      error(t("admin.auditForensics.sealFailed"));
     }
   };
 
@@ -74,21 +74,21 @@ export default function AuditTrailForensicsPage() {
     <div className="w-full min-w-0 p-6 space-y-4">
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Forensic cases"
-        subtitle="MVP case workspace — link events, apply holds, seal hashed evidence packages."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Forensic cases" }]} />}
+        title="admin.auditForensics.title"
+        subtitle="admin.auditForensics.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "admin.auditForensics.title" }]} />}
       />
-        <Link href="/admin/audit-trail" className="btn-secondary text-sm">Back</Link>
+        <Link href="/admin/audit-trail" className="btn-secondary text-sm">{t("common.back")}</Link>
       </div>
 
       <div className="card p-4 grid gap-3 sm:grid-cols-2">
-        <input className="form-input text-sm sm:col-span-2" placeholder="Case title" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <button className="btn-primary text-sm sm:col-span-2" disabled={!title} onClick={create}>Open forensic case</button>
+        <input className="form-input text-sm sm:col-span-2" placeholder={t("admin.auditForensics.caseTitle")} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <button className="btn-primary text-sm sm:col-span-2" disabled={!title} onClick={create}>{t("admin.auditForensics.open")}</button>
       </div>
 
       <div className="card p-4 grid gap-3 sm:grid-cols-3">
         <select className="form-input text-sm" value={linkCaseId} onChange={(e) => setLinkCaseId(e.target.value ? Number(e.target.value) : "")}>
-          <option value="">Select case</option>
+          <option value="">{t("admin.auditForensics.selectCase")}</option>
           {cases.map((c) => <option key={c.id} value={c.id}>{c.reference} — {c.title}</option>)}
         </select>
         <select
@@ -105,18 +105,18 @@ export default function AuditTrailForensicsPage() {
             </option>
           ))}
         </select>
-        <button className="btn-secondary text-sm" onClick={link}>Link event</button>
+        <button className="btn-secondary text-sm" onClick={link}>{t("admin.auditForensics.linkEvent")}</button>
       </div>
 
       <div className="card overflow-hidden">
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-50 text-xs uppercase text-neutral-500">
             <tr>
-              <th className="px-4 py-2 text-left">Ref</th>
-              <th className="px-4 py-2 text-left">Title</th>
-              <th className="px-4 py-2 text-left">Status</th>
-              <th className="px-4 py-2 text-left">Custody</th>
-              <th className="px-4 py-2 text-left">Actions</th>
+              <th className="px-4 py-2 text-left">{t("admin.auditTrail.alerts.colRef")}</th>
+              <th className="px-4 py-2 text-left">{t("audit.col.title")}</th>
+              <th className="px-4 py-2 text-left">{t("audit.col.status")}</th>
+              <th className="px-4 py-2 text-left">{t("assets.mine.colCustody")}</th>
+              <th className="px-4 py-2 text-left">{t("audit.col.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -127,13 +127,13 @@ export default function AuditTrailForensicsPage() {
                 <td className="px-4 py-2">{c.status}</td>
                 <td className="px-4 py-2 text-xs">{c.custody_holder_id ?? "—"}</td>
                 <td className="px-4 py-2 space-x-1">
-                  <button className="btn-secondary text-xs" onClick={() => hold(c.id)}>Hold</button>
-                  <button className="btn-primary text-xs" onClick={() => seal(c.id)}>Seal package</button>
+                  <button className="btn-secondary text-xs" onClick={() => hold(c.id)}>{t("admin.auditForensics.hold")}</button>
+                  <button className="btn-primary text-xs" onClick={() => seal(c.id)}>{t("admin.auditForensics.seal")}</button>
                 </td>
               </tr>
             ))}
             {cases.length === 0 && (
-              <TableEmpty colSpan={5} title="No forensic cases yet." />
+              <TableEmpty colSpan={5} title="admin.auditForensics.empty" />
             )}
           </tbody>
         </table>

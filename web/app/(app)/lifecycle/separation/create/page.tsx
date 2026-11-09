@@ -7,8 +7,10 @@ import { lifecycleApi, tenantUsersApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { FormField } from "@/components/ui/FormSection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function LifecycleSeparationCreatePage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [employeeId, setEmployeeId] = useState("");
   const [reason, setReason] = useState("resignation");
@@ -32,35 +34,35 @@ export default function LifecycleSeparationCreatePage() {
       const id = res.data.data?.id;
       if (id) router.push(`/lifecycle/cases/${id}`);
     },
-    onError: () => setErr("Could not start separation. Ensure published HR notice policy exists for the employee."),
+    onError: () => setErr(t("lifecycle.separationCreate.failed")),
   });
 
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Start separation"
-        subtitle="Notice period is resolved from published grade band or contract type — not editable here."
+        title={t("lifecycle.separation.start")}
+        subtitle={t("lifecycle.separationCreate.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Employee Lifecycle", href: "/lifecycle" },
-              { label: "Separation", href: "/lifecycle/separation" },
-              { label: "Start" },
+              { label: t("lifecycle.common.breadcrumb"), href: "/lifecycle" },
+              { label: t("lifecycle.separation.crumb"), href: "/lifecycle/separation" },
+              { label: t("lifecycle.common.startCrumb") },
             ]}
           />
         }
       />
 
-      <FormSection title="Separation details">
+      <FormSection title={t("lifecycle.separationCreate.details")}>
         <div className="space-y-4">
-          <FormField label="Employee" htmlFor="lifecycle-separation-employee">
+          <FormField label={t("lifecycle.common.employee")} htmlFor="lifecycle-separation-employee">
             <select
               id="lifecycle-separation-employee"
               className="input w-full"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
             >
-              <option value="">Select employee…</option>
+              <option value="">{t("lifecycle.common.selectEmployee")}</option>
               {(usersQuery.data ?? []).map((u: { id: number; name: string }) => (
                 <option key={u.id} value={u.id}>
                   {u.name}
@@ -69,19 +71,19 @@ export default function LifecycleSeparationCreatePage() {
             </select>
           </FormField>
 
-          <FormField label="Separation type" htmlFor="lifecycle-separation-reason">
+          <FormField label={t("lifecycle.separationCreate.type")} htmlFor="lifecycle-separation-reason">
             <select
               id="lifecycle-separation-reason"
               className="input w-full"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             >
-              <option value="resignation">Resignation</option>
-              <option value="end_of_contract">End of contract</option>
+              <option value="resignation">{t("lifecycle.separationCreate.resignation")}</option>
+              <option value="end_of_contract">{t("lifecycle.separationCreate.endOfContract")}</option>
             </select>
           </FormField>
 
-          <FormField label="Last working day" htmlFor="lifecycle-separation-lwd">
+          <FormField label={t("lifecycle.separationCreate.lastDay")} htmlFor="lifecycle-separation-lwd">
             <input
               id="lifecycle-separation-lwd"
               type="date"
@@ -99,7 +101,7 @@ export default function LifecycleSeparationCreatePage() {
             disabled={!employeeId || create.isPending}
             onClick={() => create.mutate()}
           >
-            {create.isPending ? "Starting…" : "Start separation case"}
+            {create.isPending ? t("lifecycle.common.starting") : t("lifecycle.separationCreate.submit")}
           </button>
         </div>
       </FormSection>

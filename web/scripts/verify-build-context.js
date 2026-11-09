@@ -63,7 +63,7 @@ const checks = [
       "await setupApi.updateIdentity({",
       "await profileApi.update({",
       "await setupApi.complete();",
-      'title="Emergency Contact"',
+      'title={t("setup.emergency.title")}',
     ],
   },
 ];

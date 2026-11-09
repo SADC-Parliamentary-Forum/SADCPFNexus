@@ -9,6 +9,7 @@ import { FormField, FormSection } from "@/components/ui/FormSection";
 import { TableEmpty } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type DsaRate = {
   id: number;
@@ -43,10 +44,11 @@ type SponsoredRate = {
   is_active?: boolean;
 };
 
+/** i18n keys of the DSA rate type labels. */
 const RATE_TYPE_LABELS: Record<number, string> = {
-  1: "Type 1 — Acc + meals + incidentals",
-  2: "Type 2 — Meals + incidentals",
-  3: "Type 3 — Incidentals only",
+  1: "travel.settings.rateType1",
+  2: "travel.settings.rateType2",
+  3: "travel.settings.rateType3",
 };
 
 function localIso(d = new Date()): string {
@@ -84,11 +86,11 @@ const defaultSponsoredForm = {
 
 const nonNegativeNumber = (value: string) => Math.max(0, Number(value));
 
-const componentSummary = (rate: DsaRate) => {
+const componentSummary = (rate: DsaRate, t: (key: string, vars?: Record<string, string | number>) => string) => {
   const parts = [
-    rate.accommodation_component != null ? `Acc ${rate.accommodation_component}` : null,
-    rate.meal_component != null ? `Meals ${rate.meal_component}` : null,
-    rate.incidentals_component != null ? `Inc ${rate.incidentals_component}` : null,
+    rate.accommodation_component != null ? t("travel.settings.compAcc", { value: rate.accommodation_component }) : null,
+    rate.meal_component != null ? t("travel.settings.compMeals", { value: rate.meal_component }) : null,
+    rate.incidentals_component != null ? t("travel.settings.compInc", { value: rate.incidentals_component }) : null,
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : "—";
 };
@@ -123,6 +125,7 @@ function SettingsTable({
 
 export default function TravelSettingsPage() {
   const toast = useToast();
+  const { t } = useI18n();
   const [rates, setRates] = useState<DsaRate[]>([]);
   const [fxRates, setFxRates] = useState<FxRate[]>([]);
   const [sponsoredRates, setSponsoredRates] = useState<SponsoredRate[]>([]);
@@ -148,7 +151,7 @@ export default function TravelSettingsPage() {
       setFxRates((fxRes.data.data as FxRate[]) ?? []);
       setSponsoredRates((sponsoredRes.data.data as SponsoredRate[]) ?? []);
     } catch {
-      setError("Failed to load travel settings. Finance review or travel admin access is required.");
+      setError(t("travel.settings.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -191,14 +194,14 @@ export default function TravelSettingsPage() {
         ...form,
         ...(editingId ? { id: editingId } : {}),
       });
-      setSuccess(editingId ? "DSA rate updated." : "DSA rate saved.");
-      toast.success(editingId ? "DSA rate updated" : "DSA rate saved");
+      setSuccess(editingId ? t("travel.settings.dsaUpdatedMsg") : t("travel.settings.dsaSavedMsg"));
+      toast.success(editingId ? t("travel.settings.dsaUpdated") : t("travel.settings.dsaSaved"));
       await load({ quiet: true });
       resetForm();
     } catch (err) {
-      const message = apiErrorMessage(err, "Failed to save DSA rate.");
+      const message = apiErrorMessage(err, t("travel.settings.dsaSaveFailed"));
       setError(message);
-      toast.error("DSA rate not saved", message);
+      toast.error(t("travel.settings.dsaNotSaved"), message);
     } finally {
       setSaving(null);
     }
@@ -211,13 +214,13 @@ export default function TravelSettingsPage() {
     setSuccess(null);
     try {
       await travelApi.saveFxRate({ ...fxForm, source: "manual" });
-      setSuccess("FX rate saved. The rate is snapshotted onto DSA lines at calculation time.");
-      toast.success("FX rate saved");
+      setSuccess(t("travel.settings.fxSavedMsg"));
+      toast.success(t("travel.settings.fxSaved"));
       await load({ quiet: true });
     } catch (err) {
-      const message = apiErrorMessage(err, "Failed to save FX rate.");
+      const message = apiErrorMessage(err, t("travel.settings.fxSaveFailed"));
       setError(message);
-      toast.error("FX rate not saved", message);
+      toast.error(t("travel.settings.fxNotSaved"), message);
     } finally {
       setSaving(null);
     }
@@ -230,13 +233,13 @@ export default function TravelSettingsPage() {
     setSuccess(null);
     try {
       await travelApi.saveSponsoredRate(sponsoredForm);
-      setSuccess("Sponsored deduction rate saved.");
-      toast.success("Sponsored rate saved");
+      setSuccess(t("travel.settings.sponsoredSavedMsg"));
+      toast.success(t("travel.settings.sponsoredSaved"));
       await load({ quiet: true });
     } catch (err) {
-      const message = apiErrorMessage(err, "Failed to save sponsored rate.");
+      const message = apiErrorMessage(err, t("travel.settings.sponsoredSaveFailed"));
       setError(message);
-      toast.error("Sponsored rate not saved", message);
+      toast.error(t("travel.settings.sponsoredNotSaved"), message);
     } finally {
       setSaving(null);
     }
@@ -245,15 +248,15 @@ export default function TravelSettingsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Travel settings"
-        subtitle="DSA rate types 1–3, FX snapshots, and host/donor meal deductions used by Finance — not ad-hoc percentages."
+        title={t("travel.settings.title")}
+        subtitle={t("travel.settings.subtitle")}
         breadcrumbs={
-          <PageBreadcrumbs items={[{ label: "Travel", href: "/travel" }, { label: "Settings" }]} />
+          <PageBreadcrumbs items={[{ label: "nav.travel", href: "/travel" }, { label: "travel.settings.crumb" }]} />
         }
         actions={
           <Link href="/travel" className="btn-secondary text-sm">
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            Back
+            {t("common.back")}
           </Link>
         }
       />
@@ -279,14 +282,14 @@ export default function TravelSettingsPage() {
         <>
           <div data-testid="travel-dsa-settings">
             <FormSection
-              title="DSA rate register"
+              title={t("travel.settings.dsa.title")}
               icon="payments"
-              description="Country or city daily rates by type. Finance applies these after a request is submitted."
+              description={t("travel.settings.dsa.description")}
             >
               <div className="space-y-5">
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label="Country" htmlFor="dsa-country" required>
+                  <FormField label={t("travel.settings.country")} htmlFor="dsa-country" required>
                     <input
                       id="dsa-country"
                       className="form-input w-full"
@@ -295,7 +298,7 @@ export default function TravelSettingsPage() {
                       required
                     />
                   </FormField>
-                  <FormField label="City" htmlFor="dsa-city" hint="Leave blank for a country-level rate.">
+                  <FormField label={t("travel.settings.city")} htmlFor="dsa-city" hint={t("travel.settings.cityHint")}>
                     <input
                       id="dsa-city"
                       className="form-input w-full"
@@ -303,19 +306,19 @@ export default function TravelSettingsPage() {
                       onChange={(e) => setForm({ ...form, city: e.target.value })}
                     />
                   </FormField>
-                  <FormField label="Rate type" htmlFor="dsa-rate-type">
+                  <FormField label={t("travel.settings.rateType")} htmlFor="dsa-rate-type">
                     <select
                       id="dsa-rate-type"
                       className="form-input w-full"
                       value={form.rate_type}
                       onChange={(e) => setForm({ ...form, rate_type: Number(e.target.value) })}
                     >
-                      <option value={1}>{RATE_TYPE_LABELS[1]}</option>
-                      <option value={2}>{RATE_TYPE_LABELS[2]}</option>
-                      <option value={3}>{RATE_TYPE_LABELS[3]}</option>
+                      <option value={1}>{t(RATE_TYPE_LABELS[1])}</option>
+                      <option value={2}>{t(RATE_TYPE_LABELS[2])}</option>
+                      <option value={3}>{t(RATE_TYPE_LABELS[3])}</option>
                     </select>
                   </FormField>
-                  <FormField label="Rate / day" htmlFor="dsa-rate-per-day" required>
+                  <FormField label={t("travel.settings.ratePerDay")} htmlFor="dsa-rate-per-day" required>
                     <input
                       id="dsa-rate-per-day"
                       type="number"
@@ -326,7 +329,7 @@ export default function TravelSettingsPage() {
                       required
                     />
                   </FormField>
-                  <FormField label="Currency" htmlFor="dsa-currency" required>
+                  <FormField label={t("travel.settings.currency")} htmlFor="dsa-currency" required>
                     <input
                       id="dsa-currency"
                       className="form-input w-full"
@@ -336,7 +339,7 @@ export default function TravelSettingsPage() {
                       required
                     />
                   </FormField>
-                  <FormField label="Effective from" htmlFor="dsa-effective-from">
+                  <FormField label={t("travel.settings.effectiveFrom")} htmlFor="dsa-effective-from">
                     <input
                       id="dsa-effective-from"
                       type="date"
@@ -345,7 +348,7 @@ export default function TravelSettingsPage() {
                       onChange={(e) => setForm({ ...form, effective_from: e.target.value })}
                     />
                   </FormField>
-                  <FormField label="Accommodation" htmlFor="dsa-accommodation">
+                  <FormField label={t("travel.settings.accommodation")} htmlFor="dsa-accommodation">
                     <input
                       id="dsa-accommodation"
                       type="number"
@@ -355,7 +358,7 @@ export default function TravelSettingsPage() {
                       onChange={(e) => setForm({ ...form, accommodation_component: nonNegativeNumber(e.target.value) })}
                     />
                   </FormField>
-                  <FormField label="Meals" htmlFor="dsa-meals">
+                  <FormField label={t("travel.settings.meals")} htmlFor="dsa-meals">
                     <input
                       id="dsa-meals"
                       type="number"
@@ -365,7 +368,7 @@ export default function TravelSettingsPage() {
                       onChange={(e) => setForm({ ...form, meal_component: nonNegativeNumber(e.target.value) })}
                     />
                   </FormField>
-                  <FormField label="Incidentals" htmlFor="dsa-incidentals">
+                  <FormField label={t("travel.settings.incidentals")} htmlFor="dsa-incidentals">
                     <input
                       id="dsa-incidentals"
                       type="number"
@@ -383,14 +386,14 @@ export default function TravelSettingsPage() {
                         checked={form.is_active}
                         onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                       />
-                      Active rate
+                      {t("travel.settings.activeRate")}
                     </label>
                   </div>
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
                   {editingId ? (
                     <button type="button" className="btn-secondary text-sm" onClick={resetForm}>
-                      Cancel edit
+                      {t("travel.settings.cancelEdit")}
                     </button>
                   ) : null}
                   <button
@@ -399,32 +402,36 @@ export default function TravelSettingsPage() {
                     data-testid="travel-save-dsa"
                     disabled={saving !== null}
                   >
-                    {saving === "dsa" ? "Saving…" : editingId ? "Update DSA rate" : "Save DSA rate"}
+                    {saving === "dsa"
+                      ? t("travel.settings.saving")
+                      : editingId
+                        ? t("travel.settings.updateDsa")
+                        : t("travel.settings.saveDsa")}
                   </button>
                 </div>
               </form>
 
               <SettingsTable
-                caption="DSA rate register"
+                caption={t("travel.settings.dsa.title")}
                 columns={8}
                 empty={{
                   icon: "payments",
-                  title: "No DSA rates yet",
-                  description: "Add a country or city rate so Finance can calculate daily subsistence.",
+                  title: t("travel.settings.dsa.emptyTitle"),
+                  description: t("travel.settings.dsa.emptyDescription"),
                 }}
               >
                 {rates.length > 0 ? (
                   <>
                     <thead>
                       <tr>
-                        <th scope="col">Country</th>
-                        <th scope="col">City</th>
-                        <th scope="col">Type</th>
-                        <th scope="col">Components</th>
-                        <th scope="col">Rate/day</th>
-                        <th scope="col">Effective</th>
-                        <th scope="col">Status</th>
-                        <th scope="col"><span className="sr-only">Actions</span></th>
+                        <th scope="col">{t("travel.settings.country")}</th>
+                        <th scope="col">{t("travel.settings.city")}</th>
+                        <th scope="col">{t("travel.settings.col.type")}</th>
+                        <th scope="col">{t("travel.settings.col.components")}</th>
+                        <th scope="col">{t("travel.settings.col.ratePerDay")}</th>
+                        <th scope="col">{t("travel.settings.col.effective")}</th>
+                        <th scope="col">{t("travel.settings.col.status")}</th>
+                        <th scope="col"><span className="sr-only">{t("travel.settings.col.actions")}</span></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -432,20 +439,20 @@ export default function TravelSettingsPage() {
                         <tr key={r.id}>
                           <td className="font-medium text-neutral-900">{r.country}</td>
                           <td>{r.city || "—"}</td>
-                          <td className="text-xs text-neutral-600">{RATE_TYPE_LABELS[r.rate_type] ?? r.rate_type}</td>
-                          <td className="text-xs text-neutral-600">{componentSummary(r)}</td>
+                          <td className="text-xs text-neutral-600">{RATE_TYPE_LABELS[r.rate_type] ? t(RATE_TYPE_LABELS[r.rate_type]) : r.rate_type}</td>
+                          <td className="text-xs text-neutral-600">{componentSummary(r, t)}</td>
                           <td className="whitespace-nowrap">
                             {r.rate_per_day} {r.currency}
                           </td>
                           <td className="whitespace-nowrap">{formatDateShort(r.effective_from)}</td>
                           <td>
                             <span className={`badge text-xs ${r.is_active ? "badge-success" : "badge-muted"}`}>
-                              {r.is_active ? "Active" : "Inactive"}
+                              {r.is_active ? t("travel.settings.active") : t("travel.settings.inactive")}
                             </span>
                           </td>
                           <td>
                             <button type="button" className="btn-secondary py-1 px-2 text-xs" onClick={() => startEdit(r)}>
-                              Edit
+                              {t("common.edit")}
                             </button>
                           </td>
                         </tr>
@@ -460,14 +467,14 @@ export default function TravelSettingsPage() {
 
           <div data-testid="travel-fx-settings">
             <FormSection
-              title="FX rate register"
+              title={t("travel.settings.fx.title")}
               icon="currency_exchange"
-              description="Manual rates used when converting DSA lines. The source is recorded as manual — this is not a live feed."
+              description={t("travel.settings.fx.description")}
             >
               <div className="space-y-5">
               <form onSubmit={onFxSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label="From" htmlFor="fx-from" required>
+                  <FormField label={t("travel.settings.fx.from")} htmlFor="fx-from" required>
                     <input
                       id="fx-from"
                       className="form-input w-full"
@@ -477,7 +484,7 @@ export default function TravelSettingsPage() {
                       required
                     />
                   </FormField>
-                  <FormField label="To" htmlFor="fx-to" required>
+                  <FormField label={t("travel.settings.fx.to")} htmlFor="fx-to" required>
                     <input
                       id="fx-to"
                       className="form-input w-full"
@@ -487,7 +494,7 @@ export default function TravelSettingsPage() {
                       required
                     />
                   </FormField>
-                  <FormField label="Rate" htmlFor="fx-rate" required>
+                  <FormField label={t("travel.settings.fx.rate")} htmlFor="fx-rate" required>
                     <input
                       id="fx-rate"
                       type="number"
@@ -499,7 +506,7 @@ export default function TravelSettingsPage() {
                       required
                     />
                   </FormField>
-                  <FormField label="Effective date" htmlFor="fx-effective">
+                  <FormField label={t("travel.settings.fx.effectiveDate")} htmlFor="fx-effective">
                     <input
                       id="fx-effective"
                       type="date"
@@ -508,7 +515,7 @@ export default function TravelSettingsPage() {
                       onChange={(e) => setFxForm({ ...fxForm, effective_date: e.target.value })}
                     />
                   </FormField>
-                  <FormField label="Notes" htmlFor="fx-notes" className="sm:col-span-2">
+                  <FormField label={t("travel.settings.fx.notes")} htmlFor="fx-notes" className="sm:col-span-2">
                     <input
                       id="fx-notes"
                       className="form-input w-full"
@@ -524,29 +531,29 @@ export default function TravelSettingsPage() {
                     data-testid="travel-save-fx"
                     disabled={saving !== null}
                   >
-                    {saving === "fx" ? "Saving…" : "Save FX rate"}
+                    {saving === "fx" ? t("travel.settings.saving") : t("travel.settings.fx.save")}
                   </button>
                 </div>
               </form>
 
               <SettingsTable
-                caption="FX rate register"
+                caption={t("travel.settings.fx.title")}
                 columns={5}
                 empty={{
                   icon: "currency_exchange",
-                  title: "No FX rates yet",
-                  description: "Add a manual rate so DSA lines can be converted at calculation time.",
+                  title: t("travel.settings.fx.emptyTitle"),
+                  description: t("travel.settings.fx.emptyDescription"),
                 }}
               >
                 {fxRates.length > 0 ? (
                   <>
                     <thead>
                       <tr>
-                        <th scope="col">From</th>
-                        <th scope="col">To</th>
-                        <th scope="col">Rate</th>
-                        <th scope="col">Effective</th>
-                        <th scope="col">Source</th>
+                        <th scope="col">{t("travel.settings.fx.from")}</th>
+                        <th scope="col">{t("travel.settings.fx.to")}</th>
+                        <th scope="col">{t("travel.settings.fx.rate")}</th>
+                        <th scope="col">{t("travel.settings.col.effective")}</th>
+                        <th scope="col">{t("travel.settings.fx.source")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -571,14 +578,14 @@ export default function TravelSettingsPage() {
 
           <div data-testid="travel-sponsored-rates">
             <FormSection
-              title="Sponsored / top-up deduction rates"
+              title={t("travel.settings.sponsored.title")}
               icon="percent"
-              description="Policy percents for meal and accommodation deductions when a host or donor provides support. Finance applies these to DSA components."
+              description={t("travel.settings.sponsored.description")}
             >
               <div className="space-y-5">
               <form onSubmit={onSponsoredSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label="Name" htmlFor="sponsored-name" required>
+                  <FormField label={t("travel.settings.sponsored.name")} htmlFor="sponsored-name" required>
                     <input
                       id="sponsored-name"
                       className="form-input w-full"
@@ -587,7 +594,7 @@ export default function TravelSettingsPage() {
                       required
                     />
                   </FormField>
-                  <FormField label="Code" htmlFor="sponsored-code" required>
+                  <FormField label={t("travel.settings.sponsored.code")} htmlFor="sponsored-code" required>
                     <input
                       id="sponsored-code"
                       className="form-input w-full"
@@ -596,7 +603,7 @@ export default function TravelSettingsPage() {
                       required
                     />
                   </FormField>
-                  <FormField label="Meal deduction %" htmlFor="sponsored-meal">
+                  <FormField label={t("travel.settings.sponsored.mealDeduction")} htmlFor="sponsored-meal">
                     <input
                       id="sponsored-meal"
                       type="number"
@@ -609,7 +616,7 @@ export default function TravelSettingsPage() {
                       }
                     />
                   </FormField>
-                  <FormField label="Accommodation deduction %" htmlFor="sponsored-accom">
+                  <FormField label={t("travel.settings.sponsored.accomDeduction")} htmlFor="sponsored-accom">
                     <input
                       id="sponsored-accom"
                       type="number"
@@ -633,35 +640,35 @@ export default function TravelSettingsPage() {
                         checked={sponsoredForm.is_active}
                         onChange={(e) => setSponsoredForm({ ...sponsoredForm, is_active: e.target.checked })}
                       />
-                      Active policy rate
+                      {t("travel.settings.sponsored.activePolicy")}
                     </label>
                   </div>
                 </div>
                 <div className="flex justify-end">
                   <button type="submit" className="btn-primary text-sm disabled:opacity-40" disabled={saving !== null}>
-                    {saving === "sponsored" ? "Saving…" : "Save policy rate"}
+                    {saving === "sponsored" ? t("travel.settings.saving") : t("travel.settings.sponsored.save")}
                   </button>
                 </div>
               </form>
 
               <SettingsTable
-                caption="Sponsored deduction rates"
+                caption={t("travel.settings.sponsored.caption")}
                 columns={5}
                 empty={{
                   icon: "percent",
-                  title: "No sponsored rates yet",
-                  description: "Record host or donor deduction percents so Finance does not invent ad-hoc amounts.",
+                  title: t("travel.settings.sponsored.emptyTitle"),
+                  description: t("travel.settings.sponsored.emptyDescription"),
                 }}
               >
                 {sponsoredRates.length > 0 ? (
                   <>
                     <thead>
                       <tr>
-                        <th scope="col">Name</th>
-                        <th scope="col">Code</th>
-                        <th scope="col">Meal %</th>
-                        <th scope="col">Accom %</th>
-                        <th scope="col">Status</th>
+                        <th scope="col">{t("travel.settings.sponsored.name")}</th>
+                        <th scope="col">{t("travel.settings.sponsored.code")}</th>
+                        <th scope="col">{t("travel.settings.sponsored.mealPct")}</th>
+                        <th scope="col">{t("travel.settings.sponsored.accomPct")}</th>
+                        <th scope="col">{t("travel.settings.col.status")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -673,7 +680,7 @@ export default function TravelSettingsPage() {
                           <td>{String(r.accommodation_deduction_percent ?? 0)}</td>
                           <td>
                             <span className={`badge text-xs ${r.is_active ? "badge-success" : "badge-muted"}`}>
-                              {r.is_active ? "Active" : "Inactive"}
+                              {r.is_active ? t("travel.settings.active") : t("travel.settings.inactive")}
                             </span>
                           </td>
                         </tr>

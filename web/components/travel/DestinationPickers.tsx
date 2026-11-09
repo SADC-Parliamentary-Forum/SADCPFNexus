@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { travelApi, type TravelDestinationCountry } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function unwrapCountries(payload: unknown): TravelDestinationCountry[] {
   if (!payload || typeof payload !== "object") return [];
@@ -47,11 +48,12 @@ export function TravelDestinationFields({
   adding?: boolean;
   idPrefix?: string;
 }) {
+  const { t } = useI18n();
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-1.5">
         <label htmlFor={`${idPrefix}-country`} className="block text-xs font-medium text-neutral-700">
-          Destination Country <span className="text-red-500">*</span>
+          {t("travel.destinationPickers.country")} <span className="text-red-500">*</span>
         </label>
         <CountrySelect
           id={`${idPrefix}-country`}
@@ -66,7 +68,7 @@ export function TravelDestinationFields({
         />
       </div>
       <div className="space-y-1.5">
-        <label htmlFor={`${idPrefix}-city`} className="block text-xs font-medium text-neutral-700">City</label>
+        <label htmlFor={`${idPrefix}-city`} className="block text-xs font-medium text-neutral-700">{t("travel.destinationPickers.city")}</label>
         <CitySelect
           id={`${idPrefix}-city`}
           value={city}
@@ -97,6 +99,7 @@ function CountrySelect({
   adding: boolean;
 }) {
   const toast = useToast();
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +129,7 @@ function CountrySelect({
         className="w-full flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-left focus:border-primary focus:ring-1 focus:ring-primary outline-none"
       >
         <span className={value ? "text-neutral-900" : "text-neutral-400"}>
-          {value || "Select country..."}
+          {value || t("travel.destinationPickers.selectCountry")}
         </span>
         <span className="material-symbols-outlined text-[16px] text-neutral-400">expand_more</span>
       </button>
@@ -136,7 +139,7 @@ function CountrySelect({
             <input
               autoFocus
               className="w-full rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs outline-none focus:border-primary"
-              placeholder="Search countries..."
+              placeholder={t("travel.destinationPickers.searchCountries")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -144,7 +147,7 @@ function CountrySelect({
           <div className="max-h-56 overflow-y-auto">
             {showSections && (
               <div className="px-3 pt-2 pb-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
-                SADC Member States
+                {t("travel.destinationPickers.sadcStates")}
               </div>
             )}
             {sadcFiltered.map((c) => (
@@ -167,7 +170,7 @@ function CountrySelect({
             ))}
             {showSections && (
               <div className="px-3 pt-2 pb-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider border-t border-neutral-50 mt-1">
-                Other Countries
+                {t("travel.destinationPickers.otherCountries")}
               </div>
             )}
             {otherFiltered.map((c) => (
@@ -199,20 +202,20 @@ function CountrySelect({
                   try {
                     const name = query.trim();
                     await onAdd(name);
-                    toast.success("Country added", name);
+                    toast.success(t("travel.destinationPickers.countryAdded"), name);
                     setOpen(false);
                     setQuery("");
                   } catch (err) {
-                    setError("Could not add that country.");
-                    toast.error("Country not added", apiErrorMessage(err, "Could not add that country."));
+                    setError(t("travel.destinationPickers.countryAddFailed"));
+                    toast.error(t("travel.destinationPickers.countryNotAdded"), apiErrorMessage(err, t("travel.destinationPickers.countryAddFailed")));
                   }
                 }}
               >
-                Add “{query.trim()}” as a country
+                {t("travel.destinationPickers.addCountry", { name: query.trim() })}
               </button>
             )}
             {!canAdd && sadcFiltered.length === 0 && otherFiltered.length === 0 && (
-              <div className="px-3 py-4 text-xs text-neutral-400 text-center">No results for "{query}"</div>
+              <div className="px-3 py-4 text-xs text-neutral-400 text-center">{t("travel.destinationPickers.noResults", { query })}</div>
             )}
             {error && <p className="px-3 py-2 text-xs text-red-600">{error}</p>}
           </div>
@@ -240,6 +243,7 @@ function CitySelect({
   adding: boolean;
 }) {
   const toast = useToast();
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -267,7 +271,7 @@ function CitySelect({
         id={id}
         className="form-input"
         disabled
-        placeholder="Select a country first"
+        placeholder={t("travel.destinationPickers.selectCountryFirst")}
         value=""
         readOnly
       />
@@ -283,7 +287,7 @@ function CitySelect({
         className="w-full flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-left focus:border-primary focus:ring-1 focus:ring-primary outline-none"
       >
         <span className={value ? "text-neutral-900" : "text-neutral-400"}>
-          {value || "Select city..."}
+          {value || t("travel.destinationPickers.selectCity")}
         </span>
         <span className="material-symbols-outlined text-[16px] text-neutral-400">expand_more</span>
       </button>
@@ -293,7 +297,7 @@ function CitySelect({
             <input
               autoFocus
               className="w-full rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs outline-none focus:border-primary"
-              placeholder="Search or add a city..."
+              placeholder={t("travel.destinationPickers.searchCity")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -328,20 +332,20 @@ function CitySelect({
                   try {
                     const name = query.trim();
                     await onAdd(country, name);
-                    toast.success("City added", name);
+                    toast.success(t("travel.destinationPickers.cityAdded"), name);
                     setOpen(false);
                     setQuery("");
                   } catch (err) {
-                    setError("Could not add that city.");
-                    toast.error("City not added", apiErrorMessage(err, "Could not add that city."));
+                    setError(t("travel.destinationPickers.cityAddFailed"));
+                    toast.error(t("travel.destinationPickers.cityNotAdded"), apiErrorMessage(err, t("travel.destinationPickers.cityAddFailed")));
                   }
                 }}
               >
-                Add “{query.trim()}” as a city
+                {t("travel.destinationPickers.addCity", { name: query.trim() })}
               </button>
             )}
             {!canAdd && filtered.length === 0 && (
-              <div className="px-3 py-4 text-xs text-neutral-400 text-center">No results for "{query}"</div>
+              <div className="px-3 py-4 text-xs text-neutral-400 text-center">{t("travel.destinationPickers.noResults", { query })}</div>
             )}
             {error && <p className="px-3 py-2 text-xs text-red-600">{error}</p>}
           </div>

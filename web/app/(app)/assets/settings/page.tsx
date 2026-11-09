@@ -71,9 +71,9 @@ export default function AssetSettingsPage() {
     <div className="w-full min-w-0 space-y-5">
       <div className="page-header">
         <ModulePageHeader
-        title="Asset Settings"
-        subtitle="Versioned capitalisation policy and structured locations"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Asset Settings" }]} />}
+        title="assets.settingsPage.title"
+        subtitle="assets.settingsPage.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "assets.settingsPage.title" }]} />}
       />
       </div>
 
@@ -92,10 +92,10 @@ export default function AssetSettingsPage() {
             try {
               await assetLifecycleApi.updateRecoveryContact(recovery);
               setRecoveryMsg(t("assets.settings.recoverySaved"));
-              toast.success("Recovery contact saved");
+              toast.success(t("assets.settingsPage.recoverySaved"));
             } catch (err) {
               setRecoveryErr(t("assets.settings.recoveryFailed"));
-              toast.error("Recovery contact not saved", apiErrorMessage(err, t("assets.settings.recoveryFailed")));
+              toast.error(t("assets.settingsPage.recoveryNotSaved"), apiErrorMessage(err, t("assets.settings.recoveryFailed")));
             } finally {
               setSaving(false);
             }
@@ -141,21 +141,21 @@ export default function AssetSettingsPage() {
       </section>
 
       <section className="card" style={{ padding: "1rem", marginBottom: "1.5rem" }}>
-        <h2 style={{ fontSize: "1.05rem" }}>Categories and labels</h2>
-        <p className="text-muted">Add and edit asset classes, then print Avery or thermal QR labels.</p>
+        <h2 style={{ fontSize: "1.05rem" }}>{t("assets.settingsPage.categoriesTitle")}</h2>
+        <p className="text-muted">{t("assets.settingsPage.categoriesHint")}</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Link href="/assets/categories" className="btn-secondary">Categories</Link>
-          <Link href="/assets/labels" className="btn-secondary">Print labels</Link>
-          <Link href="/assets/labels/templates" className="btn-secondary">Label templates</Link>
+          <Link href="/assets/categories" className="btn-secondary">{t("assets.categories.breadcrumb")}</Link>
+          <Link href="/assets/labels" className="btn-secondary">{t("assets.register.printLabels")}</Link>
+          <Link href="/assets/labels/templates" className="btn-secondary">{t("assets.labels.templatesTitle")}</Link>
         </div>
       </section>
 
       <section className="card" style={{ padding: "1rem", marginBottom: "1.5rem" }}>
-        <h2 style={{ fontSize: "1.05rem" }}>Capitalisation policies</h2>
-        <p className="text-muted">Threshold is not hard-coded — historical assets keep the policy at acquisition.</p>
+        <h2 style={{ fontSize: "1.05rem" }}>{t("assets.settingsPage.policiesTitle")}</h2>
+        <p className="text-muted">{t("assets.settingsPage.policiesHint")}</p>
         <table className="data-table" style={{ marginTop: 12 }}>
           <thead>
-            <tr><th>Version</th><th>Threshold</th><th>Effective from</th><th>Active</th></tr>
+            <tr><th>{t("assets.settingsPage.colVersion")}</th><th>{t("assets.settingsPage.colThreshold")}</th><th>{t("assets.insurance.effectiveFrom")}</th><th>{t("assets.register.active")}</th></tr>
           </thead>
           <tbody>
             {policies.map((p) => (
@@ -163,10 +163,10 @@ export default function AssetSettingsPage() {
                 <td>{p.version}</td>
                 <td>{p.threshold_currency} {Number(p.threshold_amount).toFixed(2)}</td>
                 <td>{p.effective_from}</td>
-                <td>{p.is_active ? "Yes" : "No"}</td>
+                <td>{p.is_active ? t("assets.maintenance.yes") : t("assets.maintenance.no")}</td>
               </tr>
             ))}
-            {policies.length === 0 && <TableEmpty colSpan={4} title="No policies — default USD 250 is created on first capitalisation." />}
+            {policies.length === 0 && <TableEmpty colSpan={4} title={t("assets.settingsPage.noPolicies")} />}
           </tbody>
         </table>
       </section>
@@ -182,23 +182,23 @@ export default function AssetSettingsPage() {
             const name = (form.elements.namedItem("name") as HTMLInputElement).value;
             try {
               await assetMetaApi.createLocation({ code, name, location_type: "room", is_active: true });
-              toast.success("Location saved", `${code} — ${name}`);
+              toast.success(t("assets.settingsPage.locationSaved"), `${code} — ${name}`);
               form.reset();
             } catch (err) {
-              toast.error("Location not saved", apiErrorMessage(err, "Failed to save location."));
+              toast.error(t("assets.settingsPage.locationNotSaved"), apiErrorMessage(err, t("assets.settingsPage.locationSaveFailed")));
               return;
             }
             const r = await assetMetaApi.locations().catch(() => null);
             if (r) setLocations(r.data.data ?? []);
           }}
         >
-          <input name="code" className="form-input" placeholder="Code" required />
-          <input name="name" className="form-input" placeholder="Name" required />
+          <input name="code" className="form-input" placeholder={t("assets.view.fieldCode")} required />
+          <input name="name" className="form-input" placeholder={t("assets.import.colName")} required />
           <button type="submit" className="btn-secondary">{t("common.save")}</button>
         </form>
         <table className="data-table" style={{ marginTop: 12 }}>
           <thead>
-            <tr><th>Code</th><th>Name</th><th>Building</th></tr>
+            <tr><th>{t("assets.view.fieldCode")}</th><th>{t("assets.import.colName")}</th><th>{t("assets.settingsPage.colBuilding")}</th></tr>
           </thead>
           <tbody>
             {locations.map((l) => (
@@ -208,7 +208,7 @@ export default function AssetSettingsPage() {
                 <td>{l.building ?? "—"}</td>
               </tr>
             ))}
-            {locations.length === 0 && <TableEmpty colSpan={3} title="No locations configured." />}
+            {locations.length === 0 && <TableEmpty colSpan={3} title={t("assets.settingsPage.noLocations")} />}
           </tbody>
         </table>
       </section>

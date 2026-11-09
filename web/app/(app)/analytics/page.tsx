@@ -7,8 +7,10 @@ import { useRouter } from "next/navigation";
 import { analyticsApi, type AnalyticsSummary } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
-const MONTHS_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** 1 January 2024 was a Monday; used to build localised month and weekday names. */
+const MONTH_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 // ─── Module colour map for bar chart ─────────────────────────────────────────
 const MODULE_COLORS: Record<string, { bar: string; bg: string; icon: string; iconColor: string }> = {
@@ -37,9 +39,10 @@ const MODULE_URLS: Record<string, string> = {
 };
 
 function ModuleBarChart({ modules }: { modules: { module: string; label: string; count: number }[] }) {
+  const { t } = useI18n();
   const router = useRouter();
   if (modules.length === 0) {
-    return <EmptyState icon="bar_chart" title="No module data available" className="py-10 min-h-0" />;
+    return <EmptyState icon="bar_chart" title={t("analytics.noModuleData")} className="py-10 min-h-0" />;
   }
 
   const totalCount = modules.reduce((s, m) => s + m.count, 0) || 1;
@@ -57,7 +60,7 @@ function ModuleBarChart({ modules }: { modules: { module: string; label: string;
             key={mod.module}
             className={`flex items-center gap-4 group ${url ? "cursor-pointer" : ""}`}
             onClick={() => url && router.push(url)}
-            title={url ? `View ${mod.label || mod.module} records` : undefined}
+            title={url ? t("analytics.viewRecords", { module: mod.label || mod.module }) : undefined}
           >
             {/* Module icon */}
             <div className={`h-8 w-8 rounded-lg ${colors.bg} flex items-center justify-center shrink-0`}>
@@ -87,7 +90,7 @@ function ModuleBarChart({ modules }: { modules: { module: string; label: string;
         );
       })}
       <div className="pt-2 border-t border-neutral-100 dark:border-neutral-700/30 flex justify-between text-xs text-neutral-400 dark:text-neutral-500">
-        <span>Total requests across all modules</span>
+        <span>{t("analytics.totalRequests")}</span>
         <span className="font-semibold text-neutral-600 dark:text-neutral-300">{totalCount.toLocaleString()}</span>
       </div>
     </div>
@@ -117,6 +120,7 @@ function heatmapLevel(count: number, max: number): number {
 }
 
 export default function AnalyticsPage() {
+  const { t, localeTag } = useI18n();
   const [data, setData] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("YTD");
@@ -132,7 +136,7 @@ export default function AnalyticsPage() {
 
   // Derive chart data from API
   const monthlyPoints = data?.monthly_submissions?.map((m) => m.count) ?? [];
-  const monthlyLabels = data?.monthly_submissions?.map((m) => m.label) ?? MONTHS_LABELS;
+  const monthlyLabels = data?.monthly_submissions?.map((m) => m.label) ?? MONTH_INDEXES.map((m) => new Date(2024, m, 1).toLocaleString(localeTag, { month: "short" }));
   const pathD = buildPath(monthlyPoints, 800, 260);
   const areaD = pathD ? pathD + " L800,260 L0,260 Z" : "";
 
@@ -143,16 +147,16 @@ export default function AnalyticsPage() {
 
   // Heatmap grid: rows=hours [9,12,15,18], cols=Mon-Sun (dow 1-7)
   const HOUR_SLOTS = [9, 12, 15, 18];
-  const DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const DOW_LABELS = [1, 2, 3, 4, 5, 6, 7].map((d) => new Date(2024, 0, d).toLocaleDateString(localeTag, { weekday: "short" }));
   const heatmapMap: Record<string, number> = {};
   (data?.activity_heatmap ?? []).forEach((h) => { heatmapMap[`${h.day}-${h.hour}`] = h.count; });
   const maxHeat = Math.max(...Object.values(heatmapMap), 1);
 
   const kpi = data?.kpi ?? { total_submissions: 0, approval_rate_pct: 0, active_travel: 0 };
   const kpiCards = [
-    { label: "Total Submissions", value: loading ? "—" : kpi.total_submissions.toLocaleString(), trend: null, icon: "description", iconBg: "bg-blue-100 dark:bg-blue-900/30", iconColor: "text-blue-600 dark:text-blue-400" },
-    { label: "Approval Rate", value: loading ? "—" : `${kpi.approval_rate_pct}%`, trend: null, icon: "fact_check", iconBg: "bg-primary/10", iconColor: "text-primary" },
-    { label: "Active Travel", value: loading ? "—" : kpi.active_travel.toLocaleString(), trend: null, icon: "flight_takeoff", iconBg: "bg-orange-100 dark:bg-orange-900/30", iconColor: "text-orange-600 dark:text-orange-400" },
+    { label: t("analytics.totalSubmissions"), value: loading ? "—" : kpi.total_submissions.toLocaleString(), trend: null, icon: "description", iconBg: "bg-blue-100 dark:bg-blue-900/30", iconColor: "text-blue-600 dark:text-blue-400" },
+    { label: t("analytics.approvalRate"), value: loading ? "—" : `${kpi.approval_rate_pct}%`, trend: null, icon: "fact_check", iconBg: "bg-primary/10", iconColor: "text-primary" },
+    { label: t("analytics.activeTravel"), value: loading ? "—" : kpi.active_travel.toLocaleString(), trend: null, icon: "flight_takeoff", iconBg: "bg-orange-100 dark:bg-orange-900/30", iconColor: "text-orange-600 dark:text-orange-400" },
   ];
 
   return (
@@ -160,9 +164,9 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <ModulePageHeader
-        title="Analytics Dashboard"
-        subtitle="Cross-module performance insights and operational intelligence."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Analytics Dashboard" }]} />}
+        title="analytics.title"
+        subtitle="analytics.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "analytics.title" }]} />}
       />
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden text-sm">
@@ -175,17 +179,17 @@ export default function AnalyticsPage() {
           </div>
           <div className="relative">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[18px]">domain</span>
-            <select className="form-input pl-8 pr-8 py-1.5 text-sm" value={dept} onChange={e => setDept(e.target.value)}>
-              <option>All</option>
-              <option>HR</option>
-              <option>Finance</option>
-              <option>Operations</option>
-              <option>IT</option>
+            <select className="form-input pl-8 pr-8 py-1.5 text-sm" aria-label={t("analytics.department")} value={dept} onChange={e => setDept(e.target.value)}>
+              <option value="All">{t("timesheet.import.filterAll")}</option>
+              <option value="HR">{t("nav.hr")}</option>
+              <option value="Finance">{t("nav.finance")}</option>
+              <option value="Operations">{t("analytics.dept.operations")}</option>
+              <option value="IT">{t("analytics.dept.it")}</option>
             </select>
           </div>
           <Link href="/analytics/ledger" className="btn-secondary text-sm flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[18px]">receipt_long</span>
-            Audit Ledger
+            {t("analytics.auditLedger")}
           </Link>
         </div>
       </div>
@@ -217,11 +221,11 @@ export default function AnalyticsPage() {
         <div className="lg:col-span-2 card p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Submissions by Month</h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">Requests across travel, leave & imprest modules.</p>
+              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">{t("analytics.byMonth")}</h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("analytics.byMonthHint")}</p>
             </div>
             <Link href="/reports" className="btn-secondary text-sm py-1 px-2 inline-flex items-center gap-1">
-              Full Report <span className="material-symbols-outlined text-base">arrow_forward</span>
+              {t("analytics.fullReport")} <span className="material-symbols-outlined text-base">arrow_forward</span>
             </Link>
           </div>
           <div className="relative h-64 w-full">
@@ -254,8 +258,8 @@ export default function AnalyticsPage() {
         {/* Bar chart */}
         <div className="card p-6 flex flex-col">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Module Activity</h3>
-            <span className="text-xs bg-neutral-100 dark:bg-neutral-700/40 text-neutral-500 dark:text-neutral-400 px-2 py-1 rounded font-medium">All time</span>
+            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">{t("analytics.moduleActivity")}</h3>
+            <span className="text-xs bg-neutral-100 dark:bg-neutral-700/40 text-neutral-500 dark:text-neutral-400 px-2 py-1 rounded font-medium">{t("analytics.allTime")}</span>
           </div>
           {loading ? (
             <div className="flex-1 flex items-end justify-between gap-3 px-2 pb-2 animate-pulse">
@@ -289,9 +293,9 @@ export default function AnalyticsPage() {
           <div>
             <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
               <span className="material-symbols-outlined text-neutral-400 text-lg">bar_chart</span>
-              Module Activity Breakdown
+              {t("analytics.breakdown")}
             </h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Request counts per module for the selected period.</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("analytics.breakdownHint")}</p>
           </div>
           <span className="text-xs bg-neutral-100 dark:bg-neutral-700/40 text-neutral-500 dark:text-neutral-400 px-2 py-1 rounded font-medium">{period}</span>
         </div>
@@ -318,9 +322,9 @@ export default function AnalyticsPage() {
             <div>
               <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                 <span className="material-symbols-outlined text-neutral-400 text-lg">grid_on</span>
-                Peak Action Times
+                {t("analytics.peakTimes")}
               </h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">User activity heat map by day and hour (last 90 days).</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("analytics.peakTimesHint")}</p>
             </div>
             <div className="flex items-center gap-1.5">
               {CELL_STYLE.map((c, i) => <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />)}
@@ -331,13 +335,13 @@ export default function AnalyticsPage() {
             {DOW_LABELS.map(d => <div key={d} className="font-medium">{d}</div>)}
             {HOUR_SLOTS.map((hour) => (
               <React.Fragment key={hour}>
-                <div className="text-left text-neutral-600 dark:text-neutral-400 font-medium self-center text-[11px]">{hour > 12 ? `${hour-12} PM` : `${hour} AM`}</div>
+                <div className="text-left text-neutral-600 dark:text-neutral-400 font-medium self-center text-[11px]">{hour > 12 ? t("analytics.pm", { hour: hour - 12, hour24: hour }) : t("analytics.am", { hour, hour24: hour })}</div>
                 {[1, 2, 3, 4, 5, 6, 0].map((dow) => {
                   const count = heatmapMap[`${dow}-${hour}`] ?? 0;
                   const level = heatmapLevel(count, maxHeat);
                   return (
-                    <div key={dow} className={`h-8 rounded transition-transform hover:scale-110 cursor-pointer ${CELL_STYLE[level]}`} title={`${count} events`}>
-                      {level === 3 && <div className="w-full h-full flex items-center justify-center text-white text-[10px] font-bold">Hi</div>}
+                    <div key={dow} className={`h-8 rounded transition-transform hover:scale-110 cursor-pointer ${CELL_STYLE[level]}`} title={t("analytics.events", { count })}>
+                      {level === 3 && <div className="w-full h-full flex items-center justify-center text-white text-[10px] font-bold">{t("analytics.high")}</div>}
                     </div>
                   );
                 })}
@@ -352,11 +356,11 @@ export default function AnalyticsPage() {
             <div>
               <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                 <span className="material-symbols-outlined text-neutral-400 text-lg">history</span>
-                Recent Activity
+                {t("analytics.recentActivity")}
               </h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">Latest system events from the audit log.</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("analytics.recentActivityHint")}</p>
             </div>
-            <Link href="/admin/audit-trail" className="btn-secondary text-sm py-1 px-2">View All</Link>
+            <Link href="/admin/audit-trail" className="btn-secondary text-sm py-1 px-2">{t("common.viewAll")}</Link>
           </div>
           {loading ? (
             <div className="space-y-3 animate-pulse">
@@ -386,7 +390,7 @@ export default function AnalyticsPage() {
                 </div>
               ))}
               {(data?.recent_activity ?? []).length === 0 && (
-                <EmptyState icon="history" title="No recent activity" className="py-8 min-h-0" />
+                <EmptyState icon="history" title={t("analytics.noRecentActivity")} className="py-8 min-h-0" />
               )}
             </div>
           )}

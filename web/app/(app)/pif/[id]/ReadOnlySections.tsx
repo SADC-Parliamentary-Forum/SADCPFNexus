@@ -3,41 +3,40 @@
 import type { Programme, ProgrammeDocument } from "@/lib/api";
 import { SUPPORT_SERVICE_OPTIONS } from "@/lib/api";
 import { useFormatDate } from "@/lib/useFormatDate";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type TenantUser = { id: number; name: string; email: string };
 
 const FINANCE_STATUS_LABELS: Record<string, string> = {
-  not_checked: "Not Checked",
-  available: "Available",
-  partially_available: "Partially Available",
-  unavailable: "Unavailable",
-  confirmed_with_conditions: "Confirmed with Conditions",
+  not_checked: "pif.financeStatus.not_checked",
+  available: "pif.financeStatus.available",
+  partially_available: "pif.financeStatus.partially_available",
+  unavailable: "pif.financeStatus.unavailable",
+  confirmed_with_conditions: "pif.financeStatus.confirmed_with_conditions",
 };
 
 const INTERPRETER_SOURCE_LABELS: Record<string, string> = {
-  internal: "Internal",
-  supplier: "Supplier",
-  partner: "Partner",
-  other: "Other",
+  internal: "pif.interpreterSource.internal",
+  supplier: "pif.interpreterSource.supplier",
+  partner: "pif.interpreterSource.partner",
+  other: "pif.interpreterSource.other",
 };
 
-function yesNo(v: boolean | null | undefined): string {
-  return v ? "Yes" : "No";
-}
-
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <div className="card p-5">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">{title}</h3>
+      <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">{t(title)}</h3>
       {children}
     </div>
   );
 }
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <div>
-      <p className="text-xs text-neutral-400">{label}</p>
+      <p className="text-xs text-neutral-400">{t(label)}</p>
       <p className="text-sm font-medium text-neutral-800 mt-0.5">{value ?? "—"}</p>
     </div>
   );
@@ -56,10 +55,14 @@ export default function ReadOnlySections({
   tenantUsers: TenantUser[];
 }) {
   const { fmt: formatDateShort } = useFormatDate();
+  const { t } = useI18n();
+  const yesNo = (v: boolean | null | undefined): string => (v ? t("contracts.common.yes") : t("contracts.common.no"));
+  const interpreters = (required: boolean | null | undefined, count: number | null | undefined): string =>
+    required ? t("pif.readonly.yesInterpreters", { count: count ?? 0 }) : t("contracts.common.no");
 
   const resolveOwner = (doc: ProgrammeDocument): string => {
     if (doc.owner_user_id != null) {
-      const u = tenantUsers.find((t) => t.id === doc.owner_user_id);
+      const u = tenantUsers.find((tu) => tu.id === doc.owner_user_id);
       if (u) return u.name;
     }
     if (doc.owner_name) {
@@ -75,159 +78,159 @@ export default function ReadOnlySections({
   return (
     <div className="space-y-6">
       {/* Venue */}
-      <SectionCard title="Venue">
+      <SectionCard title="pif.field.venue">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Country" value={programme.venue_country} />
-          <Field label="City" value={programme.venue_city} />
-          <Field label="Proposed hotel" value={programme.venue_proposed_hotel} />
-          <Field label="Accommodation required" value={yesNo(programme.venue_accommodation_required)} />
+          <Field label="pif.field.country" value={programme.venue_country} />
+          <Field label="pif.field.city" value={programme.venue_city} />
+          <Field label="pif.field.proposedHotel" value={programme.venue_proposed_hotel} />
+          <Field label="pif.field.accommodationRequired" value={yesNo(programme.venue_accommodation_required)} />
           {programme.venue_accommodation_required && (
-            <Field label="Accommodation count" value={programme.venue_accommodation_count} />
+            <Field label="pif.field.accommodationCount" value={programme.venue_accommodation_count} />
           )}
-          <Field label="Conferencing required" value={yesNo(programme.venue_conferencing_required)} />
+          <Field label="pif.field.conferencingRequired" value={yesNo(programme.venue_conferencing_required)} />
           {programme.venue_conferencing_required && (
-            <Field label="Conferencing participants" value={programme.venue_conferencing_participants} />
+            <Field label="pif.field.conferencingParticipants" value={programme.venue_conferencing_participants} />
           )}
-          <Field label="Venue quotation attached" value={yesNo(programme.venue_quotation_attached)} />
-          <Field label="Hotel quotation attached" value={yesNo(programme.venue_hotel_quotation_attached)} />
+          <Field label="pif.field.venueQuotationAttached" value={yesNo(programme.venue_quotation_attached)} />
+          <Field label="pif.field.hotelQuotationAttached" value={yesNo(programme.venue_hotel_quotation_attached)} />
         </div>
         {(programme.venue_accessibility_requirements || programme.venue_security_considerations || programme.venue_comments) && (
           <div className="grid gap-4 sm:grid-cols-2 mt-4 pt-4 border-t border-neutral-100">
             {programme.venue_accessibility_requirements && (
-              <Field label="Accessibility requirements" value={programme.venue_accessibility_requirements} />
+              <Field label="pif.field.accessibilityRequirements" value={programme.venue_accessibility_requirements} />
             )}
             {programme.venue_security_considerations && (
-              <Field label="Security considerations" value={programme.venue_security_considerations} />
+              <Field label="pif.field.securityConsiderations" value={programme.venue_security_considerations} />
             )}
-            {programme.venue_comments && <Field label="Comments" value={programme.venue_comments} />}
+            {programme.venue_comments && <Field label="pif.field.comments" value={programme.venue_comments} />}
           </div>
         )}
       </SectionCard>
 
       {/* Budget / Participant Provisions */}
-      <SectionCard title="Budget &amp; Participant Provisions">
+      <SectionCard title="pif.field.budgetProvisions">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Proposed DSA rate" value={programme.proposed_dsa_rate != null ? `${programme.primary_currency} ${Number(programme.proposed_dsa_rate).toLocaleString()}` : null} />
-          <Field label="Original budget rate" value={programme.original_budget_rate != null ? `${programme.primary_currency} ${Number(programme.original_budget_rate).toLocaleString()}` : null} />
-          {programme.dsa_variance_reason && <Field label="DSA variance reason" value={programme.dsa_variance_reason} />}
-          <Field label="Proposed participants" value={programme.proposed_participants} />
-          <Field label="Budgeted participants" value={programme.budgeted_participants} />
+          <Field label="pif.field.proposedDsaRate" value={programme.proposed_dsa_rate != null ? `${programme.primary_currency} ${Number(programme.proposed_dsa_rate).toLocaleString()}` : null} />
+          <Field label="pif.field.originalBudgetRate" value={programme.original_budget_rate != null ? `${programme.primary_currency} ${Number(programme.original_budget_rate).toLocaleString()}` : null} />
+          {programme.dsa_variance_reason && <Field label="pif.field.dsaVarianceReason" value={programme.dsa_variance_reason} />}
+          <Field label="pif.field.proposedParticipants" value={programme.proposed_participants} />
+          <Field label="pif.field.budgetedParticipants" value={programme.budgeted_participants} />
           {programme.participants_variance_reason && (
-            <Field label="Participants variance reason" value={programme.participants_variance_reason} />
+            <Field label="pif.field.participantsVarianceReason" value={programme.participants_variance_reason} />
           )}
-          <Field label="Proposed funding difference" value={programme.proposed_funding_difference != null ? `${programme.primary_currency} ${Number(programme.proposed_funding_difference).toLocaleString()}` : null} />
-          <Field label="Estimated activity amount" value={programme.estimated_activity_amount != null ? `${programme.primary_currency} ${Number(programme.estimated_activity_amount).toLocaleString()}` : null} />
+          <Field label="pif.field.proposedFundingDifference" value={programme.proposed_funding_difference != null ? `${programme.primary_currency} ${Number(programme.proposed_funding_difference).toLocaleString()}` : null} />
+          <Field label="pif.field.estimatedActivityAmount" value={programme.estimated_activity_amount != null ? `${programme.primary_currency} ${Number(programme.estimated_activity_amount).toLocaleString()}` : null} />
         </div>
         {/* Finance review — read-only here; only Finance can set it via a dedicated action elsewhere */}
         <div className="grid gap-4 sm:grid-cols-2 mt-4 pt-4 border-t border-neutral-100">
           <Field
-            label="Budget availability status"
+            label="pif.field.budgetAvailabilityStatus"
             value={
               programme.budget_availability_status
-                ? FINANCE_STATUS_LABELS[programme.budget_availability_status] ?? programme.budget_availability_status
-                : FINANCE_STATUS_LABELS.not_checked
+                ? (FINANCE_STATUS_LABELS[programme.budget_availability_status] ? t(FINANCE_STATUS_LABELS[programme.budget_availability_status]) : programme.budget_availability_status)
+                : t(FINANCE_STATUS_LABELS.not_checked)
             }
           />
-          {programme.finance_comments && <Field label="Finance comments" value={programme.finance_comments} />}
+          {programme.finance_comments && <Field label="pif.field.financeComments" value={programme.finance_comments} />}
         </div>
       </SectionCard>
 
       {/* Personnel */}
-      <SectionCard title="Personnel &amp; Consultants">
+      <SectionCard title="pif.field.personnel">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Secretariat staff required" value={yesNo(programme.secretariat_staff_required)} />
-          {programme.secretariat_staff_required && <Field label="Secretariat staff count" value={programme.secretariat_staff_count} />}
-          <Field label="Consultants required" value={yesNo(programme.consultants_required)} />
+          <Field label="pif.field.secretariatStaffRequired" value={yesNo(programme.secretariat_staff_required)} />
+          {programme.secretariat_staff_required && <Field label="pif.field.secretariatStaffCount" value={programme.secretariat_staff_count} />}
+          <Field label="pif.field.consultantsRequired" value={yesNo(programme.consultants_required)} />
           {programme.consultants_required && (
             <>
-              <Field label="Consultants count" value={programme.consultants_count} />
-              <Field label="Consultant rate" value={programme.consultants_rate != null ? `${programme.primary_currency} ${Number(programme.consultants_rate).toLocaleString()}` : null} />
+              <Field label="pif.field.consultantsCount" value={programme.consultants_count} />
+              <Field label="pif.field.consultantRate" value={programme.consultants_rate != null ? `${programme.primary_currency} ${Number(programme.consultants_rate).toLocaleString()}` : null} />
             </>
           )}
-          <Field label="Resource persons required" value={yesNo(programme.resource_persons_required)} />
+          <Field label="pif.field.resourcePersonsRequired" value={yesNo(programme.resource_persons_required)} />
           {programme.resource_persons_required && (
             <>
-              <Field label="Resource persons count" value={programme.resource_persons_count} />
-              <Field label="Resource person rate" value={programme.resource_persons_rate != null ? `${programme.primary_currency} ${Number(programme.resource_persons_rate).toLocaleString()}` : null} />
+              <Field label="pif.field.resourcePersonsCount" value={programme.resource_persons_count} />
+              <Field label="pif.field.resourcePersonRate" value={programme.resource_persons_rate != null ? `${programme.primary_currency} ${Number(programme.resource_persons_rate).toLocaleString()}` : null} />
             </>
           )}
-          <Field label="Rapporteurs required" value={yesNo(programme.rapporteurs_required)} />
+          <Field label="pif.field.rapporteursRequired" value={yesNo(programme.rapporteurs_required)} />
           {programme.rapporteurs_required && (
             <>
-              <Field label="Rapporteurs count" value={programme.rapporteurs_count} />
-              <Field label="Rapporteur rate" value={programme.rapporteurs_rate != null ? `${programme.primary_currency} ${Number(programme.rapporteurs_rate).toLocaleString()}` : null} />
+              <Field label="pif.field.rapporteursCount" value={programme.rapporteurs_count} />
+              <Field label="pif.field.rapporteurRate" value={programme.rapporteurs_rate != null ? `${programme.primary_currency} ${Number(programme.rapporteurs_rate).toLocaleString()}` : null} />
             </>
           )}
-          <Field label="Media liaison required" value={yesNo(programme.media_liaison_required)} />
+          <Field label="pif.field.mediaLiaisonRequired" value={yesNo(programme.media_liaison_required)} />
           {programme.media_liaison_required && (
             <>
-              <Field label="Media liaison count" value={programme.media_liaison_count} />
-              <Field label="Media liaison rate" value={programme.media_liaison_rate != null ? `${programme.primary_currency} ${Number(programme.media_liaison_rate).toLocaleString()}` : null} />
+              <Field label="pif.field.mediaLiaisonCount" value={programme.media_liaison_count} />
+              <Field label="pif.field.mediaLiaisonRate" value={programme.media_liaison_rate != null ? `${programme.primary_currency} ${Number(programme.media_liaison_rate).toLocaleString()}` : null} />
             </>
           )}
-          <Field label="Local support required" value={yesNo(programme.local_support_required)} />
+          <Field label="pif.field.localSupportRequired" value={yesNo(programme.local_support_required)} />
           {programme.local_support_required && (
             <>
-              <Field label="Local support count" value={programme.local_support_count} />
-              <Field label="Local support rate" value={programme.local_support_rate != null ? `${programme.primary_currency} ${Number(programme.local_support_rate).toLocaleString()}` : null} />
+              <Field label="pif.field.localSupportCount" value={programme.local_support_count} />
+              <Field label="pif.field.localSupportRate" value={programme.local_support_rate != null ? `${programme.primary_currency} ${Number(programme.local_support_rate).toLocaleString()}` : null} />
             </>
           )}
         </div>
         {programme.personnel_comments && (
           <div className="mt-4 pt-4 border-t border-neutral-100">
-            <Field label="Personnel comments" value={programme.personnel_comments} />
+            <Field label="pif.field.personnelComments" value={programme.personnel_comments} />
           </div>
         )}
       </SectionCard>
 
       {/* Interpretation */}
-      <SectionCard title="Interpretation &amp; Translation">
+      <SectionCard title="pif.field.interpretationTitle">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Interpretation required" value={yesNo(programme.interpretation_required)} />
+          <Field label="pif.field.interpretationRequired" value={yesNo(programme.interpretation_required)} />
           {programme.interpretation_required && (
             <>
-              <Field label="English ↔ French" value={programme.en_fr_required ? `Yes — ${programme.en_fr_interpreters_count ?? 0} interpreter(s)` : "No"} />
-              <Field label="English ↔ Portuguese" value={programme.en_pt_required ? `Yes — ${programme.en_pt_interpreters_count ?? 0} interpreter(s)` : "No"} />
-              <Field label="French ↔ Portuguese" value={programme.fr_pt_required ? `Yes — ${programme.fr_pt_interpreters_count ?? 0} interpreter(s)` : "No"} />
-              <Field label="Interpreter rate" value={programme.interpreter_rate != null ? `${programme.primary_currency} ${Number(programme.interpreter_rate).toLocaleString()}` : null} />
+              <Field label="pif.field.enFr" value={interpreters(programme.en_fr_required, programme.en_fr_interpreters_count)} />
+              <Field label="pif.field.enPt" value={interpreters(programme.en_pt_required, programme.en_pt_interpreters_count)} />
+              <Field label="pif.field.frPt" value={interpreters(programme.fr_pt_required, programme.fr_pt_interpreters_count)} />
+              <Field label="pif.field.interpreterRate" value={programme.interpreter_rate != null ? `${programme.primary_currency} ${Number(programme.interpreter_rate).toLocaleString()}` : null} />
               <Field
-                label="Interpreter source"
+                label="pif.field.interpreterSource"
                 value={
                   programme.interpreter_source
-                    ? (INTERPRETER_SOURCE_LABELS[programme.interpreter_source] ?? programme.interpreter_source) +
+                    ? (INTERPRETER_SOURCE_LABELS[programme.interpreter_source] ? t(INTERPRETER_SOURCE_LABELS[programme.interpreter_source]) : programme.interpreter_source) +
                       (programme.interpreter_source === "other" && programme.interpreter_source_other_note ? ` — ${programme.interpreter_source_other_note}` : "")
                     : null
                 }
               />
-              <Field label="Interpretation equipment required" value={yesNo(programme.interpretation_equipment_required)} />
+              <Field label="pif.field.interpretationEquipmentRequired" value={yesNo(programme.interpretation_equipment_required)} />
             </>
           )}
-          <Field label="Translation required" value={yesNo(programme.translation_required)} />
+          <Field label="pif.field.translationRequired" value={yesNo(programme.translation_required)} />
           {programme.translation_required && (programme.languages_required ?? []).length > 0 && (
-            <Field label="Languages required" value={(programme.languages_required ?? []).join(", ")} />
+            <Field label="pif.field.languagesRequired" value={(programme.languages_required ?? []).join(", ")} />
           )}
         </div>
         {programme.interpretation_comments && (
           <div className="mt-4 pt-4 border-t border-neutral-100">
-            <Field label="Interpretation comments" value={programme.interpretation_comments} />
+            <Field label="pif.field.interpretationComments" value={programme.interpretation_comments} />
           </div>
         )}
       </SectionCard>
 
       {/* Documents */}
-      <SectionCard title="Documents">
+      <SectionCard title="pif.field.documents">
         {documents.length === 0 ? (
-          <p className="text-sm text-neutral-400">No documents registered.</p>
+          <p className="text-sm text-neutral-400">{t("pif.readonly.noDocuments")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Title</th>
-                  <th>Type</th>
-                  <th>Owner</th>
-                  <th>Translation</th>
-                  <th>Deadline</th>
+                  <th>{t("pif.list.title")}</th>
+                  <th>{t("pif.detail.type")}</th>
+                  <th>{t("pif.readonly.owner")}</th>
+                  <th>{t("pif.readonly.translation")}</th>
+                  <th>{t("pif.readonly.deadline")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -237,7 +240,7 @@ export default function ReadOnlySections({
                     <td className="text-neutral-600">{d.document_type}</td>
                     <td className="text-neutral-600">{resolveOwner(d)}</td>
                     <td className="text-xs text-neutral-500">
-                      {d.translation_required ? (d.target_languages ?? []).join(", ") || "Required" : "Not required"}
+                      {d.translation_required ? (d.target_languages ?? []).join(", ") || t("contracts.settings.required") : t("contracts.settings.notRequired")}
                     </td>
                     <td className="text-xs text-neutral-500">{d.deadline ? formatDateShort(d.deadline) : "—"}</td>
                   </tr>
@@ -249,20 +252,20 @@ export default function ReadOnlySections({
       </SectionCard>
 
       {/* Arrival / Departure */}
-      <SectionCard title="Arrival / Departure">
+      <SectionCard title="pif.field.arrivalDeparture">
         {arrivalDepartures.length === 0 ? (
-          <p className="text-sm text-neutral-400">No arrival/departure rows recorded.</p>
+          <p className="text-sm text-neutral-400">{t("pif.readonly.noArrivals")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Category</th>
-                  <th>Arrival</th>
-                  <th>Departure</th>
-                  <th>Airport</th>
-                  <th>Transport</th>
-                  <th>Accommodation</th>
+                  <th>{t("pif.detail.category")}</th>
+                  <th>{t("pif.readonly.arrival")}</th>
+                  <th>{t("pif.readonly.departure")}</th>
+                  <th>{t("pif.readonly.airport")}</th>
+                  <th>{t("pif.readonly.transport")}</th>
+                  <th>{t("pif.readonly.accommodation")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -283,9 +286,9 @@ export default function ReadOnlySections({
       </SectionCard>
 
       {/* Support Services */}
-      <SectionCard title="Support Services">
+      <SectionCard title="pif.field.supportServices">
         {supportServices.length === 0 ? (
-          <p className="text-sm text-neutral-400">No support services selected.</p>
+          <p className="text-sm text-neutral-400">{t("pif.readonly.noSupportServices")}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {supportServices.map((key) => (
@@ -296,17 +299,17 @@ export default function ReadOnlySections({
           </div>
         )}
         {programme.support_services_other_note && (
-          <p className="text-sm text-neutral-600 mt-3">Other: {programme.support_services_other_note}</p>
+          <p className="text-sm text-neutral-600 mt-3">{t("pif.readonly.otherNote", { note: programme.support_services_other_note })}</p>
         )}
       </SectionCard>
 
       {/* Conflict of Interest */}
-      <SectionCard title="Conflict of Interest">
-        <Field label="Conflict declared" value={yesNo(programme.conflict_declared)} />
+      <SectionCard title="pif.field.conflictOfInterest">
+        <Field label="pif.field.conflictDeclared" value={yesNo(programme.conflict_declared)} />
         {programme.conflict_declared && (
           <div className="grid gap-4 sm:grid-cols-2 mt-4 pt-4 border-t border-neutral-100">
-            <Field label="Details" value={programme.conflict_details} />
-            <Field label="Mitigation measures" value={programme.conflict_mitigation} />
+            <Field label="pif.field.details" value={programme.conflict_details} />
+            <Field label="pif.field.mitigationMeasures" value={programme.conflict_mitigation} />
           </div>
         )}
       </SectionCard>

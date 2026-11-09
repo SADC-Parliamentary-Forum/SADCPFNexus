@@ -9,12 +9,23 @@ import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageH
 import { TableEmpty } from "@/components/ui/EmptyState";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const TENDER_ACTION_DONE: Record<"publish" | "close" | "openBids" | "startEvaluation", string> = {
-  publish: "Tender published",
-  close: "Tender closed",
-  openBids: "Bids opened",
-  startEvaluation: "Evaluation started",
+  publish: "procurement.tender.done.publish",
+  close: "procurement.tender.done.close",
+  openBids: "procurement.tender.done.openBids",
+  startEvaluation: "procurement.tender.done.startEvaluation",
+};
+
+const TENDER_STATUS_KEYS: Record<string, string> = {
+  draft: "status.draft",
+  published: "procurement.status.published",
+  closed: "procurement.status.closed",
+  opened: "procurement.status.opened",
+  evaluating: "procurement.status.evaluating",
+  awarded: "procurement.status.awarded",
+  cancelled: "status.cancelled",
 };
 
 export default function TenderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +34,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
   const qc = useQueryClient();
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const [awardQuoteId, setAwardQuoteId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -42,7 +54,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
     enabled: !!tender && ["opened", "evaluating"].includes(tender.status),
   });
 
-  const scoring = (evaluationsQuery.data ?? []).find((t) => t.id === tenderId)?.scoring ?? [];
+  const scoring = (evaluationsQuery.data ?? []).find((row) => row.id === tenderId)?.scoring ?? [];
 
   const act = useMutation({
     mutationFn: (action: "publish" | "close" | "openBids" | "startEvaluation") => {
@@ -56,12 +68,12 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
       qc.invalidateQueries({ queryKey: ["procurement", "tender", tenderId] });
       qc.invalidateQueries({ queryKey: ["procurement", "evaluations"] });
       qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
-      toast.success(TENDER_ACTION_DONE[action]);
+      toast.success(t(TENDER_ACTION_DONE[action]));
     },
     onError: (e: unknown) => {
-      const message = apiErrorMessage(e, "Action failed.");
+      const message = apiErrorMessage(e, t("procurement.actionFailed"));
       setError(message);
-      toast.error("Tender action failed", message);
+      toast.error(t("procurement.tender.actionFailedTitle"), message);
     },
   });
 
@@ -73,9 +85,9 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
         end_date: endDate,
       }),
     onSuccess: (res) => {
-      setMessage("Tender awarded — draft contract created.");
+      setMessage(t("procurement.tender.awardedMessage"));
       setError(null);
-      toast.success("Tender awarded", "Draft contract created.");
+      toast.success(t("procurement.tender.awarded"), t("procurement.tender.draftContractCreated"));
       qc.invalidateQueries({ queryKey: ["procurement", "tender", tenderId] });
       qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
       const contractId = (res.data.data as { contract?: { id?: number } }).contract?.id;
@@ -84,25 +96,25 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
       }
     },
     onError: (e: unknown) => {
-      const message = apiErrorMessage(e, "Award failed.");
+      const message = apiErrorMessage(e, t("procurement.tender.awardFailed"));
       setError(message);
-      toast.error("Tender not awarded", message);
+      toast.error(t("procurement.tender.notAwarded"), message);
     },
   });
 
   const cancelMut = useMutation({
     mutationFn: () => tendersApi.cancel(tenderId, cancelReason || "Cancelled by officer"),
     onSuccess: () => {
-      setMessage("Tender cancelled.");
+      setMessage(t("procurement.tender.cancelledMessage"));
       setError(null);
-      toast.success("Tender cancelled");
+      toast.success(t("procurement.tender.cancelled"));
       qc.invalidateQueries({ queryKey: ["procurement", "tender", tenderId] });
       qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
     },
     onError: (e: unknown) => {
-      const message = apiErrorMessage(e, "Cancel failed.");
+      const message = apiErrorMessage(e, t("procurement.tender.cancelFailed"));
       setError(message);
-      toast.error("Tender not cancelled", message);
+      toast.error(t("procurement.tender.notCancelled"), message);
     },
   });
 
@@ -118,14 +130,14 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
           summary_fingerprint: String(summaryMut.data?.summary ?? "").slice(0, 64),
         })
         .then((r) => r.data.data),
-    onSuccess: () => toast.success("Human review confirmed"),
+    onSuccess: () => toast.success(t("procurement.tender.reviewConfirmedToast")),
     onError: (e: unknown) => {
-      toast.error("Review not confirmed", apiErrorMessage(e, "Confirm failed. Enable AI comparison and ensure bids are opened."));
+      toast.error(t("procurement.tender.reviewNotConfirmed"), apiErrorMessage(e, t("procurement.tender.confirmFailed")));
     },
   });
 
   if (isLoading || !tender) {
-    return <div className="card p-8 text-center text-sm text-neutral-400">Loading…</div>;
+    return <div className="card p-8 text-center text-sm text-neutral-400">{t("common.loading")}</div>;
   }
 
   const techW = tender.technical_weight ?? 80;
@@ -143,7 +155,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
         subtitle={tender.title}
         crumbs={[
           { label: "nav.procurement", href: "/procurement" },
-          { label: "Tenders", href: "/procurement/tenders" },
+          { label: t("procurement.tenders.title"), href: "/procurement/tenders" },
           { label: tender.reference_number },
         ]}
       />
@@ -161,32 +173,31 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
             <p className="text-lg font-semibold text-neutral-900">{tender.reference_number}</p>
             <p className="text-sm text-neutral-600">{tender.title}</p>
           </div>
-          <span className="text-xs uppercase text-neutral-600">{tender.status}</span>
+          <span className="text-xs uppercase text-neutral-600">{TENDER_STATUS_KEYS[tender.status] ? t(TENDER_STATUS_KEYS[tender.status]) : tender.status}</span>
         </div>
         {tender.notice && <p className="text-sm text-neutral-700 whitespace-pre-wrap">{tender.notice}</p>}
         <p className="text-xs text-neutral-500">
-          Two-envelope weights: technical {techW}% / financial {finW}% · Min technical {minTech}
-          {sealed ? " · Financial envelope sealed" : ""}
+          {t(sealed ? "procurement.tender.weightsSealed" : "procurement.tender.weights", { tech: techW, fin: finW, min: minTech })}
         </p>
         <div className="flex flex-wrap gap-2 pt-2">
           {tender.status === "draft" && (
             <button type="button" className="btn-primary text-sm" onClick={() => act.mutate("publish")}>
-              Publish
+              {t("procurement.tender.publish")}
             </button>
           )}
           {tender.status === "published" && (
             <button type="button" className="btn-secondary text-sm" onClick={() => act.mutate("close")}>
-              Close submissions
+              {t("procurement.tender.closeSubmissions")}
             </button>
           )}
           {tender.status === "closed" && (
             <button type="button" className="btn-primary text-sm" onClick={() => act.mutate("openBids")}>
-              Open bids
+              {t("procurement.tender.openBids")}
             </button>
           )}
           {tender.status === "opened" && (
             <button type="button" className="btn-primary text-sm" onClick={() => act.mutate("startEvaluation")}>
-              Start evaluation
+              {t("procurement.tender.startEvaluation")}
             </button>
           )}
         </div>
@@ -194,20 +205,19 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
 
       {tender.status === "evaluating" && (
         <div className="card p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-neutral-900">Award & create contract</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">{t("procurement.tender.awardTitle")}</h2>
           <p className="text-xs text-neutral-500">
-            Award creates a draft contract from the selected quote value (no invented rates). Budget line is
-            copied from the procurement request when present.
+            {t("procurement.tender.awardHint")}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label htmlFor="procurement-tenders-detail-winning-quote" className="mb-1 block text-xs font-semibold">Winning quote</label>
+              <label htmlFor="procurement-tenders-detail-winning-quote" className="mb-1 block text-xs font-semibold">{t("procurement.tender.winningQuote")}</label>
               <select id="procurement-tenders-detail-winning-quote"
                 className="form-input"
                 value={awardQuoteId}
                 onChange={(e) => setAwardQuoteId(e.target.value)}
               >
-                <option value="">Select…</option>
+                <option value="">{t("procurement.select")}</option>
                 {quotes.map((q) => (
                   <option key={q.id} value={q.id}>
                     {q.vendor_name}
@@ -224,11 +234,11 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <div />
             <div>
-              <label htmlFor="procurement-tenders-detail-contract-start" className="mb-1 block text-xs font-semibold">Contract start</label>
+              <label htmlFor="procurement-tenders-detail-contract-start" className="mb-1 block text-xs font-semibold">{t("procurement.tender.contractStart")}</label>
               <input id="procurement-tenders-detail-contract-start" type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
             <div>
-              <label htmlFor="procurement-tenders-detail-contract-end" className="mb-1 block text-xs font-semibold">Contract end</label>
+              <label htmlFor="procurement-tenders-detail-contract-end" className="mb-1 block text-xs font-semibold">{t("procurement.tender.contractEnd")}</label>
               <input id="procurement-tenders-detail-contract-end" type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
           </div>
@@ -238,17 +248,17 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
             disabled={!awardQuoteId || !startDate || !endDate || awardMut.isPending}
             onClick={() => awardMut.mutate()}
           >
-            {awardMut.isPending ? "Awarding…" : "Award & create draft contract"}
+            {awardMut.isPending ? t("procurement.tender.awarding") : t("procurement.tender.awardSubmit")}
           </button>
         </div>
       )}
 
       {!["awarded", "cancelled"].includes(tender.status) && (
         <div className="card p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-neutral-900">Cancel tender</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">{t("procurement.tender.cancelTender")}</h2>
           <input
             className="form-input"
-            placeholder="Cancellation reason"
+            placeholder={t("procurement.tender.cancelReason")}
             value={cancelReason}
             onChange={(e) => setCancelReason(e.target.value)}
           />
@@ -258,7 +268,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
             disabled={!cancelReason.trim() || cancelMut.isPending}
             onClick={() => cancelMut.mutate()}
           >
-            Cancel tender
+            {t("procurement.tender.cancelTender")}
           </button>
         </div>
       )}
@@ -267,9 +277,9 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
         <div className="card p-5 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-neutral-900">Technical-first scoring</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{t("procurement.tender.scoringTitle")}</h2>
               <p className="text-xs text-neutral-500">
-                Record technical scores first. Financial scores appear only after bids are opened.
+                {t("procurement.tender.scoringHint")}
               </p>
             </div>
             <button
@@ -278,18 +288,18 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
               disabled={summaryMut.isPending}
               onClick={() => summaryMut.mutate()}
             >
-              {summaryMut.isPending ? "Generating…" : "AI comparison (assistive)"}
+              {summaryMut.isPending ? t("procurement.tender.generating") : t("procurement.tender.aiComparison")}
             </button>
           </div>
 
           {summaryMut.isError && (
             <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">
-              Comparison unavailable. Enable AI comparison in Procurement Settings, or open bids first.
+              {t("procurement.tender.comparisonUnavailable")}
             </div>
           )}
           {summaryMut.data && (
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-3 space-y-2">
-              <p className="text-xs font-semibold text-neutral-800">Assistive summary (not an award)</p>
+              <p className="text-xs font-semibold text-neutral-800">{t("procurement.tender.assistiveSummary")}</p>
               <p className="text-sm text-neutral-700 whitespace-pre-wrap">{String(summaryMut.data.summary ?? "")}</p>
               <p className="text-[11px] text-neutral-500">{String(summaryMut.data.disclaimer ?? "")}</p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -300,18 +310,18 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
                   onClick={() => confirmSummaryMut.mutate()}
                 >
                   {confirmSummaryMut.isSuccess
-                    ? "Review confirmed"
+                    ? t("procurement.tender.reviewConfirmed")
                     : confirmSummaryMut.isPending
-                      ? "Confirming…"
-                      : "Confirm human review"}
+                      ? t("procurement.tender.confirming")
+                      : t("procurement.tender.confirmReview")}
                 </button>
                 <span className="text-[11px] text-neutral-500">
-                  Confirmation is audit-only and never awards a supplier.
+                  {t("procurement.tender.confirmNote")}
                 </span>
               </div>
               {confirmSummaryMut.isError && (
                 <p className="text-[11px] text-amber-800">
-                  Confirm failed. Enable AI comparison and ensure bids are opened.
+                  {t("procurement.tender.confirmFailed")}
                 </p>
               )}
             </div>
@@ -321,11 +331,11 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-neutral-500 border-b border-neutral-200">
-                  <th className="py-2 pr-3">Vendor</th>
-                  <th className="py-2 pr-3">Technical</th>
-                  <th className="py-2 pr-3">Financial</th>
-                  <th className="py-2 pr-3">Combined</th>
-                  <th className="py-2">Min tech</th>
+                  <th className="py-2 pr-3">{t("procurement.col.vendor")}</th>
+                  <th className="py-2 pr-3">{t("procurement.tender.technical")}</th>
+                  <th className="py-2 pr-3">{t("procurement.tender.financial")}</th>
+                  <th className="py-2 pr-3">{t("procurement.tender.combined")}</th>
+                  <th className="py-2">{t("procurement.tender.minTech")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -335,19 +345,19 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
                     <td className="py-2 pr-3">{row.technical_score ?? "—"}</td>
                     <td className="py-2 pr-3">
                       {row.financials_sealed ? (
-                        <span className="italic text-neutral-400">Sealed</span>
+                        <span className="italic text-neutral-400">{t("procurement.bidSubmissions.sealed")}</span>
                       ) : (
                         (row.financial_score ?? "—")
                       )}
                     </td>
                     <td className="py-2 pr-3">{row.combined_score ?? "—"}</td>
                     <td className="py-2">
-                      {row.meets_min_tech == null ? "—" : row.meets_min_tech ? "Pass" : "Below"}
+                      {row.meets_min_tech == null ? "—" : row.meets_min_tech ? t("procurement.tender.pass") : t("procurement.tender.below")}
                     </td>
                   </tr>
                 ))}
                 {scoring.length === 0 && (
-                  <TableEmpty colSpan={5} title="No scored bids yet." />
+                  <TableEmpty colSpan={5} title={t("procurement.tender.noScores")} />
                 )}
               </tbody>
             </table>

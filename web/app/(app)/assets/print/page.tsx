@@ -11,15 +11,16 @@ import {
   parsePrintListFilters,
   qrImagesFromBatch,
 } from "@/lib/asset-register-print";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, string> = {
-  pending: "Pending capitalisation",
-  active: "Active",
-  assigned: "Assigned",
-  available: "Available",
-  service_due: "Service Due",
-  loan_out: "Loan Out",
-  retired: "Retired",
+  pending: "assets.print.status.pending",
+  active: "assets.print.status.active",
+  assigned: "assets.print.status.assigned",
+  available: "assets.print.status.available",
+  service_due: "assets.print.status.service_due",
+  loan_out: "assets.print.status.loan_out",
+  retired: "assets.print.status.retired",
 };
 
 export default function AssetsPrintPage() {
@@ -30,6 +31,7 @@ export default function AssetsPrintPage() {
   const [categoryRows, setCategoryRows] = useState<AssetCategory[]>([]);
   const categoryLabel = (code?: string | null) => categoryRows.find((c) => c.code === code)?.name ?? code ?? "—";
   const printRef = useRef<HTMLDivElement>(null);
+  const { t, localeTag } = useI18n();
 
   useEffect(() => {
     const user = getStoredUser();
@@ -76,9 +78,9 @@ export default function AssetsPrintPage() {
       .then((images) => {
         setQrBlobs(images);
       })
-      .catch(() => setError("Failed to load assets."))
+      .catch(() => setError(t("assets.print.loadFailed")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const handlePrint = () => {
     window.print();
@@ -89,7 +91,7 @@ export default function AssetsPrintPage() {
       <div className="p-8 w-full min-w-0">
         <div className="flex items-center gap-2 text-neutral-500">
           <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-          <span className="text-sm">Loading assets…</span>
+          <span className="text-sm">{t("assets.print.loading")}</span>
         </div>
       </div>
     );
@@ -99,7 +101,7 @@ export default function AssetsPrintPage() {
     return (
       <div className="p-8 w-full min-w-0">
         <p className="text-red-600">{error}</p>
-        <Link href="/assets" className="text-primary mt-2 inline-block">Back to Assets</Link>
+        <Link href="/assets" className="text-primary mt-2 inline-block">{t("assets.print.back")}</Link>
       </div>
     );
   }
@@ -109,32 +111,32 @@ export default function AssetsPrintPage() {
       <div className="no-print p-8 w-full min-w-0 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <Link href="/assets" className="text-sm text-neutral-500 hover:text-primary">← Back to Assets</Link>
-            <h1 className="text-xl font-bold text-neutral-900 mt-1">Asset Register – Print View</h1>
+            <Link href="/assets" className="text-sm text-neutral-500 hover:text-primary">{t("assets.print.backArrow")}</Link>
+            <h1 className="text-xl font-bold text-neutral-900 mt-1">{t("assets.print.title")}</h1>
             <p className="text-sm text-neutral-500 mt-0.5">
-              {assets.length} asset(s). Click Print to print or save as PDF.
+              {t("assets.print.summary", { count: assets.length })}
             </p>
           </div>
           <button type="button" onClick={handlePrint} className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">print</span>
-            Print
+            {t("common.print")}
           </button>
         </div>
       </div>
 
       <div ref={printRef} className="print-only p-8 w-full min-w-0">
-        <h2 className="text-lg font-bold text-neutral-900 mb-4">Asset Register</h2>
+        <h2 className="text-lg font-bold text-neutral-900 mb-4">{t("assets.print.register")}</h2>
         <p className="text-sm text-neutral-500 mb-4">
-          Generated {new Date().toLocaleDateString("en-GB")} – {assets.length} item(s)
+          {t("assets.print.generated", { date: new Date().toLocaleDateString(localeTag), count: assets.length })}
         </p>
         <table className="register-print-table w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-neutral-200">
-              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">Code</th>
-              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">Name</th>
-              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">Category</th>
-              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">Status</th>
-              <th className="text-left py-2 font-semibold text-neutral-700">Assigned to</th>
+              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">{t("assets.print.code")}</th>
+              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">{t("assets.print.name")}</th>
+              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">{t("assets.print.category")}</th>
+              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">{t("assets.print.status")}</th>
+              <th className="text-left py-2 font-semibold text-neutral-700">{t("assets.print.assignedTo")}</th>
               <th className="text-left py-2 font-semibold text-neutral-700 w-[12mm]">QR</th>
             </tr>
           </thead>
@@ -144,7 +146,7 @@ export default function AssetsPrintPage() {
                 <td className="py-2 pr-3 font-mono text-neutral-700">{asset.asset_code}</td>
                 <td className="py-2 pr-3 text-neutral-900">{asset.name}</td>
                 <td className="py-2 pr-3 text-neutral-700">{categoryLabel(asset.category)}</td>
-                <td className="py-2 pr-3 text-neutral-700">{statusConfig[asset.status] ?? asset.status}</td>
+                <td className="py-2 pr-3 text-neutral-700">{statusConfig[asset.status] ? t(statusConfig[asset.status]) : asset.status}</td>
                 <td className="py-2 pr-3 text-neutral-700">{asset.assigned_user?.name ?? "—"}</td>
                 <td className="py-2">
                   {qrBlobs[asset.id] ? (

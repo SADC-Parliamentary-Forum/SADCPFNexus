@@ -8,6 +8,7 @@ import { FormSection } from "@/components/ui/FormSection";
 import { useToast } from "@/components/ui/Toast";
 import { AccessDenied } from "@/components/ui/AccessDenied";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Preview = {
   employee_count?: number;
@@ -21,16 +22,17 @@ type Preview = {
   ready?: boolean;
 };
 
-function apiErrorMessage(err: unknown): string {
+function apiErrorMessage(err: unknown, fallback: string): string {
   if (err && typeof err === "object" && "response" in err) {
     const response = (err as { response?: { data?: { message?: string } } }).response;
     if (response?.data?.message) return response.data.message;
   }
-  return "Something went wrong. Please try again.";
+  return fallback;
 }
 
 export default function HistoricalLeavePayrollImportPage() {
   const toast = useToast();
+  const { t } = useI18n();
   const [files, setFiles] = useState<File[]>([]);
   const [batch, setBatch] = useState<HrVipImportBatch | null>(null);
   const [busy, setBusy] = useState<"stage" | "commit" | null>(null);
@@ -45,7 +47,7 @@ export default function HistoricalLeavePayrollImportPage() {
 
   const stage = async () => {
     if (files.length === 0) {
-      setError("Select at least one source file (PDF, XLS or XLSX).");
+      setError(t("hr.imports.selectFile"));
       return;
     }
     setBusy("stage");
@@ -55,11 +57,11 @@ export default function HistoricalLeavePayrollImportPage() {
       files.forEach((f) => form.append("files[]", f));
       const res = await hrVipImportApi.upload(form);
       setBatch(res.data.data);
-      toast.success("Files staged for import");
+      toast.success(t("hr.imports.staged"));
     } catch (err) {
-      const message = apiErrorMessage(err);
+      const message = apiErrorMessage(err, t("common.error"));
       setError(message);
-      toast.error("Files not staged", message);
+      toast.error(t("hr.imports.notStaged"), message);
     } finally {
       setBusy(null);
     }
@@ -72,11 +74,11 @@ export default function HistoricalLeavePayrollImportPage() {
     try {
       const res = await hrVipImportApi.commit(batch.id);
       setBatch(res.data.data);
-      toast.success("Import committed");
+      toast.success(t("hr.imports.committed"));
     } catch (err) {
-      const message = apiErrorMessage(err);
+      const message = apiErrorMessage(err, t("common.error"));
       setError(message);
-      toast.error("Import not committed", message);
+      toast.error(t("hr.imports.notCommitted"), message);
     } finally {
       setBusy(null);
     }
@@ -88,32 +90,35 @@ export default function HistoricalLeavePayrollImportPage() {
     setError(null);
   };
 
+  const [review1, reviewRest = ""] = t("hr.imports.review").split("{leave}");
+  const [review2, review3 = ""] = reviewRest.split("{files}");
+
   const isStaged = batch && batch.status === "staged";
   const isCommitted = batch && batch.status === "committed";
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Historical Leave & Payroll Import"
-        subtitle="One-time or corrected historical migration from source HR/payroll reports (PDF, XLS, XLSX). Routine monthly uploads should use Staff Leave Register → Import instead."
+        title="hr.imports.title"
+        subtitle="hr.imports.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "HR", href: "/hr" },
-              { label: "Historical Import" },
+              { label: "nav.hr", href: "/hr" },
+              { label: "hr.imports.crumb" },
             ]}
           />
         }
         actions={
           <Link href="/hr/imports/dry-run-source" className="btn-secondary text-sm">
-            Dry-run source files
+            {t("hr.imports.dryRunLink")}
           </Link>
         }
       />
 
       <FormSection
-        title="1. Upload source reports"
-        description="Employee Basic, Employee Recon, Birthday List, Leave Basic, Leave History, Leave Detail, Leave Provision Movement, Payslip (PDF/XLSX), Remuneration List, 12-Month (XLS). Upload as many files as you have in one batch."
+        title="hr.imports.step1"
+        description="hr.imports.step1Hint"
         icon="upload_file"
       >
         <div className="flex flex-col gap-3">
@@ -122,11 +127,12 @@ export default function HistoricalLeavePayrollImportPage() {
             multiple
             accept=".pdf,.xls,.xlsx"
             className="form-input"
+            aria-label={t("hr.imports.fileInput")}
             disabled={busy !== null || isCommitted === true}
             onChange={(e) => setFiles(e.target.files ? Array.from(e.target.files) : [])}
           />
           {files.length > 0 ? (
-            <p className="text-xs text-neutral-600">{files.length} file(s) selected.</p>
+            <p className="text-xs text-neutral-600">{t("hr.imports.filesSelected", { count: files.length })}</p>
           ) : null}
           <div className="flex flex-wrap gap-2">
             <button
@@ -135,11 +141,11 @@ export default function HistoricalLeavePayrollImportPage() {
               disabled={files.length === 0 || busy !== null || isCommitted === true}
               onClick={() => void stage()}
             >
-              {busy === "stage" ? "Staging…" : "Stage & preview"}
+              {busy === "stage" ? t("hr.imports.staging") : t("hr.imports.stage")}
             </button>
             {batch ? (
               <button type="button" className="btn-secondary text-sm" onClick={reset} disabled={busy !== null}>
-                Start a new batch
+                {t("hr.imports.newBatch")}
               </button>
             ) : null}
           </div>
@@ -154,33 +160,33 @@ export default function HistoricalLeavePayrollImportPage() {
 
       {preview ? (
         <FormSection
-          title="2. Review before commit"
-          description={`Batch ${batch?.batch_number ?? ""} — status: ${batch?.status ?? ""}`}
+          title="hr.imports.step2"
+          description={t("hr.imports.batchStatus", { batch: batch?.batch_number ?? "", status: batch?.status ?? "" })}
           icon="fact_check"
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="card p-3">
-              <div className="text-xs text-neutral-500">Employees referenced</div>
+              <div className="text-xs text-neutral-500">{t("hr.imports.stat.employees")}</div>
               <div className="text-lg font-semibold">{preview.employee_count ?? 0}</div>
             </div>
             <div className="card p-3">
-              <div className="text-xs text-neutral-500">New employees</div>
+              <div className="text-xs text-neutral-500">{t("hr.imports.stat.newEmployees")}</div>
               <div className="text-lg font-semibold">{preview.employees_to_create?.length ?? 0}</div>
             </div>
             <div className="card p-3">
-              <div className="text-xs text-neutral-500">Leave transactions</div>
+              <div className="text-xs text-neutral-500">{t("hr.imports.stat.leaveTransactions")}</div>
               <div className="text-lg font-semibold">{preview.leave_transaction_count ?? 0}</div>
             </div>
             <div className="card p-3">
-              <div className="text-xs text-neutral-500">Leave balance rows</div>
+              <div className="text-xs text-neutral-500">{t("hr.imports.stat.leaveBalances")}</div>
               <div className="text-lg font-semibold">{preview.leave_balance_rows ?? 0}</div>
             </div>
             <div className="card p-3">
-              <div className="text-xs text-neutral-500">Payslips</div>
+              <div className="text-xs text-neutral-500">{t("finance.hub.payslips")}</div>
               <div className="text-lg font-semibold">{preview.payslip_count ?? 0}</div>
             </div>
             <div className="card p-3">
-              <div className="text-xs text-neutral-500">Asset register (unaffected)</div>
+              <div className="text-xs text-neutral-500">{t("hr.imports.stat.assets")}</div>
               <div className="text-lg font-semibold">{preview.asset_count ?? 0}</div>
             </div>
           </div>
@@ -188,8 +194,7 @@ export default function HistoricalLeavePayrollImportPage() {
           {preview.legacy_profile_candidates && preview.legacy_profile_candidates.length > 0 ? (
             <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
               <p className="mb-2 font-medium">
-                {preview.legacy_profile_candidates.length} employee code(s) not in the current staff master will be
-                imported as reviewed legacy profiles (history preserved, no login):
+                {t("hr.imports.legacy", { count: preview.legacy_profile_candidates.length })}
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 {preview.legacy_profile_candidates.map((c) => (
@@ -203,7 +208,7 @@ export default function HistoricalLeavePayrollImportPage() {
 
           {preview.blocking_errors && preview.blocking_errors.length > 0 ? (
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-              <p className="mb-2 font-medium">Blocking issues — resolve before commit:</p>
+              <p className="mb-2 font-medium">{t("hr.imports.blocking")}</p>
               <ul className="list-disc space-y-1 pl-5">
                 {preview.blocking_errors.map((c) => (
                   <li key={c.employee_code}>
@@ -222,11 +227,10 @@ export default function HistoricalLeavePayrollImportPage() {
                 disabled={busy !== null || preview.ready === false}
                 onClick={() => void commit()}
               >
-                {busy === "commit" ? "Committing…" : "Commit this batch"}
+                {busy === "commit" ? t("hr.imports.committing") : t("hr.imports.commit")}
               </button>
               <p className="mt-2 text-xs text-neutral-500">
-                Committing creates/updates employee records, leave history, balances and payslips. Login remains
-                disabled for every imported identity.
+                {t("hr.imports.commitHint")}
               </p>
             </div>
           ) : null}
@@ -234,7 +238,7 @@ export default function HistoricalLeavePayrollImportPage() {
       ) : null}
 
       {isCommitted && summary ? (
-        <FormSection title="3. Commit summary" icon="task_alt">
+        <FormSection title="hr.imports.step3" icon="task_alt">
           <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {Object.entries(summary).map(([key, value]) => (
               <div key={key} className="card p-3">
@@ -244,15 +248,15 @@ export default function HistoricalLeavePayrollImportPage() {
             ))}
           </dl>
           <p className="mt-4 text-sm text-neutral-600">
-            Review imported records in{" "}
+            {review1}
             <Link href="/hr/leave/balances" className="font-semibold text-primary-700 hover:opacity-80">
-              Leave balances
-            </Link>{" "}
-            and{" "}
-            <Link href="/hr/files" className="font-semibold text-primary-700 hover:opacity-80">
-              Employee files
+              {t("hr.imports.leaveBalances")}
             </Link>
-            .
+            {review2}
+            <Link href="/hr/files" className="font-semibold text-primary-700 hover:opacity-80">
+              {t("hr.imports.employeeFiles")}
+            </Link>
+            {review3}
           </p>
         </FormSection>
       ) : null}

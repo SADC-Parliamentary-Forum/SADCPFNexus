@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
 /**
  * Search box with a leading icon and a clear button. Filtering is left to the
  * caller (client-side or a debounced API query).
@@ -9,7 +11,7 @@ export function SearchField({
   onChange,
   placeholder,
   label,
-  clearLabel = "Clear search",
+  clearLabel,
   testId,
   className,
 }: {
@@ -22,6 +24,7 @@ export function SearchField({
   testId?: string;
   className?: string;
 }) {
+  const { t } = useI18n();
   return (
     <div className={`relative ${className ?? ""}`}>
       <span
@@ -45,7 +48,7 @@ export function SearchField({
           type="button"
           className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 hover:text-neutral-700"
           onClick={() => onChange("")}
-          aria-label={clearLabel}
+          aria-label={clearLabel ?? t("ui.searchField.clear")}
         >
           <span className="material-symbols-outlined text-[16px]" aria-hidden="true">close</span>
         </button>

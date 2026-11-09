@@ -8,11 +8,13 @@ import { mandeApi, programmeApi, type PifLinkage } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function CreateActivityReportForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
+  const { t } = useI18n();
   const programmeIdParam = searchParams.get("programme_id");
   const programmeId = programmeIdParam ? Number(programmeIdParam) : NaN;
   const forcedPif = Number.isFinite(programmeId) && programmeId > 0;
@@ -70,17 +72,17 @@ function CreateActivityReportForm() {
     },
     onSuccess: (res) => {
       const report = res.data.data;
-      toast.success("Activity report created");
+      toast.success(t("mande.create.created"));
       router.push(`/mande/activity-reports/${report.id}`);
     },
     onError: (err) =>
       toast.error(
-        "Activity report not created",
+        t("mande.create.notCreated"),
         apiErrorMessage(
           err,
           nonPif
-            ? "Could not create the non-PIF report. Check the title and reason."
-            : "Could not create the report. It may already exist for this PIF."
+            ? t("mande.create.nonPifFailed")
+            : t("mande.create.pifFailed")
         )
       ),
   });
@@ -96,18 +98,18 @@ function CreateActivityReportForm() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Create Activity Report"
+        title={t("mande.create.pageTitle")}
         subtitle={
           nonPif
-            ? "Create a non-PIF activity report with a documented reason."
-            : "Link a new M&E report to an approved PIF. Planned PIF fields stay read-only after create."
+            ? t("mande.create.subtitleNonPif")
+            : t("mande.create.subtitlePif")
         }
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.mande", href: "/mande" },
-              { label: "Intake Queue", href: "/mande/intake" },
-              { label: "Create Activity Report" },
+              { label: t("mande.activityReports.intakeQueue"), href: "/mande/intake" },
+              { label: t("mande.create.pageTitle") },
             ]}
           />
         }
@@ -131,9 +133,9 @@ function CreateActivityReportForm() {
               }}
             />
             <span>
-              <span className="block text-sm font-semibold text-neutral-800">Non-PIF activity report</span>
+              <span className="block text-sm font-semibold text-neutral-800">{t("mande.create.nonPif")}</span>
               <span className="block text-xs text-neutral-500 mt-0.5">
-                Use when there is no approved programme (e.g. internal briefing with no expenditure).
+                {t("mande.create.nonPifHint")}
               </span>
             </span>
           </label>
@@ -141,9 +143,9 @@ function CreateActivityReportForm() {
 
         {!nonPif && (
           <div>
-            <label htmlFor="mande-pif" className="block text-xs font-semibold text-neutral-700 mb-1">Approved PIF *</label>
+            <label htmlFor="mande-pif" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.create.approvedPif")}</label>
             {loadingLinkages ? (
-              <p className="text-sm text-neutral-400">Loading PIFs…</p>
+              <p className="text-sm text-neutral-400">{t("mande.create.loadingPifs")}</p>
             ) : (
               <select
                 id="mande-pif"
@@ -155,7 +157,7 @@ function CreateActivityReportForm() {
                   setTitle("");
                 }}
               >
-                <option value="">Select PIF…</option>
+                <option value="">{t("mande.create.selectPif")}</option>
                 {programme && !unlinked.some((p) => p.id === programme.id) && (
                   <option value={programme.id}>
                     {programme.reference_number} — {programme.title}
@@ -173,39 +175,39 @@ function CreateActivityReportForm() {
 
         {!nonPif && programme && (
           <div className="rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2 text-xs text-neutral-600 space-y-1">
-            <p><span className="font-semibold">PIF:</span> {programme.reference_number}</p>
+            <p><span className="font-semibold">{t("mande.create.pifLabel")}</span> {programme.reference_number}</p>
             <p>
-              <span className="font-semibold">Dates:</span>{" "}
+              <span className="font-semibold">{t("mande.create.datesLabel")}</span>{" "}
               {programme.start_date ?? "—"} → {programme.end_date ?? "—"}
             </p>
           </div>
         )}
 
         <div>
-          <label htmlFor="mande-activity-title" className="block text-xs font-semibold text-neutral-700 mb-1">Activity title *</label>
+          <label htmlFor="mande-activity-title" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.create.activityTitle")}</label>
           <input
             id="mande-activity-title"
             className="form-input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={nonPif ? "Describe the activity" : "Usually matches the PIF title"}
+            placeholder={nonPif ? t("mande.create.describeActivity") : t("mande.create.matchesPif")}
           />
         </div>
 
         {nonPif && (
           <div>
             <label htmlFor="mande-non-pif-reason" className="block text-xs font-semibold text-neutral-700 mb-1">
-              Reason for non-PIF report *
+              {t("mande.create.reasonLabel")}
             </label>
             <textarea
               id="mande-non-pif-reason"
               className="form-input min-h-[100px]"
               value={nonPifReason}
               onChange={(e) => setNonPifReason(e.target.value)}
-              placeholder="Explain why this activity has no linked PIF (min. 5 characters)"
+              placeholder={t("mande.create.reasonPlaceholder")}
             />
             {nonPifReason.trim().length > 0 && nonPifReason.trim().length < 5 && (
-              <p className="text-xs text-amber-700 mt-1">Reason must be at least 5 characters.</p>
+              <p className="text-xs text-amber-700 mt-1">{t("mande.create.reasonMin")}</p>
             )}
           </div>
         )}
@@ -213,20 +215,20 @@ function CreateActivityReportForm() {
         {createMut.isError && (
           <p className="text-sm text-red-600">
             {nonPif
-              ? "Could not create the non-PIF report. Check the title and reason."
-              : "Could not create the report. It may already exist for this PIF."}
+              ? t("mande.create.nonPifFailed")
+              : t("mande.create.pifFailed")}
           </p>
         )}
 
         <div className="flex justify-end gap-2 pt-2">
-          <Link href="/mande/intake" className="btn-secondary">Cancel</Link>
+          <Link href="/mande/intake" className="btn-secondary">{t("common.cancel")}</Link>
           <button
             type="button"
             className="btn-primary disabled:opacity-40"
             disabled={!canSubmit}
             onClick={() => createMut.mutate()}
           >
-            {createMut.isPending ? "Creating…" : "Create report"}
+            {createMut.isPending ? t("mande.create.creating") : t("mande.intake.createReport")}
           </button>
         </div>
       </div>
@@ -235,8 +237,9 @@ function CreateActivityReportForm() {
 }
 
 export default function CreateActivityReportPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">Loading…</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">{t("common.loading")}</div>}>
       <CreateActivityReportForm />
     </Suspense>
   );

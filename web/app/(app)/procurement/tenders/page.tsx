@@ -15,6 +15,7 @@ import { useRowSelection } from "@/lib/useRowSelection";
 import { clientPageCount, DEFAULT_PAGE_SIZE, slicePage } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_FILTERS = [
   "all",
@@ -27,8 +28,20 @@ const STATUS_FILTERS = [
   "cancelled",
 ] as const;
 
+const STATUS_LABEL_KEYS: Record<(typeof STATUS_FILTERS)[number], string> = {
+  all: "procurement.filter.all",
+  draft: "status.draft",
+  published: "procurement.status.published",
+  closed: "procurement.status.closed",
+  opened: "procurement.status.opened",
+  evaluating: "procurement.status.evaluating",
+  awarded: "procurement.status.awarded",
+  cancelled: "status.cancelled",
+};
+
 export default function TendersPage() {
   const { success, error: showErrorToast, info } = useToast();
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>("all");
   const [search, setSearch] = useState("");
@@ -48,10 +61,10 @@ export default function TendersPage() {
     const list = data ?? [];
     if (!q) return list;
     return list.filter(
-      (t) =>
-        t.reference_number.toLowerCase().includes(q) ||
-        t.title.toLowerCase().includes(q) ||
-        t.status.toLowerCase().includes(q),
+      (row) =>
+        row.reference_number.toLowerCase().includes(q) ||
+        row.title.toLowerCase().includes(q) ||
+        row.status.toLowerCase().includes(q),
     );
   }, [data, search]);
 
@@ -60,8 +73,8 @@ export default function TendersPage() {
 
   const selection = useRowSelection<ProcurementTender>({
     rows: pageRows,
-    getId: (t) => t.id,
-    canSelect: (t) => t.status === "draft" || t.status === "published",
+    getId: (row) => row.id,
+    canSelect: (row) => row.status === "draft" || row.status === "published",
   });
 
   const cancelMut = useMutation({
@@ -74,12 +87,12 @@ export default function TendersPage() {
     onSuccess: (results) => {
       const ok = results.filter((r) => r.status === "fulfilled").length;
       const fail = results.length - ok;
-      if (fail) showErrorToast(`Cancelled ${ok}; ${fail} failed.`);
-      else success(`Cancelled ${ok} tender(s).`);
+      if (fail) showErrorToast(t("procurement.tenders.bulkPartial", { ok, fail }));
+      else success(t("procurement.tenders.bulkDone", { count: ok }));
       selection.clear();
       qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
     },
-    onError: () => setError("Bulk cancel failed."),
+    onError: () => setError(t("procurement.tenders.bulkFailed")),
     onSettled: () => setBulkLoading(false),
   });
 
@@ -93,8 +106,8 @@ export default function TendersPage() {
 
   return (
     <RegisterShell
-      title="Tenders"
-      subtitle="Open tender notices, sealed submissions, and evaluation lifecycle."
+      title={t("procurement.tenders.title")}
+      subtitle={t("procurement.tenders.subtitle")}
       density={density}
       onDensityChange={setDensity}
       page={page}
@@ -108,17 +121,17 @@ export default function TendersPage() {
       stats={
         error || isError ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error ?? "Failed to load tenders."}
+            {error ?? t("procurement.tenders.loadError")}
           </div>
         ) : null
       }
       filters={
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[180px] flex-1">
-            <label htmlFor="procurement-tenders-search" className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
+            <label htmlFor="procurement-tenders-search" className="mb-1 block text-xs font-semibold text-neutral-600">{t("common.search")}</label>
             <input id="procurement-tenders-search"
               className="form-input text-sm"
-              placeholder="Reference or title…"
+              placeholder={t("procurement.tenders.searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -138,7 +151,7 @@ export default function TendersPage() {
                 }}
                 className={`filter-tab ${status === key ? "active" : ""}`}
               >
-                {key === "all" ? "All" : key}
+                {t(STATUS_LABEL_KEYS[key])}
               </button>
             ))}
           </div>
@@ -152,7 +165,7 @@ export default function TendersPage() {
             onClick={handleBulkCancel}
             className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
           >
-            {bulkLoading ? "Cancelling…" : "Cancel selected drafts/published"}
+            {bulkLoading ? t("procurement.tenders.cancelling") : t("procurement.tenders.cancelSelected")}
           </button>
         </BulkSelectionBar>
       }
@@ -161,8 +174,8 @@ export default function TendersPage() {
           <div className="card">
             <EmptyState
               icon="gavel"
-              title="No tenders yet"
-              description="Create from an approved tender-method request."
+              title={t("procurement.tenders.empty")}
+              description={t("procurement.tenders.emptyHint")}
             />
           </div>
         ) : undefined
@@ -170,7 +183,7 @@ export default function TendersPage() {
     >
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
-              <caption className="sr-only">Procurement tenders register</caption>
+              <caption className="sr-only">{t("procurement.tenders.caption")}</caption>
           <thead>
             <tr className="border-b text-left text-xs text-neutral-500">
               <th className={selectionColumnClass.th}>
@@ -180,37 +193,37 @@ export default function TendersPage() {
                   onChange={selection.toggleAllSelectable}
                 />
               </th>
-              <th className="px-4 py-3">Reference</th>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Deadline</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">{t("procurement.col.reference")}</th>
+              <th className="px-4 py-3">{t("procurement.col.title")}</th>
+              <th className="px-4 py-3">{t("procurement.col.deadline")}</th>
+              <th className="px-4 py-3">{t("procurement.col.status")}</th>
             </tr>
           </thead>
           <tbody>
-            {pageRows.map((t) => {
-              const selectable = t.status === "draft" || t.status === "published";
+            {pageRows.map((tender) => {
+              const selectable = tender.status === "draft" || tender.status === "published";
               return (
-                <tr key={t.id} className="border-b border-neutral-50 hover:bg-neutral-50/80">
+                <tr key={tender.id} className="border-b border-neutral-50 hover:bg-neutral-50/80">
                   <td className={selectionColumnClass.td}>
                     {selectable ? (
                       <RowCheckbox
-                        checked={selection.isSelected(t.id)}
-                        onChange={() => selection.toggle(t.id)}
-                        label={`Select ${t.reference_number}`}
+                        checked={selection.isSelected(tender.id)}
+                        onChange={() => selection.toggle(tender.id)}
+                        label={t("procurement.selectRow", { ref: tender.reference_number })}
                       />
                     ) : (
                       <span className="inline-block w-4" />
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={`/procurement/tenders/${t.id}`} className="font-semibold text-primary">
-                      {t.reference_number}
+                    <Link href={`/procurement/tenders/${tender.id}`} className="font-semibold text-primary">
+                      {tender.reference_number}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-neutral-800">{t.title}</td>
-                  <td className="px-4 py-3 text-neutral-500">{t.submission_deadline ?? "—"}</td>
+                  <td className="px-4 py-3 text-neutral-800">{tender.title}</td>
+                  <td className="px-4 py-3 text-neutral-500">{tender.submission_deadline ?? "—"}</td>
                   <td className="px-4 py-3">
-                    <span className="text-xs uppercase tracking-wide text-neutral-600">{t.status}</span>
+                    <span className="text-xs uppercase tracking-wide text-neutral-600">{tender.status in STATUS_LABEL_KEYS ? t(STATUS_LABEL_KEYS[tender.status as keyof typeof STATUS_LABEL_KEYS]) : tender.status}</span>
                   </td>
                 </tr>
               );

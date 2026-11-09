@@ -32,10 +32,10 @@ export default function AuditAppointmentsPage() {
     onSuccess: () => {
       setFirm("");
       setPlenary("");
-      toast.success("Appointment recorded");
+      toast.success(t("audit.toast.appointmentRecorded"));
       qc.invalidateQueries({ queryKey: ["audit", "appointments"] });
     },
-    onError: (err) => toast.error("Appointment not recorded", apiErrorMessage(err, "Failed to record the appointment.")),
+    onError: (err) => toast.error(t("audit.toast.appointmentNotRecorded"), apiErrorMessage(err, t("audit.toast.appointmentFailed"))),
   });
 
   return (

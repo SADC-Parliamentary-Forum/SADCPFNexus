@@ -2,7 +2,7 @@
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   policyProfilesApi,
@@ -17,6 +17,14 @@ import { SupplierDocumentRequirementTypesCard } from "@/components/procurement/S
 import { SupplierCategoriesHierarchyCard } from "@/components/procurement/SupplierCategoriesHierarchyCard";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+
+/** Replaces {name} placeholders in translated copy with React nodes. */
+function richText(template: string, nodes: Record<string, ReactNode>): ReactNode[] {
+  return template.split(/(\{\w+\})/).map((part, i) => {
+    const name = part.startsWith("{") && part.endsWith("}") ? part.slice(1, -1) : null;
+    return <Fragment key={i}>{name && name in nodes ? nodes[name] : part}</Fragment>;
+  });
+}
 
 const emptyProfile = {
   key: "",
@@ -64,12 +72,12 @@ export default function ProcurementSettingsPage() {
     onSuccess: (res) => {
       qc.setQueryData(["procurement", "settings"], res.data.data);
       setForm(res.data.data);
-      setSavedMsg("Settings saved.");
+      setSavedMsg(t("admin.settings.saved"));
       setTimeout(() => setSavedMsg(null), 2500);
-      toast.success("Procurement settings saved");
+      toast.success(t("po.settingsPage.saved"));
     },
     onError: (err: unknown) => {
-      toast.error("Settings not saved", apiErrorMessage(err, "Failed to save procurement settings."));
+      toast.error(t("mande.settings.notSaved"), apiErrorMessage(err, t("po.settingsPage.saveFailed")));
     },
   });
 
@@ -93,12 +101,12 @@ export default function ProcurementSettingsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["procurement", "policy-profiles"] });
       setNewProfile(emptyProfile);
-      setSavedMsg("Policy profile created.");
+      setSavedMsg(t("po.settingsPage.profileCreatedMsg"));
       setTimeout(() => setSavedMsg(null), 2500);
-      toast.success("Policy profile created");
+      toast.success(t("po.settingsPage.profileCreated"));
     },
     onError: (err: unknown) => {
-      toast.error("Policy profile not created", apiErrorMessage(err, "Failed to create the policy profile."));
+      toast.error(t("po.settingsPage.profileNotCreated"), apiErrorMessage(err, t("po.settingsPage.profileCreateFailed")));
     },
   });
 
@@ -113,12 +121,12 @@ export default function ProcurementSettingsPage() {
       procurementWorkbenchApi.activateSequence(Number(legacyNumber), sequenceReason.trim()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["procurement", "lpo-sequence"] });
-      setSavedMsg("LPO sequence activated. Subsequent edits require a privileged reason.");
+      setSavedMsg(t("po.settingsPage.sequenceActivatedMsg"));
       setTimeout(() => setSavedMsg(null), 2500);
-      toast.success("LPO sequence activated");
+      toast.success(t("po.settingsPage.sequenceActivated"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not activate LPO sequence", apiErrorMessage(err, "Failed to activate the LPO sequence."));
+      toast.error(t("po.settingsPage.sequenceNotActivated"), apiErrorMessage(err, t("po.settingsPage.sequenceFailed")));
     },
   });
 
@@ -128,19 +136,19 @@ export default function ProcurementSettingsPage() {
       qc.setQueryData(["procurement", "settings"], res.data.data);
       setForm(res.data.data);
       qc.invalidateQueries({ queryKey: ["procurement", "policy-profiles"] });
-      setSavedMsg("Policy profile activated.");
+      setSavedMsg(t("po.settingsPage.profileActivatedMsg"));
       setTimeout(() => setSavedMsg(null), 2500);
-      toast.success("Policy profile activated");
+      toast.success(t("po.settingsPage.profileActivated"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not activate policy profile", apiErrorMessage(err, "Failed to activate the policy profile."));
+      toast.error(t("po.settingsPage.profileNotActivated"), apiErrorMessage(err, t("po.settingsPage.profileActivateFailed")));
     },
   });
 
   if (!canAdmin) {
     return (
       <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 max-w-xl">
-        You need <code className="font-mono">procurement.admin</code> to change procurement thresholds.
+        {richText(t("po.settingsPage.needAdmin"), { permission: <code className="font-mono">{"procurement.admin"}</code> })}
       </div>
     );
   }
@@ -148,8 +156,8 @@ export default function ProcurementSettingsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Procurement Settings"
-        subtitle="Thresholds, multi-donor policy profiles, and optional AI comparison assist (never auto-awards)."
+        title="po.settings.hub"
+        subtitle="po.settingsPage.subtitle"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "po.settings.hub" }]} />}
       />
 
@@ -167,13 +175,13 @@ export default function ProcurementSettingsPage() {
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {(error as { response?: { data?: { message?: string }; status?: number } })?.response?.status === 404
-            ? "This organisation's settings could not be read. Apply pending database migrations, then reload."
-            : ((error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to load settings.")}
+            ? t("po.settingsPage.loadMissing")
+            : ((error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("mande.settings.loadFailed"))}
         </div>
       )}
 
       {isLoading || !form ? (
-        <div className="card px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
+        <div className="card px-5 py-10 text-center text-sm text-neutral-400">{t("common.loading")}</div>
       ) : (
         <>
           <div className="card p-5 space-y-5">
@@ -183,21 +191,21 @@ export default function ProcurementSettingsPage() {
 
             {form.has_tenant_override && (
               <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                This tenant has custom thresholds active.
+                {t("po.settingsPage.tenantOverride")}
               </p>
             )}
 
             {(
               [
-                { key: "direct_purchase_limit", label: "Direct purchase limit (NAD)", help: "Up to this value: approved supplier / direct purchase.", step: 0.01 },
-                { key: "quotation_limit", label: "Quotation / RFQ limit (NAD)", help: "Above direct limit up to this value: RFQ with minimum quotes.", step: 0.01 },
-                { key: "tender_threshold", label: "Tender threshold (NAD)", help: "At or above this value: open tender required.", step: 0.01 },
-                { key: "minimum_quotes_required", label: "Minimum quotes required", help: "For RFQ-method purchases above the direct limit.", step: 1 },
-                { key: "split_lookback_days", label: "Split lookback (days)", help: "Window for anti-split purchase detection on submit.", step: 1 },
+                { key: "direct_purchase_limit", label: "po.settingsPage.directLimit", help: "po.settingsPage.directLimitHelp", step: 0.01 },
+                { key: "quotation_limit", label: "po.settingsPage.quotationLimit", help: "po.settingsPage.quotationLimitHelp", step: 0.01 },
+                { key: "tender_threshold", label: "po.settingsPage.tenderThreshold", help: "po.settingsPage.tenderThresholdHelp", step: 0.01 },
+                { key: "minimum_quotes_required", label: "po.settingsPage.minQuotes", help: "po.settingsPage.minQuotesHelp", step: 1 },
+                { key: "split_lookback_days", label: "po.settingsPage.splitLookback", help: "po.settingsPage.splitLookbackHelp", step: 1 },
               ] as const
             ).map((field) => (
               <div key={field.key}>
-                <label htmlFor="procurement-settings-field" className="block text-xs font-semibold text-neutral-700 mb-1">{field.label}</label>
+                <label htmlFor="procurement-settings-field" className="block text-xs font-semibold text-neutral-700 mb-1">{t(field.label)}</label>
                 <input id="procurement-settings-field"
                   type="number"
                   min={0}
@@ -211,19 +219,19 @@ export default function ProcurementSettingsPage() {
                     })
                   }
                 />
-                <p className="text-xs text-neutral-500 mt-1">{field.help}</p>
+                <p className="text-xs text-neutral-500 mt-1">{t(field.help)}</p>
               </div>
             ))}
 
             <div>
-              <label htmlFor="procurement-settings-split-enforcement" className="block text-xs font-semibold text-neutral-700 mb-1">Split enforcement</label>
+              <label htmlFor="procurement-settings-split-enforcement" className="block text-xs font-semibold text-neutral-700 mb-1">{t("po.settingsPage.splitEnforcement")}</label>
               <select id="procurement-settings-split-enforcement"
                 className="form-input max-w-[240px]"
                 value={form.split_enforcement ?? "hard"}
                 onChange={(e) => setForm({ ...form, split_enforcement: e.target.value as "soft" | "hard" })}
               >
-                <option value="hard">Hard — require Finance/SG authorisation</option>
-                <option value="soft">Soft — justification text only</option>
+                <option value="hard">{t("po.settingsPage.splitHard")}</option>
+                <option value="soft">{t("po.settingsPage.splitSoft")}</option>
               </select>
             </div>
 
@@ -236,9 +244,9 @@ export default function ProcurementSettingsPage() {
                   onChange={(e) => setForm({ ...form, ai_comparison_enabled: e.target.checked })}
                 />
                 <span>
-                  <span className="font-semibold">Enable AI comparison summaries</span>
+                  <span className="font-semibold">{t("po.settingsPage.aiEnable")}</span>
                   <span className="block text-xs text-neutral-500 mt-0.5">
-                    Assistive text only (stub provider when no LLM configured). Never auto-awards or auto-recommends.
+                    {t("po.settingsPage.aiHelp")}
                   </span>
                 </span>
               </label>
@@ -260,18 +268,16 @@ export default function ProcurementSettingsPage() {
                 })
               }
             >
-              {saveMut.isPending ? "Saving…" : "Save settings"}
+              {saveMut.isPending ? t("stock.common.saving") : t("correspondence.mailbox.saveSettings")}
             </button>
           </div>
 
           <div className="card p-5 space-y-4">
             <div>
-              <h2 className="text-base font-semibold text-neutral-900">Multi-donor policy profiles</h2>
+              <h2 className="text-base font-semibold text-neutral-900">{t("po.settingsPage.profilesTitle")}</h2>
               <p className="text-xs text-neutral-500 mt-1">
-                Active: <code className="font-mono">{form.policy_profile_key ?? "sadc_pf_core"}</code>
-                {(form.donor_codes?.length ?? 0) > 0 && (
-                  <> · Donors: {(form.donor_codes ?? []).join(", ")}</>
-                )}
+                {richText(t("po.settingsPage.activeProfile"), { key: <code className="font-mono">{form.policy_profile_key ?? "sadc_pf_core"}</code> })}
+                {(form.donor_codes?.length ?? 0) > 0 && t("po.settingsPage.donors", { donors: (form.donor_codes ?? []).join(", ") })}
               </p>
             </div>
 
@@ -282,14 +288,17 @@ export default function ProcurementSettingsPage() {
                     <p className="text-sm font-medium text-neutral-900">
                       {p.name}{" "}
                       <span className="font-mono text-xs text-neutral-500">{p.key}</span>
-                      {p.is_default && <span className="ml-2 text-[10px] uppercase text-neutral-500">default</span>}
+                      {p.is_default && <span className="ml-2 text-[10px] uppercase text-neutral-500">{t("po.settingsPage.defaultBadge")}</span>}
                       {form.policy_profile_key === p.key && (
-                        <span className="ml-2 text-[10px] uppercase text-green-700">active</span>
+                        <span className="ml-2 text-[10px] uppercase text-green-700">{t("po.settingsPage.activeBadge")}</span>
                       )}
                     </p>
                     <p className="text-xs text-neutral-500">
-                      ≤{p.direct_purchase_limit.toLocaleString()} direct · ≤{p.quotation_limit.toLocaleString()} RFQ · donors:{" "}
-                      {(p.donor_codes ?? []).join(", ") || "—"}
+                      {t("po.settingsPage.profileSummary", {
+                        direct: p.direct_purchase_limit.toLocaleString(),
+                        quotation: p.quotation_limit.toLocaleString(),
+                        donors: (p.donor_codes ?? []).join(", ") || "—",
+                      })}
                     </p>
                   </div>
                   {form.policy_profile_key !== p.key && p.is_active && (
@@ -299,7 +308,7 @@ export default function ProcurementSettingsPage() {
                       disabled={activateMut.isPending}
                       onClick={() => activateMut.mutate(p.id)}
                     >
-                      Activate
+                      {t("audit.external.activate")}
                     </button>
                   )}
                 </div>
@@ -307,13 +316,13 @@ export default function ProcurementSettingsPage() {
             </div>
 
             <div className="border-t border-neutral-200 pt-4 space-y-3">
-              <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wide">Create profile</p>
+              <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wide">{t("po.settingsPage.createProfile")}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input className="form-input" placeholder="key (eu_donor)" value={newProfile.key} onChange={(e) => setNewProfile({ ...newProfile, key: e.target.value })} />
-                <input className="form-input" placeholder="Name" value={newProfile.name} onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })} />
-                <input className="form-input sm:col-span-2" placeholder="Donor codes (comma-separated)" value={newProfile.donor_codes} onChange={(e) => setNewProfile({ ...newProfile, donor_codes: e.target.value })} />
-                <input className="form-input" type="number" placeholder="Direct limit" value={newProfile.direct_purchase_limit} onChange={(e) => setNewProfile({ ...newProfile, direct_purchase_limit: parseFloat(e.target.value) || 0 })} />
-                <input className="form-input" type="number" placeholder="Quotation limit" value={newProfile.quotation_limit} onChange={(e) => setNewProfile({ ...newProfile, quotation_limit: parseFloat(e.target.value) || 0, tender_threshold: parseFloat(e.target.value) || 0 })} />
+                <input className="form-input" placeholder={t("po.settingsPage.keyPlaceholder")} value={newProfile.key} onChange={(e) => setNewProfile({ ...newProfile, key: e.target.value })} />
+                <input className="form-input" placeholder={t("stock.common.name")} value={newProfile.name} onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })} />
+                <input className="form-input sm:col-span-2" placeholder={t("po.settingsPage.donorCodes")} value={newProfile.donor_codes} onChange={(e) => setNewProfile({ ...newProfile, donor_codes: e.target.value })} />
+                <input className="form-input" type="number" placeholder={t("po.settingsPage.directLimitPlaceholder")} value={newProfile.direct_purchase_limit} onChange={(e) => setNewProfile({ ...newProfile, direct_purchase_limit: parseFloat(e.target.value) || 0 })} />
+                <input className="form-input" type="number" placeholder={t("po.settingsPage.quotationLimitPlaceholder")} value={newProfile.quotation_limit} onChange={(e) => setNewProfile({ ...newProfile, quotation_limit: parseFloat(e.target.value) || 0, tender_threshold: parseFloat(e.target.value) || 0 })} />
               </div>
               <button
                 type="button"
@@ -321,26 +330,28 @@ export default function ProcurementSettingsPage() {
                 disabled={createProfileMut.isPending || !newProfile.key || !newProfile.name}
                 onClick={() => createProfileMut.mutate()}
               >
-                {createProfileMut.isPending ? "Creating…" : "Create policy profile"}
+                {createProfileMut.isPending ? t("audit.campaigns.creating") : t("po.settingsPage.createPolicyProfile")}
               </button>
             </div>
           </div>
 
           <div className="card p-5 space-y-4">
             <div>
-              <h2 className="text-base font-semibold text-neutral-900">LPO Sequence Setup</h2>
+              <h2 className="text-base font-semibold text-neutral-900">{t("po.settingsPage.sequenceTitle")}</h2>
               <p className="text-xs text-neutral-500 mt-1">
-                Before production issuance, activate the live LPO sequence with the <strong>real last legacy number</strong>.
-                Consecutive <code className="font-mono">S #####</code> numbers are allocated on submit for both intake LPOs and award-path POs.
-                Drafts use a temporary <code className="font-mono">PROC-DRAFT-*</code> reference until submit. Do not infer the next number from the sample invoice S 04015.
+                {richText(t("po.settingsPage.sequenceIntro"), {
+                  legacy: <strong>{t("po.settingsPage.legacyStrong")}</strong>,
+                  pattern: <code className="font-mono">S #####</code>,
+                  draft: <code className="font-mono">{"PROC-DRAFT-*"}</code>,
+                })}
               </p>
             </div>
             {sequenceQuery.data && (
               <dl className="grid grid-cols-2 gap-3 text-sm">
-                <div><dt className="text-xs text-neutral-500">Status</dt><dd className="font-medium">{String(sequenceQuery.data.status ?? "missing")}</dd></div>
-                <div><dt className="text-xs text-neutral-500">Next example</dt><dd className="font-mono">{String(sequenceQuery.data.next_example ?? "S 00001")}</dd></div>
-                <div><dt className="text-xs text-neutral-500">Current value</dt><dd className="font-mono">{String(sequenceQuery.data.current_value ?? 0)}</dd></div>
-                <div><dt className="text-xs text-neutral-500">Last legacy</dt><dd className="font-mono">{String(sequenceQuery.data.last_legacy_number ?? "—")}</dd></div>
+                <div><dt className="text-xs text-neutral-500">{t("stock.common.status")}</dt><dd className="font-medium">{String(sequenceQuery.data.status ?? "missing")}</dd></div>
+                <div><dt className="text-xs text-neutral-500">{t("po.numbering.next")}</dt><dd className="font-mono">{String(sequenceQuery.data.next_example ?? "S 00001")}</dd></div>
+                <div><dt className="text-xs text-neutral-500">{t("po.numbering.current")}</dt><dd className="font-mono">{String(sequenceQuery.data.current_value ?? 0)}</dd></div>
+                <div><dt className="text-xs text-neutral-500">{t("po.settingsPage.lastLegacy")}</dt><dd className="font-mono">{String(sequenceQuery.data.last_legacy_number ?? "—")}</dd></div>
               </dl>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -348,13 +359,13 @@ export default function ProcurementSettingsPage() {
                 className="form-input"
                 type="number"
                 min={0}
-                placeholder="Last issued legacy number (not the sample)"
+                placeholder={t("po.settingsPage.legacyPlaceholder")}
                 value={legacyNumber}
                 onChange={(e) => setLegacyNumber(e.target.value)}
               />
               <input
                 className="form-input"
-                placeholder="Reason / confirmation"
+                placeholder={t("po.settingsPage.reasonPlaceholder")}
                 value={sequenceReason}
                 onChange={(e) => setSequenceReason(e.target.value)}
               />
@@ -365,7 +376,7 @@ export default function ProcurementSettingsPage() {
               disabled={activateSequenceMut.isPending || legacyNumber === "" || sequenceReason.trim().length < 3}
               onClick={() => activateSequenceMut.mutate()}
             >
-              {activateSequenceMut.isPending ? "Activating…" : "Confirm sequence"}
+              {activateSequenceMut.isPending ? t("admin.notifications.activating") : t("po.settingsPage.confirmSequence")}
             </button>
           </div>
 

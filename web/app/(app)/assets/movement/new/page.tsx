@@ -116,13 +116,13 @@ function NewAssetMovementPageContent() {
         notes: notes || undefined,
         movement_date: movementDate,
       });
-      toast.success("Asset movement recorded", asset.tag_number || asset.name);
+      toast.success(t("assets.movementNew.recorded"), asset.tag_number || asset.name);
       router.push("/assets");
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string };
       const msg = Object.values(ax.response?.data?.errors ?? {}).flat()[0] ?? ax.response?.data?.message ?? t("common.error");
       setError(msg);
-      toast.error("Asset movement not recorded", msg);
+      toast.error(t("assets.movementNew.notRecorded"), msg);
     } finally {
       setSubmitting(false);
     }

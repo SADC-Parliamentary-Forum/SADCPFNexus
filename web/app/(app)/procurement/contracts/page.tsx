@@ -5,10 +5,12 @@
 // an awarded procurement request creating a contract).
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function RedirectInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
 
   useEffect(() => {
     const request = searchParams.get("request");
@@ -17,7 +19,7 @@ function RedirectInner() {
   }, [router, searchParams]);
 
   return (
-    <div className="p-8 text-sm text-neutral-500">Redirecting to Contracts…</div>
+    <div className="p-8 text-sm text-neutral-500">{t("procurement.contracts.redirecting")}</div>
   );
 }
 

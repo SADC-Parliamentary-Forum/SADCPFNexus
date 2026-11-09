@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { type UserDocument, type ProfileDocumentType, PROFILE_DOCUMENT_TYPES } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function formatBytes(bytes: number | null): string {
   if (!bytes) return "—";
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export default function DocumentsPanel({ documents, loading, uploading, onUpload, onDelete, getDownloadUrl }: Props) {
+  const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState<ProfileDocumentType>("cv");
   const [title, setTitle] = useState("");
@@ -67,7 +69,7 @@ export default function DocumentsPanel({ documents, loading, uploading, onUpload
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {
-      setDownloadError(`Failed to download ${doc.original_filename}.`);
+      setDownloadError(t("ui.documents.downloadFailed", { name: doc.original_filename }));
     }
   };
 
@@ -112,8 +114,8 @@ export default function DocumentsPanel({ documents, loading, uploading, onUpload
             <p className="text-sm font-semibold text-primary">{selectedFile.name} ({formatBytes(selectedFile.size)})</p>
           ) : (
             <>
-              <p className="text-sm font-semibold text-neutral-700">Click to select or drag & drop</p>
-              <p className="text-xs text-neutral-400 mt-1">PDF, Word, JPG, PNG · Max 20 MB</p>
+              <p className="text-sm font-semibold text-neutral-700">{t("ui.documents.dropHint")}</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("ui.documents.formats20")}</p>
             </>
           )}
         </div>
@@ -121,26 +123,26 @@ export default function DocumentsPanel({ documents, loading, uploading, onUpload
         {selectedFile && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1">
-              <label htmlFor="profile-doc-type" className="text-xs font-semibold text-neutral-600">Document Type</label>
+              <label htmlFor="profile-doc-type" className="text-xs font-semibold text-neutral-600">{t("ui.documents.type")}</label>
               <select
                 id="profile-doc-type"
                 value={docType}
                 onChange={(e) => setDocType(e.target.value as ProfileDocumentType)}
                 className="form-input"
               >
-                {PROFILE_DOCUMENT_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                {PROFILE_DOCUMENT_TYPES.map((dt) => (
+                  <option key={dt.value} value={dt.value}>{dt.label}</option>
                 ))}
               </select>
             </div>
             <div className="space-y-1">
-              <label htmlFor="profile-doc-title" className="text-xs font-semibold text-neutral-600">Title (optional)</label>
+              <label htmlFor="profile-doc-title" className="text-xs font-semibold text-neutral-600">{t("ui.documents.titleOptional")}</label>
               <input
                 id="profile-doc-title"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. MSc Computer Science 2019"
+                placeholder={t("ui.documents.titlePlaceholder")}
                 className="form-input"
               />
             </div>
@@ -156,12 +158,13 @@ export default function DocumentsPanel({ documents, loading, uploading, onUpload
                 ) : (
                   <span className="material-symbols-outlined text-[18px]">cloud_upload</span>
                 )}
-                Upload
+                {t("common.upload")}
               </button>
               <button
                 type="button"
                 onClick={() => { setSelectedFile(null); setTitle(""); if (fileRef.current) fileRef.current.value = ""; }}
                 className="btn-secondary px-3"
+                aria-label={t("ui.documents.clearFile")}
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -174,10 +177,10 @@ export default function DocumentsPanel({ documents, loading, uploading, onUpload
       {loading ? (
         <div className="flex items-center justify-center py-10">
           <span className="material-symbols-outlined animate-spin text-primary text-2xl mr-2">progress_activity</span>
-          <span className="text-sm text-neutral-400">Loading documents...</span>
+          <span className="text-sm text-neutral-400">{t("ui.documents.loadingDots")}</span>
         </div>
       ) : documents.length === 0 ? (
-        <div className="py-10 text-center text-sm text-neutral-400 italic">No documents uploaded yet.</div>
+        <div className="py-10 text-center text-sm text-neutral-400 italic">{t("ui.documents.empty")}</div>
       ) : (
         <div className="space-y-2">
           {documents.map((doc) => (
@@ -204,12 +207,13 @@ export default function DocumentsPanel({ documents, loading, uploading, onUpload
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-neutral-200 text-neutral-600 hover:text-primary hover:border-primary text-xs font-semibold transition-all"
                 >
                   <span className="material-symbols-outlined text-[16px]">download</span>
-                  Download
+                  {t("common.download")}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDelete(doc.id)}
                   disabled={deletingId === doc.id}
+                  aria-label={t("common.delete")}
                   className="flex items-center justify-center h-8 w-8 rounded-lg border border-red-100 text-red-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[16px]">delete</span>

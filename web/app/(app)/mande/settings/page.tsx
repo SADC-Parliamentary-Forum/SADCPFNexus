@@ -7,10 +7,12 @@ import { mandeApi, type MeSettings } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function MandeSettingsPage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "mande.admin");
   const [form, setForm] = useState<MeSettings | null>(null);
@@ -31,17 +33,17 @@ export default function MandeSettingsPage() {
     onSuccess: (res) => {
       qc.setQueryData(["mande", "settings"], res.data.data);
       setForm(res.data.data);
-      setSavedMsg("Settings saved.");
-      toast.success("Settings saved");
+      setSavedMsg(t("mande.settings.savedMsg"));
+      toast.success(t("mande.settings.saved"));
       setTimeout(() => setSavedMsg(null), 2500);
     },
-    onError: (err) => toast.error("Settings not saved", apiErrorMessage(err, "Could not save M&E settings.")),
+    onError: (err) => toast.error(t("mande.settings.notSaved"), apiErrorMessage(err, t("mande.settings.saveFailedDetail"))),
   });
 
   if (!canAdmin) {
     return (
       <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 max-w-xl">
-        You need <code className="font-mono">mande.admin</code> to change M&amp;E settings.
+        {t("mande.settings.needBefore")} <code className="font-mono">mande.admin</code> {t("mande.settings.needAfter")} {/* i18n-ignore */}
       </div>
     );
   }
@@ -49,19 +51,19 @@ export default function MandeSettingsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="M&E Settings"
-        subtitle="Tenant defaults for intake, due dates and programme-manager review."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "M&E Settings" }]} />}
+        title={t("mande.settings.title")}
+        subtitle={t("mande.settings.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("mande.settings.title") }]} />}
       />
 
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          Failed to load settings.
+          {t("mande.settings.loadFailed")}
         </div>
       )}
 
       {isLoading || !form ? (
-        <div className="card px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
+        <div className="card px-5 py-10 text-center text-sm text-neutral-400">{t("common.loading")}</div>
       ) : (
         <div className="card p-5 space-y-5">
           {savedMsg && (
@@ -76,15 +78,15 @@ export default function MandeSettingsPage() {
               onChange={(e) => setForm({ ...form, auto_intake: e.target.checked })}
             />
             <span>
-              <span className="block text-sm font-semibold text-neutral-800">Auto-intake on PIF approve</span>
+              <span className="block text-sm font-semibold text-neutral-800">{t("mande.settings.autoIntake")}</span>
               <span className="block text-xs text-neutral-500">
-                When enabled, approving a PIF creates one M&amp;E activity report shell (idempotent).
+                {t("mande.settings.autoIntakeHint")}
               </span>
             </span>
           </label>
 
           <div>
-            <label htmlFor="mande-settings-report-due-days" className="block text-xs font-semibold text-neutral-700 mb-1">Report due days</label>
+            <label htmlFor="mande-settings-report-due-days" className="block text-xs font-semibold text-neutral-700 mb-1">{t("mande.settings.dueDays")}</label>
             <input id="mande-settings-report-due-days"
               type="number"
               min={1}
@@ -93,7 +95,7 @@ export default function MandeSettingsPage() {
               value={form.report_due_days}
               onChange={(e) => setForm({ ...form, report_due_days: Number(e.target.value) || 14 })}
             />
-            <p className="text-xs text-neutral-500 mt-1">Days after activity end date before a report is overdue.</p>
+            <p className="text-xs text-neutral-500 mt-1">{t("mande.settings.dueDaysHint")}</p>
           </div>
 
           <label htmlFor="mande-settings-setform-programme-manager-review-when-enabled-re" className="flex items-start gap-3">
@@ -104,15 +106,15 @@ export default function MandeSettingsPage() {
               onChange={(e) => setForm({ ...form, programme_manager_review: e.target.checked })}
             />
             <span>
-              <span className="block text-sm font-semibold text-neutral-800">Programme manager review</span>
+              <span className="block text-sm font-semibold text-neutral-800">{t("mande.settings.pmReview")}</span>
               <span className="block text-xs text-neutral-500">
-                When enabled, reports may require programme-manager review before M&amp;E (full PM queue UX in Phase 2).
+                {t("mande.settings.pmReviewHint")}
               </span>
             </span>
           </label>
 
           {saveMut.isError && (
-            <p className="text-sm text-red-600">Could not save settings.</p>
+            <p className="text-sm text-red-600">{t("mande.settings.saveFailed")}</p>
           )}
 
           <div className="flex justify-end">
@@ -122,7 +124,7 @@ export default function MandeSettingsPage() {
               disabled={saveMut.isPending || form.report_due_days < 1}
               onClick={() => saveMut.mutate(form)}
             >
-              {saveMut.isPending ? "Saving…" : "Save settings"}
+              {saveMut.isPending ? t("correspondence.saving") : t("correspondence.mailbox.saveSettings")}
             </button>
           </div>
         </div>

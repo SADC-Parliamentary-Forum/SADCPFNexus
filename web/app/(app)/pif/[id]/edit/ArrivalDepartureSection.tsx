@@ -4,6 +4,7 @@ import { useState } from "react";
 import { programmeApi, type ProgrammeArrivalDeparture } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type DraftRow = {
   category: string;
@@ -55,14 +56,14 @@ function buildPayload(d: DraftRow): Partial<ProgrammeArrivalDeparture> {
 
 /** Mirrors the server-side rule in ProgrammeArrivalDepartureController: departure
  * must not be before arrival. Surfacing this client-side avoids a round-trip
- * for the most common input mistake. */
+ * for the most common input mistake. Returns a catalog key. */
 function validateDraft(d: DraftRow): string | null {
-  if (!d.category.trim()) return "Category is required.";
+  if (!d.category.trim()) return "pif.arrivals.categoryRequired";
   if (d.arrival_date && d.departure_date) {
     const arrival = new Date(d.arrival_date);
     const departure = new Date(d.departure_date);
     if (!Number.isNaN(arrival.getTime()) && !Number.isNaN(departure.getTime()) && departure < arrival) {
-      return "Departure date must not be before arrival date.";
+      return "pif.arrivals.departureBeforeArrival";
     }
   }
   return null;
@@ -78,6 +79,7 @@ export default function ArrivalDepartureSection({
   onToast: (msg: string) => void;
 }) {
   const toast = useToast();
+  const { t } = useI18n();
   const [rows, setRows] = useState<ProgrammeArrivalDeparture[]>(initialRows);
   const [drafts, setDrafts] = useState<Record<number, DraftRow>>(() =>
     Object.fromEntries(initialRows.map((r) => [r.id, toDraft(r)]))
@@ -94,14 +96,14 @@ export default function ArrivalDepartureSection({
     if (!draft) return;
     const err = validateDraft(draft);
     if (err) {
-      toast.error("Arrival/departure row not saved", err);
+      toast.error(t("pif.arrivals.notSaved"), t(err));
       return;
     }
     try {
       const res = await programmeApi.updateArrivalDeparture(programmeId, id, buildPayload(draft));
       setRows((prev) => prev.map((r) => (r.id === id ? res.data.data : r)));
     } catch (e) {
-      toast.error("Arrival/departure row not saved", apiErrorMessage(e, "Failed to save arrival/departure row."));
+      toast.error(t("pif.arrivals.notSaved"), apiErrorMessage(e, t("pif.arrivals.saveFailed")));
     }
   };
 
@@ -114,9 +116,9 @@ export default function ArrivalDepartureSection({
         delete next[id];
         return next;
       });
-      onToast("Arrival/departure row removed.");
+      onToast(t("pif.arrivals.removed"));
     } catch (e) {
-      toast.error("Arrival/departure row not removed", apiErrorMessage(e, "Failed to remove arrival/departure row."));
+      toast.error(t("pif.arrivals.notRemoved"), apiErrorMessage(e, t("pif.arrivals.removeFailed")));
     }
   };
 
@@ -124,7 +126,7 @@ export default function ArrivalDepartureSection({
     if (!pending) return;
     const err = validateDraft(pending);
     if (err) {
-      toast.error("Arrival/departure row not added", err);
+      toast.error(t("pif.arrivals.notAdded"), t(err));
       return;
     }
     setSaving(true);
@@ -134,9 +136,9 @@ export default function ArrivalDepartureSection({
       setRows((prev) => [...prev, created]);
       setDrafts((prev) => ({ ...prev, [created.id]: toDraft(created) }));
       setPending(null);
-      onToast("Arrival/departure row added.");
+      onToast(t("pif.arrivals.added"));
     } catch (e) {
-      toast.error("Arrival/departure row not added", apiErrorMessage(e, "Failed to add arrival/departure row."));
+      toast.error(t("pif.arrivals.notAdded"), apiErrorMessage(e, t("pif.arrivals.addFailed")));
     } finally {
       setSaving(false);
     }
@@ -149,28 +151,28 @@ export default function ArrivalDepartureSection({
   ) => (
     <div className="space-y-3">
       <div>
-        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-category" className="block text-xs font-semibold text-neutral-700 mb-1">Category <span className="text-red-500">*</span></label>
-        <input id="pif-detail-edit-ArrivalDepartureSection-category" className="form-input w-full" placeholder="e.g. Delegate, Speaker, Staff" value={draft.category} onChange={(e) => onChange({ category: e.target.value })} onBlur={onFieldBlur} />
+        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-category" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.detail.category")} <span className="text-red-500">*</span></label>
+        <input id="pif-detail-edit-ArrivalDepartureSection-category" className="form-input w-full" placeholder={t("pif.arrivals.categoryPlaceholder")} value={draft.category} onChange={(e) => onChange({ category: e.target.value })} onBlur={onFieldBlur} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label htmlFor="pif-detail-edit-ArrivalDepartureSection-arrival-date" className="block text-xs font-semibold text-neutral-700 mb-1">Arrival date</label>
+          <label htmlFor="pif-detail-edit-ArrivalDepartureSection-arrival-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.arrivals.arrivalDate")}</label>
           <input id="pif-detail-edit-ArrivalDepartureSection-arrival-date" type="date" className="form-input w-full" value={draft.arrival_date} onChange={(e) => onChange({ arrival_date: e.target.value })} onBlur={onFieldBlur} />
         </div>
         <div>
-          <label htmlFor="pif-detail-edit-ArrivalDepartureSection-departure-date" className="block text-xs font-semibold text-neutral-700 mb-1">Departure date</label>
+          <label htmlFor="pif-detail-edit-ArrivalDepartureSection-departure-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.arrivals.departureDate")}</label>
           <input id="pif-detail-edit-ArrivalDepartureSection-departure-date" type="date" className="form-input w-full" value={draft.departure_date} onChange={(e) => onChange({ departure_date: e.target.value })} onBlur={onFieldBlur} />
         </div>
       </div>
       {draft.arrival_date && draft.departure_date && new Date(draft.departure_date) < new Date(draft.arrival_date) && (
-        <p className="text-xs text-red-500">Departure date must not be before arrival date.</p>
+        <p className="text-xs text-red-500">{t("pif.arrivals.departureBeforeArrival")}</p>
       )}
       <div>
-        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-airport" className="block text-xs font-semibold text-neutral-700 mb-1">Airport</label>
+        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-airport" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.readonly.airport")}</label>
         <input id="pif-detail-edit-ArrivalDepartureSection-airport" className="form-input w-full" value={draft.airport} onChange={(e) => onChange({ airport: e.target.value })} onBlur={onFieldBlur} />
       </div>
       <div>
-        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-flight-details" className="block text-xs font-semibold text-neutral-700 mb-1">Flight details</label>
+        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-flight-details" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.arrivals.flightDetails")}</label>
         <textarea id="pif-detail-edit-ArrivalDepartureSection-flight-details" rows={2} className="form-input w-full resize-none" value={draft.flight_details} onChange={(e) => onChange({ flight_details: e.target.value })} onBlur={onFieldBlur} />
       </div>
       <div className="flex flex-wrap gap-6">
@@ -181,7 +183,7 @@ export default function ArrivalDepartureSection({
             onChange={(e) => { onChange({ transport_required: e.target.checked }); onFieldBlur?.(); }}
             className="rounded border-neutral-300"
           />
-          <span className="text-sm text-neutral-700">Transport required</span>
+          <span className="text-sm text-neutral-700">{t("pif.arrivals.transportRequired")}</span>
         </label>
         <label htmlFor="pif-detail-edit-ArrivalDepartureSection-onfieldblur-classname-rounded-border-neutral-300-2" className="flex items-center gap-2 cursor-pointer">
           <input id="pif-detail-edit-ArrivalDepartureSection-onfieldblur-classname-rounded-border-neutral-300-2"
@@ -190,11 +192,11 @@ export default function ArrivalDepartureSection({
             onChange={(e) => { onChange({ accommodation_required: e.target.checked }); onFieldBlur?.(); }}
             className="rounded border-neutral-300"
           />
-          <span className="text-sm text-neutral-700">Accommodation required</span>
+          <span className="text-sm text-neutral-700">{t("pif.field.accommodationRequired")}</span>
         </label>
       </div>
       <div>
-        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-comments" className="block text-xs font-semibold text-neutral-700 mb-1">Comments</label>
+        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-comments" className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.field.comments")}</label>
         <textarea id="pif-detail-edit-ArrivalDepartureSection-comments" rows={2} className="form-input w-full resize-none" value={draft.comments} onChange={(e) => onChange({ comments: e.target.value })} onBlur={onFieldBlur} />
       </div>
     </div>
@@ -207,8 +209,8 @@ export default function ArrivalDepartureSection({
         return (
           <div key={row.id} className="rounded-xl border border-neutral-200 p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-neutral-500">Arrival / Departure</span>
-              <button type="button" onClick={() => removeRow(row.id)} className="text-neutral-300 hover:text-red-500">
+              <span className="text-xs font-semibold text-neutral-500">{t("pif.field.arrivalDeparture")}</span>
+              <button type="button" onClick={() => removeRow(row.id)} aria-label={t("common.delete")} className="text-neutral-300 hover:text-red-500">
                 <span className="material-symbols-outlined text-[18px]">delete</span>
               </button>
             </div>
@@ -219,19 +221,19 @@ export default function ArrivalDepartureSection({
 
       {pending ? (
         <div className="rounded-xl border-2 border-dashed border-primary/40 p-4 space-y-3">
-          <span className="text-xs font-semibold text-primary">New row</span>
+          <span className="text-xs font-semibold text-primary">{t("pif.arrivals.newRow")}</span>
           {renderFields(pending, (patch) => setPending((p) => (p ? { ...p, ...patch } : p)))}
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setPending(null)} className="btn-secondary px-3 py-1.5 text-xs">Discard</button>
+            <button type="button" onClick={() => setPending(null)} className="btn-secondary px-3 py-1.5 text-xs">{t("pif.arrivals.discard")}</button>
             <button type="button" disabled={saving} onClick={savePending} className="btn-primary px-3 py-1.5 text-xs disabled:opacity-50">
-              {saving ? "Saving…" : "Save row"}
+              {saving ? t("hr.positions.form.saving") : t("pif.arrivals.saveRow")}
             </button>
           </div>
         </div>
       ) : (
         <button type="button" onClick={() => setPending(emptyDraft)} className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
           <span className="material-symbols-outlined text-[14px]">add</span>
-          Add arrival/departure row
+          {t("pif.arrivals.addRow")}
         </button>
       )}
     </div>

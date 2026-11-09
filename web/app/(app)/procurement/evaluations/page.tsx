@@ -5,8 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { tendersApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function EvaluationsPage() {
+  const { t } = useI18n();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["procurement", "evaluations"],
     queryFn: () => tendersApi.evaluations().then((r) => r.data.data),
@@ -15,28 +17,28 @@ export default function EvaluationsPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Evaluations"
-        subtitle="Technical-first / two-envelope scoring for opened tenders. COI still required before assess/award. Financials stay sealed until open."
+        title={t("procurement.evaluations.title")}
+        subtitle={t("procurement.evaluations.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Procurement", href: "/procurement" },
-              { label: "Evaluations" },
+              { label: t("nav.procurement"), href: "/procurement" },
+              { label: t("procurement.evaluations.title") },
             ]}
           />
         }
         actions={
           <Link href="/my-work/procurement-evaluations" className="btn-secondary text-sm">
-            My assigned evaluations
+            {t("procurement.evaluations.myAssigned")}
           </Link>
         }
       />
 
       {isError ? (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <span className="flex-1">Failed to load evaluations.</span>
+          <span className="flex-1">{t("procurement.evaluations.loadError")}</span>
           <button type="button" className="btn-secondary text-xs" onClick={() => void refetch()}>
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       ) : null}
@@ -49,27 +51,38 @@ export default function EvaluationsPage() {
         </div>
       ) : (data?.length ?? 0) === 0 ? (
         <div className="card">
-          <EmptyState icon="gavel" title="No tenders in evaluation" description="Opened tenders ready for scoring will appear here." />
+          <EmptyState icon="gavel" title={t("procurement.evaluations.empty")} description={t("procurement.evaluations.emptyHint")} />
         </div>
       ) : (
         <div className="space-y-3">
-          {(data ?? []).map((t) => (
-            <Link key={t.id} href={`/procurement/tenders/${t.id}`} className="card block space-y-2 p-4 hover:bg-neutral-50">
+          {(data ?? []).map((tender) => (
+            <Link key={tender.id} href={`/procurement/tenders/${tender.id}`} className="card block space-y-2 p-4 hover:bg-neutral-50">
               <div className="flex justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold">{t.reference_number} — {t.title}</p>
+                  <p className="text-sm font-semibold">{tender.reference_number} — {tender.title}</p>
                   <p className="text-xs text-neutral-500">
-                    Opened: {t.bids_opened_at ?? "—"} · Weights {t.technical_weight ?? 80}/{t.financial_weight ?? 20} · Min tech {t.min_technical_score ?? 70}
+                    {t("procurement.evaluations.meta", {
+                      opened: tender.bids_opened_at ?? "—",
+                      tech: tender.technical_weight ?? 80,
+                      fin: tender.financial_weight ?? 20,
+                      min: tender.min_technical_score ?? 70,
+                    })}
                   </p>
                 </div>
-                <span className="badge badge-muted text-xs uppercase">{t.status}</span>
+                <span className="badge badge-muted text-xs uppercase">{tender.status}</span>
               </div>
-              {(t.scoring?.length ?? 0) > 0 && (
+              {(tender.scoring?.length ?? 0) > 0 && (
                 <div className="space-y-1 text-xs text-neutral-600">
-                  {(t.scoring ?? []).slice(0, 3).map((s) => (
+                  {(tender.scoring ?? []).slice(0, 3).map((s) => (
                     <p key={s.quote_id}>
-                      {s.vendor_name}: tech {s.technical_score ?? "—"}
-                      {s.financials_sealed ? " · financial sealed" : ` · fin ${s.financial_score ?? "—"} · combined ${s.combined_score ?? "—"}`}
+                      {s.financials_sealed
+                        ? t("procurement.evaluations.scoreSealed", { vendor: s.vendor_name, tech: s.technical_score ?? "—" })
+                        : t("procurement.evaluations.score", {
+                            vendor: s.vendor_name,
+                            tech: s.technical_score ?? "—",
+                            fin: s.financial_score ?? "—",
+                            combined: s.combined_score ?? "—",
+                          })}
                     </p>
                   ))}
                 </div>

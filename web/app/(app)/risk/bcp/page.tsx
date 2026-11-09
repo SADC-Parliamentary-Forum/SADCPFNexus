@@ -20,6 +20,14 @@ import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
 
+/** Translated label for an enum value, falling back to the raw value when no key exists. */
+function enumLabel(t: (key: string) => string, prefix: string, value: string | null | undefined): string {
+  if (!value) return "—";
+  const key = `${prefix}.${value}`;
+  const label = t(key);
+  return label === key ? value : label;
+}
+
 function riskOptionLabel(risk: Pick<Risk, "id" | "risk_code" | "title">): string {
   const code = risk.risk_code?.trim();
   const title = risk.title?.trim();
@@ -88,12 +96,12 @@ export default function RiskBcpPage() {
       setTitle("");
       setNotes("");
       qc.invalidateQueries({ queryKey: ["risk", "bcp-links"] });
-      toast.success("BCP/insurance link created");
+      toast.success(t("risk.bcp.linkCreated"));
     },
     onError: (err) => {
-      const message = apiErrorMessage(err, "Could not create BCP/insurance link.");
+      const message = apiErrorMessage(err, t("risk.bcp.linkCreateFailed"));
       setError(message);
-      toast.error("BCP/insurance link not created", message);
+      toast.error(t("risk.bcp.linkNotCreated"), message);
     },
   });
 
@@ -108,12 +116,12 @@ export default function RiskBcpPage() {
       setError(null);
       setRelatedRiskId("");
       qc.invalidateQueries({ queryKey: ["risk", "dependencies"] });
-      toast.success("Related risk linked");
+      toast.success(t("risk.bcp.depLinked"));
     },
     onError: (err) => {
-      const message = apiErrorMessage(err, "Could not link related risk.");
+      const message = apiErrorMessage(err, t("risk.bcp.depLinkFailed"));
       setError(message);
-      toast.error("Related risk not linked", message);
+      toast.error(t("risk.bcp.depNotLinked"), message);
     },
   });
 
@@ -129,12 +137,12 @@ export default function RiskBcpPage() {
       setError(null);
       setExerciseTitle("");
       qc.invalidateQueries({ queryKey: ["risk", "bcp-exercises"] });
-      toast.success("BCP exercise scheduled");
+      toast.success(t("risk.bcp.exerciseScheduled"));
     },
     onError: (err) => {
-      const message = apiErrorMessage(err, "Could not schedule BCP exercise.");
+      const message = apiErrorMessage(err, t("risk.bcp.exerciseScheduleFailed"));
       setError(message);
-      toast.error("BCP exercise not scheduled", message);
+      toast.error(t("risk.bcp.exerciseNotScheduled"), message);
     },
   });
 
@@ -143,12 +151,12 @@ export default function RiskBcpPage() {
       riskApi.completeBcpExercise(id, { result: "pass", outcome_notes: "Completed via ops UI" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["risk", "bcp-exercises"] });
-      toast.success("BCP exercise completed");
+      toast.success(t("risk.bcp.exerciseCompleted"));
     },
     onError: (err) => {
-      const message = apiErrorMessage(err, "Could not complete exercise.");
+      const message = apiErrorMessage(err, t("risk.bcp.exerciseCompleteFailed"));
       setError(message);
-      toast.error("Could not complete exercise", message);
+      toast.error(t("risk.bcp.exerciseNotCompleted"), message);
     },
   });
 
@@ -166,12 +174,12 @@ export default function RiskBcpPage() {
     onSuccess: () => {
       setError(null);
       qc.invalidateQueries({ queryKey: ["risk", "insurance-renewals"] });
-      toast.success("Insurance policy renewed");
+      toast.success(t("risk.bcp.policyRenewed"));
     },
     onError: (err) => {
-      const message = apiErrorMessage(err, "Could not renew insurance policy.");
+      const message = apiErrorMessage(err, t("risk.bcp.policyRenewFailed"));
       setError(message);
-      toast.error("Insurance policy not renewed", message);
+      toast.error(t("risk.bcp.policyNotRenewed"), message);
     },
   });
 
@@ -186,16 +194,16 @@ export default function RiskBcpPage() {
     <RiskPageFrame>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
-        title="BCP / Insurance Ops"
-        subtitle="BCP linkage, exercises, and insurance renewal queue on existing risk/FA insurance data."
+        title="risk.bcp.pageTitle"
+        subtitle="risk.bcp.pageSubtitle"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.bcp.title" }]} />}
       />
         <div className="flex gap-2">
           <Link href="/assets/insurance" className="btn-secondary">
-            FA insurance
+            {t("risk.bcp.faInsurance")}
           </Link>
           <Link href="/risk/control-testing" className="btn-secondary">
-            Control testing
+            {t("risk.testing.title")}
           </Link>
         </div>
       </div>
@@ -228,18 +236,18 @@ export default function RiskBcpPage() {
           </select>
         </label>
         <label htmlFor="risk-bcp-link-type-setlinktype-e-target-value-as-typeof-l" className="space-y-1">
-          <span className="text-sm font-medium">Link type</span>
+          <span className="text-sm font-medium">{t("risk.bcp.linkType")}</span>
           <select id="risk-bcp-link-type-setlinktype-e-target-value-as-typeof-l" className="input w-full" value={linkType} onChange={(e) => setLinkType(e.target.value as typeof linkType)}>
-            <option value="bcp_note">BCP note</option>
-            <option value="insurance_policy">FA insurance policy</option>
+            <option value="bcp_note">{t("risk.bcp.linkType.bcp_note")}</option>
+            <option value="insurance_policy">{t("risk.bcp.linkType.insurance_policy")}</option>
           </select>
         </label>
         <label htmlFor="risk-bcp-title-settitle-e-target-value" className="space-y-1 md:col-span-2">
-          <span className="text-sm font-medium">Title</span>
+          <span className="text-sm font-medium">{t("risk.common.title")}</span>
           <input id="risk-bcp-title-settitle-e-target-value" className="input w-full" required value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
         <label htmlFor="risk-bcp-notes-setnotes-e-target-value" className="space-y-1 md:col-span-2">
-          <span className="text-sm font-medium">Notes</span>
+          <span className="text-sm font-medium">{t("risk.common.notes")}</span>
           <textarea id="risk-bcp-notes-setnotes-e-target-value" className="input w-full min-h-20" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </label>
         {linkType === "insurance_policy" && (
@@ -264,7 +272,7 @@ export default function RiskBcpPage() {
         )}
         <div className="md:col-span-2">
           <button type="submit" className="btn-primary" disabled={createLink.isPending}>
-            Add link
+            {t("risk.bcp.addLink")}
           </button>
         </div>
       </form>
@@ -273,30 +281,30 @@ export default function RiskBcpPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-50 text-left text-neutral-600">
             <tr>
-              <th className="px-3 py-2">Risk</th>
-              <th className="px-3 py-2">Type</th>
-              <th className="px-3 py-2">Title</th>
-              <th className="px-3 py-2">Insurance</th>
+              <th className="px-3 py-2">{t("risk.bcp.risk")}</th>
+              <th className="px-3 py-2">{t("risk.common.type")}</th>
+              <th className="px-3 py-2">{t("risk.common.title")}</th>
+              <th className="px-3 py-2">{t("risk.bcp.colInsurance")}</th>
             </tr>
           </thead>
           <tbody>
             {links.map((l) => (
               <tr key={l.id} className="border-t border-neutral-100">
                 <td className="px-3 py-2">{l.risk?.risk_code ?? l.risk_id}</td>
-                <td className="px-3 py-2">{l.link_type}</td>
+                <td className="px-3 py-2">{enumLabel(t, "risk.bcp.linkType", l.link_type)}</td>
                 <td className="px-3 py-2">{l.title}</td>
                 <td className="px-3 py-2">{l.insurance_policy?.policy_number ?? "—"}</td>
               </tr>
             ))}
             {links.length === 0 && (
-              <TableEmpty colSpan={4} title="No BCP/insurance links yet." />
+              <TableEmpty colSpan={4} title="risk.bcp.noLinks" />
             )}
           </tbody>
         </table>
       </div>
 
       <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
-        <h2 className="text-lg font-semibold">BCP exercises</h2>
+        <h2 className="text-lg font-semibold">{t("risk.bcp.exercises")}</h2>
         <form
           onSubmit={(e: FormEvent) => {
             e.preventDefault();
@@ -305,24 +313,24 @@ export default function RiskBcpPage() {
           className="grid gap-3 md:grid-cols-4"
         >
           <label htmlFor="risk-bcp-title-setexercisetitle-e-target-value" className="space-y-1 md:col-span-2">
-            <span className="text-sm font-medium">Title</span>
+            <span className="text-sm font-medium">{t("risk.common.title")}</span>
             <input id="risk-bcp-title-setexercisetitle-e-target-value" className="input w-full" required value={exerciseTitle} onChange={(e) => setExerciseTitle(e.target.value)} />
           </label>
           <label htmlFor="risk-bcp-type-setexercisetype-e-target-value-tabletop-dri" className="space-y-1">
-            <span className="text-sm font-medium">Type</span>
+            <span className="text-sm font-medium">{t("risk.common.type")}</span>
             <select id="risk-bcp-type-setexercisetype-e-target-value-tabletop-dri" className="input w-full" value={exerciseType} onChange={(e) => setExerciseType(e.target.value)}>
-              <option value="tabletop">Tabletop</option>
-              <option value="drill">Drill</option>
-              <option value="full">Full</option>
+              <option value="tabletop">{t("risk.bcp.exerciseType.tabletop")}</option>
+              <option value="drill">{t("risk.bcp.exerciseType.drill")}</option>
+              <option value="full">{t("risk.bcp.exerciseType.full")}</option>
             </select>
           </label>
           <label htmlFor="risk-bcp-scheduled-setexerciseat-e-target-value" className="space-y-1">
-            <span className="text-sm font-medium">Scheduled</span>
+            <span className="text-sm font-medium">{t("risk.bcp.scheduled")}</span>
             <input id="risk-bcp-scheduled-setexerciseat-e-target-value" className="input w-full" type="datetime-local" value={exerciseAt} onChange={(e) => setExerciseAt(e.target.value)} />
           </label>
           <div className="md:col-span-4">
             <button type="submit" className="btn-primary" disabled={createExercise.isPending}>
-              Schedule exercise
+              {t("risk.bcp.scheduleExercise")}
             </button>
           </div>
         </form>
@@ -330,10 +338,10 @@ export default function RiskBcpPage() {
           <table className="min-w-full text-sm">
             <thead className="bg-neutral-50 text-left text-neutral-600">
               <tr>
-                <th className="px-3 py-2">Title</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Result</th>
+                <th className="px-3 py-2">{t("risk.common.title")}</th>
+                <th className="px-3 py-2">{t("risk.common.type")}</th>
+                <th className="px-3 py-2">{t("risk.common.status")}</th>
+                <th className="px-3 py-2">{t("risk.common.result")}</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -341,20 +349,20 @@ export default function RiskBcpPage() {
               {exercises.map((ex) => (
                 <tr key={ex.id} className="border-t border-neutral-100">
                   <td className="px-3 py-2">{ex.title}</td>
-                  <td className="px-3 py-2">{ex.exercise_type}</td>
+                  <td className="px-3 py-2">{enumLabel(t, "risk.bcp.exerciseType", ex.exercise_type)}</td>
                   <td className="px-3 py-2">{ex.status}</td>
                   <td className="px-3 py-2">{ex.result ?? "—"}</td>
                   <td className="px-3 py-2 text-right">
                     {ex.status !== "completed" && (
                       <button type="button" className="btn-secondary text-xs" onClick={() => completeExercise.mutate(ex.id)}>
-                        Complete
+                        {t("risk.common.complete")}
                       </button>
                     )}
                   </td>
                 </tr>
               ))}
               {exercises.length === 0 && (
-                <TableEmpty colSpan={5} title="No exercises scheduled." />
+                <TableEmpty colSpan={5} title="risk.bcp.noExercises" />
               )}
             </tbody>
           </table>
@@ -362,15 +370,15 @@ export default function RiskBcpPage() {
       </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
-        <h2 className="text-lg font-semibold">Insurance renewals due</h2>
+        <h2 className="text-lg font-semibold">{t("risk.bcp.renewalsDue")}</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-neutral-50 text-left text-neutral-600">
               <tr>
-                <th className="px-3 py-2">Policy</th>
-                <th className="px-3 py-2">Insurer</th>
-                <th className="px-3 py-2">Effective to</th>
-                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">{t("risk.bcp.colPolicy")}</th>
+                <th className="px-3 py-2">{t("assets.insurance.insurer")}</th>
+                <th className="px-3 py-2">{t("assets.insurance.effectiveTo")}</th>
+                <th className="px-3 py-2">{t("risk.common.status")}</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -384,14 +392,14 @@ export default function RiskBcpPage() {
                   <td className="px-3 py-2 text-right">
                     {p.status === "active" && (
                       <button type="button" className="btn-secondary text-xs" onClick={() => renewPolicy.mutate(p)}>
-                        Renew +1y
+                        {t("risk.bcp.renew")}
                       </button>
                     )}
                   </td>
                 </tr>
               ))}
               {renewals.length === 0 && (
-                <TableEmpty colSpan={5} title="No policies due within 120 days." />
+                <TableEmpty colSpan={5} title="risk.bcp.noRenewals" />
               )}
             </tbody>
           </table>
@@ -405,7 +413,7 @@ export default function RiskBcpPage() {
         }}
         className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-3 dark:border-neutral-700 dark:bg-neutral-900"
       >
-        <h2 className="md:col-span-3 text-lg font-semibold">Interdependency mapping</h2>
+        <h2 className="md:col-span-3 text-lg font-semibold">{t("risk.bcp.interdependency")}</h2>
         <label htmlFor="risk-bcp-risk-a-depends-setriskid-e-target-value" className="space-y-1">
           <span className="text-sm font-medium">{t("risk.bcp.riskA")}</span>
           <select
@@ -444,7 +452,7 @@ export default function RiskBcpPage() {
         </label>
         <div className="flex items-end">
           <button type="submit" className="btn-primary" disabled={createDep.isPending}>
-            Link A depends on B
+            {t("risk.bcp.linkDependency")}
           </button>
         </div>
       </form>
@@ -453,9 +461,9 @@ export default function RiskBcpPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-50 text-left text-neutral-600">
             <tr>
-              <th className="px-3 py-2">Risk</th>
-              <th className="px-3 py-2">Relation</th>
-              <th className="px-3 py-2">Related risk</th>
+              <th className="px-3 py-2">{t("risk.bcp.risk")}</th>
+              <th className="px-3 py-2">{t("risk.bcp.relation")}</th>
+              <th className="px-3 py-2">{t("risk.common.relatedRisk")}</th>
             </tr>
           </thead>
           <tbody>
@@ -467,7 +475,7 @@ export default function RiskBcpPage() {
               </tr>
             ))}
             {deps.length === 0 && (
-              <TableEmpty colSpan={3} title="No interdependencies mapped." />
+              <TableEmpty colSpan={3} title="risk.bcp.noDeps" />
             )}
           </tbody>
         </table>

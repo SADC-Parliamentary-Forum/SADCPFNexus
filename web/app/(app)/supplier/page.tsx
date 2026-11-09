@@ -68,10 +68,10 @@ export default function SupplierDashboardPage() {
     mutationFn: () => supplierPortalApi.submitApplication(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
-      toast.success("Application submitted");
+      toast.success(t("supplier.dashboard.submitted"));
     },
     onError: (err: unknown) => {
-      toast.error("Application not submitted", apiErrorMessage(err, "Failed to submit your application."));
+      toast.error(t("supplier.dashboard.notSubmitted"), apiErrorMessage(err, t("supplier.dashboard.submitError")));
     },
   });
 

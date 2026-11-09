@@ -9,6 +9,7 @@ import { formatDateShort } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const CONFIDENTIALITY_BADGE: Record<HrFileDocument["confidentiality_level"], string> = {
   standard: "badge-muted",
@@ -26,6 +27,7 @@ export default function HrFileDocumentsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { error: toastError } = useToast();
+  const { t } = useI18n();
   const user = getStoredUser();
   const isHR = user?.roles?.includes("hr") || user?.permissions?.includes("hr.admin");
 
@@ -60,11 +62,11 @@ export default function HrFileDocumentsPage() {
       const res = await hrFilesApi.getDocuments(Number(id), docTypeFilter ? { document_type: docTypeFilter } : undefined);
       setDocuments(res.data.data);
     } catch {
-      setError("Failed to load documents.");
+      setError(t("hr.files.docs.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [id, docTypeFilter]);
+  }, [id, docTypeFilter, t]);
 
   useEffect(() => {
     loadDocs();
@@ -86,7 +88,7 @@ export default function HrFileDocumentsPage() {
       setUploadForm({ document_type: "other", title: "", file_name: "", confidentiality_level: "standard", issue_date: "", remarks: "" });
       loadDocs();
     } catch {
-      toastError("Failed to add document.");
+      toastError(t("hr.files.docs.addFailed"));
     } finally {
       setUploading(false);
     }
@@ -99,7 +101,7 @@ export default function HrFileDocumentsPage() {
       setDeleteConfirm(null);
       loadDocs();
     } catch {
-      toastError("Failed to delete document.");
+      toastError(t("hr.files.docs.deleteFailed"));
     } finally {
       setDeleting(false);
     }
@@ -109,22 +111,22 @@ export default function HrFileDocumentsPage() {
     <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-neutral-400">
-        <button onClick={() => router.push("/hr")} className="hover:text-neutral-600">HR</button>
+        <button onClick={() => router.push("/hr")} className="hover:text-neutral-600">{t("hr.files.crumb.hr")}</button>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <button onClick={() => router.push("/hr/files")} className="hover:text-neutral-600">Employee Files</button>
+        <button onClick={() => router.push("/hr/files")} className="hover:text-neutral-600">{t("hr.files.crumb.files")}</button>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
         <button onClick={() => router.push(`/hr/files/${id}`)} className="hover:text-neutral-600">
-          {file?.employee?.name ?? `File #${id}`}
+          {file?.employee?.name ?? t("hr.files.fileNumber", { id })}
         </button>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-700 font-medium">Documents</span>
+        <span className="text-neutral-700 font-medium">{t("hr.files.docs.crumb")}</span>
       </nav>
 
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <ModulePageHeader
-        title="Document Vault"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Document Vault" }]} />}
+        title={t("hr.files.docs.title")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "hr.files.docs.title" }]} />}
       />
         <div className="flex gap-2">
           <button
@@ -132,12 +134,12 @@ export default function HrFileDocumentsPage() {
             onClick={() => router.push(`/hr/files/${id}?tab=documents`)}
           >
             <span className="material-symbols-outlined text-[18px]">folder</span>
-            Back to File
+            {t("hr.files.docs.backToFile")}
           </button>
           {isHR && (
             <button className="btn-primary flex items-center gap-2" onClick={() => setShowUpload(true)}>
               <span className="material-symbols-outlined text-[18px]">upload_file</span>
-              Add Document
+              {t("hr.files.docs.add")}
             </button>
           )}
         </div>
@@ -146,19 +148,19 @@ export default function HrFileDocumentsPage() {
       {/* Filter */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <label htmlFor="hr-files-detail-documents-filter-by-type" className="text-sm text-neutral-600 font-medium">Filter by type:</label>
+          <label htmlFor="hr-files-detail-documents-filter-by-type" className="text-sm text-neutral-600 font-medium">{t("hr.files.docs.filterByType")}</label>
           <select id="hr-files-detail-documents-filter-by-type"
             className="form-input w-52"
             value={docTypeFilter}
             onChange={(e) => setDocTypeFilter(e.target.value)}
           >
-            <option value="">All Document Types</option>
-            {DOC_TYPES.map((t) => (
-              <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+            <option value="">{t("hr.files.docs.allTypes")}</option>
+            {DOC_TYPES.map((dt) => (
+              <option key={dt} value={dt}>{t(`hr.files.docType.${dt}`)}</option>
             ))}
           </select>
         </div>
-        <span className="text-sm text-neutral-400">{documents.length} document{documents.length !== 1 ? "s" : ""}</span>
+        <span className="text-sm text-neutral-400">{t(documents.length === 1 ? "hr.files.docs.countOne" : "hr.files.docs.countMany", { count: documents.length })}</span>
       </div>
 
       {/* Document Cards */}
@@ -181,10 +183,10 @@ export default function HrFileDocumentsPage() {
         <div className="card">
           <EmptyState
             icon="folder_open"
-            title="No documents found"
-            description={docTypeFilter ? "Try clearing the filter" : "Start by adding a document to this file"}
+            title={t("hr.files.docs.empty")}
+            description={docTypeFilter ? t("hr.files.docs.emptyFiltered") : t("hr.files.docs.emptyHint")}
             action={isHR ? (
-              <button type="button" className="btn-primary" onClick={() => setShowUpload(true)}>Add First Document</button>
+              <button type="button" className="btn-primary" onClick={() => setShowUpload(true)}>{t("hr.files.docs.addFirst")}</button>
             ) : undefined}
           />
         </div>
@@ -198,13 +200,13 @@ export default function HrFileDocumentsPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className={cn("badge text-xs capitalize", CONFIDENTIALITY_BADGE[doc.confidentiality_level])}>
-                    {doc.confidentiality_level}
+                    {t(`hr.files.confidentiality.${doc.confidentiality_level}`)}
                   </span>
                   {isHR && (
                     <button
                       className="text-neutral-300 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"
                       onClick={() => setDeleteConfirm(doc.id)}
-                      title="Delete document"
+                      title={t("hr.files.docs.deleteDoc")}
                     >
                       <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
@@ -212,7 +214,7 @@ export default function HrFileDocumentsPage() {
                 </div>
               </div>
               <h3 className="font-semibold text-neutral-800 text-sm mb-1 line-clamp-2">{doc.title}</h3>
-              <p className="text-xs text-neutral-500 capitalize mb-2">{doc.document_type.replace(/_/g, " ")}</p>
+              <p className="text-xs text-neutral-500 capitalize mb-2">{DOC_TYPES.includes(doc.document_type) ? t(`hr.files.docType.${doc.document_type}`) : doc.document_type.replace(/_/g, " ")}</p>
               {doc.file_name && (
                 <p className="text-xs text-neutral-400 font-mono truncate mb-2">{doc.file_name}</p>
               )}
@@ -222,21 +224,21 @@ export default function HrFileDocumentsPage() {
               <div className="flex items-center justify-between pt-2 border-t border-neutral-100 mt-2">
                 <div>
                   {doc.issue_date && (
-                    <p className="text-xs text-neutral-400">Issued: {formatDateShort(doc.issue_date)}</p>
+                    <p className="text-xs text-neutral-400">{t("hr.files.docs.issued", { date: formatDateShort(doc.issue_date) })}</p>
                   )}
-                  <p className="text-xs text-neutral-400">Added: {formatDateShort(doc.created_at)}</p>
+                  <p className="text-xs text-neutral-400">{t("hr.files.docs.added", { date: formatDateShort(doc.created_at) })}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-neutral-400">v{doc.version}</span>
                   {doc.verified_at && (
-                    <span className="material-symbols-outlined text-[16px] text-green-500" title={`Verified ${formatDateShort(doc.verified_at)}`}>
+                    <span className="material-symbols-outlined text-[16px] text-green-500" title={t("hr.files.docs.verified", { date: formatDateShort(doc.verified_at) })}>
                       verified
                     </span>
                   )}
                 </div>
               </div>
               {doc.uploaded_by && (
-                <p className="text-xs text-neutral-400 mt-1">By: {doc.uploaded_by.name}</p>
+                <p className="text-xs text-neutral-400 mt-1">{t("hr.files.docs.by", { name: doc.uploaded_by.name })}</p>
               )}
             </div>
           ))}
@@ -248,51 +250,51 @@ export default function HrFileDocumentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="card p-6 w-full max-w-lg">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-neutral-800">Add Document</h2>
-              <button onClick={() => setShowUpload(false)} aria-label="Close upload document dialog" className="text-neutral-400 hover:text-neutral-600">
+              <h2 className="text-lg font-semibold text-neutral-800">{t("hr.files.docs.add")}</h2>
+              <button onClick={() => setShowUpload(false)} aria-label={t("hr.files.docs.closeUpload")} className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label htmlFor="hr-files-detail-documents-document-type" className="block text-sm font-medium text-neutral-700 mb-1">Document Type <span className="text-red-500">*</span></label>
+                <label htmlFor="hr-files-detail-documents-document-type" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.files.docs.type")} <span className="text-red-500">*</span></label>
                 <select id="hr-files-detail-documents-document-type" className="form-input" value={uploadForm.document_type} onChange={(e) => setUploadForm((f) => ({ ...f, document_type: e.target.value }))}>
-                  {DOC_TYPES.map((t) => (
-                    <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+                  {DOC_TYPES.map((dt) => (
+                    <option key={dt} value={dt}>{t(`hr.files.docType.${dt}`)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label htmlFor="hr-files-detail-documents-title" className="block text-sm font-medium text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
-                <input id="hr-files-detail-documents-title" type="text" className="form-input" placeholder="Document title" value={uploadForm.title} onChange={(e) => setUploadForm((f) => ({ ...f, title: e.target.value }))} />
+                <label htmlFor="hr-files-detail-documents-title" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.files.docs.docTitle")} <span className="text-red-500">*</span></label>
+                <input id="hr-files-detail-documents-title" type="text" className="form-input" placeholder={t("hr.files.docs.titlePlaceholder")} value={uploadForm.title} onChange={(e) => setUploadForm((f) => ({ ...f, title: e.target.value }))} />
               </div>
               <div>
-                <label htmlFor="hr-files-detail-documents-file-name" className="block text-sm font-medium text-neutral-700 mb-1">File Name</label>
-                <input id="hr-files-detail-documents-file-name" type="text" className="form-input" placeholder="e.g. contract_2024.pdf" value={uploadForm.file_name} onChange={(e) => setUploadForm((f) => ({ ...f, file_name: e.target.value }))} />
+                <label htmlFor="hr-files-detail-documents-file-name" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.files.docs.fileName")}</label>
+                <input id="hr-files-detail-documents-file-name" type="text" className="form-input" placeholder={t("hr.files.docs.fileNamePlaceholder")} value={uploadForm.file_name} onChange={(e) => setUploadForm((f) => ({ ...f, file_name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="hr-files-detail-documents-confidentiality" className="block text-sm font-medium text-neutral-700 mb-1">Confidentiality</label>
+                  <label htmlFor="hr-files-detail-documents-confidentiality" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.files.docs.confidentiality")}</label>
                   <select id="hr-files-detail-documents-confidentiality" className="form-input" value={uploadForm.confidentiality_level} onChange={(e) => setUploadForm((f) => ({ ...f, confidentiality_level: e.target.value as HrFileDocument["confidentiality_level"] }))}>
-                    <option value="standard">Standard</option>
-                    <option value="restricted">Restricted</option>
-                    <option value="confidential">Confidential</option>
+                    <option value="standard">{t("hr.files.docs.standard")}</option>
+                    <option value="restricted">{t("hr.files.docs.restricted")}</option>
+                    <option value="confidential">{t("hr.files.docs.confidential")}</option>
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="hr-files-detail-documents-issue-date" className="block text-sm font-medium text-neutral-700 mb-1">Issue Date</label>
+                  <label htmlFor="hr-files-detail-documents-issue-date" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.files.docs.issueDate")}</label>
                   <input id="hr-files-detail-documents-issue-date" type="date" className="form-input" value={uploadForm.issue_date} onChange={(e) => setUploadForm((f) => ({ ...f, issue_date: e.target.value }))} />
                 </div>
               </div>
               <div>
-                <label htmlFor="hr-files-detail-documents-remarks" className="block text-sm font-medium text-neutral-700 mb-1">Remarks</label>
-                <textarea id="hr-files-detail-documents-remarks" className="form-input resize-none" rows={2} placeholder="Optional notes..." value={uploadForm.remarks} onChange={(e) => setUploadForm((f) => ({ ...f, remarks: e.target.value }))} />
+                <label htmlFor="hr-files-detail-documents-remarks" className="block text-sm font-medium text-neutral-700 mb-1">{t("hr.files.docs.remarks")}</label>
+                <textarea id="hr-files-detail-documents-remarks" className="form-input resize-none" rows={2} placeholder={t("hr.files.docs.remarksPlaceholder")} value={uploadForm.remarks} onChange={(e) => setUploadForm((f) => ({ ...f, remarks: e.target.value }))} />
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <button className="btn-secondary flex-1" onClick={() => setShowUpload(false)}>Cancel</button>
+              <button className="btn-secondary flex-1" onClick={() => setShowUpload(false)}>{t("common.cancel")}</button>
               <button className="btn-primary flex-1" onClick={handleUpload} disabled={uploading || !uploadForm.title}>
-                {uploading ? "Saving..." : "Add Document"}
+                {uploading ? t("hr.files.docs.saving") : t("hr.files.docs.add")}
               </button>
             </div>
           </div>
@@ -307,17 +309,17 @@ export default function HrFileDocumentsPage() {
               <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
                 <span className="material-symbols-outlined text-red-600 text-[26px]">delete</span>
               </div>
-              <h2 className="text-lg font-semibold text-neutral-800">Delete Document?</h2>
-              <p className="text-sm text-neutral-500 mt-1">This will remove the document record. This action cannot be undone.</p>
+              <h2 className="text-lg font-semibold text-neutral-800">{t("hr.files.docs.deleteTitle")}</h2>
+              <p className="text-sm text-neutral-500 mt-1">{t("hr.files.docs.deleteMessage")}</p>
             </div>
             <div className="flex gap-3">
-              <button className="btn-secondary flex-1" onClick={() => setDeleteConfirm(null)}>Cancel</button>
+              <button className="btn-secondary flex-1" onClick={() => setDeleteConfirm(null)}>{t("common.cancel")}</button>
               <button
                 className="btn-primary flex-1 !bg-red-600 hover:!bg-red-700 !border-red-600"
                 onClick={() => handleDelete(deleteConfirm)}
                 disabled={deleting}
               >
-                {deleting ? "Deleting..." : "Delete"}
+                {deleting ? t("hr.files.docs.deleting") : t("common.delete")}
               </button>
             </div>
           </div>

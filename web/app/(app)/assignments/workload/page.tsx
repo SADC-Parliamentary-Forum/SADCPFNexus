@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { assignmentsApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function AssignmentsWorkloadPage() {
+  const { t } = useI18n();
   const [weeks, setWeeks] = useState(4);
   const { data, isLoading, isError } = useQuery({
     queryKey: ["assignments-workload", weeks],
@@ -19,25 +21,25 @@ export default function AssignmentsWorkloadPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <ModulePageHeader
-        title="Workload forecast"
-        subtitle="Hours versus available capacity from estimated hours (8h default when unset). Not a surveillance ranking."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Workload forecast" }]} />}
+        title={t("assignments.capacity.workloadForecast")}
+        subtitle={t("assignments.workload.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("assignments.capacity.workloadForecast") }]} />}
       />
-        <Link href="/assignments/capacity" className="btn-secondary text-sm">Capacity bands</Link>
+        <Link href="/assignments/capacity" className="btn-secondary text-sm">{t("assignments.workload.capacityBands")}</Link>
       </div>
       <label htmlFor="assignments-workload-weeks-setweeks-number-e-target-value" className="card inline-flex items-center gap-2 p-3 text-sm" data-testid="workload-weeks">
-        Weeks
+        {t("assignments.workload.weeks")}
         <select id="assignments-workload-weeks-setweeks-number-e-target-value" className="form-input" value={weeks} onChange={(e) => setWeeks(Number(e.target.value))}>
           {[2, 4, 8, 12].map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
         </select>
       </label>
-      {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
-      {isError && <p className="text-sm text-red-700">Failed to load forecast.</p>}
+      {isLoading && <p className="text-sm text-neutral-500">{t("common.loading")}</p>}
+      {isError && <p className="text-sm text-red-700">{t("assignments.workload.loadFailed")}</p>}
       <div className="card overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead><tr className="text-left text-neutral-500"><th className="p-2">Assignee</th><th className="p-2">Open</th><th className="p-2">Est. hours</th><th className="p-2">Available</th><th className="p-2">Util %</th><th className="p-2">Band</th></tr></thead>
+          <thead><tr className="text-left text-neutral-500"><th className="p-2">{t("assignments.capacity.assignee")}</th><th className="p-2">{t("assignments.capacity.open")}</th><th className="p-2">{t("assignments.handover.colEstHours")}</th><th className="p-2">{t("assignments.workload.available")}</th><th className="p-2">{t("assignments.workload.util")}</th><th className="p-2">{t("assignments.capacity.band")}</th></tr></thead>
           <tbody>
             {assignees.map((a) => (
               <tr key={String(a.user_id)} className="border-t border-neutral-200">

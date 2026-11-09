@@ -8,6 +8,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const UPDATE_TYPE_ICONS: Record<string, string> = {
   progress: "radio_button_unchecked",
@@ -48,11 +49,31 @@ function statusBadge(status: WorkAssignment["status"]) {
   return map[status] ?? "badge-muted";
 }
 
-function statusLabel(status: WorkAssignment["status"]) {
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  draft: "hr.assignments.status.draft",
+  assigned: "hr.assignments.status.assigned",
+  in_progress: "hr.assignments.status.inProgress",
+  pending_review: "hr.assignments.status.pendingReview",
+  completed: "hr.assignments.status.completed",
+  overdue: "hr.assignments.status.overdue",
+  cancelled: "hr.assignments.status.cancelled",
+};
+
+const PRIORITY_KEYS: Record<string, string> = {
+  critical: "hr.assignments.priority.critical",
+  high: "hr.assignments.priority.high",
+  medium: "hr.assignments.priority.medium",
+  low: "hr.assignments.priority.low",
+};
+
+function statusLabel(status: WorkAssignment["status"], t: (key: string) => string) {
+  const key = STATUS_LABEL_KEYS[status];
+  if (key) return t(key);
   return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export default function AssignmentDetailPage() {
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm } = useConfirm();
@@ -80,7 +101,7 @@ export default function AssignmentDetailPage() {
       const res = await workAssignmentsApi.get(Number(id));
       setAssignment(res.data);
     } catch {
-      setError("Failed to load assignment.");
+      setError(t("hr.assignments.detail.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -96,9 +117,9 @@ export default function AssignmentDetailPage() {
     try {
       const res = await workAssignmentsApi.start(assignment.id);
       setAssignment(res.data);
-      toast.success("Assignment started");
+      toast.success(t("hr.assignments.detail.started"));
     } catch (err) {
-      toast.error("Could not start assignment", apiErrorMessage(err, "Failed to start assignment."));
+      toast.error(t("hr.assignments.detail.startFailedTitle"), apiErrorMessage(err, t("hr.assignments.detail.startFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -111,9 +132,9 @@ export default function AssignmentDetailPage() {
       const res = await workAssignmentsApi.complete(assignment.id, completionNotes || undefined);
       setAssignment(res.data);
       setShowCompleteModal(false);
-      toast.success("Assignment completed");
+      toast.success(t("hr.assignments.detail.completed"));
     } catch (err) {
-      toast.error("Could not complete assignment", apiErrorMessage(err, "Failed to complete assignment."));
+      toast.error(t("hr.assignments.detail.completeFailedTitle"), apiErrorMessage(err, t("hr.assignments.detail.completeFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -121,14 +142,14 @@ export default function AssignmentDetailPage() {
 
   const handleCancel = async () => {
     if (!assignment) return;
-    if (!(await confirm({ title: "Cancel assignment", message: "Cancel this assignment?", variant: "danger" }))) return;
+    if (!(await confirm({ title: t("hr.assignments.detail.cancelTitle"), message: t("hr.assignments.detail.cancelMessage"), variant: "danger" }))) return;
     setActionLoading(true);
     try {
       const res = await workAssignmentsApi.update(assignment.id, { status: "cancelled" });
       setAssignment(res.data);
-      toast.success("Assignment cancelled");
+      toast.success(t("hr.assignments.detail.cancelled"));
     } catch (err) {
-      toast.error("Could not cancel assignment", apiErrorMessage(err, "Failed to cancel assignment."));
+      toast.error(t("hr.assignments.detail.cancelFailedTitle"), apiErrorMessage(err, t("hr.assignments.detail.cancelFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -137,7 +158,7 @@ export default function AssignmentDetailPage() {
   const handleAddUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!updateContent.trim()) {
-      setUpdateError("Content is required.");
+      setUpdateError(t("hr.assignments.detail.contentRequired"));
       return;
     }
     setUpdateSubmitting(true);
@@ -151,11 +172,11 @@ export default function AssignmentDetailPage() {
       setUpdateContent("");
       setHoursLogged("");
       setUpdateType("comment");
-      toast.success("Update submitted");
+      toast.success(t("hr.assignments.detail.updateSubmitted"));
       await load();
     } catch (err) {
-      setUpdateError("Failed to submit update.");
-      toast.error("Update not submitted", apiErrorMessage(err, "Failed to submit update."));
+      setUpdateError(t("hr.assignments.detail.updateFailed"));
+      toast.error(t("hr.assignments.detail.updateNotSubmitted"), apiErrorMessage(err, t("hr.assignments.detail.updateFailed")));
     } finally {
       setUpdateSubmitting(false);
     }
@@ -178,10 +199,10 @@ export default function AssignmentDetailPage() {
     return (
       <div className="p-6 text-center py-20 text-red-500">
         <span className="material-symbols-outlined text-[48px] block mb-2">error_outline</span>
-        {error ?? "Assignment not found."}
+        {error ?? t("hr.assignments.detail.notFound")}
         <div className="mt-4">
           <button className="btn-secondary" onClick={() => router.push("/hr/assignments")}>
-            Back to Assignments
+            {t("hr.assignments.detail.back")}
           </button>
         </div>
       </div>
@@ -200,7 +221,7 @@ export default function AssignmentDetailPage() {
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Assignments", href: "/hr/assignments" },
+              { label: t("hr.assignments.detail.crumb"), href: "/hr/assignments" },
               { label: assignment.title },
             ]}
           />
@@ -208,15 +229,15 @@ export default function AssignmentDetailPage() {
         meta={
           <div className="flex flex-wrap items-center gap-2">
             <span className={`badge ${priorityBadge(assignment.priority)}`}>
-              {assignment.priority.charAt(0).toUpperCase() + assignment.priority.slice(1)} Priority
+              {t("hr.assignments.detail.priorityBadge", { priority: PRIORITY_KEYS[assignment.priority] ? t(PRIORITY_KEYS[assignment.priority]) : assignment.priority })}
             </span>
             <span className={`badge ${statusBadge(assignment.status)}`}>
-              {statusLabel(assignment.status)}
+              {statusLabel(assignment.status, t)}
             </span>
             {assignment.is_overdue && (
               <span className="badge badge-danger flex items-center gap-1">
                 <span className="material-symbols-outlined text-[13px]">schedule</span>
-                Overdue
+                {t("hr.assignments.status.overdue")}
               </span>
             )}
           </div>
@@ -226,7 +247,7 @@ export default function AssignmentDetailPage() {
             {canStart && (
               <button className="btn-primary flex items-center gap-1" onClick={handleStart} disabled={actionLoading}>
                 <span className="material-symbols-outlined text-[18px]">play_arrow</span>
-                Start
+                {t("hr.assignments.detail.start")}
               </button>
             )}
             {canComplete && (
@@ -236,7 +257,7 @@ export default function AssignmentDetailPage() {
                 disabled={actionLoading}
               >
                 <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                Mark Complete
+                {t("hr.assignments.detail.markComplete")}
               </button>
             )}
             {canCancel && (
@@ -246,7 +267,7 @@ export default function AssignmentDetailPage() {
                 disabled={actionLoading}
               >
                 <span className="material-symbols-outlined text-[18px]">cancel</span>
-                Cancel
+                {t("common.cancel")}
               </button>
             )}
           </div>
@@ -258,20 +279,20 @@ export default function AssignmentDetailPage() {
         <div className="card p-5 space-y-3">
           <h2 className="font-semibold text-neutral-700 text-sm uppercase tracking-wide flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-primary">info</span>
-            Assignment Details
+            {t("hr.assignments.detail.details")}
           </h2>
           {[
-            { icon: "person", label: "Assignee", value: assignment.assigned_to_user?.name ?? `User #${assignment.assigned_to}` },
-            { icon: "manage_accounts", label: "Assigned By", value: assignment.assigned_by_user?.name ?? `User #${assignment.assigned_by}` },
+            { icon: "person", label: t("hr.assignments.assignee"), value: assignment.assigned_to_user?.name ?? t("hr.assignments.detail.userFallback", { id: assignment.assigned_to }) },
+            { icon: "manage_accounts", label: t("hr.assignments.detail.assignedBy"), value: assignment.assigned_by_user?.name ?? t("hr.assignments.detail.userFallback", { id: assignment.assigned_by }) },
             {
               icon: "calendar_today",
-              label: "Due Date",
-              value: assignment.due_date ? formatDateShort(assignment.due_date) : "Not set",
+              label: t("hr.assignments.dueDate"),
+              value: assignment.due_date ? formatDateShort(assignment.due_date) : t("hr.assignments.detail.notSet"),
               highlight: assignment.is_overdue,
             },
-            { icon: "timer", label: "Est. Hours", value: assignment.estimated_hours ? `${assignment.estimated_hours}h` : "—" },
-            { icon: "hourglass_bottom", label: "Actual Hours", value: `${assignment.actual_hours}h` },
-            { icon: "event", label: "Created", value: formatDate(assignment.created_at) },
+            { icon: "timer", label: t("hr.assignments.estHours"), value: assignment.estimated_hours ? `${assignment.estimated_hours}h` : "—" },
+            { icon: "hourglass_bottom", label: t("hr.assignments.detail.actualHours"), value: `${assignment.actual_hours}h` },
+            { icon: "event", label: t("hr.assignments.detail.created"), value: formatDate(assignment.created_at) },
           ].map(({ icon, label, value, highlight }) => (
             <div key={label} className="flex items-center gap-3">
               <span className="material-symbols-outlined text-[18px] text-neutral-400">{icon}</span>
@@ -285,7 +306,7 @@ export default function AssignmentDetailPage() {
           <div className="card p-5">
             <h2 className="font-semibold text-neutral-700 text-sm uppercase tracking-wide flex items-center gap-2 mb-3">
               <span className="material-symbols-outlined text-[18px] text-primary">description</span>
-              Description
+              {t("hr.assignments.description")}
             </h2>
             <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">{assignment.description}</p>
           </div>
@@ -296,14 +317,14 @@ export default function AssignmentDetailPage() {
       <div className="card p-5">
         <h2 className="font-semibold text-neutral-700 text-sm uppercase tracking-wide flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[18px] text-primary">update</span>
-          Progress Updates
+          {t("hr.assignments.detail.progressUpdates")}
           {assignment.updates && assignment.updates.length > 0 && (
             <span className="badge badge-muted ml-1">{assignment.updates.length}</span>
           )}
         </h2>
 
         {!assignment.updates || assignment.updates.length === 0 ? (
-          <p className="text-sm text-neutral-400 text-center py-4">No updates yet. Add the first update below.</p>
+          <p className="text-sm text-neutral-400 text-center py-4">{t("hr.assignments.detail.noUpdates")}</p>
         ) : (
           <div className="space-y-4 mb-6">
             {assignment.updates.map((upd: WorkAssignmentUpdate) => (
@@ -316,7 +337,7 @@ export default function AssignmentDetailPage() {
                 <div className="flex-1 pb-4 border-b border-neutral-100 last:border-0">
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <span className="text-sm font-semibold text-neutral-700">
-                      {upd.user?.name ?? "System"}
+                      {upd.user?.name ?? t("hr.assignments.detail.system")}
                     </span>
                     <span className="text-xs text-neutral-400">{formatDate(upd.created_at)}</span>
                   </div>
@@ -324,7 +345,7 @@ export default function AssignmentDetailPage() {
                   {upd.hours_logged != null && (
                     <span className="inline-flex items-center gap-1 mt-1 text-xs text-amber-600 bg-amber-50 rounded px-2 py-0.5">
                       <span className="material-symbols-outlined text-[13px]">timer</span>
-                      {upd.hours_logged}h logged
+                      {t("hr.assignments.detail.hoursLoggedValue", { hours: upd.hours_logged })}
                     </span>
                   )}
                 </div>
@@ -335,54 +356,54 @@ export default function AssignmentDetailPage() {
 
         {/* Add update form */}
         <form onSubmit={handleAddUpdate} className="border-t border-neutral-100 pt-4 space-y-3">
-          <h3 className="text-sm font-semibold text-neutral-700">Add Update</h3>
+          <h3 className="text-sm font-semibold text-neutral-700">{t("hr.assignments.detail.addUpdate")}</h3>
           {updateError && (
             <div className="bg-red-50 text-red-700 rounded-lg px-3 py-2 text-sm">{updateError}</div>
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="hr-assignment-update-type" className="block text-xs font-medium text-neutral-500 mb-1">Type</label>
+              <label htmlFor="hr-assignment-update-type" className="block text-xs font-medium text-neutral-500 mb-1">{t("hr.assignments.detail.type")}</label>
               <select
                 id="hr-assignment-update-type"
                 className="form-input"
                 value={updateType}
                 onChange={(e) => setUpdateType(e.target.value)}
               >
-                <option value="comment">Comment</option>
-                <option value="progress">Progress</option>
-                <option value="blocker">Blocker</option>
-                <option value="review">Review</option>
-                <option value="completion">Completion</option>
+                <option value="comment">{t("hr.assignments.detail.typeComment")}</option>
+                <option value="progress">{t("hr.assignments.detail.typeProgress")}</option>
+                <option value="blocker">{t("hr.assignments.detail.typeBlocker")}</option>
+                <option value="review">{t("hr.assignments.detail.typeReview")}</option>
+                <option value="completion">{t("hr.assignments.detail.typeCompletion")}</option>
               </select>
             </div>
             <div>
-              <label htmlFor="hr-assignment-hours" className="block text-xs font-medium text-neutral-500 mb-1">Hours Logged</label>
+              <label htmlFor="hr-assignment-hours" className="block text-xs font-medium text-neutral-500 mb-1">{t("hr.assignments.detail.hoursLogged")}</label>
               <input
                 id="hr-assignment-hours"
                 className="form-input"
                 type="number"
                 min="0"
                 step="0.5"
-                placeholder="e.g. 2.5"
+                placeholder={t("hr.assignments.detail.hoursPlaceholder")}
                 value={hoursLogged}
                 onChange={(e) => setHoursLogged(e.target.value)}
               />
             </div>
           </div>
           <div>
-            <label htmlFor="hr-assignment-content" className="block text-xs font-medium text-neutral-500 mb-1">Content *</label>
+            <label htmlFor="hr-assignment-content" className="block text-xs font-medium text-neutral-500 mb-1">{t("hr.assignments.detail.content")}</label>
             <textarea
               id="hr-assignment-content"
               className="form-input"
               rows={3}
-              placeholder="Describe the update, progress, or blocker..."
+              placeholder={t("hr.assignments.detail.contentPlaceholder")}
               value={updateContent}
               onChange={(e) => setUpdateContent(e.target.value)}
             />
           </div>
           <div className="flex justify-end">
             <button type="submit" className="btn-primary" disabled={updateSubmitting}>
-              {updateSubmitting ? "Submitting..." : "Add Update"}
+              {updateSubmitting ? t("hr.assignments.detail.submitting") : t("hr.assignments.detail.addUpdate")}
             </button>
           </div>
         </form>
@@ -392,7 +413,7 @@ export default function AssignmentDetailPage() {
       <div>
         <button className="btn-secondary flex items-center gap-2" onClick={() => router.push("/hr/assignments")}>
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Back to Assignments
+          {t("hr.assignments.detail.back")}
         </button>
       </div>
 
@@ -401,28 +422,28 @@ export default function AssignmentDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
-              <h2 className="font-semibold text-neutral-800">Mark Assignment Complete</h2>
-              <button onClick={() => setShowCompleteModal(false)} aria-label="Close completion dialog" className="text-neutral-400 hover:text-neutral-600">
+              <h2 className="font-semibold text-neutral-800">{t("hr.assignments.detail.completeTitle")}</h2>
+              <button onClick={() => setShowCompleteModal(false)} aria-label={t("hr.assignments.detail.closeComplete")} className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="hr-assignment-completion-notes" className="block text-sm font-medium text-neutral-700 mb-1">
-                  Completion Notes (optional)
+                  {t("hr.assignments.detail.completionNotes")}
                 </label>
                 <textarea
                   id="hr-assignment-completion-notes"
                   className="form-input"
                   rows={4}
-                  placeholder="Summarize what was completed, any outcomes or follow-up items..."
+                  placeholder={t("hr.assignments.detail.completionPlaceholder")}
                   value={completionNotes}
                   onChange={(e) => setCompletionNotes(e.target.value)}
                 />
               </div>
               <div className="flex justify-end gap-3">
                 <button className="btn-secondary" onClick={() => setShowCompleteModal(false)}>
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   className="btn-primary flex items-center gap-2"
@@ -430,7 +451,7 @@ export default function AssignmentDetailPage() {
                   disabled={actionLoading}
                 >
                   <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                  {actionLoading ? "Completing..." : "Complete Assignment"}
+                  {actionLoading ? t("hr.assignments.detail.completing") : t("hr.assignments.detail.complete")}
                 </button>
               </div>
             </div>

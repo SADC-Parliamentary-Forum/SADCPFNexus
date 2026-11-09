@@ -60,18 +60,19 @@ const SEARCH_INDEX: SearchResult[] = [
 
 const CATEGORY_ORDER = ["Records", "Actions", "Modules", "Admin", "Account", "Help"];
 
-// Server record hits (already filtered to records the user can open).
+// Server record hits (already filtered to records the user can open). Labels are i18n keys.
 const RECORD_MODULE: Record<RecordSearchHit["module"], { label: string; icon: string }> = {
-  travel: { label: "Travel request", icon: "flight_takeoff" },
-  leave: { label: "Leave request", icon: "event_available" },
-  procurement: { label: "Procurement request", icon: "shopping_cart" },
-  programmes: { label: "Programme", icon: "account_tree" },
-  suppliers: { label: "Supplier", icon: "storefront" },
-  correspondence: { label: "Correspondence", icon: "mail" },
+  travel: { label: "layout.globalSearch.record.travel", icon: "flight_takeoff" },
+  leave: { label: "layout.globalSearch.record.leave", icon: "event_available" },
+  procurement: { label: "layout.globalSearch.record.procurement", icon: "shopping_cart" },
+  programmes: { label: "layout.globalSearch.record.programmes", icon: "account_tree" },
+  suppliers: { label: "layout.globalSearch.record.suppliers", icon: "storefront" },
+  correspondence: { label: "layout.globalSearch.record.correspondence", icon: "mail" },
 };
 
-function recordToResult(hit: RecordSearchHit): SearchResult {
-  const meta = RECORD_MODULE[hit.module] ?? { label: hit.module, icon: "description" };
+function recordToResult(hit: RecordSearchHit, t: (key: string) => string): SearchResult {
+  const known = RECORD_MODULE[hit.module];
+  const meta = known ? { label: t(known.label), icon: known.icon } : { label: hit.module, icon: "description" };
   return {
     id: `rec-${hit.module}-${hit.id}`,
     label: hit.title || hit.reference || `${meta.label} #${hit.id}`,
@@ -168,7 +169,7 @@ export function GlobalSearch() {
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_RESULTS)
       .map((x) => x.r);
-    const records = q.length >= 2 ? (recordHits ?? []).slice(0, MAX_RESULTS).map(recordToResult) : [];
+    const records = q.length >= 2 ? (recordHits ?? []).slice(0, MAX_RESULTS).map((hit) => recordToResult(hit, t)) : [];
     return [...records, ...navigation];
   }, [accessibleIndex, debouncedQuery, recordHits, t]);
 
@@ -292,11 +293,11 @@ export function GlobalSearch() {
                 autoComplete="off"
               />
               {query && (
-                <button type="button" aria-label="Clear search query" onClick={() => setQuery("")} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200">
+                <button type="button" aria-label={t("layout.globalSearch.clear")} onClick={() => setQuery("")} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200">
                   <span className="material-symbols-outlined text-[18px]">close</span>
                 </button>
               )}
-              <kbd className="hidden sm:inline-flex rounded-md border border-neutral-200 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-700 px-1.5 py-0.5 text-[10px] font-mono text-neutral-400">ESC</kbd>
+              <kbd className="hidden sm:inline-flex rounded-md border border-neutral-200 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-700 px-1.5 py-0.5 text-[10px] font-mono text-neutral-400">ESC</kbd>{/* i18n-ignore */}
             </div>
 
             {/* Results */}
@@ -337,7 +338,7 @@ export function GlobalSearch() {
                 <div className="py-10 text-center">
                   <span className="material-symbols-outlined text-4xl text-neutral-200">search_off</span>
                   <p className="mt-2 text-sm font-medium text-neutral-500">{t("common.noResults")}</p>
-                  <p className="text-xs text-neutral-400 mt-0.5">Try a module name, action, or keyword</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">{t("layout.globalSearch.tryHint")}</p>
                 </div>
               ) : (
                 <div id={searchListboxId} role="listbox" aria-label={t("search.results")} className="py-2">
@@ -396,9 +397,9 @@ export function GlobalSearch() {
                 <kbd className="rounded border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1 py-0.5 font-mono">↵</kbd> {t("common.open")}
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-neutral-400">
-                <kbd className="rounded border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1 py-0.5 font-mono">ESC</kbd> {t("common.close")}
+                <kbd className="rounded border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1 py-0.5 font-mono">ESC</kbd> {t("common.close")}{/* i18n-ignore */}
               </div>
-              <span className="ml-auto text-[10px] text-neutral-400">{flatResults.length} result{flatResults.length !== 1 ? "s" : ""}</span>
+              <span className="ml-auto text-[10px] text-neutral-400">{t(flatResults.length === 1 ? "layout.globalSearch.resultOne" : "layout.globalSearch.resultMany", { count: flatResults.length })}</span>
             </div>
           </div>
         </div>

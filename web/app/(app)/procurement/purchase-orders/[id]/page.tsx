@@ -15,17 +15,25 @@ import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  draft:              { label: "Draft",          cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"   },
-  returned:           { label: "Returned",       cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "undo"        },
-  awaiting_approval:  { label: "Awaiting approval", cls: "text-amber-700 bg-amber-50 border-amber-200",    icon: "hourglass"   },
-  approved:           { label: "Approved",       cls: "text-green-700 bg-green-50 border-green-200",        icon: "check"       },
-  issued:             { label: "Issued",         cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "send"        },
-  partially_received: { label: "Part. Received", cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "inventory"   },
-  received:           { label: "Received",       cls: "text-green-700 bg-green-50 border-green-200",        icon: "inventory_2" },
-  cancelled:          { label: "Cancelled",      cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"      },
-  void:               { label: "Void",           cls: "text-red-700 bg-red-50 border-red-200",              icon: "block"       },
-  rejected:           { label: "Rejected",       cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"      },
-  closed:             { label: "Closed",         cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "check_circle"},
+  draft:              { label: "status.draft",   cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"   },
+  returned:           { label: "procurement.status.returned", cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "undo"        },
+  awaiting_approval:  { label: "procurement.index.wb.awaitingApproval", cls: "text-amber-700 bg-amber-50 border-amber-200",    icon: "hourglass"   },
+  approved:           { label: "status.approved", cls: "text-green-700 bg-green-50 border-green-200",        icon: "check"       },
+  issued:             { label: "procurement.poStatus.issued", cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "send"        },
+  partially_received: { label: "procurement.poStatus.partReceived", cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "inventory"   },
+  received:           { label: "procurement.poStatus.received", cls: "text-green-700 bg-green-50 border-green-200",        icon: "inventory_2" },
+  cancelled:          { label: "status.cancelled", cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"      },
+  void:               { label: "po.detailPage.status.void", cls: "text-red-700 bg-red-50 border-red-200",              icon: "block"       },
+  rejected:           { label: "status.rejected", cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"      },
+  closed:             { label: "procurement.poStatus.closed", cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "check_circle"},
+};
+
+const PO_DOC_TYPE_LABEL_KEYS: Record<string, string> = {
+  signed_po: "po.detailPage.docType.signedPo",
+  vendor_acknowledgement: "po.detailPage.docType.vendorAck",
+  delivery_schedule: "po.detailPage.docType.deliverySchedule",
+  po_amendment: "po.detailPage.docType.poAmendment",
+  other: "procurement.vendors.country.other",
 };
 
 function getStoredUser() {
@@ -82,10 +90,10 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
     mutationFn: () => purchaseOrdersApi.issue(poId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
-      toast.success("Purchase order issued");
+      toast.success(t("po.detailPage.issued"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not issue purchase order", apiErrorMessage(err, "Failed to issue the purchase order."));
+      toast.error(t("po.detailPage.notIssued"), apiErrorMessage(err, t("po.detailPage.issueFailed")));
     },
   });
   const submitMutation = useMutation({
@@ -97,40 +105,40 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
     } : { reference_mode: "auto" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
-      toast.success("Purchase order submitted for approval");
+      toast.success(t("po.detailPage.submitted"));
     },
     onError: (err: unknown) => {
-      toast.error("Purchase order not submitted", apiErrorMessage(err, "Failed to submit the purchase order."));
+      toast.error(t("po.detailPage.notSubmitted"), apiErrorMessage(err, t("po.detailPage.submitFailed")));
     },
   });
   const emailMutation = useMutation({
     mutationFn: () => purchaseOrdersApi.emailSupplier(poId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
-      toast.success("Purchase order emailed to supplier");
+      toast.success(t("po.detailPage.emailed"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not email supplier", apiErrorMessage(err, "Failed to email the purchase order to the supplier."));
+      toast.error(t("po.detailPage.notEmailed"), apiErrorMessage(err, t("po.detailPage.emailFailed")));
     },
   });
   const financeMutation = useMutation({
     mutationFn: () => purchaseOrdersApi.financeHandover(poId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
-      toast.success("Handed over to Finance");
+      toast.success(t("po.detailPage.handedOver"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not hand over to Finance", apiErrorMessage(err, "Failed to hand the purchase order over to Finance."));
+      toast.error(t("po.detailPage.notHandedOver"), apiErrorMessage(err, t("po.detailPage.handoverFailed")));
     },
   });
   const serviceMutation = useMutation({
     mutationFn: () => purchaseOrdersApi.confirmService(poId, { delivered: "yes", satisfactory: true }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
-      toast.success("Service delivery confirmed");
+      toast.success(t("po.detailPage.serviceConfirmed"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not confirm service delivery", apiErrorMessage(err, "Failed to confirm service delivery."));
+      toast.error(t("po.detailPage.serviceNotConfirmed"), apiErrorMessage(err, t("po.detailPage.serviceFailed")));
     },
   });
 
@@ -139,12 +147,12 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] });
       setShowCancelModal(false);
-      toast.success("Purchase order cancelled");
+      toast.success(t("po.detailPage.cancelled"));
     },
     onError: (e: unknown) => {
-      const message = apiErrorMessage(e, "Failed to cancel.");
+      const message = apiErrorMessage(e, t("po.detailPage.cancelFailed"));
       setCancelError(message);
-      toast.error("Purchase order not cancelled", message);
+      toast.error(t("po.detailPage.notCancelled"), message);
     },
   });
 
@@ -158,8 +166,8 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
   if (isError || !po) return (
     <div className="w-full min-w-0 card p-8 text-center space-y-3">
       <span className="material-symbols-outlined text-4xl text-neutral-300">error</span>
-      <p className="text-sm text-neutral-500">Purchase order not found.</p>
-      <Link href="/procurement/purchase-orders" className="btn-secondary inline-flex items-center gap-1.5 text-sm py-2 px-4">Back</Link>
+      <p className="text-sm text-neutral-500">{t("po.detailPage.notFound")}</p>
+      <Link href="/procurement/purchase-orders" className="btn-secondary inline-flex items-center gap-1.5 text-sm py-2 px-4">{t("common.back")}</Link>
     </div>
   );
 
@@ -172,17 +180,17 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
       <div className="flex gap-1 border-b border-neutral-200">
         {(["details", "documents"] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors -mb-px ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
-            {tab === "documents" ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}` : "Details"}
+            {tab === "documents" ? (attachments.length > 0 ? t("procurement.tab.documentsCount", { count: attachments.length }) : t("procurement.tab.documents")) : t("procurement.tab.details")}
           </button>
         ))}
       </div>
 
       {activeTab === "documents" && (
         <div className="card p-6">
-          <h2 className="text-sm font-semibold text-neutral-800 mb-5">Purchase Order Documents</h2>
+          <h2 className="text-sm font-semibold text-neutral-800 mb-5">{t("po.detailPage.documentsTitle")}</h2>
           <GenericDocumentsPanel
             documents={attachments}
-            documentTypes={PURCHASE_ORDER_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
+            documentTypes={PURCHASE_ORDER_DOC_TYPES.map((dt) => ({ value: dt.value, icon: dt.icon, label: t(PO_DOC_TYPE_LABEL_KEYS[dt.value] ?? dt.label) }))}
             defaultType="signed_po"
             loading={false}
             uploading={uploading}
@@ -191,18 +199,18 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
               try {
                 const r = await purchaseOrderAttachmentsApi.upload(poId, file, type);
                 setAttachments((p) => [r.data.data, ...p]);
-                toast.success("Document uploaded");
+                toast.success(t("procurement.doc.uploaded"));
               } catch (err) {
-                toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload the document."));
+                toast.error(t("procurement.doc.notUploaded"), apiErrorMessage(err, t("procurement.doc.uploadFailed")));
               } finally { setUploading(false); }
             }}
             onDelete={async (id) => {
               try {
                 await purchaseOrderAttachmentsApi.delete(poId, id);
                 setAttachments((p) => p.filter((a) => a.id !== id));
-                toast.success("Document deleted");
+                toast.success(t("procurement.doc.deleted"));
               } catch (err) {
-                toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete the document."));
+                toast.error(t("procurement.doc.notDeleted"), apiErrorMessage(err, t("procurement.doc.deleteFailed")));
               }
             }}
             downloadUrl={(id) => purchaseOrderAttachmentsApi.downloadUrl(poId, id)}
@@ -216,7 +224,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
         subtitle={po.lpo_number ?? po.display_reference ?? po.reference_number}
         crumbs={[
           { label: "nav.procurement", href: "/procurement" },
-          { label: "Purchase Orders", href: "/procurement/purchase-orders" },
+          { label: "procurement.purchaseOrders.title", href: "/procurement/purchase-orders" },
           { label: po.reference_number },
         ]}
       />
@@ -230,7 +238,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
           <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
-              {s.label}
+              {t(s.label)}
             </span>
             {["draft", "returned"].includes(po.status) && canManagePO() && !po.lpo_number && (
               <button
@@ -239,7 +247,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
                 className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
                 data-testid="po-submit"
               >
-                {submitMutation.isPending ? "Submitting…" : t("po.detail.submit")}
+                {submitMutation.isPending ? t("procurement.submitting") : t("po.detail.submit")}
               </button>
             )}
             {po.status === "approved" && canManagePO() && (
@@ -249,7 +257,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
                 className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
               >
                 <span className="material-symbols-outlined text-[14px]">send</span>
-                {issueMutation.isPending ? "Issuing…" : "Issue PO"}
+                {issueMutation.isPending ? t("payslips.desk.issuing") : t("po.detailPage.issuePo")}
               </button>
             )}
             {(po.status === "issued" || po.status === "approved") && canManagePO() && (
@@ -262,15 +270,15 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
                   a.download = `LPO_${(po.lpo_number ?? po.reference_number).replace(/\s+/g, "_")}.pdf`;
                   a.click();
                   URL.revokeObjectURL(url);
-                }}>Download PDF</button>
+                }}>{t("assets.labels.downloadPdf")}</button>
                 <button type="button" className="btn-secondary text-xs px-3 py-1.5" disabled={emailMutation.isPending} onClick={() => emailMutation.mutate()}>
-                  {emailMutation.isPending ? "Queuing…" : "Email Supplier"}
+                  {emailMutation.isPending ? t("admin.weeklySummary.queuing") : t("po.detailPage.emailSupplier")}
                 </button>
                 <button type="button" className="btn-secondary text-xs px-3 py-1.5" disabled={serviceMutation.isPending} onClick={() => serviceMutation.mutate()}>
-                  Confirm service
+                  {t("po.detailPage.confirmService")}
                 </button>
                 <button type="button" className="btn-primary text-xs px-3 py-1.5" disabled={financeMutation.isPending} onClick={() => financeMutation.mutate()}>
-                  Send to Finance
+                  {t("po.detailPage.sendToFinance")}
                 </button>
               </>
             )}
@@ -280,7 +288,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
                 className="inline-flex items-center gap-1 text-xs text-red-600 border border-red-200 rounded-full px-3 py-1 bg-red-50 hover:bg-red-100 transition-colors"
               >
                 <span className="material-symbols-outlined text-[12px]">cancel</span>
-                Cancel PO
+                {t("po.detailPage.cancelPo")}
               </button>
             )}
           </div>
@@ -288,15 +296,15 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
           {[
-            { label: "Vendor",             icon: "storefront",      value: po.vendor?.name ?? "—"                                              },
-            { label: "Payment Terms",      icon: "schedule",        value: po.payment_terms?.replace("_", " ") ?? "—"                           },
-            { label: "Expected Delivery",  icon: "calendar_today",  value: po.expected_delivery_date ? formatDateShort(po.expected_delivery_date) : "—" },
-            { label: "Total Amount",       icon: "payments",        value: `${po.currency} ${(po.total_amount ?? 0).toLocaleString()}`           },
+            { label: "procurement.col.vendor", icon: "storefront",      value: po.vendor?.name ?? "—"                                              },
+            { label: "procurement.po.paymentTerms", icon: "schedule",        value: po.payment_terms?.replace("_", " ") ?? "—"                           },
+            { label: "procurement.po.col.expectedDelivery", icon: "calendar_today",  value: po.expected_delivery_date ? formatDateShort(po.expected_delivery_date) : "—" },
+            { label: "finance.budget.col.totalAmount", icon: "payments",        value: `${po.currency} ${(po.total_amount ?? 0).toLocaleString()}`           },
           ].map((row) => (
             <div key={row.label}>
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="material-symbols-outlined text-[13px] text-neutral-300">{row.icon}</span>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{row.label}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t(row.label)}</p>
               </div>
               <p className="font-medium text-neutral-900">{row.value}</p>
             </div>
@@ -342,7 +350,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
           <div className="mt-4 pt-4 border-t border-neutral-50">
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[13px] text-neutral-300">location_on</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Delivery Address</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("procurement.po.deliveryAddress")}</p>
             </div>
             <p className="text-sm text-neutral-700">{po.delivery_address}</p>
           </div>
@@ -350,7 +358,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
         {po.status === "issued" && (
           <div className="mt-4 pt-4 border-t border-neutral-50">
             <p className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-              Supplier notification has been sent. The supplier must now submit a proforma invoice through the supplier portal before finance can process payment.
+              {t("po.detailPage.issuedNotice")}
             </p>
           </div>
         )}
@@ -361,22 +369,22 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
         <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">list_alt</span>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Line Items</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("procurement.po.lineItems")}</h3>
           </div>
           <span className="text-sm font-bold text-primary">{po.currency} {(po.total_amount ?? 0).toLocaleString()}</span>
         </div>
         <table className="data-table">
           <thead>
             <tr>
-              <th>Description</th>
-              <th className="text-center">Qty</th>
-              <th className="text-right">Unit Price</th>
-              <th className="text-right">Total</th>
+              <th>{t("procurement.detail.description")}</th>
+              <th className="text-center">{t("procurement.po.qty")}</th>
+              <th className="text-right">{t("procurement.po.unitPrice")}</th>
+              <th className="text-right">{t("procurement.detail.total")}</th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 ? (
-              <TableEmpty colSpan={4} title="No line items." />
+              <TableEmpty colSpan={4} title="procurement.detail.noLineItems" />
             ) : items.map((item) => (
               <tr key={item.id}>
                 <td><p className="font-medium text-neutral-900">{item.description}</p><p className="text-xs text-neutral-400">{item.unit}</p></td>
@@ -394,20 +402,20 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
         <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px] text-green-600">inventory_2</span>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Goods Receipts</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("procurement.receipts.title")}</h3>
           </div>
           {po.status === "issued" || po.status === "partially_received" ? (
             <Link href={`/procurement/receipts?po=${poId}`} className="btn-primary text-xs px-3 py-1.5 inline-flex items-center gap-1">
               <span className="material-symbols-outlined text-[14px]">add</span>
-              Record Receipt
+              {t("procurement.receipts.record")}
             </Link>
           ) : null}
         </div>
         {(grns as { id: number; reference_number: string; received_date: string; status: string }[]).length === 0 ? (
-          <div className="p-8 text-center text-sm text-neutral-400">No receipts recorded yet.</div>
+          <div className="p-8 text-center text-sm text-neutral-400">{t("po.detailPage.noReceipts")}</div>
         ) : (
           <table className="data-table">
-            <thead><tr><th>GRN Ref</th><th>Received Date</th><th>Status</th></tr></thead>
+            <thead><tr><th>{t("po.detailPage.grnRef")}</th><th>{t("procurement.receipts.receivedDate")}</th><th>{t("stock.common.status")}</th></tr></thead>
             <tbody>
               {(grns as { id: number; reference_number: string; received_date: string; status: string }[]).map((grn) => (
                 <tr key={grn.id}>
@@ -423,7 +431,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
 
       <Link href="/procurement/purchase-orders" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-        Back to Purchase Orders
+        {t("po.detailPage.backToList")}
       </Link>
       </> /* end details tab */}
 
@@ -431,17 +439,17 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowCancelModal(false)}>
           <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-base font-bold text-neutral-900">Cancel Purchase Order</h2>
+            <h2 className="text-base font-bold text-neutral-900">{t("po.detailPage.cancelTitle")}</h2>
             {cancelError && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{cancelError}</div>}
-            <textarea className="form-input w-full h-24 resize-none" placeholder="Reason for cancellation…" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
+            <textarea className="form-input w-full h-24 resize-none" placeholder={t("po.detailPage.cancelReason")} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
             <div className="flex gap-3">
-              <button className="btn-secondary flex-1" onClick={() => setShowCancelModal(false)}>Back</button>
+              <button className="btn-secondary flex-1" onClick={() => setShowCancelModal(false)}>{t("common.back")}</button>
               <button
                 disabled={cancelMutation.isPending || !cancelReason.trim()}
                 onClick={() => cancelMutation.mutate()}
                 className="flex-1 rounded-lg bg-red-600 text-white text-sm font-medium py-2 hover:bg-red-700 disabled:opacity-60 transition-colors"
               >
-                {cancelMutation.isPending ? "Cancelling…" : "Confirm Cancel"}
+                {cancelMutation.isPending ? t("procurement.tenders.cancelling") : t("assignments.detail.confirmCancel")}
               </button>
             </div>
           </div>

@@ -5,8 +5,10 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { parliamentsApi, type Parliament } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function ParliamentsPage() {
+  const { t } = useI18n();
   const [parliaments, setParliaments] = useState<Parliament[]>([]);
   const [loading, setLoading]         = useState(true);
   const [search, setSearch]           = useState("");
@@ -32,9 +34,9 @@ export default function ParliamentsPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Member State Parliaments"
-        subtitle="SADC member state parliaments where researchers are or can be deployed."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Member State Parliaments" }]} />}
+        title="srhr.parliamentsPage.title"
+        subtitle="srhr.parliamentsPage.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "srhr.parliamentsPage.title" }]} />}
       />
       </div>
 
@@ -44,12 +46,12 @@ export default function ParliamentsPage() {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[18px]">search</span>
           <input
             className="form-input pl-9"
-            placeholder="Search parliaments…"
+            placeholder={t("srhr.parliamentsPage.search")}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        <p className="text-sm text-neutral-500 ml-auto">{total} parliament{total !== 1 ? "s" : ""}</p>
+        <p className="text-sm text-neutral-500 ml-auto">{t(total === 1 ? "srhr.parliamentsPage.countOne" : "srhr.parliamentsPage.countMany", { count: total })}</p>
       </div>
 
       {/* Table */}
@@ -57,11 +59,11 @@ export default function ParliamentsPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Parliament</th>
-              <th>Country</th>
-              <th>City</th>
-              <th>Active Deployments</th>
-              <th>Status</th>
+              <th>{t("srhr.col.parliament")}</th>
+              <th>{t("profile.field.country")}</th>
+              <th>{t("profile.field.city")}</th>
+              <th>{t("srhr.activeDeployments")}</th>
+              <th>{t("hr.timesheets.monthly.status")}</th>
               <th></th>
             </tr>
           </thead>
@@ -76,7 +78,7 @@ export default function ParliamentsPage() {
                 ))
               : parliaments.length === 0
               ? (
-                  <TableEmpty colSpan={6} title="No parliaments found." />
+                  <TableEmpty colSpan={6} title={t("srhr.parliamentsPage.empty")} />
                 )
               : parliaments.map((p) => (
                   <tr key={p.id}>
@@ -94,14 +96,14 @@ export default function ParliamentsPage() {
                     <td className="text-sm text-neutral-600">{p.city ?? "—"}</td>
                     <td>
                       {(p.active_deployments_count ?? 0) > 0 ? (
-                        <span className="badge badge-success">{p.active_deployments_count} active</span>
+                        <span className="badge badge-success">{t("srhr.parliamentsPage.activeCount", { count: p.active_deployments_count ?? 0 })}</span>
                       ) : (
-                        <span className="text-sm text-neutral-400">None</span>
+                        <span className="text-sm text-neutral-400">{t("hr.timesheets.templates.none")}</span>
                       )}
                     </td>
                     <td>
                       <span className={`badge ${p.is_active ? "badge-success" : "badge-muted"}`}>
-                        {p.is_active ? "Active" : "Inactive"}
+                        {p.is_active ? t("hr.timesheets.templates.active") : t("hr.timesheets.templates.inactive")}
                       </span>
                     </td>
                     <td>
@@ -109,7 +111,7 @@ export default function ParliamentsPage() {
                         href={`/srhr/parliaments/${p.id}`}
                         className="btn-secondary text-xs py-1 px-2"
                       >
-                        View
+                        {t("hr.timesheets.team.view")}
                       </Link>
                     </td>
                   </tr>
@@ -126,15 +128,15 @@ export default function ParliamentsPage() {
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
           >
-            Previous
+            {t("common.previous")}
           </button>
-          <span className="text-xs text-neutral-500">Page {page} of {lastPage}</span>
+          <span className="text-xs text-neutral-500">{t("common.pageOf", { page, total: lastPage })}</span>
           <button
             className="btn-secondary text-xs px-3 py-1.5"
             disabled={page >= lastPage}
             onClick={() => setPage((p) => p + 1)}
           >
-            Next
+            {t("common.next")}
           </button>
         </div>
       )}

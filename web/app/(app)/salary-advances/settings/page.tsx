@@ -19,7 +19,7 @@ export default function SalaryAdvanceSettingsPage() {
   const toast = useToast();
   const [policies, setPolicies] = useState<SalaryAdvancePolicyVersion[]>([]);
   const [exceptions, setExceptions] = useState<SalaryAdvancePolicyException[]>([]);
-  const [employeeOptions, setEmployeeOptions] = useState<Array<{ id: number; label: string }>>([]);
+  const [employeeOptions, setEmployeeOptions] = useState<Array<{ id: number; name: string | null; detail: string | null }>>([]);
   const [payroll, setPayroll] = useState<{
     mode: string;
     adapter?: string;
@@ -66,7 +66,7 @@ export default function SalaryAdvanceSettingsPage() {
         setExceptions([]);
       }
     } catch {
-      setError("Failed to load salary advance settings.");
+      setError(t("salaryAdvances.settings.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,8 @@ export default function SalaryAdvanceSettingsPage() {
         setEmployeeOptions(
           (res.data.data ?? []).map((file) => ({
             id: file.employee_id,
-            label: `${file.employee?.name ?? file.staff_number ?? `Employee ${file.employee_id}`} (${file.employee?.email ?? file.current_position ?? "no email"})`,
+            name: file.employee?.name ?? file.staff_number ?? null,
+            detail: file.employee?.email ?? file.current_position ?? null,
           })),
         );
       })
@@ -102,13 +103,13 @@ export default function SalaryAdvanceSettingsPage() {
         admin_review_required: true,
         final_approver_role: "Secretary General",
       });
-      toast.success("Policy version created", form.version || undefined);
+      toast.success(t("salaryAdvances.settings.versionCreated"), form.version || undefined);
       setForm({ version: "", effective_from: "", max_salary_percentage: 50, change_reason: "" });
       await load();
     } catch (err) {
-      const message = apiErrorMessage(err, "Could not create policy version. Ensure you have salary_advance.admin and provide a change reason.");
+      const message = apiErrorMessage(err, t("salaryAdvances.settings.versionCreateFailed"));
       setError(message);
-      toast.error("Policy version not created", message);
+      toast.error(t("salaryAdvances.settings.versionNotCreated"), message);
     } finally {
       setSaving(false);
     }
@@ -127,7 +128,7 @@ export default function SalaryAdvanceSettingsPage() {
         effective_from: exceptionForm.effective_from,
         effective_to: exceptionForm.effective_to || undefined,
       });
-      toast.success("Policy exception created");
+      toast.success(t("salaryAdvances.settings.exceptionCreated"));
       setExceptionForm({
         employee_id: "",
         exception_type: "outstanding_balance",
@@ -138,9 +139,9 @@ export default function SalaryAdvanceSettingsPage() {
       });
       await load();
     } catch (err) {
-      const message = apiErrorMessage(err, "Could not create policy exception. Admin permission required. Exceptions never silently override eligibility.");
+      const message = apiErrorMessage(err, t("salaryAdvances.settings.exceptionCreateFailed"));
       setError(message);
-      toast.error("Policy exception not created", message);
+      toast.error(t("salaryAdvances.settings.exceptionNotCreated"), message);
     } finally {
       setSaving(false);
     }
@@ -152,12 +153,12 @@ export default function SalaryAdvanceSettingsPage() {
       await financeApi.approveSalaryAdvancePolicyException(id, {
         decision_notes: "Approved via Salary Advance Settings",
       });
-      toast.success("Policy exception approved");
+      toast.success(t("salaryAdvances.settings.exceptionApproved"));
       await load();
     } catch (err) {
-      const message = apiErrorMessage(err, "Could not approve exception.");
+      const message = apiErrorMessage(err, t("salaryAdvances.settings.approveFailed"));
       setError(message);
-      toast.error("Could not approve exception", message);
+      toast.error(t("procurement.exceptions.approveFailedTitle"), message);
     } finally {
       setSaving(false);
     }
@@ -168,11 +169,11 @@ export default function SalaryAdvanceSettingsPage() {
   return (
     <div className="space-y-6">
       <SalaryAdvancePageHeader
-        title="Salary Advance Settings"
-        subtitle="Policy versions are immutable once activated. Create a new version to change rules — no silent overrides."
+        title="salaryAdvances.settings.title"
+        subtitle={t("salaryAdvances.settings.subtitle")}
         crumbs={[
           { label: "nav.salary_advances", href: "/salary-advances" },
-          { label: "Settings" },
+          { label: "travel.settings.crumb" },
         ]}
       />
 
@@ -183,69 +184,74 @@ export default function SalaryAdvanceSettingsPage() {
       ) : (
         <>
           <div className="card p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-neutral-900">Active policy</h2>
+            <h2 className="text-sm font-semibold text-neutral-900">{t("leave.settings.activePolicy")}</h2>
             {active ? (
               <dl className="grid sm:grid-cols-2 gap-3 text-sm">
-                <div><dt className="text-xs text-neutral-500">Version</dt><dd className="font-medium">{active.version}</dd></div>
-                <div><dt className="text-xs text-neutral-500">Effective from</dt><dd className="font-medium">{formatDate(active.effective_from)}</dd></div>
-                <div><dt className="text-xs text-neutral-500">Max % of net</dt><dd className="font-medium">{active.max_salary_percentage}%</dd></div>
-                <div><dt className="text-xs text-neutral-500">Salary basis</dt><dd className="font-medium">{active.salary_basis}</dd></div>
-                <div><dt className="text-xs text-neutral-500">Recovery</dt><dd className="font-medium">{active.recovery_rule}</dd></div>
-                <div><dt className="text-xs text-neutral-500">Concurrent advances</dt><dd className="font-medium">{active.max_concurrent_advances} (locked)</dd></div>
+                <div><dt className="text-xs text-neutral-500">{t("leave.settings.version")}</dt><dd className="font-medium">{active.version}</dd></div>
+                <div><dt className="text-xs text-neutral-500">{t("travel.settings.effectiveFrom")}</dt><dd className="font-medium">{formatDate(active.effective_from)}</dd></div>
+                <div><dt className="text-xs text-neutral-500">{t("salaryAdvances.settings.maxPctNet")}</dt><dd className="font-medium">{active.max_salary_percentage}%</dd></div>
+                <div><dt className="text-xs text-neutral-500">{t("salaryAdvances.settings.salaryBasis")}</dt><dd className="font-medium">{active.salary_basis}</dd></div>
+                <div><dt className="text-xs text-neutral-500">{t("salaryAdvances.detail.step.recovery")}</dt><dd className="font-medium">{active.recovery_rule}</dd></div>
+                <div><dt className="text-xs text-neutral-500">{t("salaryAdvances.settings.concurrent")}</dt><dd className="font-medium">{t("salaryAdvances.settings.locked", { count: active.max_concurrent_advances })}</dd></div>
               </dl>
             ) : (
-              <EmptyState icon="policy" title="No active policy found." className="py-6 min-h-0" />
+              <EmptyState icon="policy" title="salaryAdvances.settings.noActive" className="py-6 min-h-0" />
             )}
           </div>
 
           <form onSubmit={createVersion} className="card p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-neutral-900">Activate new policy version</h2>
-            <p className="text-xs text-neutral-500">Creates a new audited version. Prior tenant versions are deactivated. Consolidation and instalments remain disabled.</p>
+            <h2 className="text-sm font-semibold text-neutral-900">{t("salaryAdvances.settings.activateTitle")}</h2>
+            <p className="text-xs text-neutral-500">{t("salaryAdvances.settings.activateHint")}</p>
             <div className="grid sm:grid-cols-2 gap-3">
-              <label htmlFor="salary-advances-settings-version-label-setform-placeholder-2026-2" className="text-xs font-medium text-neutral-700">Version label
+              <label htmlFor="salary-advances-settings-version-label-setform-placeholder-2026-2" className="text-xs font-medium text-neutral-700">{t("salaryAdvances.settings.versionLabel")}
                 <input id="salary-advances-settings-version-label-setform-placeholder-2026-2" required className="mt-1 input w-full" value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} placeholder="2026.2" />
               </label>
-              <label htmlFor="salary-advances-settings-effective-from-setform" className="text-xs font-medium text-neutral-700">Effective from
+              <label htmlFor="salary-advances-settings-effective-from-setform" className="text-xs font-medium text-neutral-700">{t("travel.settings.effectiveFrom")}
                 <input id="salary-advances-settings-effective-from-setform" required type="date" className="mt-1 input w-full" value={form.effective_from} onChange={(e) => setForm({ ...form, effective_from: e.target.value })} />
               </label>
-              <label htmlFor="salary-advances-settings-max-salary-setform" className="text-xs font-medium text-neutral-700">Max salary %
+              <label htmlFor="salary-advances-settings-max-salary-setform" className="text-xs font-medium text-neutral-700">{t("salaryAdvances.settings.maxSalaryPct")}
                 <input id="salary-advances-settings-max-salary-setform" required type="number" min={1} max={100} className="mt-1 input w-full" value={form.max_salary_percentage} onChange={(e) => setForm({ ...form, max_salary_percentage: Number(e.target.value) })} />
               </label>
-              <label htmlFor="salary-advances-settings-change-reason-required-for-audit-setform" className="text-xs font-medium text-neutral-700 sm:col-span-2">Change reason (required for audit)
+              <label htmlFor="salary-advances-settings-change-reason-required-for-audit-setform" className="text-xs font-medium text-neutral-700 sm:col-span-2">{t("salaryAdvances.settings.changeReason")}
                 <textarea id="salary-advances-settings-change-reason-required-for-audit-setform" required className="mt-1 input w-full min-h-[80px]" value={form.change_reason} onChange={(e) => setForm({ ...form, change_reason: e.target.value })} />
               </label>
             </div>
             <button type="submit" disabled={saving} className="btn-primary py-2 px-4 text-sm disabled:opacity-40">
-              {saving ? "Saving…" : "Create & activate version"}
+              {saving ? t("leave.settings.saving") : t("salaryAdvances.settings.createActivate")}
             </button>
           </form>
 
           <div className="card p-5 space-y-2">
-            <h2 className="text-sm font-semibold text-neutral-900">Payroll recovery adapter</h2>
-            <p className="text-sm text-neutral-600">{payroll?.message ?? "Manual recovery is the default."}</p>
+            <h2 className="text-sm font-semibold text-neutral-900">{t("salaryAdvances.settings.payrollTitle")}</h2>
+            <p className="text-sm text-neutral-600">{payroll?.message ?? t("salaryAdvances.settings.manualDefault")}</p>
             <div className="flex flex-wrap gap-2">
-              <span className="badge badge-muted text-xs">Driver: {payroll?.driver ?? payroll?.mode ?? "manual"}</span>
-              <span className="badge badge-muted text-xs">Adapter: {payroll?.adapter ?? "manual"}</span>
+              <span className="badge badge-muted text-xs">{t("salaryAdvances.settings.driver", { value: payroll?.driver ?? payroll?.mode ?? "manual" })}</span>
+              <span className="badge badge-muted text-xs">{t("salaryAdvances.settings.adapter", { value: payroll?.adapter ?? "manual" })}</span>
               <span className="badge badge-muted text-xs">
                 {payroll?.recording_mode === "manual_reference_required"
-                  ? "Reference required"
+                  ? t("salaryAdvances.settings.referenceRequired")
                   : (payroll?.recording_mode ?? "manual")}
               </span>
               <span className={`badge text-xs ${payroll?.enabled ? "badge-warning" : "badge-success"}`}>
-                {payroll?.enabled ? "Vendor automation enabled" : "Manual recording only"}
+                {payroll?.enabled ? t("salaryAdvances.settings.vendorEnabled") : t("salaryAdvances.settings.manualOnly")}
               </span>
             </div>
             <p className="text-xs text-neutral-500">
-              Auto push: {payroll?.supports_auto_push ? "yes" : "no"} · Auto pull: {payroll?.supports_auto_pull ? "yes" : "no"}.
-              Change driver via <code className="font-mono">SALARY_ADVANCE_PAYROLL_DRIVER</code> — vendor stays rejected until a reviewed class is configured.
+              {t("salaryAdvances.settings.autoPushPull", {
+                push: payroll?.supports_auto_push ? t("procurement.vendors.csv.yes") : t("procurement.vendors.csv.no"),
+                pull: payroll?.supports_auto_pull ? t("procurement.vendors.csv.yes") : t("procurement.vendors.csv.no"),
+              })}{" "}
+              {t("salaryAdvances.settings.changeDriverVia")}{" "}
+              <code className="font-mono">SALARY_ADVANCE_PAYROLL_DRIVER</code>{" "}{/* i18n-ignore */}
+              {t("salaryAdvances.settings.vendorRejected")}
             </p>
           </div>
 
           <div className="card p-5 space-y-4">
             <div>
-              <h2 className="text-sm font-semibold text-neutral-900">Controlled policy exceptions</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">{t("salaryAdvances.settings.exceptionsTitle")}</h2>
               <p className="text-xs text-neutral-500 mt-1">
-                Documented exceptions with audit trail. Approved exceptions are visible on eligibility but never silently bypass outstanding-balance or 50% rules.
+                {t("salaryAdvances.settings.exceptionsHint")}
               </p>
             </div>
             <form onSubmit={createException} className="grid sm:grid-cols-2 gap-3">
@@ -261,45 +267,45 @@ export default function SalaryAdvanceSettingsPage() {
                   <option value="">{t("pickers.none")}</option>
                   {employeeOptions.map((employee) => (
                     <option key={employee.id} value={String(employee.id)}>
-                      {employee.label}
+                      {`${employee.name ?? t("salaryAdvances.settings.employeeFallback", { id: employee.id })} (${employee.detail ?? t("salaryAdvances.settings.noEmail")})`}
                     </option>
                   ))}
                 </select>
               </label>
-              <label htmlFor="salary-advances-settings-exception-type-setexceptionform-outstanding-bala" className="text-xs font-medium text-neutral-700">Exception type
+              <label htmlFor="salary-advances-settings-exception-type-setexceptionform-outstanding-bala" className="text-xs font-medium text-neutral-700">{t("salaryAdvances.settings.exceptionType")}
                 <select id="salary-advances-settings-exception-type-setexceptionform-outstanding-bala" className="mt-1 input w-full" value={exceptionForm.exception_type} onChange={(e) => setExceptionForm({ ...exceptionForm, exception_type: e.target.value })}>
-                  <option value="outstanding_balance">Outstanding balance</option>
-                  <option value="max_percentage">Max percentage</option>
-                  <option value="concurrent">Concurrent advances</option>
-                  <option value="other">Other</option>
+                  <option value="outstanding_balance">{t("workflows.simulate.field.outstanding_balance")}</option>
+                  <option value="max_percentage">{t("salaryAdvances.settings.maxPercentage")}</option>
+                  <option value="concurrent">{t("salaryAdvances.settings.concurrent")}</option>
+                  <option value="other">{t("risk.create.category.other")}</option>
                 </select>
               </label>
-              <label htmlFor="salary-advances-settings-effective-from-setexceptionform" className="text-xs font-medium text-neutral-700">Effective from
+              <label htmlFor="salary-advances-settings-effective-from-setexceptionform" className="text-xs font-medium text-neutral-700">{t("travel.settings.effectiveFrom")}
                 <input id="salary-advances-settings-effective-from-setexceptionform" required type="date" className="mt-1 input w-full" value={exceptionForm.effective_from} onChange={(e) => setExceptionForm({ ...exceptionForm, effective_from: e.target.value })} />
               </label>
-              <label htmlFor="salary-advances-settings-effective-to-setexceptionform" className="text-xs font-medium text-neutral-700">Effective to
+              <label htmlFor="salary-advances-settings-effective-to-setexceptionform" className="text-xs font-medium text-neutral-700">{t("assets.insurance.effectiveTo")}
                 <input id="salary-advances-settings-effective-to-setexceptionform" type="date" className="mt-1 input w-full" value={exceptionForm.effective_to} onChange={(e) => setExceptionForm({ ...exceptionForm, effective_to: e.target.value })} />
               </label>
-              <label htmlFor="salary-advances-settings-reason-setexceptionform" className="text-xs font-medium text-neutral-700 sm:col-span-2">Reason
+              <label htmlFor="salary-advances-settings-reason-setexceptionform" className="text-xs font-medium text-neutral-700 sm:col-span-2">{t("common.reason")}
                 <input id="salary-advances-settings-reason-setexceptionform" required className="mt-1 input w-full" value={exceptionForm.reason} onChange={(e) => setExceptionForm({ ...exceptionForm, reason: e.target.value })} />
               </label>
-              <label htmlFor="salary-advances-settings-justification-audit-setexceptionform" className="text-xs font-medium text-neutral-700 sm:col-span-2">Justification (audit)
+              <label htmlFor="salary-advances-settings-justification-audit-setexceptionform" className="text-xs font-medium text-neutral-700 sm:col-span-2">{t("salaryAdvances.settings.justification")}
                 <textarea id="salary-advances-settings-justification-audit-setexceptionform" required className="mt-1 input w-full min-h-[70px]" value={exceptionForm.justification} onChange={(e) => setExceptionForm({ ...exceptionForm, justification: e.target.value })} />
               </label>
               <div className="sm:col-span-2">
                 <button type="submit" disabled={saving} className="btn-secondary py-2 px-4 text-sm disabled:opacity-40">
-                  Record exception (pending)
+                  {t("salaryAdvances.settings.recordException")}
                 </button>
               </div>
             </form>
             {exceptions.length === 0 ? (
-              <EmptyState icon="rule" title="No policy exceptions recorded." className="py-6 min-h-0" />
+              <EmptyState icon="rule" title="salaryAdvances.settings.noExceptions" className="py-6 min-h-0" />
             ) : (
             <ul className="divide-y divide-neutral-100">
               {exceptions.map((ex) => (
                 <li key={ex.id} className="py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
                   <div>
-                    <p className="font-medium">{ex.employee?.name ?? `User #${ex.employee_id}`} · {ex.exception_type}</p>
+                    <p className="font-medium">{ex.employee?.name ?? t("fleet.userNumber", { id: ex.employee_id })} · {ex.exception_type}</p>
                     <p className="text-xs text-neutral-500">{ex.reason}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -308,7 +314,7 @@ export default function SalaryAdvanceSettingsPage() {
                     </span>
                     {ex.status === "pending" ? (
                       <button type="button" disabled={saving} onClick={() => approveException(ex.id)} className="btn-primary py-1 px-2 text-xs disabled:opacity-40">
-                        Approve
+                        {t("common.approve")}
                       </button>
                     ) : null}
                   </div>
@@ -319,13 +325,13 @@ export default function SalaryAdvanceSettingsPage() {
           </div>
 
           <div className="card p-5">
-            <h2 className="text-sm font-semibold text-neutral-900 mb-3">Version history</h2>
+            <h2 className="text-sm font-semibold text-neutral-900 mb-3">{t("leave.settings.history")}</h2>
             <ul className="divide-y divide-neutral-100">
               {policies.map((p) => (
                 <li key={p.id} className="py-2 flex items-center justify-between gap-3 text-sm">
                   <span className="font-medium">{p.version}</span>
                   <span className="text-xs text-neutral-500">{formatDate(p.effective_from)}</span>
-                  <span className={`badge text-xs ${p.active ? "badge-success" : "badge-muted"}`}>{p.active ? "Active" : "Inactive"}</span>
+                  <span className={`badge text-xs ${p.active ? "badge-success" : "badge-muted"}`}>{p.active ? t("audit.access.active") : t("admin.common.inactive")}</span>
                 </li>
               ))}
             </ul>

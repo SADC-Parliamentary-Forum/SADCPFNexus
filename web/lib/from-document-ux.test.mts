@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 
-const source = readFileSync(join(process.cwd(), "app/(app)/procurement/from-document/page.tsx"), "utf8");
+const source = readEnglishSource(join(process.cwd(), "app/(app)/procurement/from-document/page.tsx"));
 
 test("from-document upload and form actions have gap so buttons are not flush", () => {
   assert.match(source, /mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap/);

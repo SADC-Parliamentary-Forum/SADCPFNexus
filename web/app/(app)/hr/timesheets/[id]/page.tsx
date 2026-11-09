@@ -11,17 +11,18 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Shared UI helpers ─────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }> = {
-  draft:     { label: "Draft",            cls: "text-neutral-700 bg-neutral-100 border-neutral-200",  icon: "edit_note" },
-  submitted: { label: "Pending Approval", cls: "text-amber-700 bg-amber-50 border-amber-200",         icon: "pending" },
-  approved:  { label: "Nexus Approved",   cls: "text-green-700 bg-green-50 border-green-200",         icon: "check_circle" },
-  rejected:  { label: "Rejected",         cls: "text-red-700 bg-red-50 border-red-200",               icon: "cancel" },
-  imported:  { label: "Imported (historical)", cls: "text-indigo-700 bg-indigo-50 border-indigo-200", icon: "history" },
-  verified_historical: { label: "Verified Historical", cls: "text-violet-700 bg-violet-50 border-violet-200", icon: "verified" },
-  returned: { label: "Returned", cls: "text-amber-700 bg-amber-50 border-amber-200", icon: "undo" },
+  draft:     { label: "hr.timesheets.status.draft", cls: "text-neutral-700 bg-neutral-100 border-neutral-200",  icon: "edit_note" },
+  submitted: { label: "hr.timesheets.status.submitted", cls: "text-amber-700 bg-amber-50 border-amber-200",         icon: "pending" },
+  approved:  { label: "timesheet.import.origin.approved", cls: "text-green-700 bg-green-50 border-green-200",         icon: "check_circle" },
+  rejected:  { label: "hr.timesheets.status.rejected", cls: "text-red-700 bg-red-50 border-red-200",               icon: "cancel" },
+  imported:  { label: "timesheet.import.origin.imported", cls: "text-indigo-700 bg-indigo-50 border-indigo-200", icon: "history" },
+  verified_historical: { label: "timesheet.import.origin.verified", cls: "text-violet-700 bg-violet-50 border-violet-200", icon: "verified" },
+  returned: { label: "hr.timesheets.status.returned", cls: "text-amber-700 bg-amber-50 border-amber-200", icon: "undo" },
 };
 
 const BUCKET_ICONS: Record<string, string> = {
@@ -72,6 +73,7 @@ function initials(name: string): string {
 // ─── Page ──────────────────────────────────────────────────────────────────
 
 export default function TimesheetDetailPage() {
+  const { t, localeTag } = useI18n();
   const { fmt: formatDateShort, fmtRelative: formatDateRelative } = useFormatDate();
   const params = useParams();
   const router = useRouter();
@@ -100,12 +102,12 @@ export default function TimesheetDetailPage() {
   useEffect(() => {
     if (!id || Number.isNaN(id)) {
       setLoading(false);
-      setError("Invalid timesheet ID.");
+      setError(t("hr.timesheets.detail.invalidId"));
       return;
     }
     hrApi.getTimesheet(id)
       .then((res) => setTimesheet((res.data as any).data ?? res.data))
-      .catch(() => setError("Failed to load timesheet."))
+      .catch(() => setError(t("hr.timesheets.detail.loadFailed")))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -114,12 +116,12 @@ export default function TimesheetDetailPage() {
     setActionLoading(true);
     try {
       await hrApi.approveTimesheet(timesheet.id);
-      toast.success("Timesheet approved");
+      toast.success(t("hr.timesheets.approved"));
       const res = await hrApi.getTimesheet(timesheet.id);
       setTimesheet((res.data as any).data ?? res.data);
     } catch (err) {
-      setError("Failed to approve timesheet.");
-      toast.error("Could not approve timesheet", apiErrorMessage(err, "Failed to approve timesheet."));
+      setError(t("hr.timesheets.approveFailed"));
+      toast.error(t("hr.timesheets.notApproved"), apiErrorMessage(err, t("hr.timesheets.approveFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -130,14 +132,14 @@ export default function TimesheetDetailPage() {
     setActionLoading(true);
     try {
       await hrApi.rejectTimesheet(timesheet.id, rejectReason.trim());
-      toast.success("Timesheet rejected");
+      toast.success(t("hr.timesheets.rejected"));
       const res = await hrApi.getTimesheet(timesheet.id);
       setTimesheet((res.data as any).data ?? res.data);
       setShowRejectModal(false);
       setRejectReason("");
     } catch (err) {
-      setError("Failed to reject timesheet.");
-      toast.error("Could not reject timesheet", apiErrorMessage(err, "Failed to reject timesheet."));
+      setError(t("hr.timesheets.rejectFailed"));
+      toast.error(t("hr.timesheets.notRejected"), apiErrorMessage(err, t("hr.timesheets.rejectFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -159,8 +161,8 @@ export default function TimesheetDetailPage() {
       <div className="w-full min-w-0">
         <div className="card p-8 text-center">
           <span className="material-symbols-outlined text-[48px] text-neutral-300">error</span>
-          <p className="mt-3 text-sm text-neutral-600">{error ?? "Timesheet not found."}</p>
-          <button onClick={() => router.back()} className="btn-secondary mt-4">Go back</button>
+          <p className="mt-3 text-sm text-neutral-600">{error ?? t("hr.timesheets.detail.notFound")}</p>
+          <button onClick={() => router.back()} className="btn-secondary mt-4">{t("hr.timesheets.detail.goBack")}</button>
         </div>
       </div>
     );
@@ -180,7 +182,7 @@ export default function TimesheetDetailPage() {
   const byProject: Record<string, { label: string; hours: number }> = {};
   for (const e of entries) {
     const key   = e.project_id ? String(e.project_id) : "__none__";
-    const label = e.project?.label ?? "No Project";
+    const label = e.project?.label ?? t("hr.timesheets.detail.noProject");
     if (!byProject[key]) byProject[key] = { label, hours: 0 };
     byProject[key].hours += e.hours;
   }
@@ -188,33 +190,33 @@ export default function TimesheetDetailPage() {
   // Week label
   const weekStart = new Date(timesheet.week_start + "T00:00:00");
   const weekEnd   = new Date(timesheet.week_end   + "T00:00:00");
-  const weekLabel = `${weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${weekEnd.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+  const weekLabel = `${weekStart.toLocaleDateString(localeTag, { day: "numeric", month: "short" })} – ${weekEnd.toLocaleDateString(localeTag, { day: "numeric", month: "short", year: "numeric" })}`;
 
-  const userName   = timesheet.user?.name ?? "Staff Member";
+  const userName   = timesheet.user?.name ?? t("hr.timesheets.detail.staffMember");
   const approverName = timesheet.approver?.name;
 
   // Timeline steps
   type TimelineStatus = "done" | "current" | "pending";
   const steps: { label: string; done: boolean; current: boolean; date?: string | null }[] = isHistorical
     ? [
-        { label: "Imported (historical)", done: true, current: timesheet.status === "imported" },
+        { label: t("timesheet.import.origin.imported"), done: true, current: timesheet.status === "imported" },
         {
-          label: "Verified Historical",
+          label: t("timesheet.import.origin.verified"),
           done: timesheet.status === "verified_historical",
           current: timesheet.status === "verified_historical",
           date: timesheet.approved_at,
         },
       ]
     : [
-        { label: "Draft", done: true, current: timesheet.status === "draft" },
+        { label: t("hr.timesheets.status.draft"), done: true, current: timesheet.status === "draft" },
         {
-          label:   "Submitted",
+          label:   t("hr.timesheets.detail.stepSubmitted"),
           done:    ["submitted", "approved", "rejected"].includes(timesheet.status),
           current: timesheet.status === "submitted",
           date:    timesheet.submitted_at,
         },
         {
-          label:   timesheet.status === "rejected" ? "Rejected" : "Nexus Approved",
+          label:   timesheet.status === "rejected" ? t("hr.timesheets.status.rejected") : t("timesheet.import.origin.approved"),
           done:    ["approved", "rejected"].includes(timesheet.status),
           current: ["approved", "rejected"].includes(timesheet.status),
           date:    timesheet.approved_at,
@@ -224,20 +226,20 @@ export default function TimesheetDetailPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title={`Week of ${weekLabel}`}
+        title={t("hr.timesheets.detail.weekOf", { week: weekLabel })}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Timesheets", href: "/hr/timesheets" },
-              { label: `Week of ${weekLabel}` },
+              { label: "nav.timesheets", href: "/hr/timesheets" },
+              { label: t("hr.timesheets.detail.weekOf", { week: weekLabel }) },
             ]}
           />
         }
         meta={
           <div className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold", sc.cls)}>
             <span className="material-symbols-outlined text-[14px]">{sc.icon}</span>
-            {sc.label}
+            {t(sc.label)}
           </div>
         }
         actions={
@@ -248,7 +250,7 @@ export default function TimesheetDetailPage() {
             target="_blank"
             rel="noreferrer"
           >
-            PDF
+            PDF {/* i18n-ignore */}
           </a>
           <a
             href={hrApi.exportTimesheetUrl(timesheet.id, "excel")}
@@ -256,7 +258,7 @@ export default function TimesheetDetailPage() {
             target="_blank"
             rel="noreferrer"
           >
-            Excel
+            Excel {/* i18n-ignore */}
           </a>
           <a
             href={hrApi.exportTimesheetUrl(timesheet.id, "csv")}
@@ -264,15 +266,15 @@ export default function TimesheetDetailPage() {
             target="_blank"
             rel="noreferrer"
           >
-            CSV
+            CSV {/* i18n-ignore */}
           </a>
           {timesheet.status === "draft" && timesheet.origin !== "historical_import" && (
-            <Link href="/hr/timesheets" className="btn-secondary">Edit</Link>
+            <Link href="/hr/timesheets" className="btn-secondary">{t("common.edit")}</Link>
           )}
           {isAdmin && timesheet.status === "submitted" && (
             <>
               <button type="button" onClick={handleApprove} disabled={actionLoading} className="btn-primary disabled:opacity-50">
-                {actionLoading ? "Processing…" : "Approve"}
+                {actionLoading ? t("hr.timesheets.detail.processing") : t("common.approve")}
               </button>
               <button
                 type="button"
@@ -280,7 +282,7 @@ export default function TimesheetDetailPage() {
                 disabled={actionLoading}
                 className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
               >
-                Reject
+                {t("common.reject")}
               </button>
             </>
           )}
@@ -293,7 +295,7 @@ export default function TimesheetDetailPage() {
       )}
       {isHistorical && (
         <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
-          This historical week is read-only.
+          {t("timesheet.import.readOnly")}
         </div>
       )}
 
@@ -305,23 +307,23 @@ export default function TimesheetDetailPage() {
             <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100">
               <SectionIcon icon="schedule" color="text-blue-600" bg="bg-blue-50" />
               <div>
-                <h2 className="text-sm font-semibold text-neutral-900">Time Entries</h2>
-                <p className="text-xs text-neutral-500">{entries.length} entries this week</p>
+                <h2 className="text-sm font-semibold text-neutral-900">{t("hr.timesheets.detail.timeEntries")}</h2>
+                <p className="text-xs text-neutral-500">{t("hr.timesheets.detail.entriesThisWeek", { count: entries.length })}</p>
               </div>
             </div>
 
             {entries.length === 0 ? (
-              <EmptyState icon="schedule" title="No entries recorded for this week." className="py-12 min-h-0" />
+              <EmptyState icon="schedule" title={t("hr.timesheets.detail.noEntries")} className="py-12 min-h-0" />
             ) : (
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Work Type</th>
-                    <th>Project</th>
-                    <th>Activity</th>
-                    <th className="text-right">Hours</th>
-                    <th className="text-right">OT</th>
+                    <th>{t("hr.timesheets.col.date")}</th>
+                    <th>{t("hr.timesheets.detail.workType")}</th>
+                    <th>{t("hr.timesheets.col.project")}</th>
+                    <th>{t("hr.timesheets.detail.activity")}</th>
+                    <th className="text-right">{t("hr.timesheets.col.hours")}</th>
+                    <th className="text-right">{t("hr.timesheets.detail.ot")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -333,12 +335,12 @@ export default function TimesheetDetailPage() {
                     return (
                       <tr key={entry.id ?? idx}>
                         <td className="text-xs text-neutral-600">
-                          {entryDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+                          {entryDate.toLocaleDateString(localeTag, { weekday: "short", day: "numeric", month: "short" })}
                         </td>
                         <td>
                           <div className="flex items-center gap-1.5">
                             <span className={cn("material-symbols-outlined text-[15px]", color)}>{icon}</span>
-                            <span className="text-xs capitalize text-neutral-700">{bucket}</span>
+                            <span className="text-xs capitalize text-neutral-700">{t(`hr.timesheets.bucket.${bucket}`)}</span>
                           </div>
                         </td>
                         <td className="text-xs text-neutral-600">
@@ -357,7 +359,7 @@ export default function TimesheetDetailPage() {
                 </tbody>
                 <tfoot>
                   <tr className="bg-neutral-50">
-                    <td colSpan={4} className="px-4 py-3 text-xs font-semibold text-neutral-600">Total</td>
+                    <td colSpan={4} className="px-4 py-3 text-xs font-semibold text-neutral-600">{t("hr.timesheets.detail.total")}</td>
                     <td className="px-4 py-3 text-right text-sm font-bold text-neutral-900">{totalHours}h</td>
                     <td className="px-4 py-3 text-right text-xs font-semibold text-amber-600">
                       {totalOT > 0 ? `${totalOT}h` : "—"}
@@ -375,22 +377,22 @@ export default function TimesheetDetailPage() {
           <div className="card p-4 space-y-3">
             <div className="flex items-center gap-2">
               <SectionIcon icon="bar_chart" color="text-indigo-600" bg="bg-indigo-50" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Summary</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("hr.timesheets.detail.summary")}</span>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-500">Total hours</span>
+                <span className="text-xs text-neutral-500">{t("hr.timesheets.detail.totalHours")}</span>
                 <span className="text-sm font-bold text-neutral-900">{totalHours.toFixed(1)}h</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-500">Overtime</span>
+                <span className="text-xs text-neutral-500">{t("hr.timesheets.detail.overtime")}</span>
                 <span className={cn("text-sm font-semibold", totalOT > 0 ? "text-amber-600" : "text-neutral-400")}>
-                  {totalOT > 0 ? `+${totalOT.toFixed(1)}h` : "None"}
+                  {totalOT > 0 ? `+${totalOT.toFixed(1)}h` : t("hr.timesheets.detail.none")}
                 </span>
               </div>
               {missing > 0 && timesheet.status === "draft" && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-neutral-500">Missing</span>
+                  <span className="text-xs text-neutral-500">{t("hr.timesheets.detail.missing")}</span>
                   <span className="text-sm font-semibold text-red-600">{missing.toFixed(1)}h</span>
                 </div>
               )}
@@ -408,7 +410,7 @@ export default function TimesheetDetailPage() {
             <div className="card p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <SectionIcon icon="pie_chart" color="text-emerald-600" bg="bg-emerald-50" />
-                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">By Project</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("hr.timesheets.detail.byProject")}</span>
               </div>
               {Object.values(byProject).map((p) => (
                 <div key={p.label} className="space-y-1">
@@ -431,7 +433,7 @@ export default function TimesheetDetailPage() {
           <div className="card p-4 space-y-3">
             <div className="flex items-center gap-2">
               <SectionIcon icon="person" color="text-violet-600" bg="bg-violet-50" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Employee</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("hr.timesheets.detail.employee")}</span>
             </div>
             <div className="flex items-center gap-3">
               <div className={cn("flex h-9 w-9 items-center justify-center rounded-full text-white text-xs font-bold flex-shrink-0", avatarColor(userName))}>
@@ -444,13 +446,13 @@ export default function TimesheetDetailPage() {
             </div>
             {timesheet.submitted_at && (
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-500">Submitted</span>
+                <span className="text-xs text-neutral-500">{t("hr.timesheets.detail.stepSubmitted")}</span>
                 <span className="text-xs text-neutral-700">{formatDateShort(timesheet.submitted_at)}</span>
               </div>
             )}
             {approverName && (
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-500">Approved by</span>
+                <span className="text-xs text-neutral-500">{t("hr.timesheets.detail.approvedBy")}</span>
                 <span className="text-xs text-neutral-700">{approverName}</span>
               </div>
             )}
@@ -461,7 +463,7 @@ export default function TimesheetDetailPage() {
       {/* Rejection reason */}
       {timesheet.status === "rejected" && timesheet.rejection_reason && (
         <div className="card p-4 border-red-200 bg-red-50 space-y-1">
-          <p className="text-sm font-semibold text-red-700">Rejection Reason</p>
+          <p className="text-sm font-semibold text-red-700">{t("hr.timesheets.detail.rejectionReason")}</p>
           <p className="text-sm text-red-600">{timesheet.rejection_reason}</p>
         </div>
       )}
@@ -470,7 +472,7 @@ export default function TimesheetDetailPage() {
       <div className="card p-5">
         <div className="flex items-center gap-3 mb-5">
           <SectionIcon icon="timeline" color="text-neutral-600" bg="bg-neutral-100" />
-          <h2 className="text-sm font-semibold text-neutral-900">Approval Timeline</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">{t("hr.timesheets.detail.timeline")}</h2>
         </div>
         <div className="flex items-center gap-0">
           {steps.map((step, i) => (
@@ -515,24 +517,24 @@ export default function TimesheetDetailPage() {
           <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} aria-hidden />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="card w-full max-w-md p-6 space-y-4">
-              <h3 className="text-base font-semibold text-neutral-900">Reject Timesheet</h3>
-              <p className="text-sm text-neutral-600">Please provide a reason for rejection.</p>
+              <h3 className="text-base font-semibold text-neutral-900">{t("hr.timesheets.rejectTitle")}</h3>
+              <p className="text-sm text-neutral-600">{t("hr.timesheets.rejectPrompt")}</p>
               <textarea
                 rows={4}
                 className="form-input resize-none"
-                placeholder="Rejection reason…"
+                placeholder={t("hr.timesheets.rejectPlaceholder")}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
               />
               <div className="flex gap-3 justify-end">
-                <button type="button" className="btn-secondary" onClick={() => setShowRejectModal(false)}>Cancel</button>
+                <button type="button" className="btn-secondary" onClick={() => setShowRejectModal(false)}>{t("common.cancel")}</button>
                 <button
                   type="button"
                   onClick={handleReject}
                   disabled={!rejectReason.trim() || actionLoading}
                   className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
                 >
-                  {actionLoading ? "Rejecting…" : "Reject"}
+                  {actionLoading ? t("hr.timesheets.rejecting") : t("common.reject")}
                 </button>
               </div>
             </div>

@@ -19,26 +19,27 @@ import { RegisterShell, type RegisterDensity } from "@/components/registers/Regi
 import { clientPageCount, DEFAULT_PAGE_SIZE, slicePage } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
-  approved: { label: "Approved", badge: "badge-success" },
-  submitted: { label: "Submitted", badge: "badge-warning" },
-  resubmitted: { label: "Resubmitted", badge: "badge-warning" },
-  rejected: { label: "Rejected", badge: "badge-danger" },
-  draft: { label: "Draft", badge: "badge-muted" },
-  cancelled: { label: "Cancelled", badge: "badge-muted" },
-  withdrawn: { label: "Withdrawn", badge: "badge-muted" },
-  returned_for_correction: { label: "Returned", badge: "badge-warning" },
-  amendment_pending: { label: "Amendment", badge: "badge-warning" },
+  approved: { label: "travel.hub.status.approved", badge: "badge-success" },
+  submitted: { label: "travel.hub.status.submitted", badge: "badge-warning" },
+  resubmitted: { label: "travel.register.status.resubmitted", badge: "badge-warning" },
+  rejected: { label: "travel.hub.status.rejected", badge: "badge-danger" },
+  draft: { label: "travel.hub.status.draft", badge: "badge-muted" },
+  cancelled: { label: "travel.hub.status.cancelled", badge: "badge-muted" },
+  withdrawn: { label: "travel.register.status.withdrawn", badge: "badge-muted" },
+  returned_for_correction: { label: "travel.hub.status.returned", badge: "badge-warning" },
+  amendment_pending: { label: "travel.register.status.amendment", badge: "badge-warning" },
 };
 
 const FILTER_TABS = [
-  { key: "all", label: "All" },
-  { key: "draft", label: "Draft" },
-  { key: "submitted", label: "Submitted" },
-  { key: "approved", label: "Approved" },
-  { key: "returned_for_correction", label: "Returned" },
-  { key: "cancelled", label: "Cancelled" },
+  { key: "all", label: "travel.hub.filter.all" },
+  { key: "draft", label: "travel.hub.status.draft" },
+  { key: "submitted", label: "travel.hub.status.submitted" },
+  { key: "approved", label: "travel.hub.status.approved" },
+  { key: "returned_for_correction", label: "travel.hub.status.returned" },
+  { key: "cancelled", label: "travel.hub.status.cancelled" },
 ] as const;
 
 type FilterKey = (typeof FILTER_TABS)[number]["key"];
@@ -93,6 +94,7 @@ function downloadCsv(filename: string, content: string) {
 export default function TravelRegisterPage() {
   const { success, error: showErrorToast, info } = useToast();
   const { confirm } = useConfirm();
+  const { t } = useI18n();
   const user = getStoredUser();
   const admin = isSystemAdmin(user);
   const canExport =
@@ -129,12 +131,12 @@ export default function TravelRegisterPage() {
       const res = await travelApi.list({ per_page: 100 });
       setRows(getListData<TravelRequest>(res.data));
     } catch {
-      setError("Failed to load the travel register.");
+      setError(t("travel.register.loadFailed"));
       setRows([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -241,11 +243,11 @@ export default function TravelRegisterPage() {
   const saveEdit = async () => {
     if (!editRow || !editForm) return;
     if (!editForm.purpose.trim() || !editForm.destination_country.trim()) {
-      setEditError("Purpose and destination country are required.");
+      setEditError(t("travel.register.err.required"));
       return;
     }
     if (editForm.return_date < editForm.departure_date) {
-      setEditError("Return date must be on or after departure.");
+      setEditError(t("travel.register.err.returnDate"));
       return;
     }
     setEditSaving(true);
@@ -261,7 +263,7 @@ export default function TravelRegisterPage() {
       });
       setEditRow(null);
       setEditForm(null);
-      success("Travel request updated.");
+      success(t("travel.register.ok.updated"));
       await load();
     } catch (err: unknown) {
       const apiMessage =
@@ -273,7 +275,7 @@ export default function TravelRegisterPage() {
       )
         .flat()
         .join(" ");
-      const msg = apiMessage || fieldErrors || "Failed to update travel request.";
+      const msg = apiMessage || fieldErrors || t("travel.register.err.update");
       setEditError(msg);
     } finally {
       setEditSaving(false);
@@ -283,9 +285,9 @@ export default function TravelRegisterPage() {
   const handleDelete = async (row: TravelRequest) => {
     if (
       !(await confirm({
-        title: "Delete draft",
-        message: `Permanently remove draft ${row.reference_number}? This cannot be undone.`,
-        confirmText: "Delete",
+        title: t("travel.register.deleteDraft"),
+        message: t("travel.register.deleteDraftMessage", { ref: row.reference_number }),
+        confirmText: t("common.delete"),
         variant: "danger",
       }))
     ) {
@@ -294,13 +296,13 @@ export default function TravelRegisterPage() {
     setActionId(row.id);
     try {
       await travelApi.delete(row.id);
-      success("Draft deleted.");
+      success(t("travel.register.ok.draftDeleted"));
       selection.clear();
       await load();
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to delete draft.",
+          t("travel.register.err.delete"),
       );
     } finally {
       setActionId(null);
@@ -312,9 +314,9 @@ export default function TravelRegisterPage() {
     if (ids.length === 0) return;
     if (
       !(await confirm({
-        title: "Delete drafts",
-        message: `Permanently delete ${ids.length} selected draft(s)? This cannot be undone.`,
-        confirmText: "Delete",
+        title: t("travel.register.deleteDrafts"),
+        message: t("travel.register.deleteDraftsMessage", { count: ids.length }),
+        confirmText: t("common.delete"),
         variant: "danger",
       }))
     ) {
@@ -325,12 +327,12 @@ export default function TravelRegisterPage() {
     try {
       await Promise.all(ids.map((id) => travelApi.delete(id)));
       selection.clear();
-      success("Selected drafts deleted.");
+      success(t("travel.register.ok.draftsDeleted"));
       await load();
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Some deletions failed.",
+          t("travel.register.err.bulkDelete"),
       );
     } finally {
       setBulkLoading(false);
@@ -340,9 +342,9 @@ export default function TravelRegisterPage() {
   const handleWithdraw = async (row: TravelRequest) => {
     if (
       !(await confirm({
-        title: "Withdraw request",
-        message: `Withdraw ${row.reference_number} from the approval workflow?`,
-        confirmText: "Withdraw",
+        title: t("travel.register.withdrawTitle"),
+        message: t("travel.register.withdrawMessage", { ref: row.reference_number }),
+        confirmText: t("travel.register.withdraw"),
         variant: "danger",
       }))
     ) {
@@ -351,12 +353,12 @@ export default function TravelRegisterPage() {
     setActionId(row.id);
     try {
       await travelApi.withdraw(row.id);
-      success("Request withdrawn.");
+      success(t("travel.register.ok.withdrawn"));
       await load();
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to withdraw request.",
+          t("travel.register.err.withdraw"),
       );
     } finally {
       setActionId(null);
@@ -366,7 +368,7 @@ export default function TravelRegisterPage() {
   const saveCancel = async () => {
     if (!cancelRow) return;
     if (!cancelReason.trim()) {
-      setCancelError("A cancellation reason is required.");
+      setCancelError(t("travel.register.err.cancelReason"));
       return;
     }
     setCancelSaving(true);
@@ -375,12 +377,12 @@ export default function TravelRegisterPage() {
       await travelApi.cancel(cancelRow.id, cancelReason.trim());
       setCancelRow(null);
       setCancelReason("");
-      success("Travel request cancelled.");
+      success(t("travel.register.ok.cancelled"));
       await load();
     } catch (err: unknown) {
       setCancelError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to cancel travel request.",
+          t("travel.register.err.cancel"),
       );
     } finally {
       setCancelSaving(false);
@@ -396,13 +398,13 @@ export default function TravelRegisterPage() {
       const res = await travelApi.registerExport(params);
       const data = res.data.data ?? [];
       if (!data.length) {
-        success("No rows to export.");
+        success(t("travel.register.noRowsToExport"));
         return;
       }
       downloadCsv(`travel-register-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(data));
-      success(`Exported ${data.length} row(s).`);
+      success(t("travel.register.exported", { count: data.length }));
     } catch {
-      setError("Export failed. Check that you have travel.export or travel.view.");
+      setError(t("travel.register.err.export"));
     } finally {
       setExporting(false);
     }
@@ -411,22 +413,22 @@ export default function TravelRegisterPage() {
   return (
     <>
     <RegisterShell
-      title="Travel Register"
-      subtitle="Organisation-wide travel register with DSA totals, status filters, and row actions."
+      title={t("travel.register.title")}
+      subtitle={t("travel.register.subtitle")}
       breadcrumbs={
         <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
           <Link href="/travel" className="transition-colors hover:text-neutral-700">
-            Travel
+            {t("nav.travel")}
           </Link>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700">Register</span>
+          <span className="text-neutral-700">{t("travel.register.crumb")}</span>
         </div>
       }
       actions={
         <>
           <Link href="/travel/reports" className="btn-secondary text-sm">
             <span className="material-symbols-outlined text-[18px]">summarize</span>
-            Reports
+            {t("travel.register.reports")}
           </Link>
           {canExport && (
             <button
@@ -436,12 +438,12 @@ export default function TravelRegisterPage() {
               onClick={() => void handleExport()}
             >
               <span className="material-symbols-outlined text-[18px]">download</span>
-              {exporting ? "Exporting…" : "Export CSV"}
+              {exporting ? t("travel.register.exporting") : t("travel.register.exportCsv")}
             </button>
           )}
           <Link href="/travel/create" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New request
+            {t("travel.hub.newRequest")}
           </Link>
         </>
       }
@@ -463,10 +465,10 @@ export default function TravelRegisterPage() {
           {!loading && rows.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { label: "Register rows", value: stats.total, icon: "menu_book", color: "text-primary", bg: "bg-primary/10" },
-                { label: "Approved", value: stats.approved, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
-                { label: "Upcoming", value: stats.upcoming, icon: "flight_takeoff", color: "text-amber-600", bg: "bg-amber-50" },
-                { label: "Drafts", value: stats.drafts, icon: "edit_note", color: "text-neutral-600", bg: "bg-neutral-100" },
+                { label: t("travel.register.stat.rows"), value: stats.total, icon: "menu_book", color: "text-primary", bg: "bg-primary/10" },
+                { label: t("travel.hub.status.approved"), value: stats.approved, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
+                { label: t("travel.hub.stat.upcoming"), value: stats.upcoming, icon: "flight_takeoff", color: "text-amber-600", bg: "bg-amber-50" },
+                { label: t("travel.hub.stat.drafts"), value: stats.drafts, icon: "edit_note", color: "text-neutral-600", bg: "bg-neutral-100" },
               ].map((s) => (
                 <div key={s.label} className="card p-4">
                   <div className="flex items-center justify-between">
@@ -487,7 +489,7 @@ export default function TravelRegisterPage() {
       filters={
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[180px] flex-1">
-            <label htmlFor="travel-register-search" className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
+            <label htmlFor="travel-register-search" className="mb-1 block text-xs font-semibold text-neutral-600">{t("common.search")}</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-[18px] text-neutral-400">
                 search
@@ -495,7 +497,7 @@ export default function TravelRegisterPage() {
               <input
                 id="travel-register-search"
                 className="form-input pl-8 text-sm"
-                placeholder="Reference, purpose, traveller, destination…"
+                placeholder={t("travel.register.searchPlaceholder")}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -516,7 +518,7 @@ export default function TravelRegisterPage() {
                 }}
                 className={`filter-tab ${filter === tab.key ? "active" : ""}`}
               >
-                {tab.label}
+                {t(tab.label)}
               </button>
             ))}
           </div>
@@ -531,7 +533,7 @@ export default function TravelRegisterPage() {
             className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[14px]">delete</span>
-            {bulkLoading ? "Deleting…" : "Delete selected"}
+            {bulkLoading ? t("travel.register.deleting") : t("travel.register.deleteSelected")}
           </button>
         </BulkSelectionBar>
       }
@@ -540,11 +542,11 @@ export default function TravelRegisterPage() {
           <div className="card">
             <EmptyState
               icon="flight"
-              title={rows.length === 0 ? "No travel register rows yet" : "No trips match your filters"}
+              title={rows.length === 0 ? t("travel.register.empty.none") : t("travel.register.empty.filtered")}
               description={
                 rows.length === 0
-                  ? "Approved and in-flight missions will appear here as requests are created."
-                  : "Try another status filter or clear the search."
+                  ? t("travel.register.empty.noneHint")
+                  : t("travel.register.empty.filteredHint")
               }
             />
           </div>
@@ -555,7 +557,7 @@ export default function TravelRegisterPage() {
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table w-full">
-              <caption className="sr-only">Travel requisitions register</caption>
+              <caption className="sr-only">{t("travel.register.caption")}</caption>
               <thead>
                 <tr>
                   <th className={selectionColumnClass.th}>
@@ -566,21 +568,24 @@ export default function TravelRegisterPage() {
                       }
                       onChange={selection.toggleAllSelectable}
                       disabled={selection.selectableIds.length === 0 || bulkLoading}
-                      label="Select all deletable drafts"
+                      label={t("travel.register.selectAll")}
                     />
                   </th>
-                  <th>Reference</th>
-                  <th>Traveller</th>
-                  <th>Purpose / destination</th>
-                  <th>Dates</th>
-                  <th className="text-right">DSA</th>
-                  <th>Status</th>
-                  <th className="text-right">Actions</th>
+                  <th>{t("travel.register.col.reference")}</th>
+                  <th>{t("travel.register.col.traveller")}</th>
+                  <th>{t("travel.register.col.purpose")}</th>
+                  <th>{t("travel.register.col.dates")}</th>
+                  <th className="text-right">{t("travel.register.col.dsa")}</th>
+                  <th>{t("travel.register.col.status")}</th>
+                  <th className="text-right">{t("travel.register.col.actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {pageRows.map((row) => {
-                  const sc = STATUS_CONFIG[row.status] ?? { label: row.status, badge: "badge-muted" };
+                  const scConfig = STATUS_CONFIG[row.status];
+                  const sc = scConfig
+                    ? { label: t(scConfig.label), badge: scConfig.badge }
+                    : { label: row.status, badge: "badge-muted" };
                   const mutable = canMutateRow(row, user?.id, admin);
                   const canEdit =
                     mutable && (row.status === "draft" || row.status === "returned_for_correction");
@@ -602,8 +607,8 @@ export default function TravelRegisterPage() {
                           checked={selection.isSelected(row.id)}
                           onChange={() => selection.toggle(row.id)}
                           disabled={!canDelete || bulkLoading}
-                          title={canDelete ? undefined : "Only mutable drafts can be deleted"}
-                          label={`Select ${row.reference_number}`}
+                          title={canDelete ? undefined : t("travel.register.onlyDrafts")}
+                          label={t("travel.register.selectRow", { ref: row.reference_number })}
                         />
                       </td>
                       <td className="whitespace-nowrap font-mono text-xs text-neutral-600">
@@ -637,8 +642,8 @@ export default function TravelRegisterPage() {
                           <Link
                             href={`/travel/${row.id}`}
                             className="rounded-lg p-2 text-neutral-500 transition-colors hover:bg-primary/10 hover:text-primary"
-                            aria-label={`View ${row.reference_number}`}
-                            title="View"
+                            aria-label={t("travel.register.viewRow", { ref: row.reference_number })}
+                            title={t("travel.register.view")}
                           >
                             <span className="material-symbols-outlined text-[18px]">visibility</span>
                           </Link>
@@ -647,8 +652,8 @@ export default function TravelRegisterPage() {
                               <Link
                                 href={`/travel/create?edit=${row.id}`}
                                 className="rounded-lg p-2 text-neutral-500 transition-colors hover:bg-primary/10 hover:text-primary"
-                                aria-label={`Edit ${row.reference_number} in wizard`}
-                                title="Edit in wizard"
+                                aria-label={t("travel.register.editWizardRow", { ref: row.reference_number })}
+                                title={t("travel.register.editWizard")}
                               >
                                 <span className="material-symbols-outlined text-[18px]">edit_note</span>
                               </Link>
@@ -657,8 +662,8 @@ export default function TravelRegisterPage() {
                               disabled={busy}
                               onClick={() => openEdit(row)}
                               className="rounded-lg p-2 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-40"
-                              aria-label={`Quick edit ${row.reference_number}`}
-                              title="Quick edit"
+                              aria-label={t("travel.register.quickEditRow", { ref: row.reference_number })}
+                              title={t("travel.register.quickEdit")}
                             >
                               <span className="material-symbols-outlined text-[18px]">edit</span>
                             </button>
@@ -670,8 +675,8 @@ export default function TravelRegisterPage() {
                               disabled={busy}
                               onClick={() => void handleDelete(row)}
                               className="rounded-lg p-2 text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
-                              aria-label={`Delete ${row.reference_number}`}
-                              title="Delete draft"
+                              aria-label={t("travel.register.deleteRow", { ref: row.reference_number })}
+                              title={t("travel.register.deleteDraft")}
                             >
                               <span className="material-symbols-outlined text-[18px]">delete</span>
                             </button>
@@ -682,8 +687,8 @@ export default function TravelRegisterPage() {
                               disabled={busy}
                               onClick={() => void handleWithdraw(row)}
                               className="rounded-lg p-2 text-neutral-500 transition-colors hover:bg-amber-50 hover:text-amber-700 disabled:opacity-40"
-                              aria-label={`Withdraw ${row.reference_number}`}
-                              title="Withdraw"
+                              aria-label={t("travel.register.withdrawRow", { ref: row.reference_number })}
+                              title={t("travel.register.withdraw")}
                             >
                               <span className="material-symbols-outlined text-[18px]">block</span>
                             </button>
@@ -698,8 +703,8 @@ export default function TravelRegisterPage() {
                                 setCancelError(null);
                               }}
                               className="rounded-lg p-2 text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
-                              aria-label={`Cancel ${row.reference_number}`}
-                              title="Cancel"
+                              aria-label={t("travel.register.cancelRow", { ref: row.reference_number })}
+                              title={t("common.cancel")}
                             >
                               <span className="material-symbols-outlined text-[18px]">cancel</span>
                             </button>
@@ -714,10 +719,10 @@ export default function TravelRegisterPage() {
           </div>
           <div className="flex items-center justify-between border-t border-neutral-100 px-4 py-3 text-xs text-neutral-500">
             <span>
-              Showing {pageRows.length} of {filtered.length} row(s) on this page
+              {t("travel.register.showing", { shown: pageRows.length, total: filtered.length })}
             </span>
             <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => void load()}>
-              Refresh
+              {t("travel.register.refresh")}
             </button>
           </div>
         </div>
@@ -734,10 +739,10 @@ export default function TravelRegisterPage() {
           >
             <div className="border-b border-neutral-100 px-5 py-4">
               <h2 id="travel-register-edit-title" className="text-lg font-semibold text-neutral-900">
-                Edit {editRow.reference_number}
+                {t("travel.register.editTitle", { ref: editRow.reference_number })}
               </h2>
               <p className="mt-0.5 text-xs text-neutral-500">
-                Draft and returned requests only. Approved trips require an amendment from the detail page.
+                {t("travel.register.editHint")}
               </p>
             </div>
             <div className="space-y-3 px-5 py-4">
@@ -747,7 +752,7 @@ export default function TravelRegisterPage() {
                 </div>
               )}
               <div>
-                <label htmlFor="travel-register-purpose" className="mb-1 block text-xs font-semibold text-neutral-600">Purpose</label>
+                <label htmlFor="travel-register-purpose" className="mb-1 block text-xs font-semibold text-neutral-600">{t("travel.register.purpose")}</label>
                 <input id="travel-register-purpose"
                   className="form-input text-sm"
                   value={editForm.purpose}
@@ -766,7 +771,7 @@ export default function TravelRegisterPage() {
                 />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="travel-register-departure" className="mb-1 block text-xs font-semibold text-neutral-600">Departure</label>
+                  <label htmlFor="travel-register-departure" className="mb-1 block text-xs font-semibold text-neutral-600">{t("travel.register.departure")}</label>
                   <input id="travel-register-departure"
                     type="date"
                     className="form-input text-sm"
@@ -775,7 +780,7 @@ export default function TravelRegisterPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="travel-register-return" className="mb-1 block text-xs font-semibold text-neutral-600">Return</label>
+                  <label htmlFor="travel-register-return" className="mb-1 block text-xs font-semibold text-neutral-600">{t("travel.register.return")}</label>
                   <input id="travel-register-return"
                     type="date"
                     className="form-input text-sm"
@@ -785,7 +790,7 @@ export default function TravelRegisterPage() {
                 </div>
               </div>
               <div>
-                <label htmlFor="travel-register-justification" className="mb-1 block text-xs font-semibold text-neutral-600">Justification</label>
+                <label htmlFor="travel-register-justification" className="mb-1 block text-xs font-semibold text-neutral-600">{t("travel.register.justification")}</label>
                 <textarea id="travel-register-justification"
                   className="form-input min-h-[80px] text-sm"
                   value={editForm.justification}
@@ -803,10 +808,10 @@ export default function TravelRegisterPage() {
                   setEditForm(null);
                 }}
               >
-                Close
+                {t("common.close")}
               </button>
               <Link href={`/travel/${editRow.id}`} className="btn-secondary text-sm">
-                Open detail
+                {t("travel.register.openDetail")}
               </Link>
               <button
                 type="button"
@@ -814,7 +819,7 @@ export default function TravelRegisterPage() {
                 disabled={editSaving}
                 onClick={() => void saveEdit()}
               >
-                {editSaving ? "Saving…" : "Save changes"}
+                {editSaving ? t("travel.register.saving") : t("travel.register.saveChanges")}
               </button>
             </div>
           </div>
@@ -831,10 +836,10 @@ export default function TravelRegisterPage() {
           >
             <div className="border-b border-neutral-100 px-5 py-4">
               <h2 id="travel-register-cancel-title" className="text-lg font-semibold text-neutral-900">
-                Cancel {cancelRow.reference_number}
+                {t("travel.register.cancelTitle", { ref: cancelRow.reference_number })}
               </h2>
               <p className="mt-0.5 text-xs text-neutral-500">
-                Hard delete is only allowed for drafts. Cancelling releases any budget reservation and keeps an audit trail.
+                {t("travel.register.cancelHint")}
               </p>
             </div>
             <div className="space-y-3 px-5 py-4">
@@ -844,10 +849,10 @@ export default function TravelRegisterPage() {
                 </div>
               )}
               <div>
-                <label htmlFor="travel-register-reason" className="mb-1 block text-xs font-semibold text-neutral-600">Reason</label>
+                <label htmlFor="travel-register-reason" className="mb-1 block text-xs font-semibold text-neutral-600">{t("common.reason")}</label>
                 <textarea id="travel-register-reason"
                   className="form-input min-h-[96px] text-sm"
-                  placeholder="Why is this trip being cancelled?"
+                  placeholder={t("travel.register.cancelPlaceholder")}
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                 />
@@ -860,7 +865,7 @@ export default function TravelRegisterPage() {
                 disabled={cancelSaving}
                 onClick={() => setCancelRow(null)}
               >
-                Close
+                {t("common.close")}
               </button>
               <button
                 type="button"
@@ -868,7 +873,7 @@ export default function TravelRegisterPage() {
                 disabled={cancelSaving}
                 onClick={() => void saveCancel()}
               >
-                {cancelSaving ? "Cancelling…" : "Cancel trip"}
+                {cancelSaving ? t("travel.register.cancelling") : t("travel.register.cancelTrip")}
               </button>
             </div>
           </div>

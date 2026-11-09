@@ -6,38 +6,40 @@ import { useQuery } from "@tanstack/react-query";
 import { supplierPortalApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function SupplierPurchaseOrdersPage() {
+  const { t } = useI18n();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["supplier-purchase-orders"],
     queryFn: () => supplierPortalApi.purchaseOrders().then((response) => response.data.data),
   });
 
-  if (isLoading) return <div className="card p-6">Loading purchase orders...</div>;
-  if (isError || !data) return <div className="card p-6">Failed to load purchase orders.</div>;
+  if (isLoading) return <div className="card p-6">{t("supplier.purchaseOrders.loading")}</div>;
+  if (isError || !data) return <div className="card p-6">{t("supplier.purchaseOrders.loadFailed")}</div>;
 
   return (
     <div className="space-y-5">
       <ModulePageHeader
-        title="Purchase Orders"
-        subtitle="Track issued orders and then move to the Invoices page to submit your proforma and final invoice documents."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Purchase Orders" }]} />}
+        title={t("supplier.purchaseOrders.title")}
+        subtitle={t("supplier.purchaseOrders.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("supplier.purchaseOrders.title") }]} />}
       />
 
       <div className="card overflow-hidden">
         <table className="data-table w-full">
           <thead>
             <tr>
-              <th>Reference</th>
-              <th>Request</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Issued</th>
+              <th>{t("leave.certifyQueue.col.reference")}</th>
+              <th>{t("supplier.purchaseOrders.col.request")}</th>
+              <th>{t("supplier.purchaseOrders.col.total")}</th>
+              <th>{t("assignments.handover.colStatus")}</th>
+              <th>{t("supplier.purchaseOrders.col.issued")}</th>
             </tr>
           </thead>
           <tbody>
             {data.length === 0 ? (
-              <TableEmpty colSpan={5} title="No purchase orders yet." />
+              <TableEmpty colSpan={5} title={t("supplier.purchaseOrders.empty")} />
             ) : (
               data.map((po) => (
                 <tr key={po.id}>

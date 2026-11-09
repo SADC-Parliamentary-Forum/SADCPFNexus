@@ -8,6 +8,7 @@ import { imprestApi, type ImprestRequest } from "@/lib/api";
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function getStoredUser(): { id: number | null; roles: string[] } {
   const parsed = readStoredUser();
@@ -37,6 +38,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
   const { id } = use(params);
   const requestId = Number(id);
   const router = useRouter();
+  const { t } = useI18n();
   const queryClient = useQueryClient();
 
   const [amountSpent, setAmountSpent] = useState("");
@@ -67,7 +69,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
     onError: (error: unknown) => {
       setSubmitError(
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to submit liquidation.",
+          t("imprest.liquidate.submitFailed"),
       );
     },
   });
@@ -76,11 +78,11 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
     return (
       <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
-          Invalid imprest request ID.
+          {t("imprest.liquidate.invalidId")}
         </div>
         <Link href="/imprest" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary transition-colors">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Imprest Requests
+          {t("imprest.backToList")}
         </Link>
       </div>
     );
@@ -107,11 +109,11 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
     return (
       <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
-          Failed to load this imprest request.
+          {t("imprest.liquidate.loadFailed")}
         </div>
         <Link href="/imprest" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary transition-colors">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Imprest Requests
+          {t("imprest.backToList")}
         </Link>
       </div>
     );
@@ -137,14 +139,14 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
     return (
       <div className="w-full min-w-0 space-y-5">
         <ModulePageHeader
-          title="Liquidation Submitted"
+          title={t("imprest.liquidate.submitted")}
           subtitle={request.reference_number}
           breadcrumbs={
             <PageBreadcrumbs
               items={[
                 { label: "nav.imprest", href: "/imprest" },
                 { label: request.reference_number, href: `/imprest/${request.id}` },
-                { label: "Liquidated" },
+                { label: t("imprest.liquidate.liquidated") },
               ]}
             />
           }
@@ -156,28 +158,28 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
               <span className="material-symbols-outlined text-[24px] text-green-600">check_circle</span>
             </div>
             <div>
-              <p className="text-lg font-semibold text-neutral-900">Liquidation Submitted</p>
+              <p className="text-lg font-semibold text-neutral-900">{t("imprest.liquidate.submitted")}</p>
               <p className="text-sm text-neutral-500">{request.reference_number}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Approved Amount</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("imprest.liquidate.approvedAmount")}</p>
               <p className="font-semibold text-neutral-900">{request.currency} {approvedAmount.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Liquidated Amount</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("imprest.liquidate.liquidatedAmount")}</p>
               <p className="font-semibold text-neutral-900">{request.currency} {(request.amount_liquidated ?? 0).toLocaleString()}</p>
             </div>
           </div>
           <div className="flex gap-3">
             <Link href={`/imprest/${request.id}`} className="btn-primary inline-flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[16px]">visibility</span>
-              View Request
+              {t("imprest.liquidate.viewRequest")}
             </Link>
             <Link href="/imprest" className="btn-secondary inline-flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              Back to List
+              {t("imprest.liquidate.backToList")}
             </Link>
           </div>
         </div>
@@ -189,24 +191,24 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
     return (
       <div className="w-full min-w-0 space-y-5">
         <ModulePageHeader
-          title="Liquidation Not Available"
-          subtitle={`This request is currently ${request.status}. Only approved imprest requests can be liquidated.`}
+          title={t("imprest.liquidate.notAvailable")}
+          subtitle={t("imprest.liquidate.notAvailableHint", { status: request.status })}
           breadcrumbs={
             <PageBreadcrumbs
               items={[
                 { label: "nav.imprest", href: "/imprest" },
                 { label: request.reference_number, href: `/imprest/${request.id}` },
-                { label: "Liquidate" },
+                { label: t("imprest.liquidate.crumb") },
               ]}
             />
           }
         />
           <p className="text-sm text-neutral-600">
-            This request is currently <strong>{request.status}</strong>. Only approved imprest requests can be liquidated.
+            {t("imprest.liquidate.notAvailableHint", { status: request.status })}
           </p>
           <Link href={`/imprest/${request.id}`} className="btn-secondary inline-flex items-center gap-1.5 w-fit">
             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-            Back to Request
+            {t("imprest.backToRequest")}
           </Link>
       </div>
     );
@@ -215,14 +217,14 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Liquidate Imprest"
+        title={t("imprest.liquidate.title")}
         subtitle={request.purpose}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.imprest", href: "/imprest" },
               { label: request.reference_number, href: `/imprest/${request.id}` },
-              { label: "Liquidate" },
+              { label: t("imprest.liquidate.crumb") },
             ]}
           />
         }
@@ -231,7 +233,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
       <div className="card p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-lg font-semibold text-neutral-900">Liquidate Imprest</p>
+            <p className="text-lg font-semibold text-neutral-900">{t("imprest.liquidate.title")}</p>
             <p className="text-sm text-neutral-500 mt-0.5">{request.purpose}</p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
@@ -242,18 +244,18 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
 
         <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
           <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Approved Amount</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("imprest.liquidate.approvedAmount")}</p>
             <p className="mt-1 text-lg font-bold text-neutral-900">{request.currency} {approvedAmount.toLocaleString()}</p>
           </div>
           <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Liquidation Deadline</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("imprest.liquidate.deadline")}</p>
             <p className="mt-1 text-lg font-bold text-neutral-900">{formatDateShort(request.expected_liquidation_date)}</p>
           </div>
         </div>
 
         {request.justification && (
           <div className="mt-4 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Original Justification</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("imprest.liquidate.justification")}</p>
             <p className="mt-1 text-sm text-neutral-700">{request.justification}</p>
           </div>
         )}
@@ -261,14 +263,14 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
 
       {!canLiquidate && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          You can view this liquidation page, but only the requester or an authorised administrator can submit it.
+          {t("imprest.liquidate.viewOnly")}
         </div>
       )}
 
       <div className="card p-5 space-y-5">
         <div>
-          <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Liquidation Details</h2>
-          <p className="text-sm text-neutral-500 mt-1">Submit the final amount spent and any supporting notes for Finance.</p>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-500">{t("imprest.liquidate.details")}</h2>
+          <p className="text-sm text-neutral-500 mt-1">{t("imprest.liquidate.detailsHint")}</p>
         </div>
 
         {submitError && (
@@ -278,7 +280,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <label htmlFor="imprest-liquidate-amount" className="text-xs font-semibold text-neutral-600">
-              Amount Spent ({request.currency}) <span className="text-red-500">*</span>
+              {t("imprest.liquidate.amountSpent", { currency: request.currency })} <span className="text-red-500">*</span>
             </label>
             <input
               id="imprest-liquidate-amount"
@@ -292,23 +294,23 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
             />
           </div>
           <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3 text-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Balance</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("imprest.liquidate.balance")}</p>
             <p className={`mt-1 text-lg font-bold ${balance < 0 ? "text-red-600" : balance > 0 ? "text-blue-600" : "text-green-600"}`}>
               {request.currency} {Math.abs(balance).toLocaleString()}
             </p>
             <p className="mt-1 text-xs text-neutral-500">
-              {balance < 0 ? "Amount exceeds the approved imprest." : balance > 0 ? "Surplus to be returned." : "Fully liquidated."}
+              {balance < 0 ? t("imprest.liquidate.overrun") : balance > 0 ? t("imprest.liquidate.surplus") : t("imprest.liquidate.full")}
             </p>
           </div>
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="imprest-liquidate-notes" className="text-xs font-semibold text-neutral-600">Notes / Explanation</label>
+          <label htmlFor="imprest-liquidate-notes" className="text-xs font-semibold text-neutral-600">{t("imprest.liquidate.notes")}</label>
           <textarea
             id="imprest-liquidate-notes"
             rows={4}
             className="form-input resize-none"
-            placeholder="Summarise how the imprest was used and note any surplus or overrun."
+            placeholder={t("imprest.liquidate.notesPlaceholder")}
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
           />
@@ -323,14 +325,14 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
             onChange={(event) => setReceiptsAttached(event.target.checked)}
           />
           <span className="text-sm text-neutral-700">
-            I confirm that receipts and supporting documents are attached or will be submitted to Finance.
+            {t("imprest.liquidate.confirmReceipts")}
           </span>
         </label>
 
         <div className="flex items-center justify-between gap-3 pt-2">
           <Link href={`/imprest/${request.id}`} className="btn-secondary inline-flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-            Back to Request
+            {t("imprest.backToRequest")}
           </Link>
           <button
             type="button"
@@ -344,7 +346,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
             <span className={`material-symbols-outlined text-[16px] ${submitMutation.isPending ? "animate-spin" : ""}`}>
               {submitMutation.isPending ? "progress_activity" : "check_circle"}
             </span>
-            {submitMutation.isPending ? "Submitting..." : "Submit Liquidation"}
+            {submitMutation.isPending ? t("imprest.liquidate.submitting") : t("imprest.liquidate.submit")}
           </button>
         </div>
       </div>

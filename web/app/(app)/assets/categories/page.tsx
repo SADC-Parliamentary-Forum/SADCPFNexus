@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function AssetCategoriesPage() {
   const [categories, setCategories] = useState<AssetCategory[]>([]);
@@ -24,6 +25,7 @@ export default function AssetCategoriesPage() {
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const { toast } = useToast();
   const { confirm } = useConfirm();
+  const { t } = useI18n();
 
   useEffect(() => {
     setAllowed(canManageAssets(getStoredUser()));
@@ -38,9 +40,9 @@ export default function AssetCategoriesPage() {
     assetCategoriesApi
       .list()
       .then((res) => setCategories(res.data.data ?? []))
-      .catch(() => setError("Failed to load categories."))
+      .catch(() => setError(t("assets.categories.loadFailed")))
       .finally(() => setLoading(false));
-  }, [allowed]);
+  }, [allowed, t]);
 
   const handleSave = async () => {
     const name = form.name.trim();
@@ -56,7 +58,7 @@ export default function AssetCategoriesPage() {
           sort_order: form.sort_order,
           useful_life_years: form.useful_life_years === "" ? null : Number(form.useful_life_years),
         });
-        toast("success", "Category updated");
+        toast("success", t("assets.categories.toast.updated"));
       } else {
         await assetCategoriesApi.create({
           name,
@@ -64,7 +66,7 @@ export default function AssetCategoriesPage() {
           sort_order: form.sort_order,
           useful_life_years: form.useful_life_years === "" ? undefined : Number(form.useful_life_years),
         });
-        toast("success", "Category created");
+        toast("success", t("assets.categories.toast.created"));
       }
       const res = await assetCategoriesApi.list();
       setCategories(res.data.data ?? []);
@@ -76,8 +78,8 @@ export default function AssetCategoriesPage() {
         err && typeof err === "object" && "response" in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
-      setError(msg || "Failed to save category.");
-      toast("error", msg || "Failed to save category.");
+      setError(msg || t("assets.categories.saveFailed"));
+      toast("error", msg || t("assets.categories.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -104,8 +106,8 @@ export default function AssetCategoriesPage() {
   const handleDelete = async (id: number, name: string) => {
     if (
       !(await confirm({
-        title: "Delete Category",
-        message: `Are you sure you want to delete "${name}"? This is only allowed if no assets use this category.`,
+        title: t("assets.categories.deleteTitle"),
+        message: t("assets.categories.deleteConfirm", { name }),
         variant: "danger",
       }))
     )
@@ -113,13 +115,13 @@ export default function AssetCategoriesPage() {
     try {
       await assetCategoriesApi.delete(id);
       setCategories((prev) => prev.filter((c) => c.id !== id));
-      toast("success", "Category deleted");
+      toast("success", t("assets.categories.toast.deleted"));
     } catch (err: unknown) {
       const msg =
         err && typeof err === "object" && "response" in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
-      toast("error", msg || "Cannot delete category (may be in use).");
+      toast("error", msg || t("assets.categories.deleteFailed"));
     }
   };
 
@@ -130,13 +132,13 @@ export default function AssetCategoriesPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Asset Categories"
-        subtitle="Manage asset categories used when adding assets."
+        title={t("assets.categories.title")}
+        subtitle={t("assets.categories.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.assets", href: "/assets" },
-              { label: "Categories" },
+              { label: "assets.categories.breadcrumb" },
             ]}
           />
         }
@@ -153,7 +155,7 @@ export default function AssetCategoriesPage() {
             <span className="material-symbols-outlined text-[18px]">
               {showForm && !editId ? "close" : "add"}
             </span>
-            {showForm && !editId ? "Cancel" : "New Category"}
+            {showForm && !editId ? t("common.cancel") : t("assets.categories.new")}
           </button>
         }
       />
@@ -167,41 +169,41 @@ export default function AssetCategoriesPage() {
               </span>
             </div>
             <h3 className="text-sm font-semibold text-neutral-900">
-              {editId ? "Edit Category" : "New Category"}
+              {editId ? t("assets.categories.edit") : t("assets.categories.new")}
             </h3>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label htmlFor="asset-cat-name" className="block text-xs font-semibold text-neutral-700">
-                Name <span className="text-red-500">*</span>
+                {t("assets.categories.name")} <span className="text-red-500">*</span>
               </label>
               <input
                 id="asset-cat-name"
                 className="form-input"
-                placeholder="e.g. IT Equipment"
+                placeholder={t("assets.categories.namePlaceholder")}
                 value={form.name}
                 onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
               />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="asset-cat-code" className="block text-xs font-semibold text-neutral-700">
-                Code <span className="text-red-500">*</span>
+                {t("assets.categories.code")} <span className="text-red-500">*</span>
               </label>
               <input
                 id="asset-cat-code"
                 className="form-input font-mono"
-                placeholder="e.g. it"
+                placeholder={t("assets.categories.codePlaceholder")}
                 value={form.code}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, code: e.target.value.toLowerCase().replace(/\s+/g, "_") }))
                 }
               />
               {editId && (
-                <p className="text-xs text-neutral-400">Code can change only when no assets use this category.</p>
+                <p className="text-xs text-neutral-400">{t("assets.categories.codeHint")}</p>
               )}
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="asset-cat-sort" className="block text-xs font-semibold text-neutral-700">Sort order</label>
+              <label htmlFor="asset-cat-sort" className="block text-xs font-semibold text-neutral-700">{t("assets.categories.sortOrder")}</label>
               <input
                 id="asset-cat-sort"
                 type="number"
@@ -212,14 +214,14 @@ export default function AssetCategoriesPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="asset-cat-life" className="block text-xs font-semibold text-neutral-700">Useful life (years)</label>
+              <label htmlFor="asset-cat-life" className="block text-xs font-semibold text-neutral-700">{t("assets.categories.usefulLife")}</label>
               <input
                 id="asset-cat-life"
                 type="number"
                 min={1}
                 max={80}
                 className="form-input"
-                placeholder="e.g. 4"
+                placeholder={t("assets.categories.lifePlaceholder")}
                 value={form.useful_life_years}
                 onChange={(e) => setForm((p) => ({ ...p, useful_life_years: e.target.value }))}
               />
@@ -228,7 +230,7 @@ export default function AssetCategoriesPage() {
           <div className="flex justify-end gap-2 pt-1">
             <button onClick={cancelForm} className="btn-secondary">
               <span className="material-symbols-outlined text-[16px]">close</span>
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               onClick={handleSave}
@@ -244,7 +246,7 @@ export default function AssetCategoriesPage() {
                   {editId ? "save" : "add"}
                 </span>
               )}
-              {saving ? "Saving…" : editId ? "Update" : "Create"}
+              {saving ? t("assets.categories.saving") : editId ? t("assets.categories.update") : t("assets.categories.create")}
             </button>
           </div>
         </div>
@@ -261,9 +263,9 @@ export default function AssetCategoriesPage() {
         <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">category</span>
-            <h3 className="text-sm font-semibold text-neutral-900">All Categories</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("assets.categories.all")}</h3>
           </div>
-          <span className="badge-muted">{categories.length} total</span>
+          <span className="badge-muted">{t("assets.categories.total", { count: categories.length })}</span>
         </div>
 
         {loading ? (
@@ -281,12 +283,12 @@ export default function AssetCategoriesPage() {
         ) : categories.length === 0 ? (
           <EmptyState
             icon="category"
-            title="No categories yet"
-            description="Create at least one category before adding assets."
+            title={t("assets.categories.empty")}
+            description={t("assets.categories.emptyHint")}
             action={
               <button type="button" onClick={() => setShowForm(true)} className="btn-primary">
                 <span className="material-symbols-outlined text-[16px]">add</span>
-                New Category
+                {t("assets.categories.new")}
               </button>
             }
           />
@@ -307,7 +309,7 @@ export default function AssetCategoriesPage() {
                     <p className="text-sm font-medium text-neutral-900">{cat.name}</p>
                     <p className="text-xs font-mono text-neutral-500">
                       {cat.code}
-                      {cat.useful_life_years ? ` · ${cat.useful_life_years} yr` : ""}
+                      {cat.useful_life_years ? ` ${t("assets.categories.lifeYears", { years: cat.useful_life_years })}` : ""}
                     </p>
                   </div>
                 </div>
@@ -316,7 +318,7 @@ export default function AssetCategoriesPage() {
                     type="button"
                     onClick={() => startEdit(cat)}
                     className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
-                    aria-label="Edit"
+                    aria-label={t("common.edit")}
                   >
                     <span className="material-symbols-outlined text-[18px]">edit</span>
                   </button>
@@ -324,7 +326,7 @@ export default function AssetCategoriesPage() {
                     type="button"
                     onClick={() => handleDelete(cat.id, cat.name)}
                     className="p-2 rounded-lg text-neutral-500 hover:bg-red-50 hover:text-red-600"
-                    aria-label="Delete"
+                    aria-label={t("common.delete")}
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
                   </button>

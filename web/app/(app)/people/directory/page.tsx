@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { FormField } from "@/components/ui/FormSection";
 import { DEFAULT_PAGE_SIZE, getListData, getLastPage, getTotal } from "@/lib/listPagination";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type DirectoryPerson = {
   id?: number;
@@ -39,11 +40,11 @@ const emptyForm = {
   work_phone: "",
 };
 
-function displayName(p: DirectoryPerson): string {
+function displayName(p: DirectoryPerson, fallback: string): string {
   const preferred = p.preferred_name?.trim();
   if (preferred) return preferred;
   if (p.display_name?.trim()) return p.display_name.trim();
-  return [p.first_name, p.last_name].filter(Boolean).join(" ") || `Person #${p.id ?? "-"}`;
+  return [p.first_name, p.last_name].filter(Boolean).join(" ") || fallback;
 }
 
 function deptLabel(p: DirectoryPerson): string {
@@ -67,6 +68,7 @@ function numberOf(p: DirectoryPerson): string {
 }
 
 export default function StaffDirectoryPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { confirm } = useConfirm();
   const toast = useToast();
@@ -78,8 +80,8 @@ export default function StaffDirectoryPage() {
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebouncedQ(q.trim()), 300);
+    return () => clearTimeout(timer);
   }, [q]);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -113,35 +115,35 @@ export default function StaffDirectoryPage() {
   const create = useMutation({
     mutationFn: () => peopleAuthorityApi.createPerson(payload()),
     onSuccess: () => {
-      toast.success("Person added");
+      toast.success(t("people.directory.added"));
       setForm(emptyForm);
       setEditingId(null);
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not create the person. First name and last name are required.");
+      const message = apiErrorMessage(e, t("people.directory.createFailed"));
       setErr(message);
-      toast.error("Person not added", message);
+      toast.error(t("people.directory.notAdded"), message);
     },
   });
 
   const update = useMutation({
     mutationFn: () => {
-      if (!editingId) throw new Error("No person selected");
+      if (!editingId) throw new Error(t("people.directory.noneSelected"));
       return peopleAuthorityApi.updatePerson(editingId, payload());
     },
     onSuccess: () => {
-      toast.success("Person updated");
+      toast.success(t("people.directory.updated"));
       setForm(emptyForm);
       setEditingId(null);
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not update the person.");
+      const message = apiErrorMessage(e, t("people.directory.updateFailed"));
       setErr(message);
-      toast.error("Person not updated", message);
+      toast.error(t("people.directory.notUpdated"), message);
     },
   });
 
@@ -150,16 +152,16 @@ export default function StaffDirectoryPage() {
     mutationFn: () => peopleAuthorityApi.syncPeopleFromUsers(),
     onSuccess: (res) => {
       const { people_created, links_created } = res.data.data;
-      const summary = `Added ${people_created} new directory entries, linked ${links_created} staff accounts.`;
+      const summary = t("people.directory.syncSummary", { created: people_created, linked: links_created });
       setSyncMessage(summary);
-      toast.success("Directory populated", summary);
+      toast.success(t("people.directory.populated"), summary);
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not populate the directory from staff accounts.");
+      const message = apiErrorMessage(e, t("people.directory.populateFailed"));
       setErr(message);
-      toast.error("Directory not populated", message);
+      toast.error(t("people.directory.notPopulated"), message);
     },
   });
 
@@ -169,26 +171,25 @@ export default function StaffDirectoryPage() {
       const { removed } = res.data.data;
       const summary =
         removed > 0
-          ? `Removed ${removed} supplier-portal account(s) from the staff directory.`
-          : "No supplier-portal accounts were found in the staff directory.";
+          ? t("people.directory.suppliersRemovedSummary", { count: removed })
+          : t("people.directory.noSuppliersFound");
       setSyncMessage(summary);
-      toast.success("Supplier accounts removed", summary);
+      toast.success(t("people.directory.suppliersRemoved"), summary);
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
     },
     onError: (e) => {
-      const message = apiErrorMessage(e, "Could not remove supplier accounts from the directory.");
+      const message = apiErrorMessage(e, t("people.directory.removeSuppliersFailed"));
       setErr(message);
-      toast.error("Supplier accounts not removed", message);
+      toast.error(t("people.directory.suppliersNotRemoved"), message);
     },
   });
 
   async function handleRemoveSuppliers() {
     const ok = await confirm({
-      title: "Remove supplier accounts from staff directory?",
-      message:
-        "This removes any directory entry that is linked to a Supplier or Supplier Finance User account. Removed entries are soft-deleted and can be restored if this was a mistake. It does not affect supplier records anywhere else in the system.",
-      confirmText: "Remove supplier accounts",
+      title: t("people.directory.removeSuppliersConfirmTitle"),
+      message: t("people.directory.removeSuppliersConfirmMessage"),
+      confirmText: t("people.directory.removeSuppliers"),
       variant: "danger",
     });
     if (ok) removeSuppliers.mutate();
@@ -210,13 +211,13 @@ export default function StaffDirectoryPage() {
 
   return (
     <RegisterShell
-      title="Staff Directory"
-      subtitle="Search institutional staff records linked to People & Authority."
+      title={t("people.authority.staffDirectory")}
+      subtitle={t("people.directory.subtitle")}
       breadcrumbs={
         <PageBreadcrumbs
           items={[
-            { label: "People & Authority", href: "/people" },
-            { label: "Staff Directory" },
+            { label: t("people.hub.title"), href: "/people" },
+            { label: t("people.authority.staffDirectory") },
           ]}
         />
       }
@@ -227,34 +228,34 @@ export default function StaffDirectoryPage() {
             className="btn-secondary text-sm"
             onClick={() => sync.mutate()}
             disabled={sync.isPending}
-            title="Create directory entries from existing staff login accounts that aren't in this directory yet"
+            title={t("people.directory.populateHint")}
           >
-            {sync.isPending ? "Populating…" : "Populate from staff accounts"}
+            {sync.isPending ? t("people.directory.populating") : t("people.directory.populate")}
           </button>
           <button
             type="button"
             className="btn-secondary text-sm"
             onClick={handleRemoveSuppliers}
             disabled={removeSuppliers.isPending}
-            title="Remove any directory entry linked to a Supplier or Supplier Finance User account"
+            title={t("people.directory.removeSuppliersHint")}
           >
-            {removeSuppliers.isPending ? "Removing…" : "Remove supplier accounts"}
+            {removeSuppliers.isPending ? t("people.directory.removing") : t("people.directory.removeSuppliers")}
           </button>
           <Link href="/organogram" className="btn-secondary text-sm">
-            Organisation chart
+            {t("people.directory.orgChart")}
           </Link>
           <Link href="/profile" className="btn-secondary text-sm">
-            My profile
+            {t("people.directory.myProfile")}
           </Link>
         </>
       }
       filters={
         <div className="flex flex-wrap items-end gap-3">
           <label htmlFor="people-directory-search" className="block min-w-[220px] flex-1 text-xs font-medium text-neutral-600">
-            Search
+            {t("common.search")}
             <input id="people-directory-search"
               className="form-input mt-1"
-              placeholder="Name, email, employee number…"
+              placeholder={t("people.directory.searchPlaceholder")}
               value={q}
               onChange={(e) => {
                 setQ(e.target.value);
@@ -275,11 +276,11 @@ export default function StaffDirectoryPage() {
             ? (
                 <EmptyState
                   icon="error"
-                  title="Unable to load directory"
-                  description="The staff directory could not be retrieved."
+                  title={t("people.directory.loadErrorTitle")}
+                  description={t("people.directory.loadError")}
                   action={
                     <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                      Retry
+                      {t("common.retry")}
                     </button>
                   }
                 />
@@ -287,16 +288,16 @@ export default function StaffDirectoryPage() {
             : (
                 <EmptyState
                   icon="contacts"
-                  title={q ? "No matching staff" : "Directory is empty"}
+                  title={q ? t("people.directory.noMatches") : t("people.directory.emptyTitle")}
                   description={
                     q
-                      ? "Try a different search term."
-                      : "This directory is separate from staff login accounts. Use \"Populate from staff accounts\" above to create directory entries from your existing accounts, add people one at a time below, or run an M365/Azure AD sync under Admin → People → M365 sync."
+                      ? t("people.directory.noMatchesHint")
+                      : t("people.directory.emptyHint")
                   }
                   action={
                     !q ? (
                       <button type="button" className="btn-primary text-sm" onClick={() => sync.mutate()} disabled={sync.isPending}>
-                        {sync.isPending ? "Populating…" : "Populate from staff accounts"}
+                        {sync.isPending ? t("people.directory.populating") : t("people.directory.populate")}
                       </button>
                     ) : undefined
                   }
@@ -310,14 +311,14 @@ export default function StaffDirectoryPage() {
         onSubmit={(e) => {
           e.preventDefault();
           if (!form.first_name.trim() || !form.last_name.trim()) {
-            setErr("First name and last name are required.");
+            setErr(t("people.directory.namesRequired"));
             return;
           }
           if (editingId) update.mutate();
           else create.mutate();
         }}
       >
-        <FormField label="First name" htmlFor="dir-first-name" required>
+        <FormField label={t("people.directory.firstName")} htmlFor="dir-first-name" required>
           <input
             id="dir-first-name"
             className="form-input"
@@ -326,7 +327,7 @@ export default function StaffDirectoryPage() {
             required
           />
         </FormField>
-        <FormField label="Last name" htmlFor="dir-last-name" required>
+        <FormField label={t("people.directory.lastName")} htmlFor="dir-last-name" required>
           <input
             id="dir-last-name"
             className="form-input"
@@ -335,7 +336,7 @@ export default function StaffDirectoryPage() {
             required
           />
         </FormField>
-        <FormField label="Preferred name" htmlFor="dir-preferred-name">
+        <FormField label={t("people.directory.preferredName")} htmlFor="dir-preferred-name">
           <input
             id="dir-preferred-name"
             className="form-input"
@@ -343,7 +344,7 @@ export default function StaffDirectoryPage() {
             onChange={(e) => setForm((f) => ({ ...f, preferred_name: e.target.value }))}
           />
         </FormField>
-        <FormField label="Work email" htmlFor="dir-work-email">
+        <FormField label={t("people.directory.workEmail")} htmlFor="dir-work-email">
           <input
             id="dir-work-email"
             type="email"
@@ -352,7 +353,7 @@ export default function StaffDirectoryPage() {
             onChange={(e) => setForm((f) => ({ ...f, work_email: e.target.value }))}
           />
         </FormField>
-        <FormField label="Employee number" htmlFor="dir-person-number">
+        <FormField label={t("people.directory.employeeNumber")} htmlFor="dir-person-number">
           <input
             id="dir-person-number"
             className="form-input"
@@ -360,7 +361,7 @@ export default function StaffDirectoryPage() {
             onChange={(e) => setForm((f) => ({ ...f, person_number: e.target.value }))}
           />
         </FormField>
-        <FormField label="Work phone" htmlFor="dir-work-phone">
+        <FormField label={t("people.directory.workPhone")} htmlFor="dir-work-phone">
           <input
             id="dir-work-phone"
             className="form-input"
@@ -372,11 +373,11 @@ export default function StaffDirectoryPage() {
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending || update.isPending}>
             {editingId
               ? update.isPending
-                ? "Saving…"
-                : "Update person"
+                ? t("people.common.saving")
+                : t("people.directory.updatePerson")
               : create.isPending
-                ? "Saving…"
-                : "Add person"}
+                ? t("people.common.saving")
+                : t("people.directory.addPerson")}
           </button>
           {editingId ? (
             <button
@@ -388,7 +389,7 @@ export default function StaffDirectoryPage() {
                 setErr(null);
               }}
             >
-              Cancel edit
+              {t("people.directory.cancelEdit")}
             </button>
           ) : null}
           {err && <p className="text-sm text-red-700">{err}</p>}
@@ -405,15 +406,15 @@ export default function StaffDirectoryPage() {
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">Staff directory</caption>
+              <caption className="sr-only">{t("people.authority.staffDirectory")}</caption>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Employee no.</th>
-                  <th>Department</th>
-                  <th>Position</th>
-                  <th>Email</th>
-                  <th>Status</th>
+                  <th>{t("people.common.name")}</th>
+                  <th>{t("people.directory.employeeNo")}</th>
+                  <th>{t("people.directory.department")}</th>
+                  <th>{t("people.common.position")}</th>
+                  <th>{t("people.directory.email")}</th>
+                  <th>{t("people.common.status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -423,7 +424,7 @@ export default function StaffDirectoryPage() {
                     className="cursor-pointer"
                     onClick={() => startEdit(p)}
                   >
-                    <td className="font-medium text-neutral-800">{displayName(p)}</td>
+                    <td className="font-medium text-neutral-800">{displayName(p, t("people.directory.personFallback", { id: p.id ?? "-" }))}</td>
                     <td>{numberOf(p)}</td>
                     <td>{deptLabel(p)}</td>
                     <td>{positionLabel(p)}</td>

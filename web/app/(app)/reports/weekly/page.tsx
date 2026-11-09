@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { weeklySummaryApi, WeeklySummaryReport } from "@/lib/api";
 import { formatDate, formatDateRelative } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_BADGE: Record<string, string> = {
   generated: "badge-muted",
@@ -23,6 +24,9 @@ const SCOPE_BADGE: Record<string, string> = {
 type SectionKey = "who_is_out" | "travel" | "leave" | "timesheets" | "assignments" | "approvals" | "personal";
 
 export default function WeeklyReportsPage() {
+  const { t } = useI18n();
+  const scopeLabel = (s: string) => (s in SCOPE_BADGE ? t(`reports.weekly.scope.${s}`) : s);
+  const statusLabel = (s: string) => (s in STATUS_BADGE ? t(`reports.weekly.status.${s}`) : s);
   const [reports, setReports]     = useState<WeeklySummaryReport[]>([]);
   const [loading, setLoading]     = useState(true);
   const [page, setPage]           = useState(1);
@@ -61,25 +65,25 @@ export default function WeeklyReportsPage() {
     <div className="p-6 w-full min-w-0 space-y-6">
       {/* Header */}
       <ModulePageHeader
-        title="Weekly Summary Reports"
-        subtitle="Your institutional summary emails — generated every Friday"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Weekly Summary Reports" }]} />}
+        title="reports.weekly.title"
+        subtitle="reports.weekly.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "reports.weekly.title" }]} />}
       />
 
       {/* Table */}
       <div className="card overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-neutral-400">Loading…</div>
+          <div className="p-8 text-center text-neutral-400">{t("common.loading")}</div>
         ) : reports.length === 0 ? (
-          <EmptyState icon="summarize" title="No reports yet." description="Reports are generated every Friday at 16:00." />
+          <EmptyState icon="summarize" title="reports.weekly.empty" description="reports.weekly.emptyHint" />
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Period</th>
-                <th>Scope</th>
-                <th>Status</th>
-                <th>Sent</th>
+                <th>{t("reports.weekly.period")}</th>
+                <th>{t("reports.weekly.scopeCol")}</th>
+                <th>{t("reports.weekly.statusCol")}</th>
+                <th>{t("reports.weekly.sent")}</th>
                 <th></th>
               </tr>
             </thead>
@@ -91,12 +95,12 @@ export default function WeeklyReportsPage() {
                   </td>
                   <td>
                     <span className={`badge ${SCOPE_BADGE[r.scope_type] ?? "badge-muted"}`}>
-                      {r.scope_type}
+                      {scopeLabel(r.scope_type)}
                     </span>
                   </td>
                   <td>
                     <span className={`badge ${STATUS_BADGE[r.status] ?? "badge-muted"}`}>
-                      {r.status}
+                      {statusLabel(r.status)}
                     </span>
                   </td>
                   <td className="text-neutral-500 text-xs">
@@ -108,7 +112,7 @@ export default function WeeklyReportsPage() {
                       className="btn-secondary text-sm py-1 px-2 inline-flex items-center gap-0.5"
                     >
                       <span className="material-symbols-outlined text-base">open_in_new</span>
-                      View
+                      {t("reports.weekly.view")}
                     </button>
                   </td>
                 </tr>
@@ -119,9 +123,9 @@ export default function WeeklyReportsPage() {
 
         {lastPage > 1 && (
           <div className="px-5 py-3 border-t border-neutral-100 flex gap-2 justify-end">
-            <button onClick={() => { setPage(p => Math.max(1, p - 1)); loadReports(Math.max(1, page - 1)); }} disabled={page <= 1} className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40">Previous</button>
-            <span className="text-sm text-neutral-500 self-center">Page {page} / {lastPage}</span>
-            <button onClick={() => { setPage(p => Math.min(lastPage, p + 1)); loadReports(Math.min(lastPage, page + 1)); }} disabled={page >= lastPage} className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40">Next</button>
+            <button onClick={() => { setPage(p => Math.max(1, p - 1)); loadReports(Math.max(1, page - 1)); }} disabled={page <= 1} className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40">{t("common.previous")}</button>
+            <span className="text-sm text-neutral-500 self-center">{t("common.pageOf", { page, total: lastPage })}</span>
+            <button onClick={() => { setPage(p => Math.min(lastPage, p + 1)); loadReports(Math.min(lastPage, page + 1)); }} disabled={page >= lastPage} className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40">{t("common.next")}</button>
           </div>
         )}
       </div>
@@ -136,9 +140,9 @@ export default function WeeklyReportsPage() {
                 <p className="font-semibold text-neutral-900">
                   {formatDate(selected.period_start)} – {formatDate(selected.period_end)}
                 </p>
-                <p className="text-xs text-neutral-500 capitalize">{selected.scope_type} scope · {selected.status}</p>
+                <p className="text-xs text-neutral-500 capitalize">{t("reports.weekly.scopeLine", { scope: scopeLabel(selected.scope_type), status: statusLabel(selected.status) })}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-neutral-400 hover:text-neutral-600">
+              <button onClick={() => setSelected(null)} aria-label={t("common.close")} className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -147,7 +151,7 @@ export default function WeeklyReportsPage() {
               {/* Highlights */}
               {payload.highlights?.length > 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wide mb-2">Key Highlights</h3>
+                  <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wide mb-2">{t("reports.weekly.highlights")}</h3>
                   <ul className="list-disc pl-4 space-y-1">
                     {payload.highlights.map((h: string, i: number) => (
                       <li key={i} className="text-sm text-amber-900">{h}</li>
@@ -158,9 +162,9 @@ export default function WeeklyReportsPage() {
 
               {/* Who is out */}
               {payload.who_is_out?.length > 0 && (
-                <Section title="Who is Out / Away" icon="person_off" color="text-red-500">
+                <Section title="reports.weekly.whoIsOut" icon="person_off" color="text-red-500">
                   <table className="data-table">
-                    <thead><tr><th>Name</th><th>Department</th><th>Status</th><th>Location</th><th>Returns</th></tr></thead>
+                    <thead><tr><th>{t("reports.weekly.name")}</th><th>{t("reports.weekly.department")}</th><th>{t("reports.weekly.statusCol")}</th><th>{t("reports.weekly.location")}</th><th>{t("reports.weekly.returns")}</th></tr></thead>
                     <tbody>
                       {payload.who_is_out.map((p: any, i: number) => (
                         <tr key={i}>
@@ -177,76 +181,76 @@ export default function WeeklyReportsPage() {
               )}
 
               {/* Travel */}
-              <Section title="Travel & Missions" icon="flight" color="text-blue-500">
+              <Section title="reports.weekly.travel" icon="flight" color="text-blue-500">
                 <StatRow items={[
-                  { label: "Active Missions",      value: payload.travel?.ongoing?.length ?? 0 },
-                  { label: "Departing Next Week",  value: payload.travel?.next_week_departures?.length ?? 0 },
-                  { label: "Approved This Week",   value: payload.travel?.approved_this_week ?? 0 },
-                  { label: "Pending Approval",     value: payload.travel?.pending_count ?? 0 },
+                  { label: "reports.weekly.activeMissions",      value: payload.travel?.ongoing?.length ?? 0 },
+                  { label: "reports.weekly.departingNextWeek",  value: payload.travel?.next_week_departures?.length ?? 0 },
+                  { label: "reports.weekly.approvedThisWeek",   value: payload.travel?.approved_this_week ?? 0 },
+                  { label: "reports.weekly.pendingApproval",     value: payload.travel?.pending_count ?? 0 },
                 ]} />
               </Section>
 
               {/* Leave */}
-              <Section title="Leave" icon="event_busy" color="text-amber-500">
+              <Section title="nav.leave" icon="event_busy" color="text-amber-500">
                 <StatRow items={[
-                  { label: "Approved",        value: payload.leave?.approved ?? 0 },
-                  { label: "Pending",         value: payload.leave?.submitted ?? 0 },
-                  { label: "Total This Week", value: payload.leave?.total ?? 0 },
+                  { label: "reports.weekly.approved",        value: payload.leave?.approved ?? 0 },
+                  { label: "reports.weekly.pending",         value: payload.leave?.submitted ?? 0 },
+                  { label: "reports.weekly.totalThisWeek", value: payload.leave?.total ?? 0 },
                 ]} />
               </Section>
 
               {/* Timesheets */}
-              <Section title="Timesheets" icon="schedule" color="text-primary">
+              <Section title="nav.timesheets" icon="schedule" color="text-primary">
                 <StatRow items={[
-                  { label: "Submitted", value: payload.timesheets?.submitted ?? 0 },
-                  { label: "Approved",  value: payload.timesheets?.approved ?? 0 },
-                  { label: "Missing",   value: payload.timesheets?.missing ?? 0, warn: (payload.timesheets?.missing ?? 0) > 0 },
+                  { label: "reports.weekly.submitted", value: payload.timesheets?.submitted ?? 0 },
+                  { label: "reports.weekly.approved",  value: payload.timesheets?.approved ?? 0 },
+                  { label: "reports.weekly.missing",   value: payload.timesheets?.missing ?? 0, warn: (payload.timesheets?.missing ?? 0) > 0 },
                 ]} />
               </Section>
 
               {/* Assignments */}
-              <Section title="Assignments & Tasks" icon="task_alt" color="text-emerald-500">
+              <Section title="reports.weekly.assignments" icon="task_alt" color="text-emerald-500">
                 <StatRow items={[
-                  { label: "Completed",     value: payload.assignments?.completed_this_week ?? 0 },
-                  { label: "Overdue",       value: payload.assignments?.overdue ?? 0, warn: (payload.assignments?.overdue ?? 0) > 0 },
-                  { label: "Due Next Week", value: payload.assignments?.due_next_week ?? 0 },
+                  { label: "reports.weekly.completed",     value: payload.assignments?.completed_this_week ?? 0 },
+                  { label: "reports.weekly.overdue",       value: payload.assignments?.overdue ?? 0, warn: (payload.assignments?.overdue ?? 0) > 0 },
+                  { label: "reports.weekly.dueNextWeek", value: payload.assignments?.due_next_week ?? 0 },
                 ]} />
               </Section>
 
               {/* Personal */}
               {payload.personal && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                  <h3 className="text-xs font-bold text-green-800 uppercase tracking-wide mb-3">Your Personal Summary</h3>
+                  <h3 className="text-xs font-bold text-green-800 uppercase tracking-wide mb-3">{t("reports.weekly.personalSummary")}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-neutral-600 font-medium">Timesheet:</span>
+                      <span className="text-neutral-600 font-medium">{t("reports.weekly.timesheet")}</span>
                       {payload.personal.timesheet_submitted
-                        ? <span className="badge badge-success">Submitted</span>
-                        : <span className="badge badge-warning">Not submitted</span>}
+                        ? <span className="badge badge-success">{t("reports.weekly.submitted")}</span>
+                        : <span className="badge badge-warning">{t("reports.weekly.notSubmitted")}</span>}
                     </div>
                     {payload.personal.leave?.length > 0 && (
-                      <div><span className="text-neutral-600 font-medium">Leave this week: </span>
+                      <div><span className="text-neutral-600 font-medium">{t("reports.weekly.leaveThisWeek")} </span>
                         {payload.personal.leave.map((l: any, i: number) => (
                           <span key={i}>{l.leave_type} ({l.status}){i < payload.personal.leave.length - 1 ? ", " : ""}</span>
                         ))}
                       </div>
                     )}
                     {payload.personal.travel?.length > 0 && (
-                      <div><span className="text-neutral-600 font-medium">Travel: </span>
-                        {payload.personal.travel.map((t: any, i: number) => (
-                          <span key={i}>{t.purpose} → {t.destination_country} ({t.status}){i < payload.personal.travel.length - 1 ? ", " : ""}</span>
+                      <div><span className="text-neutral-600 font-medium">{t("reports.weekly.travelLabel")} </span>
+                        {payload.personal.travel.map((tr: any, i: number) => (
+                          <span key={i}>{tr.purpose} → {tr.destination_country} ({tr.status}){i < payload.personal.travel.length - 1 ? ", " : ""}</span>
                         ))}
                       </div>
                     )}
                     {(payload.personal.pending_approvals ?? 0) > 0 && (
                       <div className="flex items-center gap-2">
-                        <span className="text-neutral-600 font-medium">Approvals pending from you:</span>
+                        <span className="text-neutral-600 font-medium">{t("reports.weekly.approvalsPending")}</span>
                         <span className="badge badge-warning">{payload.personal.pending_approvals}</span>
                       </div>
                     )}
                     {(payload.personal.overdue_tasks ?? 0) > 0 && (
                       <div className="flex items-center gap-2">
-                        <span className="text-neutral-600 font-medium">Overdue tasks:</span>
+                        <span className="text-neutral-600 font-medium">{t("reports.weekly.overdueTasks")}</span>
                         <span className="badge badge-danger">{payload.personal.overdue_tasks}</span>
                       </div>
                     )}
@@ -268,11 +272,12 @@ export default function WeeklyReportsPage() {
 }
 
 function Section({ title, icon, color, children }: { title: string; icon: string; color: string; children: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <div>
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-neutral-100">
         <span className={`material-symbols-outlined text-lg ${color}`}>{icon}</span>
-        <h3 className="text-xs font-bold text-neutral-600 uppercase tracking-wide">{title}</h3>
+        <h3 className="text-xs font-bold text-neutral-600 uppercase tracking-wide">{t(title)}</h3>
       </div>
       {children}
     </div>
@@ -280,12 +285,13 @@ function Section({ title, icon, color, children }: { title: string; icon: string
 }
 
 function StatRow({ items }: { items: { label: string; value: number; warn?: boolean }[] }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-wrap gap-3">
       {items.map((item) => (
         <div key={item.label} className={`flex-1 min-w-[80px] rounded-lg border p-3 text-center ${item.warn ? "bg-red-50 border-red-200" : "bg-neutral-50 border-neutral-200"}`}>
           <div className={`text-2xl font-bold ${item.warn ? "text-red-600" : "text-neutral-900"}`}>{item.value}</div>
-          <div className="text-xs text-neutral-500 mt-0.5">{item.label}</div>
+          <div className="text-xs text-neutral-500 mt-0.5">{t(item.label)}</div>
         </div>
       ))}
     </div>

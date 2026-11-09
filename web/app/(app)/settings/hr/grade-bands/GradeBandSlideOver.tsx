@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { HrGradeBand, HrJobFamily, HrSettingsStatus } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Tab = "basic" | "benefits" | "compensation" | "governance";
 
@@ -21,11 +22,19 @@ interface Props {
 }
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: "basic",        label: "Basic Info",         icon: "info" },
-  { key: "benefits",     label: "Leave & Benefits",   icon: "event_available" },
-  { key: "compensation", label: "Travel & Pay",       icon: "payments" },
-  { key: "governance",   label: "Governance",         icon: "policy" },
+  { key: "basic",        label: "settings.hr.gradeBand.tab.basic",         icon: "info" },
+  { key: "benefits",     label: "settings.hr.gradeBand.tab.benefits",   icon: "event_available" },
+  { key: "compensation", label: "settings.hr.gradeBand.tab.compensation",       icon: "payments" },
+  { key: "governance",   label: "settings.hr.matrix.governance",         icon: "policy" },
 ];
+
+const STATUS_VALUE_KEYS: Record<string, string> = {
+  draft: "settings.hr.lifecycleValue.draft",
+  review: "settings.hr.lifecycleValue.review",
+  approved: "settings.hr.lifecycleValue.approved",
+  published: "settings.hr.lifecycleValue.published",
+  archived: "settings.hr.lifecycleValue.archived",
+};
 
 const STATUS_BADGE: Record<HrSettingsStatus, string> = {
   draft:     "badge-muted",
@@ -49,6 +58,7 @@ export function GradeBandSlideOver({
   saving,
 }: Props) {
   const isEdit = !!grade?.id;
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("basic");
   const [form, setForm] = useState<Partial<HrGradeBand>>(
     grade ?? {
@@ -69,6 +79,7 @@ export function GradeBandSlideOver({
   const isDraft = status === "draft";
   const isReview = status === "review";
   const isApproved = status === "approved";
+  const statusLabel = STATUS_VALUE_KEYS[status] ? t(STATUS_VALUE_KEYS[status]) : status;
 
   return (
     <>
@@ -81,35 +92,35 @@ export function GradeBandSlideOver({
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
           <div>
             <h2 className="font-semibold text-neutral-900">
-              {isEdit ? `Grade Band — ${grade?.code}` : "New Grade Band"}
+              {isEdit ? t("settings.hr.gradeBand.titleEdit", { code: grade?.code ?? "" }) : t("settings.hr.gradeBands.new")}
             </h2>
             {isEdit && (
               <div className="flex items-center gap-2 mt-0.5">
-                <span className={cn("badge text-[11px]", STATUS_BADGE[status])}>{status}</span>
+                <span className={cn("badge text-[11px]", STATUS_BADGE[status])}>{statusLabel}</span>
                 <span className="text-xs text-neutral-400">v{form.version_number ?? 1}</span>
               </div>
             )}
           </div>
-          <button onClick={onClose} aria-label="Close grade band editor" className="text-neutral-400 hover:text-neutral-700 ml-4">
+          <button onClick={onClose} aria-label={t("settings.hr.gradeBand.closeEditor")} className="text-neutral-400 hover:text-neutral-700 ml-4">
             <span className="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>
 
         {/* Tabs */}
         <div className="flex border-b border-neutral-100 px-2">
-          {TABS.map((t) => (
+          {TABS.map((tb) => (
             <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
+              key={tb.key}
+              onClick={() => setTab(tb.key)}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-3 text-xs font-medium border-b-2 transition-colors",
-                tab === t.key
+                tab === tb.key
                   ? "border-primary text-primary"
                   : "border-transparent text-neutral-500 hover:text-neutral-700"
               )}
             >
-              <span className="material-symbols-outlined text-[14px]">{t.icon}</span>
-              {t.label}
+              <span className="material-symbols-outlined text-[14px]">{tb.icon}</span>
+              {t(tb.label)}
             </button>
           ))}
         </div>
@@ -121,63 +132,63 @@ export function GradeBandSlideOver({
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-grade-code" className="block text-xs font-medium text-neutral-700 mb-1">Grade Code *</label>
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-grade-code" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.codeRequired")}</label>
                   <input id="hr-grade-bands-GradeBandSlideOver-grade-code"
                     className="form-input text-sm uppercase"
                     value={form.code ?? ""}
                     onChange={(e) => set("code", e.target.value.toUpperCase())}
-                    placeholder="e.g. C2"
+                    placeholder={t("settings.hr.gradeBand.codePlaceholder")}
                     maxLength={10}
                     disabled={isEdit && !isDraft}
                   />
                 </div>
                 <div>
-                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-band-group" className="block text-xs font-medium text-neutral-700 mb-1">Band Group *</label>
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-band-group" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.bandGroupRequired")}</label>
                   <select id="hr-grade-bands-GradeBandSlideOver-band-group"
                     className="form-input text-sm"
                     value={form.band_group ?? "C"}
                     onChange={(e) => set("band_group", e.target.value as HrGradeBand["band_group"])}
                     disabled={isEdit && !isDraft}
                   >
-                    <option value="A">A — Executive</option>
-                    <option value="B">B — Senior/Manager</option>
-                    <option value="C">C — Officer</option>
-                    <option value="D">D — Support</option>
+                    <option value="A">A — {t("settings.hr.band.A")}</option>
+                    <option value="B">B — {t("settings.hr.band.B")}</option>
+                    <option value="C">C — {t("settings.hr.band.C")}</option>
+                    <option value="D">D — {t("settings.hr.band.D")}</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="hr-grade-bands-GradeBandSlideOver-grade-label" className="block text-xs font-medium text-neutral-700 mb-1">Grade Label *</label>
+                <label htmlFor="hr-grade-bands-GradeBandSlideOver-grade-label" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.labelRequired")}</label>
                 <input id="hr-grade-bands-GradeBandSlideOver-grade-label"
                   className="form-input text-sm"
                   value={form.label ?? ""}
                   onChange={(e) => set("label", e.target.value)}
-                  placeholder="e.g. Senior Officer"
+                  placeholder={t("settings.hr.gradeBand.labelPlaceholder")}
                 />
               </div>
 
               <div>
-                <label htmlFor="hr-grade-bands-GradeBandSlideOver-employment-category" className="block text-xs font-medium text-neutral-700 mb-1">Employment Category *</label>
+                <label htmlFor="hr-grade-bands-GradeBandSlideOver-employment-category" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.categoryRequired")}</label>
                 <select id="hr-grade-bands-GradeBandSlideOver-employment-category"
                   className="form-input text-sm"
                   value={form.employment_category ?? "local"}
                   onChange={(e) => set("employment_category", e.target.value as HrGradeBand["employment_category"])}
                 >
-                  <option value="local">Local</option>
-                  <option value="regional">Regional</option>
-                  <option value="researcher">Researcher</option>
+                  <option value="local">{t("settings.hr.gradeBand.category.local")}</option>
+                  <option value="regional">{t("settings.hr.gradeBand.category.regional")}</option>
+                  <option value="researcher">{t("settings.hr.gradeBand.category.researcher")}</option>
                 </select>
               </div>
 
               <div>
-                <label htmlFor="hr-grade-bands-GradeBandSlideOver-job-family" className="block text-xs font-medium text-neutral-700 mb-1">Job Family</label>
+                <label htmlFor="hr-grade-bands-GradeBandSlideOver-job-family" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.jobFamily")}</label>
                 <select id="hr-grade-bands-GradeBandSlideOver-job-family"
                   className="form-input text-sm"
                   value={form.job_family_id ?? ""}
                   onChange={(e) => set("job_family_id", e.target.value ? Number(e.target.value) : null as any)}
                 >
-                  <option value="">— None —</option>
+                  <option value="">{t("assignments.create.none")}</option>
                   {jobFamilies.map((jf) => (
                     <option key={jf.id} value={jf.id}>{jf.name}</option>
                   ))}
@@ -186,7 +197,7 @@ export function GradeBandSlideOver({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-effective-from" className="block text-xs font-medium text-neutral-700 mb-1">Effective From *</label>
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-effective-from" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.effectiveFromRequired")}</label>
                   <input id="hr-grade-bands-GradeBandSlideOver-effective-from"
                     type="date"
                     className="form-input text-sm"
@@ -195,7 +206,7 @@ export function GradeBandSlideOver({
                   />
                 </div>
                 <div>
-                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-effective-to" className="block text-xs font-medium text-neutral-700 mb-1">Effective To</label>
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-effective-to" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.effectiveTo")}</label>
                   <input id="hr-grade-bands-GradeBandSlideOver-effective-to"
                     type="date"
                     className="form-input text-sm"
@@ -206,13 +217,13 @@ export function GradeBandSlideOver({
               </div>
 
               <div>
-                <label htmlFor="hr-grade-bands-GradeBandSlideOver-notes-policy-reference" className="block text-xs font-medium text-neutral-700 mb-1">Notes / Policy Reference</label>
+                <label htmlFor="hr-grade-bands-GradeBandSlideOver-notes-policy-reference" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.notesPolicy")}</label>
                 <textarea id="hr-grade-bands-GradeBandSlideOver-notes-policy-reference"
                   className="form-input text-sm resize-none"
                   rows={3}
                   value={form.notes ?? ""}
                   onChange={(e) => set("notes", e.target.value)}
-                  placeholder="Reference ExCo resolution or policy document…"
+                  placeholder={t("settings.hr.gradeBand.notesPlaceholder")}
                 />
               </div>
             </>
@@ -223,7 +234,7 @@ export function GradeBandSlideOver({
             <>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-min-notch" className="block text-xs font-medium text-neutral-700 mb-1">Min Notch</label>
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-min-notch" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.minNotch")}</label>
                   <input id="hr-grade-bands-GradeBandSlideOver-min-notch"
                     type="number"
                     className="form-input text-sm"
@@ -233,7 +244,7 @@ export function GradeBandSlideOver({
                   />
                 </div>
                 <div>
-                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-max-notch" className="block text-xs font-medium text-neutral-700 mb-1">Max Notch</label>
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-max-notch" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.maxNotch")}</label>
                   <input id="hr-grade-bands-GradeBandSlideOver-max-notch"
                     type="number"
                     className="form-input text-sm"
@@ -243,7 +254,7 @@ export function GradeBandSlideOver({
                   />
                 </div>
                 <div>
-                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-leave-days-yr" className="block text-xs font-medium text-neutral-700 mb-1">Leave Days / yr</label>
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-leave-days-yr" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.leaveDaysYr")}</label>
                   <input id="hr-grade-bands-GradeBandSlideOver-leave-days-yr"
                     type="number"
                     className="form-input text-sm"
@@ -256,7 +267,7 @@ export function GradeBandSlideOver({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-probation-months" className="block text-xs font-medium text-neutral-700 mb-1">Probation (months)</label>
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-probation-months" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.probationMonths")}</label>
                   <input id="hr-grade-bands-GradeBandSlideOver-probation-months"
                     type="number"
                     className="form-input text-sm"
@@ -266,7 +277,7 @@ export function GradeBandSlideOver({
                   />
                 </div>
                 <div>
-                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-notice-period-days" className="block text-xs font-medium text-neutral-700 mb-1">Notice Period (days)</label>
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-notice-period-days" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.noticeDays")}</label>
                   <input id="hr-grade-bands-GradeBandSlideOver-notice-period-days"
                     type="number"
                     className="form-input text-sm"
@@ -278,7 +289,7 @@ export function GradeBandSlideOver({
               </div>
 
               <div>
-                <label htmlFor="grade-band-acting-allowance" className="block text-xs font-medium text-neutral-700 mb-1">Acting Allowance Rate</label>
+                <label htmlFor="grade-band-acting-allowance" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.actingRate")}</label>
                 <div className="relative">
                   <input
                     id="grade-band-acting-allowance"
@@ -293,16 +304,16 @@ export function GradeBandSlideOver({
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">%</span>
                 </div>
-                <p className="text-xs text-neutral-400 mt-1">Percentage of base salary. Leave blank if not eligible.</p>
+                <p className="text-xs text-neutral-400 mt-1">{t("settings.hr.gradeBand.actingRateHint")}</p>
               </div>
 
               <div className="space-y-2">
                 {([
-                  ["medical_aid_eligible",       "Medical Aid Eligible"],
-                  ["housing_allowance_eligible",  "Housing Allowance Eligible"],
+                  ["medical_aid_eligible",       "settings.hr.gradeBand.medicalAid"],
+                  ["housing_allowance_eligible",  "settings.hr.gradeBand.housingAllowance"],
                 ] as const).map(([key, label]) => (
                   <label key={key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-neutral-50 cursor-pointer">
-                    <span className="text-sm text-neutral-700">{label}</span>
+                    <span className="text-sm text-neutral-700">{t(label)}</span>
                     <div
                       onClick={() => set(key, !form[key] as any)}
                       className={cn(
@@ -322,23 +333,23 @@ export function GradeBandSlideOver({
           {tab === "compensation" && (
             <>
               <div>
-                <label htmlFor="hr-grade-bands-GradeBandSlideOver-travel-class" className="block text-xs font-medium text-neutral-700 mb-1">Travel Class</label>
+                <label htmlFor="hr-grade-bands-GradeBandSlideOver-travel-class" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.gradeBand.travelClass")}</label>
                 <select id="hr-grade-bands-GradeBandSlideOver-travel-class"
                   className="form-input text-sm"
                   value={form.travel_class ?? "economy"}
                   onChange={(e) => set("travel_class", e.target.value as HrGradeBand["travel_class"])}
                 >
-                  <option value="">— Not specified —</option>
-                  <option value="economy">Economy</option>
-                  <option value="business">Business</option>
-                  <option value="first">First Class</option>
+                  <option value="">{t("settings.hr.gradeBand.notSpecified")}</option>
+                  <option value="economy">{t("settings.hr.gradeBand.travel.economy")}</option>
+                  <option value="business">{t("settings.hr.gradeBand.travel.business")}</option>
+                  <option value="first">{t("settings.hr.gradeBand.travel.first")}</option>
                 </select>
               </div>
 
               <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-neutral-50 cursor-pointer">
                 <div>
-                  <p className="text-sm font-medium text-neutral-700">Overtime Eligible</p>
-                  <p className="text-xs text-neutral-500">Staff at this grade may claim overtime pay.</p>
+                  <p className="text-sm font-medium text-neutral-700">{t("settings.hr.gradeBand.overtime")}</p>
+                  <p className="text-xs text-neutral-500">{t("settings.hr.gradeBand.overtimeHint")}</p>
                 </div>
                 <div
                   onClick={() => set("overtime_eligible", !form.overtime_eligible as any)}
@@ -358,22 +369,22 @@ export function GradeBandSlideOver({
             <div className="space-y-4">
               {!isEdit ? (
                 <p className="text-sm text-neutral-500 italic">
-                  Governance details will appear after the grade band is created.
+                  {t("settings.hr.gradeBand.governancePending")}
                 </p>
               ) : (
                 <>
                   <div className="rounded-xl bg-neutral-50 border border-neutral-200 divide-y divide-neutral-100">
                     {[
-                      { label: "Status",   value: <span className={cn("badge", STATUS_BADGE[status])}>{status}</span> },
-                      { label: "Version",  value: `v${form.version_number ?? 1}` },
-                      { label: "Effective From", value: form.effective_from ?? "—" },
-                      { label: "Approved by",    value: (form as any).approver?.name ?? (form.approved_by ? `User #${form.approved_by}` : "—") },
-                      { label: "Approved at",    value: form.approved_at ? new Date(form.approved_at).toLocaleString() : "—" },
-                      { label: "Published by",   value: (form as any).publisher?.name ?? (form.published_by ? `User #${form.published_by}` : "—") },
-                      { label: "Published at",   value: form.published_at ? new Date(form.published_at).toLocaleString() : "—" },
+                      { label: "settings.hr.common.status",   value: <span className={cn("badge", STATUS_BADGE[status])}>{statusLabel}</span> },
+                      { label: "settings.hr.gradeBand.version",  value: `v${form.version_number ?? 1}` },
+                      { label: "settings.hr.gradeBand.effectiveFrom", value: form.effective_from ?? "—" },
+                      { label: "settings.hr.gradeBand.approvedBy",    value: (form as any).approver?.name ?? (form.approved_by ? t("saam.delegations.userNumber", { id: form.approved_by }) : "—") },
+                      { label: "settings.hr.gradeBand.approvedAt",    value: form.approved_at ? new Date(form.approved_at).toLocaleString() : "—" },
+                      { label: "settings.hr.gradeBand.publishedBy",   value: (form as any).publisher?.name ?? (form.published_by ? t("saam.delegations.userNumber", { id: form.published_by }) : "—") },
+                      { label: "settings.hr.gradeBand.publishedAt",   value: form.published_at ? new Date(form.published_at).toLocaleString() : "—" },
                     ].map(({ label, value }) => (
                       <div key={label} className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-xs text-neutral-500">{label}</span>
+                        <span className="text-xs text-neutral-500">{t(label)}</span>
                         <span className="text-xs font-medium text-neutral-800">{value}</span>
                       </div>
                     ))}
@@ -382,8 +393,7 @@ export function GradeBandSlideOver({
                   {status === "published" && (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
                       <p className="text-xs text-amber-700">
-                        <span className="font-medium">Published record.</span> This grade cannot be edited directly.
-                        Use &ldquo;New Version&rdquo; to create a draft revision for review.
+                        <span className="font-medium">{t("settings.hr.gradeBand.publishedRecord")}</span> {t("settings.hr.gradeBand.publishedHint")}
                       </p>
                     </div>
                   )}
@@ -395,7 +405,7 @@ export function GradeBandSlideOver({
 
         {/* Footer */}
         <div className="border-t border-neutral-100 px-6 py-4 flex items-center gap-2">
-          <button onClick={onClose} className="btn-secondary text-sm px-4">Cancel</button>
+          <button onClick={onClose} className="btn-secondary text-sm px-4">{t("common.cancel")}</button>
 
           <div className="flex-1" />
 
@@ -403,19 +413,19 @@ export function GradeBandSlideOver({
           {isEdit && isDraft && onSubmit && (
             <button onClick={onSubmit} disabled={saving} className="btn-secondary text-sm px-4 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[16px]">send</span>
-              Submit for Review
+              {t("settings.hr.gradeBand.submitForReview")}
             </button>
           )}
           {isEdit && isReview && canApprove && onApprove && (
             <button onClick={onApprove} disabled={saving} className="btn-secondary text-sm px-4 flex items-center gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
               <span className="material-symbols-outlined text-[16px]">check_circle</span>
-              Approve
+              {t("common.approve")}
             </button>
           )}
           {isEdit && isApproved && canPublish && onPublish && (
             <button onClick={onPublish} disabled={saving} className="btn-primary text-sm px-4 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[16px]">publish</span>
-              Publish
+              {t("settings.hr.gradeBands.publish")}
             </button>
           )}
 
@@ -427,7 +437,7 @@ export function GradeBandSlideOver({
               className="btn-primary text-sm px-4 flex items-center gap-1.5 disabled:opacity-50"
             >
               {saving && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
-              {isEdit ? "Save Draft" : "Create Draft"}
+              {isEdit ? t("settings.hr.gradeBand.saveDraft") : t("settings.hr.gradeBand.createDraft")}
             </button>
           )}
         </div>

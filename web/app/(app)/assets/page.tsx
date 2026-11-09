@@ -41,20 +41,21 @@ const EMPTY_SUMMARY: AssetRegisterSummary = {
   categories: [],
 };
 
+// Labels are i18n keys; translate with t() where they are shown.
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  pending:           { label: "Pending capitalisation", cls: "badge-warning" },
-  active:            { label: "Active",       cls: "badge-success" },
-  assigned:          { label: "Assigned",     cls: "badge-info" },
-  available:         { label: "Available",    cls: "badge-success" },
-  service_due:       { label: "Service Due",  cls: "badge-warning" },
-  loan_out:          { label: "Loan Out",      cls: "badge-info" },
-  pending_disposal:  { label: "Pending disposal", cls: "badge-warning" },
-  retired:           { label: "Retired",       cls: "badge-muted" },
-  disposed:          { label: "Disposed",      cls: "badge-muted" },
-  sold:              { label: "Sold",          cls: "badge-muted" },
-  written_off:       { label: "Written off",   cls: "badge-muted" },
-  scrapped:          { label: "Scrapped",      cls: "badge-muted" },
-  donated_out:       { label: "Donated",       cls: "badge-muted" },
+  pending:           { label: "assets.print.status.pending", cls: "badge-warning" },
+  active:            { label: "assets.register.active",       cls: "badge-success" },
+  assigned:          { label: "assets.print.status.assigned",     cls: "badge-info" },
+  available:         { label: "assets.print.status.available",    cls: "badge-success" },
+  service_due:       { label: "assets.print.status.service_due",  cls: "badge-warning" },
+  loan_out:          { label: "assets.print.status.loan_out",      cls: "badge-info" },
+  pending_disposal:  { label: "assets.registerPage.status.pendingDisposal", cls: "badge-warning" },
+  retired:           { label: "assets.register.retiredStatus",       cls: "badge-muted" },
+  disposed:          { label: "assets.register.disposed",      cls: "badge-muted" },
+  sold:              { label: "assets.registerPage.status.sold",          cls: "badge-muted" },
+  written_off:       { label: "assets.registerPage.status.writtenOff",   cls: "badge-muted" },
+  scrapped:          { label: "assets.registerPage.status.scrapped",      cls: "badge-muted" },
+  donated_out:       { label: "assets.registerPage.status.donated",       cls: "badge-muted" },
 };
 
 const UNASSIGNABLE_STATUSES = [
@@ -74,9 +75,10 @@ function canAssignAsset(status: string): boolean {
 
 // ─── Depreciation helpers ────────────────────────────────────────────────────
 
+// Labels are i18n keys; translate with t() where they are shown.
 const DEPR_METHODS = [
-  { value: "straight_line",    label: "Straight Line"    },
-  { value: "declining_balance", label: "Declining Balance (Double)" },
+  { value: "straight_line",    label: "assets.form.method.straightLine"    },
+  { value: "declining_balance", label: "assets.registerPage.decliningDouble" },
 ] as const;
 
 function calcDepreciation(
@@ -126,6 +128,7 @@ function CapitaliseModal({
   onClose: () => void;
   onSaved: (updated: Asset) => void;
 }) {
+  const { t } = useI18n();
   const [purchaseDate, setPurchaseDate] = useState(asset.purchase_date?.slice(0, 10) ?? "");
   const [purchaseValue, setPurchaseValue] = useState(
     asset.purchase_value != null ? String(asset.purchase_value) : "",
@@ -147,7 +150,7 @@ function CapitaliseModal({
 
   const handleSave = async () => {
     if (!purchaseDate || pv == null || Number.isNaN(pv)) {
-      setError("Purchase date and purchase value are required.");
+      setError(t("assets.registerPage.capitaliseRequired"));
       return;
     }
     setSaving(true);
@@ -171,7 +174,7 @@ function CapitaliseModal({
         )
           .flat()
           .join(" ") ||
-        "Failed to capitalise asset.";
+        t("assets.registerPage.capitaliseFailed");
       setError(msg);
     } finally {
       setSaving(false);
@@ -187,13 +190,13 @@ function CapitaliseModal({
               <span className="material-symbols-outlined text-primary text-[18px]">verified</span>
             </div>
             <div>
-              <h3 className="font-semibold text-neutral-900 text-sm">Capitalise Asset</h3>
+              <h3 className="font-semibold text-neutral-900 text-sm">{t("assets.registerPage.capitaliseTitle")}</h3>
               <p className="text-xs text-neutral-400">
                 {asset.asset_code} — {asset.name}
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close asset form" className="text-neutral-400 hover:text-neutral-600">
+          <button type="button" onClick={onClose} aria-label={t("assets.registerPage.closeAssetForm")} className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -205,13 +208,10 @@ function CapitaliseModal({
               {error}
             </div>
           )}
-          <p className="text-xs text-neutral-500">
-            Confirm financial details to add this GRN draft into the Fixed Asset Register. No auto-capitalisation —
-            officer confirmation is required.
-          </p>
+          <p className="text-xs text-neutral-500">{t("assets.registerPage.capitaliseHint")}</p>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="assets-purchase-date" className="block text-xs font-semibold text-neutral-700 mb-1">Purchase Date *</label>
+              <label htmlFor="assets-purchase-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("assets.registerPage.purchaseDate")} *</label>
               <input id="assets-purchase-date"
                 type="date"
                 className="form-input"
@@ -220,7 +220,7 @@ function CapitaliseModal({
               />
             </div>
             <div>
-              <label htmlFor="assets-purchase-value" className="block text-xs font-semibold text-neutral-700 mb-1">Purchase Value *</label>
+              <label htmlFor="assets-purchase-value" className="block text-xs font-semibold text-neutral-700 mb-1">{t("assets.registerPage.purchaseValue")} *</label>
               <input id="assets-purchase-value"
                 type="number"
                 min={0}
@@ -231,7 +231,7 @@ function CapitaliseModal({
               />
             </div>
             <div>
-              <label htmlFor="assets-useful-life-years" className="block text-xs font-semibold text-neutral-700 mb-1">Useful Life (years)</label>
+              <label htmlFor="assets-useful-life-years" className="block text-xs font-semibold text-neutral-700 mb-1">{t("assets.registerPage.usefulLife")}</label>
               <input id="assets-useful-life-years"
                 type="number"
                 min={1}
@@ -242,7 +242,7 @@ function CapitaliseModal({
               />
             </div>
             <div>
-              <label htmlFor="assets-salvage-value" className="block text-xs font-semibold text-neutral-700 mb-1">Salvage Value</label>
+              <label htmlFor="assets-salvage-value" className="block text-xs font-semibold text-neutral-700 mb-1">{t("assets.registerPage.salvageValue")}</label>
               <input id="assets-salvage-value"
                 type="number"
                 min={0}
@@ -253,11 +253,11 @@ function CapitaliseModal({
               />
             </div>
             <div className="col-span-2">
-              <label htmlFor="assets-depreciation-method" className="block text-xs font-semibold text-neutral-700 mb-1">Depreciation Method</label>
+              <label htmlFor="assets-depreciation-method" className="block text-xs font-semibold text-neutral-700 mb-1">{t("assets.registerPage.deprMethod")}</label>
               <select id="assets-depreciation-method" className="form-input" value={method} onChange={(e) => setMethod(e.target.value)}>
                 {DEPR_METHODS.map((m) => (
                   <option key={m.value} value={m.value}>
-                    {m.label}
+                    {t(m.label)}
                   </option>
                 ))}
               </select>
@@ -265,7 +265,7 @@ function CapitaliseModal({
           </div>
           {preview && (
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm">
-              <p className="text-xs font-bold text-primary uppercase tracking-wide mb-1">Book value preview</p>
+              <p className="text-xs font-bold text-primary uppercase tracking-wide mb-1">{t("assets.registerPage.bookValuePreview")}</p>
               <p className="text-lg font-bold text-neutral-900">{fmtMoney(preview.currentValue)}</p>
             </div>
           )}
@@ -273,7 +273,7 @@ function CapitaliseModal({
 
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
           <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -282,7 +282,7 @@ function CapitaliseModal({
             className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[16px]">verified</span>
-            {saving ? "Capitalising…" : "Capitalise"}
+            {saving ? t("assets.registerPage.capitalising") : t("assets.register.capitalise")}
           </button>
         </div>
       </div>
@@ -301,6 +301,7 @@ function DepreciationModal({
   onClose: () => void;
   onSaved: (updated: Asset) => void;
 }) {
+  const { t } = useI18n();
   const [purchaseDate,    setPurchaseDate]    = useState(asset.purchase_date?.slice(0, 10) ?? "");
   const [purchaseValue,   setPurchaseValue]   = useState(asset.purchase_value != null ? String(asset.purchase_value) : "");
   const [usefulLife,      setUsefulLife]      = useState(asset.useful_life_years != null ? String(asset.useful_life_years) : "");
@@ -316,7 +317,7 @@ function DepreciationModal({
   const preview = pv && ul ? calcDepreciation(pv, ul, sv, method, purchaseDate || null, asset.issued_at) : null;
 
   const handleSave = async () => {
-    if (!pv || !ul) { setError("Purchase value and useful life are required."); return; }
+    if (!pv || !ul) { setError(t("assets.registerPage.deprRequired")); return; }
     setSaving(true); setError(null);
     try {
       const res = await assetsApi.update(asset.id, {
@@ -331,7 +332,7 @@ function DepreciationModal({
       });
       onSaved(res.data as unknown as Asset);
     } catch {
-      setError("Failed to save depreciation settings.");
+      setError(t("assets.registerPage.deprSaveFailed"));
     } finally {
       setSaving(false);
     }
@@ -354,11 +355,11 @@ function DepreciationModal({
               <span className="material-symbols-outlined text-amber-600 text-[18px]">trending_down</span>
             </div>
             <div>
-              <h3 className="font-semibold text-neutral-900 text-sm">Set Depreciation</h3>
+              <h3 className="font-semibold text-neutral-900 text-sm">{t("assets.registerPage.setDepr")}</h3>
               <p className="text-xs text-neutral-400">{asset.asset_code} — {asset.name}</p>
             </div>
           </div>
-          <button onClick={onClose} aria-label="Close asset details" className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label={t("assets.registerPage.closeAssetDetails")} className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -372,26 +373,26 @@ function DepreciationModal({
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <F label="Purchase Date" htmlFor="assets-depr-purchase-date">
+            <F label={t("assets.registerPage.purchaseDate")} htmlFor="assets-depr-purchase-date">
               <input id="assets-depr-purchase-date" type="date" className="form-input" value={purchaseDate}
                 onChange={(e) => setPurchaseDate(e.target.value)} />
             </F>
-            <F label="Purchase Value *" htmlFor="assets-depr-purchase-value">
+            <F label={`${t("assets.registerPage.purchaseValue")} *`} htmlFor="assets-depr-purchase-value">
               <input id="assets-depr-purchase-value" type="number" min={0} step="0.01" className="form-input" placeholder="0.00"
                 value={purchaseValue} onChange={(e) => setPurchaseValue(e.target.value)} />
             </F>
-            <F label="Useful Life (years) *" htmlFor="assets-depr-useful-life">
-              <input id="assets-depr-useful-life" type="number" min={1} max={100} className="form-input" placeholder="e.g. 5"
+            <F label={`${t("assets.registerPage.usefulLife")} *`} htmlFor="assets-depr-useful-life">
+              <input id="assets-depr-useful-life" type="number" min={1} max={100} className="form-input" placeholder={t("assets.registerPage.exampleYears")}
                 value={usefulLife} onChange={(e) => setUsefulLife(e.target.value)} />
             </F>
-            <F label="Salvage / Residual Value" htmlFor="assets-depr-salvage">
+            <F label={t("assets.registerPage.salvageResidual")} htmlFor="assets-depr-salvage">
               <input id="assets-depr-salvage" type="number" min={0} step="0.01" className="form-input" placeholder="0.00"
                 value={salvageValue} onChange={(e) => setSalvageValue(e.target.value)} />
             </F>
             <div className="col-span-2">
-              <F label="Depreciation Method" htmlFor="assets-depr-method">
+              <F label={t("assets.registerPage.deprMethod")} htmlFor="assets-depr-method">
                 <select id="assets-depr-method" className="form-input" value={method} onChange={(e) => setMethod(e.target.value)}>
-                  {DEPR_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  {DEPR_METHODS.map((m) => <option key={m.value} value={m.value}>{t(m.label)}</option>)}
                 </select>
               </F>
             </div>
@@ -400,32 +401,32 @@ function DepreciationModal({
           {/* Live preview */}
           {preview ? (
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
-              <p className="text-xs font-bold text-primary uppercase tracking-wide">Calculated Depreciation</p>
+              <p className="text-xs font-bold text-primary uppercase tracking-wide">{t("assets.registerPage.calcDepr")}</p>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-xs text-neutral-500">Current Book Value</p>
+                  <p className="text-xs text-neutral-500">{t("assets.registerPage.currentBookValue")}</p>
                   <p className="text-lg font-bold text-neutral-900">{fmtMoney(preview.currentValue)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-500">% Depreciated</p>
+                  <p className="text-xs text-neutral-500">{t("assets.registerPage.pctDepr")}</p>
                   <p className="text-lg font-bold text-neutral-900">{preview.pct.toFixed(1)}%</p>
                 </div>
                 {preview.annualDepr != null && (
                   <div>
-                    <p className="text-xs text-neutral-500">Annual Depreciation</p>
+                    <p className="text-xs text-neutral-500">{t("assets.registerPage.annualDepr")}</p>
                     <p className="text-sm font-semibold text-neutral-700">{fmtMoney(preview.annualDepr)}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-xs text-neutral-500">Years Elapsed</p>
-                  <p className="text-sm font-semibold text-neutral-700">{preview.yearsElapsed.toFixed(1)} yr</p>
+                  <p className="text-xs text-neutral-500">{t("assets.registerPage.yearsElapsed")}</p>
+                  <p className="text-sm font-semibold text-neutral-700">{t("assets.registerPage.yearsShort", { years: preview.yearsElapsed.toFixed(1) })}</p>
                 </div>
               </div>
               {/* Progress bar */}
               <div>
                 <div className="flex justify-between text-[10px] text-neutral-400 mb-1">
-                  <span>Purchase</span>
-                  <span>End of life ({ul} yr)</span>
+                  <span>{t("assets.registerPage.purchase")}</span>
+                  <span>{t("assets.registerPage.endOfLife", { years: ul ?? "" })}</span>
                 </div>
                 <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
                   <div
@@ -437,18 +438,18 @@ function DepreciationModal({
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-neutral-200 p-4 text-center text-xs text-neutral-400">
-              Enter purchase value and useful life to see a live calculation.
+              {t("assets.registerPage.deprEmpty")}
             </div>
           )}
         </div>
 
         {/* Footer */}
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
-          <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+          <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
           <button type="button" onClick={handleSave} disabled={saving || !pv || !ul}
             className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
             <span className="material-symbols-outlined text-[16px]">save</span>
-            {saving ? "Saving…" : "Save Depreciation"}
+            {saving ? t("assets.form.saving") : t("assets.registerPage.saveDepr")}
           </button>
         </div>
       </div>
@@ -617,10 +618,11 @@ function RejectCapitalisationModal({
   );
 }
 
+// Labels are i18n keys; translate with t() where they are shown.
 const requestStatusConfig: Record<string, { label: string; cls: string }> = {
-  pending:  { label: "Pending",  cls: "badge-warning" },
-  approved: { label: "Approved", cls: "badge-success" },
-  rejected: { label: "Rejected", cls: "badge-danger" },
+  pending:  { label: "assets.requests.status.pending",  cls: "badge-warning" },
+  approved: { label: "assets.requests.status.approved", cls: "badge-success" },
+  rejected: { label: "assets.requests.status.rejected", cls: "badge-danger" },
 };
 
 function downloadBlob(data: Blob, filename: string) {
@@ -794,10 +796,10 @@ export default function AssetsPage() {
       const widths = registerPdfColumnWidths(pageWidth, margin);
       const columnStyles = Object.fromEntries(widths.map((cellWidth, index) => [index, { cellWidth }]));
       doc.setFontSize(14);
-      doc.text("Asset Register", margin, 15);
+      doc.text(t("assets.print.register"), margin, 15);
       doc.setFontSize(9);
       doc.text(
-        `Generated ${new Date().toLocaleDateString("en-GB")} – ${exportTargets.length} item(s)`,
+        t("assets.registerPage.pdfGenerated", { date: new Date().toLocaleDateString("en-GB"), count: exportTargets.length }),
         margin,
         22,
       );
@@ -807,7 +809,7 @@ export default function AssetsPage() {
           asset.asset_code,
           asset.name,
           categoryLabel(asset.category),
-          statusConfig[asset.status]?.label ?? asset.status,
+          statusConfig[asset.status] ? t(statusConfig[asset.status].label) : asset.status,
           asset.assigned_user?.name ?? "",
         ]),
         startY: 28,
@@ -921,7 +923,7 @@ export default function AssetsPage() {
       <div className="flex items-start justify-between flex-wrap gap-4">
         <ModulePageHeader
         title="assets.register.title"
-        subtitle="Capital assets, movements, and GRN capitalisation queue."
+        subtitle="assets.registerPage.subtitle"
         breadcrumbs={<PageBreadcrumbs items={[{ label: t("assets.register.title") }]} />}
       />
         <div className="flex gap-2 flex-wrap">
@@ -988,16 +990,16 @@ export default function AssetsPage() {
             <>
               <Link href="/assets/categories" className="btn-secondary">
                 <span className="material-symbols-outlined text-[18px]">category</span>
-                Categories
+                {t("assets.categories.breadcrumb")}
               </Link>
               <Link href="/assets/import" className="btn-secondary">
                 <span className="material-symbols-outlined text-[18px]">upload_file</span>
-                Import
+                {t("assets.registerPage.import")}
               </Link>
               <ClearAssetRegisterButton onCleared={() => { void loadAssets(); }} />
               <Link href="/assets/add" className="btn-primary">
                 <span className="material-symbols-outlined text-[18px]">add</span>
-                Add Asset
+                {t("assets.add.title")}
               </Link>
             </>
           )}
@@ -1016,7 +1018,7 @@ export default function AssetsPage() {
           {showRequestButton && (
             <Link href="/assets/requests?new=1" className="btn-primary">
               <span className="material-symbols-outlined text-[18px]">add_circle</span>
-              Request Asset
+              {t("assets.registerPage.requestAsset")}
             </Link>
           )}
         </div>
@@ -1151,13 +1153,14 @@ export default function AssetsPage() {
             <div className="card p-12 text-center">
               <div className="flex items-center justify-center gap-2 text-neutral-400">
                 <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-                <span className="text-sm">Loading…</span>
+                <span className="text-sm">{t("common.loading")}</span>
               </div>
             </div>
           ) : requests.length > 0 ? (
             <div className="space-y-3">
               {requests.map((req) => {
-                const s = requestStatusConfig[req.status] ?? { label: req.status, cls: "badge-muted" };
+                const cfg = requestStatusConfig[req.status];
+                const s = cfg ? { label: t(cfg.label), cls: cfg.cls } : { label: req.status, cls: "badge-muted" };
                 return (
                   <div key={req.id} className="card p-5 hover:shadow-elevated transition-shadow">
                     <div className="flex items-start justify-between gap-4">
@@ -1187,7 +1190,7 @@ export default function AssetsPage() {
                 action={
                   <Link href="/assets/requests?new=1" className="btn-primary inline-flex">
                     <span className="material-symbols-outlined text-[18px]">add</span>
-                    Request Asset
+                    {t("assets.registerPage.requestAsset")}
                   </Link>
                 }
               />
@@ -1200,7 +1203,7 @@ export default function AssetsPage() {
             <div className="card p-12 text-center">
               <div className="flex items-center justify-center gap-2 text-neutral-400">
                 <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-                <span className="text-sm">Loading…</span>
+                <span className="text-sm">{t("common.loading")}</span>
               </div>
             </div>
           ) : pagedAssets.length > 0 ? (
@@ -1238,7 +1241,8 @@ export default function AssetsPage() {
             </BulkSelectionBar>
             <div className="grid gap-4 sm:grid-cols-2">
               {pagedAssets.map((asset) => {
-                const s = statusConfig[asset.status] ?? { label: asset.status, cls: "badge-muted" };
+                const cfg = statusConfig[asset.status];
+                const s = cfg ? { label: t(cfg.label), cls: cfg.cls } : { label: asset.status, cls: "badge-muted" };
                 return (
                   <div key={asset.id} className="card p-5 hover:shadow-elevated transition-shadow">
                     <div className="flex items-start justify-between gap-2">
@@ -1330,7 +1334,7 @@ export default function AssetsPage() {
                                 <Link
                                   href={`/assets/${asset.id}/edit`}
                                   className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-primary transition-colors"
-                                  aria-label="Edit asset"
+                                  aria-label={t("assets.registerPage.editAsset")}
                                 >
                                   <span className="material-symbols-outlined text-[20px]">edit</span>
                                 </Link>
@@ -1410,7 +1414,7 @@ export default function AssetsPage() {
                 action={showRequestButton ? (
                   <Link href="/assets/requests?new=1" className="btn-primary inline-flex">
                     <span className="material-symbols-outlined text-[18px]">add</span>
-                    Request Asset
+                    {t("assets.registerPage.requestAsset")}
                   </Link>
                 ) : undefined}
               />

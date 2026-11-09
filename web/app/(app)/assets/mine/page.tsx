@@ -60,11 +60,11 @@ export default function MyAssetsPage() {
     try {
       await assetsApi.acknowledge(asset.id);
       setNotice(t("assets.mine.acknowledged"));
-      toast.success("Asset accepted");
+      toast.success(t("assets.mine.toast.accepted"));
       await load();
     } catch (err) {
       setError(t("assets.mine.ackFailed"));
-      toast.error("Could not accept asset", apiErrorMessage(err, t("assets.mine.ackFailed")));
+      toast.error(t("assets.mine.toast.acceptFailed"), apiErrorMessage(err, t("assets.mine.ackFailed")));
     } finally {
       setActing(null);
     }
@@ -81,13 +81,13 @@ export default function MyAssetsPage() {
     try {
       await assetsApi.declineAssignment(asset.id, declineReason.trim());
       setNotice(t("assets.mine.declined"));
-      toast.success("Assignment declined");
+      toast.success(t("assets.mine.toast.declined"));
       setDecliningId(null);
       setDeclineReason("");
       await load();
     } catch (err) {
       setError(t("assets.mine.declineFailed"));
-      toast.error("Could not decline assignment", apiErrorMessage(err, t("assets.mine.declineFailed")));
+      toast.error(t("assets.mine.toast.declineFailed"), apiErrorMessage(err, t("assets.mine.declineFailed")));
     } finally {
       setActing(null);
     }
@@ -100,11 +100,11 @@ export default function MyAssetsPage() {
     try {
       await assetsApi.requestReturn(asset.id);
       setNotice(t("assets.mine.returnRequested"));
-      toast.success("Return requested");
+      toast.success(t("assets.mine.toast.returnRequested"));
       await load();
     } catch (err) {
       setError(t("assets.mine.returnRequestFailed"));
-      toast.error("Could not request return", apiErrorMessage(err, t("assets.mine.returnRequestFailed")));
+      toast.error(t("assets.mine.toast.returnFailed"), apiErrorMessage(err, t("assets.mine.returnRequestFailed")));
     } finally {
       setActing(null);
     }
@@ -116,11 +116,11 @@ export default function MyAssetsPage() {
     try {
       await assetsApi.reportLost(asset.id, { circumstances: "Reported from My Assets" });
       setNotice(t("assets.mine.reportLost"));
-      toast.success("Asset reported lost");
+      toast.success(t("assets.mine.toast.reportedLost"));
       await load();
     } catch (err) {
       setError(t("assets.mine.actionFailed"));
-      toast.error("Could not report asset lost", apiErrorMessage(err, t("assets.mine.actionFailed")));
+      toast.error(t("assets.mine.toast.lostFailed"), apiErrorMessage(err, t("assets.mine.actionFailed")));
     } finally {
       setActing(null);
     }
@@ -132,11 +132,11 @@ export default function MyAssetsPage() {
     try {
       await assetsApi.reportStolen(asset.id, { circumstances: "Reported from My Assets" });
       setNotice(t("assets.mine.reportStolen"));
-      toast.success("Asset reported stolen");
+      toast.success(t("assets.mine.toast.reportedStolen"));
       await load();
     } catch (err) {
       setError(t("assets.mine.actionFailed"));
-      toast.error("Could not report asset stolen", apiErrorMessage(err, t("assets.mine.actionFailed")));
+      toast.error(t("assets.mine.toast.stolenFailed"), apiErrorMessage(err, t("assets.mine.actionFailed")));
     } finally {
       setActing(null);
     }
@@ -151,11 +151,11 @@ export default function MyAssetsPage() {
     try {
       await assetsApi.initiateTransfer(asset.id, { to_user_id: toUserId, reason: "Requested from My Assets" });
       setNotice(t("assets.mine.requestTransfer"));
-      toast.success("Transfer requested");
+      toast.success(t("assets.mine.toast.transferRequested"));
       await load();
     } catch (err) {
       setError(t("assets.mine.actionFailed"));
-      toast.error("Could not request transfer", apiErrorMessage(err, t("assets.mine.actionFailed")));
+      toast.error(t("assets.mine.toast.transferFailed"), apiErrorMessage(err, t("assets.mine.actionFailed")));
     } finally {
       setActing(null);
     }

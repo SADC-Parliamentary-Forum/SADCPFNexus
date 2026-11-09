@@ -8,6 +8,7 @@ import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -28,6 +29,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 }
 
 export default function Page() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -62,7 +64,7 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
   const detect = useMutation({
     mutationFn: () => peopleAuthorityApi.detectPrivilegeAlerts(),
     onSuccess: () => {
-      setMsg("Detection ran. Alerts are suggestions only.");
+      setMsg(t("people.privilegeAlerts.detected"));
       qc.invalidateQueries({ queryKey: ["people-authority", "privilege-alerts"] });
     },
   });
@@ -74,13 +76,13 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Privilege Alerts"
-        subtitle="Anomalous privilege suggestions only — never auto-revoke or auto-grant access."
+        title={t("people.privilegeAlerts.title")}
+        subtitle={t("people.privilegeAlerts.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "Privilege Alerts" },
+              { label: t("people.hub.title"), href: "/people" },
+              { label: t("people.privilegeAlerts.title") },
             ]}
           />
         }
@@ -92,10 +94,10 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
               onClick={() => detect.mutate()}
               disabled={detect.isPending}
             >
-              {detect.isPending ? "Detecting…" : "Detect alerts"}
+              {detect.isPending ? t("people.privilegeAlerts.detecting") : t("people.privilegeAlerts.detect")}
             </button>
             <Link href="/people" className="btn-secondary text-sm">
-              Hub
+              {t("people.common.hub")}
             </Link>
           </div>
         }
@@ -105,12 +107,12 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
 
       <div className="card p-3">
         <label htmlFor="people-privilege-alerts-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
-          Search
+          {t("common.search")}
           <input id="people-privilege-alerts-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
+            placeholder={t("people.common.filterRows")}
           />
         </label>
       </div>
@@ -125,24 +127,24 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
         <div className="card">
           <EmptyState
             icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
+            title={t("people.common.unableToLoad")}
+            description={t("people.common.loadFailed")}
             action={
               <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
+                {t("common.retry")}
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
+          <EmptyState icon="inbox" title={t("people.common.noRecords")} description={t("people.common.emptyRegister")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
-              <caption className="sr-only">Privilege Alerts</caption>
+              <caption className="sr-only">{t("people.privilegeAlerts.title")}</caption>
               <thead>
                 <tr>
                   {columns.map((c) => (
@@ -150,7 +152,7 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
                       {c.replace(/_/g, " ")}
                     </th>
                   ))}
-                  <th>Actions</th>
+                  <th>{t("people.common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -167,7 +169,7 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
                           onClick={() => ack.mutate(Number(r.id))}
                           disabled={ack.isPending}
                         >
-                          Acknowledge
+                          {t("people.privilegeAlerts.acknowledge")}
                         </button>
                       )}
                     </td>

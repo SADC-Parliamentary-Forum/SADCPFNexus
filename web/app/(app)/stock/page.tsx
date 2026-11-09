@@ -44,7 +44,7 @@ export default function StockItemsPage() {
     stockItemsApi
       .list({ per_page: 100 })
       .then((res) => setItems(res.data.data ?? []))
-      .catch(() => setError("Failed to load stock items."))
+      .catch(() => setError("stock.register.loadFailed"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -93,26 +93,26 @@ export default function StockItemsPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-4">
         <ModulePageHeader
-        title="Stock"
-        subtitle="Track consumable stock items, balances and reorder levels — separate from fixed assets."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock" }]} />}
+        title="stock.common.stock"
+        subtitle="stock.register.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "stock.common.stock" }]} />}
       />
         <div className="flex gap-2 flex-wrap">
           <Link href="/stock/dashboard" className="btn-secondary">
             <span className="material-symbols-outlined text-[18px]">dashboard</span>
-            Dashboard
+            {t("nav.dashboard")}
           </Link>
           <Link href="/stock/stocktakes" className="btn-secondary">
             <span className="material-symbols-outlined text-[18px]">fact_check</span>
-            Stocktakes
+            {t("stock.stocktakes.title")}
           </Link>
           <Link href="/stock/reports" className="btn-secondary">
             <span className="material-symbols-outlined text-[18px]">summarize</span>
-            Reports
+            {t("nav.reports")}
           </Link>
           <Link href="/stock/movements" className="btn-secondary">
             <span className="material-symbols-outlined text-[18px]">swap_vert</span>
-            Movements
+            {t("stock.movements.crumb")}
           </Link>
           {canConfigure && (
             <>
@@ -129,13 +129,13 @@ export default function StockItemsPage() {
           {canIssue && (
             <button type="button" onClick={() => openMovement(null)} className="btn-secondary">
               <span className="material-symbols-outlined text-[18px]">add_task</span>
-              Record Movement
+              {t("stock.movements.record")}
             </button>
           )}
           {canManage && (
             <button type="button" onClick={openNew} className="btn-primary">
               <span className="material-symbols-outlined text-[18px]">add</span>
-              New Item
+              {t("stock.register.newItem")}
             </button>
           )}
         </div>
@@ -143,21 +143,21 @@ export default function StockItemsPage() {
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>{error}
+          <span className="material-symbols-outlined text-[16px]">error_outline</span>{t(error)}
         </div>
       )}
 
       {!loading && items.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { label: "Stock Items", count: items.length, icon: "inventory", color: "text-primary", bg: "bg-primary/10" },
-            { label: "Low Stock", count: lowStockCount, icon: "production_quantity_limits", color: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Stock Value", count: fmtMoney(totalValue), icon: "savings", color: "text-green-600", bg: "bg-green-50" },
+            { label: "stock.register.stockItems", count: items.length, icon: "inventory", color: "text-primary", bg: "bg-primary/10" },
+            { label: "stock.reports.lowStock", count: lowStockCount, icon: "production_quantity_limits", color: "text-amber-600", bg: "bg-amber-50" },
+            { label: "stock.register.stockValue", count: fmtMoney(totalValue), icon: "savings", color: "text-green-600", bg: "bg-green-50" },
           ].map((s) => (
             <div key={s.label} className="card p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-neutral-500">{s.label}</p>
+                  <p className="text-xs text-neutral-500">{t(s.label)}</p>
                   <p className="text-lg font-bold text-neutral-900 mt-0.5">{s.count}</p>
                 </div>
                 <div className={`h-9 w-9 rounded-xl ${s.bg} flex items-center justify-center`}>
@@ -172,25 +172,25 @@ export default function StockItemsPage() {
       {!loading && items.length > 0 && (
         <div className="card p-3 flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[160px]">
-            <label htmlFor="stock-register-search" className="block text-xs font-semibold text-neutral-600 mb-1">Search</label>
+            <label htmlFor="stock-register-search" className="block text-xs font-semibold text-neutral-600 mb-1">{t("common.search")}</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-neutral-400 text-[18px]">search</span>
-              <input id="stock-register-search" className="form-input pl-8 text-sm" placeholder="Name or item code…" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input id="stock-register-search" className="form-input pl-8 text-sm" placeholder={t("stock.register.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           </div>
           <div className="min-w-[150px]">
             <label htmlFor="stock-register-category" className="block text-xs font-semibold text-neutral-600 mb-1">{t("stock.category")}</label>
             <select id="stock-register-category" className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-              <option value="all">All Categories</option>
+              <option value="all">{t("stock.categories.all")}</option>
               {categories.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
             </select>
           </div>
           <div className="min-w-[130px]">
-            <label htmlFor="stock-status" className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
+            <label htmlFor="stock-status" className="block text-xs font-semibold text-neutral-600 mb-1">{t("stock.common.status")}</label>
             <select id="stock-status" className="form-input text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
-              <option value="all">All</option>
+              <option value="active">{t("stock.common.active")}</option>
+              <option value="archived">{t("stock.register.archived")}</option>
+              <option value="all">{t("stock.register.all")}</option>
             </select>
           </div>
         </div>
@@ -200,7 +200,7 @@ export default function StockItemsPage() {
         <div className="card p-12 text-center">
           <div className="flex items-center justify-center gap-2 text-neutral-400">
             <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-            <span className="text-sm">Loading…</span>
+            <span className="text-sm">{t("common.loading")}</span>
           </div>
         </div>
       ) : filtered.length > 0 ? (
@@ -209,13 +209,13 @@ export default function StockItemsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-100 text-left text-xs font-semibold text-neutral-500">
-                  <th className="px-4 py-3">Item</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3 text-right">Balance</th>
-                  <th className="px-4 py-3 text-right">Reorder</th>
-                  <th className="px-4 py-3 text-right">Unit Cost</th>
-                  <th className="px-4 py-3">Location</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3">{t("stock.common.item")}</th>
+                  <th className="px-4 py-3">{t("stock.common.category")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.balance")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.reorder")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.unitCost")}</th>
+                  <th className="px-4 py-3">{t("stock.common.location")}</th>
+                  <th className="px-4 py-3 text-right">{t("stock.common.actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50">
@@ -229,7 +229,7 @@ export default function StockItemsPage() {
                           </p>
                           <p className="text-xs font-mono text-neutral-400">{i.item_code}{i.unit ? ` · ${i.unit}` : ""}</p>
                         </div>
-                        {i.is_low_stock && <span className="badge badge-warning">Low</span>}
+                        {i.is_low_stock && <span className="badge badge-warning">{t("stock.reports.low")}</span>}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-neutral-600">{i.category?.name ?? "—"}</td>
@@ -240,12 +240,12 @@ export default function StockItemsPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         {canIssue && (
-                          <button type="button" onClick={() => openMovement(i)} className="p-2 rounded-lg text-neutral-500 hover:bg-primary/10 hover:text-primary" aria-label="Record movement" title="Record movement">
+                          <button type="button" onClick={() => openMovement(i)} className="p-2 rounded-lg text-neutral-500 hover:bg-primary/10 hover:text-primary" aria-label={t("stock.item.recordMovement")} title={t("stock.item.recordMovement")}>
                             <span className="material-symbols-outlined text-[18px]">swap_vert</span>
                           </button>
                         )}
                         {canManage && (
-                          <button type="button" onClick={() => openEdit(i)} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700" aria-label="Edit" title="Edit">
+                          <button type="button" onClick={() => openEdit(i)} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700" aria-label={t("common.edit")} title={t("common.edit")}>
                             <span className="material-symbols-outlined text-[18px]">edit</span>
                           </button>
                         )}
@@ -261,10 +261,10 @@ export default function StockItemsPage() {
         <div className="card">
           <EmptyState
             icon="search_off"
-            title="No items match your filters"
+            title="stock.register.noMatch"
             action={
               <button type="button" onClick={() => { setSearch(""); setFilterCategory("all"); setFilterStatus("active"); }} className="btn-secondary text-xs">
-                Clear filters
+                {t("assets.register.clearFilters")}
               </button>
             }
           />
@@ -273,12 +273,12 @@ export default function StockItemsPage() {
         <div className="card">
           <EmptyState
             icon="inventory"
-            title="No stock items yet"
-            description="Add consumable items to start tracking balances and reorder levels."
+            title="stock.register.empty"
+            description="stock.register.emptyHint"
             action={canManage ? (
               <button type="button" onClick={openNew} className="btn-primary inline-flex">
                 <span className="material-symbols-outlined text-[18px]">add</span>
-                New Item
+                {t("stock.register.newItem")}
               </button>
             ) : undefined}
           />

@@ -6,15 +6,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { researcherReportsApi, deploymentsApi, type StaffDeployment, type ResearcherReportActivity } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
-const DOCUMENT_TYPES = [
-  "Monthly Report",
-  "Quarterly Report",
-  "Field Notes",
-  "Meeting Minutes",
-  "Supporting Evidence",
-  "Photo Documentation",
-  "Other",
+/** Values are stored on the attachment; labels are translation keys. */
+const DOCUMENT_TYPES: { value: string; label: string }[] = [
+  { value: "Monthly Report", label: "srhr.reportTypeFull.monthly" },
+  { value: "Quarterly Report", label: "srhr.reportTypeFull.quarterly" },
+  { value: "Field Notes", label: "srhr.newReport.doc.fieldNotes" },
+  { value: "Meeting Minutes", label: "srhr.newReport.doc.minutes" },
+  { value: "Supporting Evidence", label: "srhr.newReport.doc.evidence" },
+  { value: "Photo Documentation", label: "srhr.newReport.doc.photos" },
+  { value: "Other", label: "srhr.deploymentType.other" },
 ];
 
 interface PendingFile {
@@ -30,6 +32,7 @@ function formatBytes(bytes: number): string {
 }
 
 function NewReportPageInner() {
+  const { t } = useI18n();
   const router       = useRouter();
   const searchParams = useSearchParams();
   const toast        = useToast();
@@ -136,18 +139,18 @@ function NewReportPageInner() {
         }
       }
 
-      toast.success("Report saved", form.title);
+      toast.success(t("srhr.newReport.saved"), form.title);
       if (failedUploads > 0) {
-        toast.warning("Some attachments not uploaded", `${failedUploads} file(s) failed to upload. Add them from the report page.`);
+        toast.warning(t("srhr.newReport.someNotUploaded"), t("srhr.newReport.someNotUploadedDetail", { count: failedUploads }));
       }
       router.push("/srhr/reports");
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       const msgs = e.response?.data?.errors
         ? Object.values(e.response.data.errors).flat().join("; ")
-        : (e.response?.data?.message ?? "Failed to save report.");
+        : (e.response?.data?.message ?? t("srhr.newReport.saveFailed"));
       setError(msgs);
-      toast.error("Report not saved", msgs);
+      toast.error(t("srhr.newReport.notSaved"), msgs);
     } finally {
       setSaving(false);
       setUploadProgress(null);
@@ -157,17 +160,17 @@ function NewReportPageInner() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-1.5 text-sm text-neutral-500">
-        <Link href="/srhr" className="hover:text-primary">SRHR</Link>
+        <Link href="/srhr" className="hover:text-primary">{t("srhr.crumb")}</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href="/srhr/reports" className="hover:text-primary">Reports</Link>
+        <Link href="/srhr/reports" className="hover:text-primary">{t("srhr.report.crumb")}</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-800 font-medium">New Report</span>
+        <span className="text-neutral-800 font-medium">{t("srhr.newReport.crumb")}</span>
       </div>
 
       <ModulePageHeader
-        title="Submit Activity Report"
-        subtitle="Document your activities, findings, and plans for the reporting period."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Submit Activity Report" }]} />}
+        title="srhr.newReport.title"
+        subtitle="srhr.newReport.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "srhr.newReport.title" }]} />}
       />
 
       {error && (
@@ -180,12 +183,12 @@ function NewReportPageInner() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Report metadata */}
         <div className="card p-6 space-y-5">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Report Details</p>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">{t("srhr.report.details")}</p>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label htmlFor="srhr-reports-new-deployment" className="block text-xs font-medium text-neutral-700 mb-1.5">Deployment <span className="text-red-500">*</span></label>
+              <label htmlFor="srhr-reports-new-deployment" className="block text-xs font-medium text-neutral-700 mb-1.5">{t("srhr.newReport.deployment")} <span className="text-red-500">*</span></label>
               <select id="srhr-reports-new-deployment" className="form-input" value={form.deployment_id} onChange={(e) => set("deployment_id", e.target.value)} required>
-                <option value="">Select deployment…</option>
+                <option value="">{t("srhr.newReport.selectDeployment")}</option>
                 {deployments.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.employee?.name} → {d.parliament?.name} ({d.reference_number})
@@ -194,37 +197,37 @@ function NewReportPageInner() {
               </select>
             </div>
             <div>
-              <label htmlFor="srhr-reports-new-report-type" className="block text-xs font-medium text-neutral-700 mb-1.5">Report Type</label>
+              <label htmlFor="srhr-reports-new-report-type" className="block text-xs font-medium text-neutral-700 mb-1.5">{t("srhr.newReport.reportType")}</label>
               <select id="srhr-reports-new-report-type" className="form-input" value={form.report_type} onChange={(e) => set("report_type", e.target.value)}>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="annual">Annual</option>
-                <option value="ad_hoc">Ad Hoc</option>
+                <option value="monthly">{t("srhr.reportType.monthly")}</option>
+                <option value="quarterly">{t("srhr.reportType.quarterly")}</option>
+                <option value="annual">{t("srhr.reportType.annual")}</option>
+                <option value="ad_hoc">{t("srhr.reportType.ad_hoc")}</option>
               </select>
             </div>
             <div />
             <div>
-              <label htmlFor="srhr-reports-new-period-start" className="block text-xs font-medium text-neutral-700 mb-1.5">Period Start <span className="text-red-500">*</span></label>
+              <label htmlFor="srhr-reports-new-period-start" className="block text-xs font-medium text-neutral-700 mb-1.5">{t("srhr.newReport.periodStart")} <span className="text-red-500">*</span></label>
               <input id="srhr-reports-new-period-start" type="date" className="form-input" value={form.period_start} onChange={(e) => set("period_start", e.target.value)} required />
             </div>
             <div>
-              <label htmlFor="srhr-reports-new-period-end" className="block text-xs font-medium text-neutral-700 mb-1.5">Period End <span className="text-red-500">*</span></label>
+              <label htmlFor="srhr-reports-new-period-end" className="block text-xs font-medium text-neutral-700 mb-1.5">{t("srhr.newReport.periodEnd")} <span className="text-red-500">*</span></label>
               <input id="srhr-reports-new-period-end" type="date" className="form-input" value={form.period_end} onChange={(e) => set("period_end", e.target.value)} required />
             </div>
             <div className="sm:col-span-2">
-              <label htmlFor="srhr-reports-new-report-title" className="block text-xs font-medium text-neutral-700 mb-1.5">Report Title <span className="text-red-500">*</span></label>
-              <input id="srhr-reports-new-report-title" className="form-input" placeholder="e.g. February 2026 Monthly Activity Report" value={form.title} onChange={(e) => set("title", e.target.value)} required />
+              <label htmlFor="srhr-reports-new-report-title" className="block text-xs font-medium text-neutral-700 mb-1.5">{t("srhr.newReport.reportTitle")} <span className="text-red-500">*</span></label>
+              <input id="srhr-reports-new-report-title" className="form-input" placeholder={t("srhr.newReport.titlePlaceholder")} value={form.title} onChange={(e) => set("title", e.target.value)} required />
             </div>
           </div>
         </div>
 
         {/* Executive Summary */}
         <div className="card p-6 space-y-3">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Executive Summary</p>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">{t("srhr.report.executiveSummary")}</p>
           <textarea
             className="form-input"
             rows={4}
-            placeholder="Provide a brief overview of the key highlights of the reporting period…"
+            placeholder={t("srhr.newReport.summaryPlaceholder")}
             value={form.executive_summary}
             onChange={(e) => set("executive_summary", e.target.value)}
           />
@@ -233,26 +236,26 @@ function NewReportPageInner() {
         {/* Activities */}
         <div className="card p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Activities Undertaken</p>
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">{t("srhr.newReport.activities")}</p>
             <button type="button" className="btn-secondary text-xs px-3 py-1.5" onClick={addActivity}>
-              + Add Activity
+              {t("srhr.newReport.addActivity")}
             </button>
           </div>
           {activities.map((act, i) => (
             <div key={i} className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-neutral-600">Activity {i + 1}</p>
+                <p className="text-xs font-medium text-neutral-600">{t("srhr.newReport.activityN", { n: i + 1 })}</p>
                 {activities.length > 1 && (
-                  <button type="button" onClick={() => removeActivity(i)} className="text-red-400 hover:text-red-600">
+                  <button type="button" onClick={() => removeActivity(i)} className="text-red-400 hover:text-red-600" aria-label={t("srhr.newReport.removeActivity", { n: i + 1 })}>
                     <span className="material-symbols-outlined text-[16px]">delete</span>
                   </button>
                 )}
               </div>
-              <input className="form-input" placeholder="Title *" value={act.title} onChange={(e) => updateActivity(i, "title", e.target.value)} />
-              <textarea className="form-input" rows={2} placeholder="Description" value={act.description ?? ""} onChange={(e) => updateActivity(i, "description", e.target.value)} />
+              <input className="form-input" placeholder={t("srhr.newReport.activityTitle")} value={act.title} onChange={(e) => updateActivity(i, "title", e.target.value)} />
+              <textarea className="form-input" rows={2} placeholder={t("hr.timesheets.templates.description")} value={act.description ?? ""} onChange={(e) => updateActivity(i, "description", e.target.value)} />
               <div className="grid grid-cols-2 gap-3">
-                <input type="date" className="form-input" placeholder="Date" value={act.date ?? ""} onChange={(e) => updateActivity(i, "date", e.target.value)} />
-                <input className="form-input" placeholder="Outcome" value={act.outcome ?? ""} onChange={(e) => updateActivity(i, "outcome", e.target.value)} />
+                <input type="date" className="form-input" placeholder={t("hr.timesheets.col.date")} value={act.date ?? ""} onChange={(e) => updateActivity(i, "date", e.target.value)} />
+                <input className="form-input" placeholder={t("srhr.newReport.outcome")} value={act.outcome ?? ""} onChange={(e) => updateActivity(i, "outcome", e.target.value)} />
               </div>
             </div>
           ))}
@@ -260,18 +263,18 @@ function NewReportPageInner() {
 
         {/* Challenges, Recommendations, Next Period */}
         <div className="card p-6 space-y-5">
-          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Analysis & Planning</p>
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">{t("srhr.report.analysis")}</p>
           <div>
-            <label htmlFor="srhr-reports-new-challenges-faced" className="block text-xs font-medium text-neutral-700 mb-1.5">Challenges Faced</label>
-            <textarea id="srhr-reports-new-challenges-faced" className="form-input" rows={3} placeholder="Describe any obstacles or challenges encountered…" value={form.challenges_faced} onChange={(e) => set("challenges_faced", e.target.value)} />
+            <label htmlFor="srhr-reports-new-challenges-faced" className="block text-xs font-medium text-neutral-700 mb-1.5">{t("srhr.report.challenges")}</label>
+            <textarea id="srhr-reports-new-challenges-faced" className="form-input" rows={3} placeholder={t("srhr.newReport.challengesPlaceholder")} value={form.challenges_faced} onChange={(e) => set("challenges_faced", e.target.value)} />
           </div>
           <div>
-            <label htmlFor="srhr-reports-new-recommendations" className="block text-xs font-medium text-neutral-700 mb-1.5">Recommendations</label>
-            <textarea id="srhr-reports-new-recommendations" className="form-input" rows={3} placeholder="Recommendations to SADC-PF or the host parliament…" value={form.recommendations} onChange={(e) => set("recommendations", e.target.value)} />
+            <label htmlFor="srhr-reports-new-recommendations" className="block text-xs font-medium text-neutral-700 mb-1.5">{t("srhr.report.recommendations")}</label>
+            <textarea id="srhr-reports-new-recommendations" className="form-input" rows={3} placeholder={t("srhr.newReport.recommendationsPlaceholder")} value={form.recommendations} onChange={(e) => set("recommendations", e.target.value)} />
           </div>
           <div>
-            <label htmlFor="srhr-reports-new-plan-for-next-period" className="block text-xs font-medium text-neutral-700 mb-1.5">Plan for Next Period</label>
-            <textarea id="srhr-reports-new-plan-for-next-period" className="form-input" rows={3} placeholder="Key activities planned for the next reporting period…" value={form.next_period_plan} onChange={(e) => set("next_period_plan", e.target.value)} />
+            <label htmlFor="srhr-reports-new-plan-for-next-period" className="block text-xs font-medium text-neutral-700 mb-1.5">{t("srhr.report.nextPlan")}</label>
+            <textarea id="srhr-reports-new-plan-for-next-period" className="form-input" rows={3} placeholder={t("srhr.newReport.nextPlanPlaceholder")} value={form.next_period_plan} onChange={(e) => set("next_period_plan", e.target.value)} />
           </div>
         </div>
 
@@ -279,8 +282,8 @@ function NewReportPageInner() {
         <div className="card p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Supporting Documents</p>
-              <p className="text-xs text-neutral-400 mt-0.5">Attach photos, field notes, meeting minutes, or any supporting evidence.</p>
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">{t("srhr.newReport.documents")}</p>
+              <p className="text-xs text-neutral-400 mt-0.5">{t("srhr.newReport.documentsHint")}</p>
             </div>
             <button
               type="button"
@@ -288,7 +291,7 @@ function NewReportPageInner() {
               className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[15px]">attach_file</span>
-              Add Files
+              {t("srhr.newReport.addFiles")}
             </button>
             <input
               ref={fileInputRef}
@@ -311,8 +314,8 @@ function NewReportPageInner() {
               onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}
             >
               <span className="material-symbols-outlined text-neutral-300 text-[32px]">upload_file</span>
-              <p className="text-sm text-neutral-500 mt-2">Drag &amp; drop files here, or <span className="text-primary underline">browse</span></p>
-              <p className="text-xs text-neutral-400 mt-1">Any file type accepted</p>
+              <p className="text-sm text-neutral-500 mt-2">{t("srhr.newReport.dropHint")} <span className="text-primary underline">{t("srhr.newReport.browse")}</span></p>
+              <p className="text-xs text-neutral-400 mt-1">{t("srhr.newReport.anyType")}</p>
             </div>
           )}
 
@@ -331,13 +334,13 @@ function NewReportPageInner() {
                     onChange={(e) => setFileDocType(pf.id, e.target.value)}
                     className="form-input text-xs py-1 h-8 w-44 flex-shrink-0"
                   >
-                    {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    {DOCUMENT_TYPES.map((d) => <option key={d.value} value={d.value}>{t(d.label)}</option>)}
                   </select>
                   <button
                     type="button"
                     onClick={() => removeFile(pf.id)}
                     className="text-neutral-300 hover:text-red-400 transition-colors flex-shrink-0"
-                    title="Remove"
+                    title={t("srhr.newReport.removeFile")}
                   >
                     <span className="material-symbols-outlined text-[18px]">close</span>
                   </button>
@@ -350,7 +353,7 @@ function NewReportPageInner() {
                 className="w-full rounded-xl border border-dashed border-neutral-200 py-2.5 text-xs font-medium text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 transition-colors flex items-center justify-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-[15px]">add</span>
-                Add more files
+                {t("srhr.newReport.addMore")}
               </button>
             </div>
           )}
@@ -359,7 +362,7 @@ function NewReportPageInner() {
           {uploadProgress && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs text-neutral-500">
-                <span>Uploading attachments…</span>
+                <span>{t("srhr.newReport.uploadingAttachments")}</span>
                 <span>{uploadProgress.done} / {uploadProgress.total}</span>
               </div>
               <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
@@ -373,13 +376,13 @@ function NewReportPageInner() {
         </div>
 
         <div className="flex items-center justify-end gap-3">
-          <Link href="/srhr/reports" className="btn-secondary">Cancel</Link>
+          <Link href="/srhr/reports" className="btn-secondary">{t("common.cancel")}</Link>
           <button type="submit" className="btn-primary" disabled={saving}>
             {saving
               ? uploadProgress
-                ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
-                : "Saving…"
-              : "Save Draft"}
+                ? t("srhr.newReport.uploadingProgress", { done: uploadProgress.done, total: uploadProgress.total })
+                : t("hr.timesheets.saving")
+              : t("hr.timesheets.saveDraft")}
           </button>
         </div>
       </form>
@@ -388,8 +391,9 @@ function NewReportPageInner() {
 }
 
 export default function NewReportPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="w-full min-w-0 p-6 text-sm text-neutral-500">Loading…</div>}>
+    <Suspense fallback={<div className="w-full min-w-0 p-6 text-sm text-neutral-500">{t("common.loading")}</div>}>
       <NewReportPageInner />
     </Suspense>
   );

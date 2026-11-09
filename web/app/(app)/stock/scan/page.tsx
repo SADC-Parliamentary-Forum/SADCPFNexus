@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import api, { stockEventPacksApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type StockItem = {
   id: number;
@@ -26,6 +27,7 @@ type OfflineLine = {
 };
 
 export default function StockBarcodeScanPage() {
+  const { t } = useI18n();
   const [barcode, setBarcode] = useState("");
   const [item, setItem] = useState<StockItem | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -55,7 +57,7 @@ export default function StockBarcodeScanPage() {
       const r = await api.get<{ data: StockItem }>(`/stock/items/by-barcode/${encodeURIComponent(barcode.trim())}`);
       setItem((r.data as { data: StockItem }).data);
     } catch {
-      setErr("No item found for this barcode.");
+      setErr(t("stock.scan.notFound"));
     }
   }
 
@@ -69,24 +71,24 @@ export default function StockBarcodeScanPage() {
       queued_at: new Date().toISOString(),
     };
     persistQueue([line, ...queue]);
-    setMsg(`Queued count for ${item.item_code}. Sync from an open stocktake draft when online.`);
+    setMsg(t("stock.scan.queued", { code: item.item_code }));
   }
 
   function clearQueue() {
     persistQueue([]);
-    setMsg("Offline queue cleared.");
+    setMsg(t("stock.scan.cleared"));
   }
 
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Barcode Scan"
-        subtitle="Scan-to-find stock items. Queue counts offline-friendly for later stocktake sync."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Barcode scan" }]} />}
+        title={t("stock.scan.title")}
+        subtitle={t("stock.scan.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("stock.common.stock"), href: "/stock" }, { label: t("stock.scan.crumb") }]} />}
         actions={
           <>
-            <Link href="/stock/event-packs" className="btn-secondary btn-sm">Event packs</Link>
-            <Link href="/stock/stocktakes" className="btn-secondary btn-sm">Open stocktake to Apply browser queue</Link>
+            <Link href="/stock/event-packs" className="btn-secondary btn-sm">{t("stock.eventPacks.title")}</Link>
+            <Link href="/stock/stocktakes" className="btn-secondary btn-sm">{t("stock.scan.openStocktake")}</Link>
           </>
         }
       />
@@ -95,51 +97,51 @@ export default function StockBarcodeScanPage() {
 
       <form onSubmit={lookup} className="card flex flex-wrap items-end gap-3 p-4">
         <label htmlFor="stock-scan-barcode-setbarcode-e-target-value-placeholder-sc" className="block min-w-[220px] flex-1 text-sm">
-          <span className="text-xs font-semibold text-neutral-700">Barcode</span>
+          <span className="text-xs font-semibold text-neutral-700">{t("stock.scan.barcode")}</span>
           <input id="stock-scan-barcode-setbarcode-e-target-value-placeholder-sc"
             className="form-input mt-1 w-full"
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
-            placeholder="Scan or type barcode"
+            placeholder={t("stock.scan.barcodePlaceholder")}
             autoFocus
             required
           />
         </label>
-        <button type="submit" className="btn-primary btn-sm">Find</button>
+        <button type="submit" className="btn-primary btn-sm">{t("stock.scan.find")}</button>
       </form>
 
       {item && (
         <div className="card space-y-3 p-4">
           <h2 className="text-sm font-semibold text-neutral-900">{item.name}</h2>
-          <p className="text-sm text-neutral-600">Code: {item.item_code} · Barcode: {item.barcode ?? "—"}</p>
-          <p className="text-sm text-neutral-600">On hand: {item.current_balance ?? "—"} · Available: {item.available_quantity ?? "—"} {item.unit ?? ""}</p>
+          <p className="text-sm text-neutral-600">{t("stock.scan.codeLine", { code: item.item_code, barcode: item.barcode ?? "—" })}</p>
+          <p className="text-sm text-neutral-600">{t("stock.scan.balanceLine", { onHand: item.current_balance ?? "—", available: item.available_quantity ?? "—", unit: item.unit ?? "" })}</p>
           <div className="flex flex-wrap items-end gap-2">
             <label htmlFor="stock-scan-count-setcount-e-target-value" className="block text-sm">
-              <span className="text-xs font-semibold text-neutral-700">Count</span>
+              <span className="text-xs font-semibold text-neutral-700">{t("stock.scan.count")}</span>
               <input id="stock-scan-count-setcount-e-target-value" type="number" min="0" className="form-input mt-1 w-28" value={count} onChange={(e) => setCount(e.target.value)} />
             </label>
-            <button type="button" className="btn-secondary btn-sm" onClick={queueOffline}>Queue offline</button>
+            <button type="button" className="btn-secondary btn-sm" onClick={queueOffline}>{t("stock.scan.queueOffline")}</button>
           </div>
         </div>
       )}
 
       <div className="card space-y-2 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-neutral-900">Offline draft queue ({queue.length})</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">{t("stock.scan.queueTitle", { count: queue.length })}</h2>
           {queue.length > 0 && (
-            <button type="button" className="btn-secondary btn-sm" onClick={clearQueue}>Clear</button>
+            <button type="button" className="btn-secondary btn-sm" onClick={clearQueue}>{t("stock.scan.clear")}</button>
           )}
         </div>
         <p className="text-xs text-neutral-500">
-          Stored in browser localStorage. When online, open a draft stocktake and use <strong>Apply browser queue</strong> so counts sync with matching client_line_key.
+          {t("stock.scan.queueHintBefore")} <strong>{t("stock.common.applyBrowserQueue")}</strong> {t("stock.scan.queueHintAfter")}
         </p>
         <ul className="space-y-1 text-sm">
           {queue.map((q) => (
             <li key={q.client_line_key} className="font-mono text-xs text-neutral-700">
-              {q.barcode ?? q.stock_item_id} → qty {q.counted_qty} · {q.client_line_key}
+              {t("stock.scan.queueLine", { code: q.barcode ?? q.stock_item_id, qty: q.counted_qty, key: q.client_line_key })}
             </li>
           ))}
-          {queue.length === 0 && <li className="text-neutral-500">Queue empty.</li>}
+          {queue.length === 0 && <li className="text-neutral-500">{t("stock.scan.queueEmpty")}</li>}
         </ul>
       </div>
 
@@ -153,12 +155,12 @@ export default function StockBarcodeScanPage() {
           setBulkResult(r.data.data);
         }}
       >
-        <h2 className="text-sm font-semibold text-neutral-900">Bulk barcode lookup</h2>
-        <textarea className="form-input min-h-[90px]" value={bulk} onChange={(e) => setBulk(e.target.value)} placeholder="One barcode per line" />
-        <button type="submit" className="btn-secondary text-sm">Look up batch</button>
+        <h2 className="text-sm font-semibold text-neutral-900">{t("stock.scan.bulkTitle")}</h2>
+        <textarea className="form-input min-h-[90px]" value={bulk} onChange={(e) => setBulk(e.target.value)} placeholder={t("stock.scan.bulkPlaceholder")} />
+        <button type="submit" className="btn-secondary text-sm">{t("stock.scan.bulkLookup")}</button>
         {bulkResult && (
           <p className="text-sm text-neutral-700">
-            Matched {bulkResult.matched.length}. Missing: {bulkResult.missing.join(", ") || "none"}.
+            {t("stock.scan.bulkResult", { matched: bulkResult.matched.length, missing: bulkResult.missing.join(", ") || t("stock.scan.none") })}
           </p>
         )}
       </form>

@@ -7,6 +7,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Layout constants ────────────────────────────────────────────────────────
 const NODE_W = 228;
@@ -72,6 +73,7 @@ function isAncestorOf(flat: Department[], ancestorId: number, targetId: number):
 
 // ─── SVG connectors ───────────────────────────────────────────────────────────
 function Connectors({ flat, positions }: { flat: Department[]; positions: PosMap }) {
+  const { t } = useI18n();
   return (
     <svg
       className="text-neutral-300 dark:text-neutral-600"
@@ -79,7 +81,7 @@ function Connectors({ flat, positions }: { flat: Department[]; positions: PosMap
       width="100%" height="100%"
       role="img"
     >
-      <title>Reporting-line connectors</title>
+      <title>{t("organogram.connectors")}</title>
       <defs>
         <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
           <circle cx="3" cy="3" r="1.5" fill="currentColor" />
@@ -127,6 +129,7 @@ function NodeCard({
   onPointerDown, onEdit, onAddChild, onDelete, onChangeParent,
 }: NodeCardProps) {
   const stopP = (e: React.PointerEvent) => e.stopPropagation();
+  const { t } = useI18n();
 
   return (
     <div
@@ -142,28 +145,28 @@ function NodeCard({
         <button
           onPointerDown={stopP} onClick={() => onAddChild(dept.id)}
           className="size-7 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
-          title="Add child unit"
+          title={t("organogram.addChild")}
         >
           <span className="material-symbols-outlined text-[15px]">add</span>
         </button>
         <button
           onPointerDown={stopP} onClick={() => onChangeParent(dept.id)}
           className="size-7 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
-          title="Change parent / move in hierarchy"
+          title={t("organogram.changeParentHint")}
         >
           <span className="material-symbols-outlined text-[15px]">account_tree</span>
         </button>
         <button
           onPointerDown={stopP} onClick={() => onEdit(dept)}
           className="size-7 rounded-full bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-600 shadow-lg flex items-center justify-center hover:text-primary hover:scale-110 transition-transform"
-          title="Edit unit"
+          title={t("organogram.editUnitHint")}
         >
           <span className="material-symbols-outlined text-[15px]">edit</span>
         </button>
         <button
           onPointerDown={stopP} onClick={() => onDelete(dept.id)}
           className="size-7 rounded-full bg-white dark:bg-neutral-800 text-red-500 border border-neutral-200 dark:border-neutral-600 shadow-lg flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-110 transition-transform"
-          title="Delete unit"
+          title={t("organogram.deleteUnitHint")}
         >
           <span className="material-symbols-outlined text-[15px]">delete</span>
         </button>
@@ -196,7 +199,7 @@ function NodeCard({
         ) : (
           <div className="mt-2.5 pt-2.5 border-t border-neutral-100 dark:border-neutral-700/50 flex items-center gap-1.5 opacity-40">
             <span className="material-symbols-outlined text-[13px] text-neutral-400">person_off</span>
-            <p className="text-[10px] text-neutral-400 italic">Unassigned</p>
+            <p className="text-[10px] text-neutral-400 italic">{t("organogram.unassigned")}</p>
           </div>
         )}
       </div>
@@ -241,6 +244,7 @@ export default function OrganogramPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const { toast }   = useToast();
+  const { t, localeTag } = useI18n();
   const { confirm } = useConfirm();
 
   // ── Data ──────────────────────────────────────────────────────────────────
@@ -266,11 +270,11 @@ export default function OrganogramPage() {
         return next;
       });
     } catch {
-      setError("Failed to load organisational structure.");
+      setError(t("organogram.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -352,10 +356,10 @@ export default function OrganogramPage() {
         await adminApi.createDepartment({ ...form, parent_id: formParentId });
       }
       setModalOpen(false);
-      toast("success", "Unit Saved", "The organisational unit has been updated.");
+      toast("success", t("organogram.toast.saved"), t("organogram.toast.savedDetail"));
       fetchData();
     } catch {
-      toast("error", "Save Failed", "Could not save the department.");
+      toast("error", t("organogram.toast.saveFailed"), t("organogram.toast.saveFailedDetail"));
     } finally {
       setSaving(false);
     }
@@ -363,13 +367,13 @@ export default function OrganogramPage() {
 
   const handleDelete = async (id: number) => {
     const dept = flat.find(d => d.id === id);
-    if (!await confirm({ title: "Delete Department", message: `Remove "${dept?.name}"? This cannot be undone.`, variant: "danger" })) return;
+    if (!await confirm({ title: t("organogram.confirm.deleteTitle"), message: t("organogram.confirm.deleteMessage", { name: dept?.name ?? "" }), variant: "danger" })) return;
     try {
       await adminApi.deleteDepartment(id);
-      toast("success", "Deleted", "Department removed.");
+      toast("success", t("organogram.toast.deleted"), t("organogram.toast.deletedDetail"));
       fetchData();
     } catch {
-      toast("error", "Delete Failed", "Cannot delete — it may have staff or sub-units.");
+      toast("error", t("organogram.toast.deleteFailed"), t("organogram.toast.deleteFailedDetail"));
     }
   };
 
@@ -386,17 +390,17 @@ export default function OrganogramPage() {
     if (!dept) return;
     const resolvedParent = newParentId === "root" ? null : (newParentId as number | null);
     if (resolvedParent && isAncestorOf(flat, reparentId, resolvedParent)) {
-      toast("error", "Invalid Move", "Cannot place a unit inside its own descendant.");
+      toast("error", t("organogram.toast.invalidMove"), t("organogram.toast.invalidMoveDetail"));
       return;
     }
     setReparenting(true);
     try {
       await adminApi.updateDepartment(reparentId, { name: dept.name, code: dept.code, parent_id: resolvedParent });
       setReparentId(null);
-      toast("success", "Hierarchy Updated", `"${dept.name}" has been moved.`);
+      toast("success", t("organogram.toast.moved"), t("organogram.toast.movedDetail", { name: dept.name }));
       fetchData();
     } catch {
-      toast("error", "Failed", "Could not update hierarchy.");
+      toast("error", t("organogram.toast.moveFailed"), t("organogram.toast.moveFailedDetail"));
     } finally {
       setReparenting(false);
     }
@@ -413,13 +417,13 @@ export default function OrganogramPage() {
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 8rem)" }}>
       <ModulePageHeader
-        title="Organisation Chart"
-        subtitle="Drag nodes to reposition · Change Parent to move hierarchy · Scroll to zoom · Drag canvas to pan"
+        title={t("organogram.title")}
+        subtitle={t("organogram.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "People & Authority", href: "/people" },
-              { label: "Organisation Chart" },
+              { label: t("organogram.breadcrumbPeople"), href: "/people" },
+              { label: t("organogram.title") },
             ]}
           />
         }
@@ -431,7 +435,7 @@ export default function OrganogramPage() {
               className="btn-secondary flex items-center gap-1.5 text-sm"
             >
               <span className="material-symbols-outlined text-[16px]">auto_fix_high</span>
-              Auto-Layout
+              {t("organogram.autoLayout")}
             </button>
             <button
               type="button"
@@ -439,7 +443,7 @@ export default function OrganogramPage() {
               className="btn-secondary flex items-center gap-1.5 text-sm"
             >
               <span className="material-symbols-outlined text-[16px]">history</span>
-              History
+              {t("organogram.history")}
             </button>
             <button
               type="button"
@@ -447,7 +451,7 @@ export default function OrganogramPage() {
               className="btn-primary flex items-center gap-1.5 text-sm"
             >
               <span className="material-symbols-outlined text-[16px]">add</span>
-              Add Unit
+              {t("organogram.addUnit")}
             </button>
           </div>
         }
@@ -458,8 +462,8 @@ export default function OrganogramPage() {
       <div className="flex items-center gap-2 mb-3">
         <button
           type="button"
-          aria-label="Zoom in"
-          title="Zoom in"
+          aria-label={t("organogram.zoomIn")}
+          title={t("organogram.zoomIn")}
           onClick={() => setScale(s => Math.min(2, +(s + 0.1).toFixed(2)))}
           className="size-7 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-700 shadow-sm text-neutral-600 dark:text-neutral-300"
         >
@@ -468,8 +472,8 @@ export default function OrganogramPage() {
         <span className="text-xs text-neutral-500 dark:text-neutral-400 w-11 text-center font-mono tabular-nums">{Math.round(scale * 100)}%</span>
         <button
           type="button"
-          aria-label="Zoom out"
-          title="Zoom out"
+          aria-label={t("organogram.zoomOut")}
+          title={t("organogram.zoomOut")}
           onClick={() => setScale(s => Math.max(0.25, +(s - 0.1).toFixed(2)))}
           className="size-7 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-700 shadow-sm text-neutral-600 dark:text-neutral-300"
         >
@@ -477,20 +481,20 @@ export default function OrganogramPage() {
         </button>
         <button
           type="button"
-          aria-label="Reset organogram view"
-          title="Reset organogram view"
+          aria-label={t("organogram.resetViewLabel")}
+          title={t("organogram.resetViewLabel")}
           onClick={() => { setScale(1); setPan({ x: 60, y: 60 }); }}
           className="text-[11px] text-neutral-400 hover:text-primary px-2"
         >
-          Reset View
+          {t("organogram.resetView")}
         </button>
-        <span className="ml-auto text-[11px] text-neutral-400">{flat.length} unit{flat.length !== 1 ? "s" : ""}</span>
+        <span className="ml-auto text-[11px] text-neutral-400">{t(flat.length !== 1 ? "organogram.units" : "organogram.unit", { count: flat.length })}</span>
       </div>
 
       {error && (
         <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 flex items-center justify-between text-sm">
           <span className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">error</span>{error}</span>
-          <button type="button" aria-label="Dismiss organogram error" title="Dismiss organogram error" onClick={() => setError(null)}><span className="material-symbols-outlined text-[16px]">close</span></button>
+          <button type="button" aria-label={t("organogram.dismissError")} title={t("organogram.dismissError")} onClick={() => setError(null)}><span className="material-symbols-outlined text-[16px]">close</span></button>
         </div>
       )}
 
@@ -542,8 +546,8 @@ export default function OrganogramPage() {
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <EmptyState
                   icon="account_tree"
-                  title="No units yet"
-                  description={'Click "Add Unit" to get started.'}
+                  title={t("organogram.emptyTitle")}
+                  description={t("organogram.emptyDescription")}
                 />
               </div>
             )}
@@ -560,29 +564,29 @@ export default function OrganogramPage() {
                 <span className="material-symbols-outlined text-amber-600 text-[26px]">account_tree</span>
               </div>
               <div>
-                <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">Change Parent</h2>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Move <span className="font-semibold text-neutral-700 dark:text-neutral-300">{reparentDept.name}</span> to a different position in the hierarchy.</p>
+                <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{t("organogram.changeParent")}</h2>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{t("organogram.moveDescription", { name: reparentDept.name })}</p>
               </div>
             </div>
 
             {/* Current path */}
             <div className="mb-5 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-xl border border-neutral-100 dark:border-neutral-700">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1">Currently under</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1">{t("organogram.currentlyUnder")}</p>
               <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                 {reparentDept.parent_id
-                  ? flat.find(d => d.id === reparentDept.parent_id)?.name ?? "Unknown"
-                  : "— (Root unit)"}
+                  ? flat.find(d => d.id === reparentDept.parent_id)?.name ?? t("organogram.unknown")
+                  : t("organogram.rootUnit")}
               </p>
             </div>
 
             <div className="mb-6">
-              <label htmlFor="organogram-new-parent-unit" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">New Parent Unit</label>
+              <label htmlFor="organogram-new-parent-unit" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">{t("organogram.newParent")}</label>
               <select id="organogram-new-parent-unit"
                 className="input-field w-full"
                 value={newParentId === null || newParentId === "root" ? "root" : String(newParentId)}
                 onChange={e => setNewParentId(e.target.value === "root" ? "root" : parseInt(e.target.value))}
               >
-                <option value="root">— Make Root Unit (no parent)</option>
+                <option value="root">{t("organogram.makeRoot")}</option>
                 {flat
                   .filter(d =>
                     d.id !== reparentId &&
@@ -594,12 +598,12 @@ export default function OrganogramPage() {
                     </option>
                   ))}
               </select>
-              <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1.5 ml-1">Descendants of this unit are excluded to prevent circular references.</p>
+              <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1.5 ml-1">{t("organogram.descendantsExcluded")}</p>
             </div>
 
             <div className="flex gap-3">
               <button onClick={() => setReparentId(null)} className="flex-1 btn-secondary py-2.5 font-semibold">
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={submitReparent}
@@ -607,8 +611,8 @@ export default function OrganogramPage() {
                 className="flex-1 btn-primary py-2.5 font-semibold flex items-center justify-center gap-2"
               >
                 {reparenting
-                  ? <><span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> Moving…</>
-                  : <><span className="material-symbols-outlined text-[16px]">check</span> Confirm Move</>}
+                  ? <><span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> {t("organogram.moving")}</>
+                  : <><span className="material-symbols-outlined text-[16px]">check</span> {t("organogram.confirmMove")}</>}
               </button>
             </div>
           </div>
@@ -630,36 +634,36 @@ export default function OrganogramPage() {
                   {editingDept ? "edit_square" : "add_business"}
                 </span>
               </span>
-              <span>{editingDept ? "Edit Unit" : "Create Unit"}</span>
+              <span>{editingDept ? t("organogram.editUnit") : t("organogram.createUnit")}</span>
             </span>
           }
-          description={<span className="text-xs font-bold uppercase tracking-widest">Organisational Management</span>}
+          description={<span className="text-xs font-bold uppercase tracking-widest">{t("organogram.management")}</span>}
           footer={
             <>
-              <button onClick={closeCrudModal} className="flex-1 btn-secondary py-3 font-bold">Cancel</button>
+              <button onClick={closeCrudModal} className="flex-1 btn-secondary py-3 font-bold">{t("common.cancel")}</button>
               <button
                 onClick={handleSave}
                 disabled={!form.name || !form.code || saving}
                 className="flex-1 btn-primary py-3 font-bold"
               >
-                {saving ? "Saving…" : "Save Unit"}
+                {saving ? t("organogram.saving") : t("organogram.saveUnit")}
               </button>
             </>
           }
         >
               <div>
-                <label htmlFor="organogram-unit-name" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Unit Name</label>
+                <label htmlFor="organogram-unit-name" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">{t("organogram.unitName")}</label>
                 <input
                   id="organogram-unit-name"
                   className="input-field w-full"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="e.g. Finance & Administration"
+                  placeholder={t("organogram.unitNamePlaceholder")}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="organogram-unit-code" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Unit Code</label>
+                  <label htmlFor="organogram-unit-code" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">{t("organogram.unitCode")}</label>
                   <input
                     id="organogram-unit-code"
                     className="input-field font-mono uppercase w-full"
@@ -670,14 +674,14 @@ export default function OrganogramPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="organogram-unit-supervisor" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Supervisor</label>
+                  <label htmlFor="organogram-unit-supervisor" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">{t("organogram.supervisor")}</label>
                   <select
                     id="organogram-unit-supervisor"
                     className="input-field w-full"
                     value={form.supervisor_id ?? ""}
                     onChange={e => setForm(f => ({ ...f, supervisor_id: e.target.value ? parseInt(e.target.value) : null }))}
                   >
-                    <option value="">None</option>
+                    <option value="">{t("organogram.none")}</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
                 </div>
@@ -685,14 +689,14 @@ export default function OrganogramPage() {
               {/* Parent selector in create mode */}
               {!editingDept && (
                 <div>
-                  <label htmlFor="organogram-parent-unit" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Parent Unit</label>
+                  <label htmlFor="organogram-parent-unit" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">{t("organogram.parentUnit")}</label>
                   <select
                     id="organogram-parent-unit"
                     className="input-field w-full"
                     value={formParentId ?? ""}
                     onChange={e => setFormParentId(e.target.value ? parseInt(e.target.value) : null)}
                   >
-                    <option value="">— None (Root Unit)</option>
+                    <option value="">{t("organogram.noneRoot")}</option>
                     {flat.map(d => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)}
                   </select>
                 </div>
@@ -708,13 +712,13 @@ export default function OrganogramPage() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-700">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px] text-primary">history</span>
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Organogram Change History</h3>
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("organogram.historyTitle")}</h3>
               </div>
               <div className="flex items-center gap-2">
-                <button type="button" aria-label="Refresh organogram history" title="Refresh organogram history" onClick={loadHistory} className="text-neutral-400 hover:text-neutral-600 p-1">
+                <button type="button" aria-label={t("organogram.refreshHistory")} title={t("organogram.refreshHistory")} onClick={loadHistory} className="text-neutral-400 hover:text-neutral-600 p-1">
                   <span className={`material-symbols-outlined text-[18px] ${historyLoading ? "animate-spin" : ""}`}>refresh</span>
                 </button>
-                <button type="button" aria-label="Close organogram history" title="Close organogram history" onClick={() => setShowHistory(false)} className="text-neutral-400 hover:text-neutral-600 p-1">
+                <button type="button" aria-label={t("organogram.closeHistory")} title={t("organogram.closeHistory")} onClick={() => setShowHistory(false)} className="text-neutral-400 hover:text-neutral-600 p-1">
                   <span className="material-symbols-outlined text-[18px]">close</span>
                 </button>
               </div>
@@ -725,7 +729,7 @@ export default function OrganogramPage() {
                   {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-14 bg-neutral-100 dark:bg-neutral-700/40 rounded-xl" />)}
                 </div>
               ) : history.length === 0 ? (
-                <EmptyState icon="history" title="No changes recorded yet." />
+                <EmptyState icon="history" title={t("organogram.noChanges")} />
               ) : (
                 <div className="divide-y divide-neutral-50 dark:divide-neutral-800">
                   {history.map(entry => {
@@ -743,12 +747,12 @@ export default function OrganogramPage() {
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 capitalize">{label}</p>
                             <span className="text-[11px] text-neutral-400 flex-shrink-0">
-                              {entry.timestamp ? new Date(entry.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""}
+                              {entry.timestamp ? new Date(entry.timestamp).toLocaleDateString(localeTag, { day: "numeric", month: "short", year: "numeric" }) : ""}
                             </span>
                           </div>
-                          <p className="text-xs text-neutral-500">{entry.user_name ?? entry.user ?? "System"}</p>
+                          <p className="text-xs text-neutral-500">{entry.user_name ?? entry.user ?? t("assignments.detail.system")}</p>
                           {entry.record_id && entry.record_id !== "—" && (
-                            <p className="text-[11px] font-mono text-neutral-400">ID: {entry.record_id}</p>
+                            <p className="text-[11px] font-mono text-neutral-400">{t("organogram.recordId", { id: String(entry.record_id) })}</p>
                           )}
                         </div>
                       </div>
@@ -758,7 +762,7 @@ export default function OrganogramPage() {
               )}
             </div>
             <div className="border-t border-neutral-100 dark:border-neutral-700 px-5 py-3">
-              <p className="text-[11px] text-neutral-400 dark:text-neutral-500">Showing latest 50 changes. Full history in the Admin Audit Ledger.</p>
+              <p className="text-[11px] text-neutral-400 dark:text-neutral-500">{t("organogram.historyFooter")}</p>
             </div>
           </div>
         </div>

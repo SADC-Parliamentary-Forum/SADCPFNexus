@@ -16,11 +16,11 @@ import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { accountProfilePath } from "@/lib/postAuthDestination";
 
-function accountNav(profileHref: string) {
+function accountNav(profileHref: string, t: (key: string) => string) {
   return [
-    { label: "Profile", href: profileHref, icon: "person" },
-    { label: "Preferences", href: "/profile/settings", icon: "tune" },
-    { label: "Security", href: "/profile/security", icon: "lock" },
+    { label: t("profile.account.profile"), href: profileHref, icon: "person" },
+    { label: t("profile.account.preferences"), href: "/profile/settings", icon: "tune" },
+    { label: t("profile.account.security"), href: "/profile/security", icon: "lock" },
   ];
 }
 
@@ -100,9 +100,9 @@ export default function ProfileSecurityPage() {
         detail_mode: weeklyPref.detail_mode,
       });
       setWeeklyPref(res.data.data);
-      success("Weekly summary preferences saved.");
+      success(t("profile.security.weeklySaved"));
     } catch {
-      success("Failed to save preferences.", "error");
+      error(t("profile.security.saveFailed"));
     } finally {
       setSavingWeekly(false);
     }
@@ -151,9 +151,9 @@ export default function ProfileSecurityPage() {
       if (stored) {
         writeStoredUser({ ...stored, idle_timeout_minutes: res.data.data.idle_timeout_minutes });
       }
-      success("Session timeout saved. You will be signed out after inactivity.");
+      success(t("profile.security.timeoutSaved"));
     } catch {
-      error("Failed to save session timeout.");
+      error(t("profile.security.timeoutFailed"));
     } finally {
       setSavingTimeout(false);
     }
@@ -167,7 +167,7 @@ export default function ProfileSecurityPage() {
       setTotpCode("");
       setShowSetupModal(true);
     } catch {
-      success("Failed to start 2FA setup.", "error");
+      error(t("profile.security.setupFailed"));
     } finally {
       setMfaActionLoading(false);
     }
@@ -190,10 +190,10 @@ export default function ProfileSecurityPage() {
       if (stored) {
         writeStoredUser({ ...stored, mfa_enabled: true });
       }
-      success("2FA enabled successfully. Your account is now more secure.");
+      success(t("profile.security.enabledToast"));
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { errors?: { code?: string[] }; message?: string } } };
-      success(ax.response?.data?.errors?.code?.[0] ?? ax.response?.data?.message ?? "Invalid code. Try again.", "error");
+      error(ax.response?.data?.errors?.code?.[0] ?? ax.response?.data?.message ?? t("profile.security.invalidCode"));
     } finally {
       setMfaActionLoading(false);
     }
@@ -209,11 +209,11 @@ export default function ProfileSecurityPage() {
       setShowDisableModal(false);
       setDisablePassword("");
       setDisableCode("");
-      success("2FA has been disabled.");
+      success(t("profile.security.disabledToast"));
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { errors?: { password?: string[]; code?: string[] }; message?: string } } };
       const errors = ax.response?.data?.errors;
-      success(errors?.password?.[0] ?? errors?.code?.[0] ?? ax.response?.data?.message ?? "Could not disable 2FA.", "error");
+      error(errors?.password?.[0] ?? errors?.code?.[0] ?? ax.response?.data?.message ?? t("profile.security.disableFailed"));
     } finally {
       setMfaActionLoading(false);
     }
@@ -232,7 +232,7 @@ export default function ProfileSecurityPage() {
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { errors?: { password?: string[]; code?: string[] }; message?: string } } };
       const errors = ax.response?.data?.errors;
-      success(errors?.password?.[0] ?? errors?.code?.[0] ?? ax.response?.data?.message ?? "Could not regenerate recovery codes.", "error");
+      error(errors?.password?.[0] ?? errors?.code?.[0] ?? ax.response?.data?.message ?? t("profile.security.regenFailed"));
     } finally {
       setMfaActionLoading(false);
     }
@@ -242,29 +242,29 @@ export default function ProfileSecurityPage() {
     if (!recoveryCodes) return;
     try {
       await navigator.clipboard.writeText(recoveryCodes.join("\n"));
-      success("Recovery codes copied.");
+      success(t("profile.security.codesCopied"));
     } catch {
-      success("Copy failed — select and copy the codes manually.", "error");
+      error(t("profile.security.copyFailed"));
     }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pwForm.next !== pwForm.confirm) { success("Passwords do not match.", "error"); return; }
-    if (pwForm.next.length < 8) { success("Password must be at least 8 characters.", "error"); return; }
+    if (pwForm.next !== pwForm.confirm) { error(t("auth.reset.mismatch")); return; }
+    if (pwForm.next.length < 8) { error(t("auth.reset.tooShort")); return; }
     setSaving(true);
     try {
       await profileApi.updatePassword(pwForm.current, pwForm.next, pwForm.confirm);
       setPwForm({ current: "", next: "", confirm: "" });
-      success("Password changed successfully.");
+      success(t("profile.passwordUpdatedBody"));
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string };
       const msg =
         ax.response?.data?.errors?.current_password?.[0] ??
         ax.response?.data?.message ??
         ax.message ??
-        "Failed to change password.";
-      success(msg, "error");
+        t("profile.security.pwChangeFailed");
+      error(msg);
     } finally {
       setSaving(false);
     }
@@ -275,9 +275,9 @@ export default function ProfileSecurityPage() {
     try {
       await profileSessionsApi.revoke(id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
-      success("Session revoked.");
+      success(t("profile.security.sessionRevoked"));
     } catch {
-      success("Failed to revoke session.", "error");
+      error(t("profile.security.revokeFailed"));
     } finally {
       setRevokingId(null);
     }
@@ -288,9 +288,9 @@ export default function ProfileSecurityPage() {
     try {
       await profileSessionsApi.revokeOthers();
       setSessions((prev) => prev.filter((s) => s.is_current));
-      success("All other sessions signed out.");
+      success(t("profile.security.othersSignedOut"));
     } catch {
-      success("Failed to sign out other sessions.", "error");
+      error(t("profile.security.othersFailed"));
     } finally {
       setRevokingOthers(false);
     }
@@ -298,11 +298,11 @@ export default function ProfileSecurityPage() {
 
   const passwordStrength = (pw: string): { label: string; color: string; width: string } => {
     const score = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^a-zA-Z0-9]/, /.{8,}/].filter((r) => r.test(pw)).length;
-    if (score <= 1) return { label: "Very Weak", color: "bg-red-500", width: "w-1/5" };
-    if (score === 2) return { label: "Weak", color: "bg-orange-400", width: "w-2/5" };
-    if (score === 3) return { label: "Fair", color: "bg-amber-400", width: "w-3/5" };
-    if (score === 4) return { label: "Strong", color: "bg-green-400", width: "w-4/5" };
-    return { label: "Very Strong", color: "bg-green-600", width: "w-full" };
+    if (score <= 1) return { label: t("auth.reset.strength.veryWeak"), color: "bg-red-500", width: "w-1/5" };
+    if (score === 2) return { label: t("auth.reset.strength.weak"), color: "bg-orange-400", width: "w-2/5" };
+    if (score === 3) return { label: t("auth.reset.strength.fair"), color: "bg-amber-400", width: "w-3/5" };
+    if (score === 4) return { label: t("auth.reset.strength.strong"), color: "bg-green-400", width: "w-4/5" };
+    return { label: t("auth.reset.strength.veryStrong"), color: "bg-green-600", width: "w-full" };
   };
 
   const strength = pwForm.next ? passwordStrength(pwForm.next) : null;
@@ -316,9 +316,9 @@ export default function ProfileSecurityPage() {
     <div className="w-full min-w-0 space-y-6">
 
       <ModulePageHeader
-        title="Security & Password"
-        subtitle="Manage your password, multi-factor authentication, and active sessions."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Security & Password" }]} />}
+        title={t("header.security")}
+        subtitle={t("profile.security.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("header.security") }]} />}
       />
 
       {forceMfaBanner && !mfaEnabled && (
@@ -328,7 +328,7 @@ export default function ProfileSecurityPage() {
             <p className="font-semibold">{t("mfa.setupTitle")}</p>
             <p className="mt-0.5 text-amber-800/90">{t("mfa.setupRequired")}</p>
             <p className="mt-2 text-xs text-amber-800/80">
-              Enable authenticator MFA below to unlock dashboards and modules. Background API calls are paused until then so you are not bounced off this page.
+              {t("profile.security.mfaBannerHint")}
             </p>
           </div>
         </div>
@@ -337,22 +337,22 @@ export default function ProfileSecurityPage() {
       {mfaJustEnabled && mfaEnabled && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">
           <div>
-            <p className="font-semibold">MFA is enabled</p>
-            <p className="text-green-800/90 text-xs mt-0.5">You can continue to the rest of the application.</p>
+            <p className="font-semibold">{t("profile.security.mfaEnabledTitle")}</p>
+            <p className="text-green-800/90 text-xs mt-0.5">{t("profile.security.mfaEnabledBody")}</p>
           </div>
           <button
             type="button"
             className="btn-primary text-sm"
             onClick={() => router.push("/dashboard")}
           >
-            Continue to dashboard
+            {t("profile.security.continueDashboard")}
           </button>
         </div>
       )}
 
       {/* Sub nav */}
       <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-700">
-        {accountNav(profileHref).map((n) => (
+        {accountNav(profileHref, t).map((n) => (
           <Link key={n.href} href={n.href}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${n.href === "/profile/security" ? "border-primary text-primary" : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"}`}>
             <span className="material-symbols-outlined text-[16px]">{n.icon}</span>
@@ -367,15 +367,15 @@ export default function ProfileSecurityPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
             <span className="material-symbols-outlined text-primary text-[18px]">lock_reset</span>
           </div>
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Change Password</h3>
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("profile.nav.password")}</h3>
         </div>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
-            <label htmlFor="profile-security-current-password" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Current Password</label>
+            <label htmlFor="profile-security-current-password" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">{t("profile.currentPassword")}</label>
             <input id="profile-security-current-password" type="password" required className="form-input" placeholder="••••••••" value={pwForm.current} onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })} />
           </div>
           <div>
-            <label htmlFor="profile-security-new-password" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">New Password</label>
+            <label htmlFor="profile-security-new-password" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">{t("profile.newPassword")}</label>
             <input id="profile-security-new-password" type="password" required className="form-input" placeholder="••••••••" value={pwForm.next} onChange={(e) => setPwForm({ ...pwForm, next: e.target.value })} />
             {strength && (
               <div className="mt-2">
@@ -387,10 +387,10 @@ export default function ProfileSecurityPage() {
             )}
             <ul className="mt-2 space-y-0.5 text-xs text-neutral-400">
               {[
-                [/[A-Z]/, "One uppercase letter"],
-                [/[0-9]/, "One number"],
-                [/[^a-zA-Z0-9]/, "One special character"],
-                [/.{8,}/, "At least 8 characters"],
+                [/[A-Z]/, t("auth.reset.rule.upper")],
+                [/[0-9]/, t("auth.reset.rule.number")],
+                [/[^a-zA-Z0-9]/, t("auth.reset.rule.special")],
+                [/.{8,}/, t("profile.req.length")],
               ].map(([regex, label]) => (
                 <li key={label as string} className={`flex items-center gap-1.5 ${(regex as RegExp).test(pwForm.next) ? "text-green-600" : ""}`}>
                   <span className="material-symbols-outlined text-[13px]">{(regex as RegExp).test(pwForm.next) ? "check_circle" : "radio_button_unchecked"}</span>
@@ -400,17 +400,17 @@ export default function ProfileSecurityPage() {
             </ul>
           </div>
           <div>
-            <label htmlFor="profile-security-confirm-new-password" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Confirm New Password</label>
+            <label htmlFor="profile-security-confirm-new-password" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">{t("profile.confirmPassword")}</label>
             <input id="profile-security-confirm-new-password" type="password" required className="form-input" placeholder="••••••••" value={pwForm.confirm} onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })} />
             {pwForm.confirm && pwForm.next !== pwForm.confirm && (
-              <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+              <p className="text-xs text-red-500 mt-1">{t("auth.reset.mismatchInline")}</p>
             )}
           </div>
           <div className="flex justify-end">
             <button type="submit" disabled={saving || !pwForm.current || !pwForm.next || !pwForm.confirm}
               className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2 disabled:opacity-40">
               <span className="material-symbols-outlined text-[18px]">lock_reset</span>
-              {saving ? "Changing…" : "Change Password"}
+              {saving ? t("profile.security.changing") : t("profile.nav.password")}
             </button>
           </div>
         </form>
@@ -422,7 +422,7 @@ export default function ProfileSecurityPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50">
             <span className="material-symbols-outlined text-green-600 text-[18px]">verified_user</span>
           </div>
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Two-Factor Authentication (2FA)</h3>
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("profile.security.twoFactorTitle")}</h3>
         </div>
 
         {mfaLoading ? (
@@ -434,11 +434,11 @@ export default function ProfileSecurityPage() {
                 {mfaEnabled ? "verified_user" : "lock_open"}
               </span>
               <div>
-                <p className="text-sm font-semibold text-neutral-900">Authenticator App (TOTP)</p>
+                <p className="text-sm font-semibold text-neutral-900">{t("profile.security.totpTitle")}</p>
                 <p className="text-xs text-neutral-500 mt-0.5">
                   {mfaEnabled
-                    ? "2FA is active — your account requires a code on every login."
-                    : "Enable 2FA with Google Authenticator, Authy, or any TOTP app."}
+                    ? t("profile.security.totpActive")
+                    : t("profile.security.totpInactive")}
                 </p>
               </div>
             </div>
@@ -448,7 +448,7 @@ export default function ProfileSecurityPage() {
                 onClick={() => { setDisablePassword(""); setDisableCode(""); setShowDisableModal(true); }}
                 className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600"
               >
-                Disable
+                {t("profile.security.disable")}
               </button>
             ) : (
               <button
@@ -462,7 +462,7 @@ export default function ProfileSecurityPage() {
                 ) : (
                   <span className="material-symbols-outlined text-[14px]">add</span>
                 )}
-                Set Up 2FA
+                {t("profile.security.setUp")}
               </button>
             )}
           </div>
@@ -471,18 +471,18 @@ export default function ProfileSecurityPage() {
         {mfaEnabled && (
           <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
             <span className="material-symbols-outlined text-[15px]">check_circle</span>
-            Your account is protected with two-factor authentication.
+            {t("profile.security.protected")}
           </div>
         )}
 
         {mfaEnabled && (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 p-3">
             <div>
-              <p className="text-xs font-semibold text-neutral-900">Recovery codes</p>
+              <p className="text-xs font-semibold text-neutral-900">{t("profile.security.recoveryTitle")}</p>
               <p className="text-xs text-neutral-500">
                 {recoveryRemaining === null
-                  ? "One-time codes for signing in if you lose your authenticator."
-                  : `${recoveryRemaining} unused one-time code(s) remaining.`}
+                  ? t("profile.security.recoveryHint")
+                  : t("profile.security.recoveryRemaining", { count: recoveryRemaining })}
               </p>
             </div>
             <button
@@ -490,7 +490,7 @@ export default function ProfileSecurityPage() {
               onClick={() => { setRegenPassword(""); setRegenCode(""); setShowRegenModal(true); }}
               className="btn-secondary text-xs py-1 px-2 flex-shrink-0"
             >
-              Generate new codes
+              {t("profile.security.generateNew")}
             </button>
           </div>
         )}
@@ -505,33 +505,33 @@ export default function ProfileSecurityPage() {
                 <span className="material-symbols-outlined text-green-600 text-[22px]">qr_code</span>
               </div>
               <div>
-                <h3 className="text-base font-bold text-neutral-900">Set Up Two-Factor Authentication</h3>
-                <p className="text-xs text-neutral-400">Scan the QR code with your authenticator app</p>
+                <h3 className="text-base font-bold text-neutral-900">{t("profile.security.setupModalTitle")}</h3>
+                <p className="text-xs text-neutral-400">{t("profile.security.setupModalHint")}</p>
               </div>
             </div>
 
             <ol className="space-y-3 text-sm text-neutral-600">
               <li className="flex gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold flex-shrink-0 mt-0.5">1</span>
-                Install <strong className="text-neutral-900">Google Authenticator</strong>, <strong className="text-neutral-900">Authy</strong>, or any TOTP app.
+                {t("profile.security.step1Prefix")}{" "}<strong className="text-neutral-900">Google Authenticator</strong>, <strong className="text-neutral-900">Authy</strong>{t("profile.security.step1Suffix")} {/* i18n-ignore */}
               </li>
               <li className="flex gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold flex-shrink-0 mt-0.5">2</span>
-                Scan the QR code below, or enter the key manually.
+                {t("profile.security.step2")}
               </li>
               <li className="flex gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold flex-shrink-0 mt-0.5">3</span>
-                Enter the 6-digit code from your app to confirm.
+                {t("profile.security.step3")}
               </li>
             </ol>
 
             {/* Rendered locally: the otpauth URL contains the TOTP secret and must not go to a third-party QR service. */}
             <div className="flex flex-col items-center gap-3 p-4 bg-neutral-50 rounded-xl border border-neutral-200">
               <div className="rounded-lg bg-white p-2">
-                <QRCode value={mfaSetup.qr_code_url} size={164} title="2FA QR Code" />
+                <QRCode value={mfaSetup.qr_code_url} size={164} title={t("profile.security.qrTitle")} />
               </div>
               <div className="text-center">
-                <p className="text-[10px] text-neutral-400 uppercase tracking-wide mb-1">Manual Entry Key</p>
+                <p className="text-[10px] text-neutral-400 uppercase tracking-wide mb-1">{t("profile.security.manualKey")}</p>
                 <code className="text-xs font-mono text-neutral-700 bg-white border border-neutral-200 px-2 py-1 rounded select-all">
                   {mfaSetup.secret}
                 </code>
@@ -539,7 +539,7 @@ export default function ProfileSecurityPage() {
             </div>
 
             <div>
-              <label htmlFor="profile-security-verification-code" className="block text-xs font-semibold text-neutral-700 mb-1.5">Verification Code</label>
+              <label htmlFor="profile-security-verification-code" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("profile.security.verificationCode")}</label>
               <input id="profile-security-verification-code"
                 type="text"
                 inputMode="numeric"
@@ -550,7 +550,7 @@ export default function ProfileSecurityPage() {
                 onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
                 autoComplete="one-time-code"
               />
-              <p className="text-xs text-neutral-400 mt-1">Enter the 6-digit code shown in your app.</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("profile.security.codeHint")}</p>
             </div>
 
             <div className="flex gap-3">
@@ -559,7 +559,7 @@ export default function ProfileSecurityPage() {
                 onClick={() => { setShowSetupModal(false); setMfaSetup(null); setTotpCode(""); }}
                 className="btn-secondary flex-1 py-2.5 text-sm justify-center"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -572,7 +572,7 @@ export default function ProfileSecurityPage() {
                 ) : (
                   <span className="material-symbols-outlined text-[16px]">check</span>
                 )}
-                Activate 2FA
+                {t("profile.security.activate")}
               </button>
             </div>
           </div>
@@ -588,15 +588,15 @@ export default function ProfileSecurityPage() {
                 <span className="material-symbols-outlined text-red-600 text-[22px]">no_encryption</span>
               </div>
               <div>
-                <h3 className="text-base font-bold text-neutral-900">Disable Two-Factor Authentication</h3>
-                <p className="text-xs text-neutral-400">This will reduce your account security</p>
+                <h3 className="text-base font-bold text-neutral-900">{t("profile.security.disableModalTitle")}</h3>
+                <p className="text-xs text-neutral-400">{t("profile.security.disableModalHint")}</p>
               </div>
             </div>
             <p className="text-sm text-neutral-600">
-              Confirm your password and a current authenticator code (or a recovery code) to disable 2FA. You will no longer be required to enter a code on login.
+              {t("profile.security.disableBody")}
             </p>
             <div>
-              <label htmlFor="profile-security-password" className="block text-xs font-semibold text-neutral-700 mb-1">Password</label>
+              <label htmlFor="profile-security-password" className="block text-xs font-semibold text-neutral-700 mb-1">{t("login.password")}</label>
               <input id="profile-security-password"
                 type="password"
                 className="form-input"
@@ -607,7 +607,7 @@ export default function ProfileSecurityPage() {
               />
             </div>
             <div>
-              <label htmlFor="profile-security-disable-code" className="block text-xs font-semibold text-neutral-700 mb-1">Authenticator or recovery code</label>
+              <label htmlFor="profile-security-disable-code" className="block text-xs font-semibold text-neutral-700 mb-1">{t("profile.security.authOrRecovery")}</label>
               <input id="profile-security-disable-code"
                 type="text"
                 className="form-input font-mono"
@@ -624,7 +624,7 @@ export default function ProfileSecurityPage() {
                 disabled={mfaActionLoading}
                 className="btn-secondary flex-1 py-2.5 text-sm justify-center"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -635,7 +635,7 @@ export default function ProfileSecurityPage() {
                 {mfaActionLoading ? (
                   <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                 ) : null}
-                Disable 2FA
+                {t("profile.security.disable2fa")}
               </button>
             </div>
           </div>
@@ -646,22 +646,22 @@ export default function ProfileSecurityPage() {
       {showRegenModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div role="dialog" aria-modal="true" aria-labelledby="profile-security-regen-title" className="rounded-2xl bg-white p-6 max-w-sm w-full shadow-2xl border border-neutral-100 space-y-4">
-            <h3 id="profile-security-regen-title" className="text-base font-bold text-neutral-900">Generate new recovery codes</h3>
-            <p className="text-sm text-neutral-600">Your current recovery codes will stop working. Confirm your password and a current authenticator code.</p>
+            <h3 id="profile-security-regen-title" className="text-base font-bold text-neutral-900">{t("profile.security.regenTitle")}</h3>
+            <p className="text-sm text-neutral-600">{t("profile.security.regenBody")}</p>
             <div>
-              <label htmlFor="profile-security-regen-password" className="block text-xs font-semibold text-neutral-700 mb-1">Password</label>
+              <label htmlFor="profile-security-regen-password" className="block text-xs font-semibold text-neutral-700 mb-1">{t("login.password")}</label>
               <input id="profile-security-regen-password" type="password" className="form-input" value={regenPassword}
                 onChange={(e) => setRegenPassword(e.target.value)} autoComplete="current-password" />
             </div>
             <div>
-              <label htmlFor="profile-security-regen-code" className="block text-xs font-semibold text-neutral-700 mb-1">Authenticator code</label>
+              <label htmlFor="profile-security-regen-code" className="block text-xs font-semibold text-neutral-700 mb-1">{t("login.mfa")}</label>
               <input id="profile-security-regen-code" type="text" inputMode="numeric" maxLength={6} className="form-input font-mono" placeholder="000000"
                 value={regenCode} onChange={(e) => setRegenCode(e.target.value.replace(/\D/g, ""))} autoComplete="one-time-code" />
             </div>
             <div className="flex gap-3">
-              <button type="button" onClick={() => setShowRegenModal(false)} disabled={mfaActionLoading} className="btn-secondary flex-1 py-2.5 text-sm justify-center">Cancel</button>
+              <button type="button" onClick={() => setShowRegenModal(false)} disabled={mfaActionLoading} className="btn-secondary flex-1 py-2.5 text-sm justify-center">{t("common.cancel")}</button>
               <button type="button" onClick={handleRegenerateRecoveryCodes} disabled={!regenPassword || regenCode.length !== 6 || mfaActionLoading}
-                className="btn-primary flex-1 py-2.5 text-sm justify-center disabled:opacity-40">Generate</button>
+                className="btn-primary flex-1 py-2.5 text-sm justify-center disabled:opacity-40">{t("profile.security.generate")}</button>
             </div>
           </div>
         </div>
@@ -671,16 +671,16 @@ export default function ProfileSecurityPage() {
       {recoveryCodes && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div role="dialog" aria-modal="true" aria-labelledby="profile-security-codes-title" className="rounded-2xl bg-white p-6 max-w-sm w-full shadow-2xl border border-neutral-100 space-y-4">
-            <h3 id="profile-security-codes-title" className="text-base font-bold text-neutral-900">Save your recovery codes</h3>
+            <h3 id="profile-security-codes-title" className="text-base font-bold text-neutral-900">{t("profile.security.codesTitle")}</h3>
             <p className="text-sm text-neutral-600">
-              Each code signs you in once if you lose access to your authenticator. Store them somewhere safe — they will not be shown again.
+              {t("profile.security.codesBody")}
             </p>
             <ul className="grid grid-cols-2 gap-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3 font-mono text-sm text-neutral-800 select-all">
               {recoveryCodes.map((code) => <li key={code}>{code}</li>)}
             </ul>
             <div className="flex gap-3">
-              <button type="button" onClick={handleCopyRecoveryCodes} className="btn-secondary flex-1 py-2.5 text-sm justify-center">Copy</button>
-              <button type="button" onClick={() => setRecoveryCodes(null)} className="btn-primary flex-1 py-2.5 text-sm justify-center">I have saved them</button>
+              <button type="button" onClick={handleCopyRecoveryCodes} className="btn-secondary flex-1 py-2.5 text-sm justify-center">{t("profile.security.copy")}</button>
+              <button type="button" onClick={() => setRecoveryCodes(null)} className="btn-primary flex-1 py-2.5 text-sm justify-center">{t("profile.security.savedThem")}</button>
             </div>
           </div>
         </div>
@@ -693,13 +693,13 @@ export default function ProfileSecurityPage() {
             <span className="material-symbols-outlined text-amber-600 text-[18px]">devices</span>
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Active Sessions</h3>
-            <p className="text-xs text-neutral-400">Devices currently signed in to your account</p>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("profile.security.sessionsTitle")}</h3>
+            <p className="text-xs text-neutral-400">{t("profile.security.sessionsHint")}</p>
           </div>
           {sessions.filter((s) => !s.is_current).length > 0 && (
             <button type="button" onClick={handleRevokeOthers} disabled={revokingOthers}
               className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-40">
-              {revokingOthers ? "Signing out…" : "Sign out all others"}
+              {revokingOthers ? t("profile.security.signingOut") : t("profile.security.signOutOthers")}
             </button>
           )}
         </div>
@@ -711,7 +711,7 @@ export default function ProfileSecurityPage() {
             ))}
           </div>
         ) : sessions.length === 0 ? (
-          <EmptyState icon="devices" title="No active sessions found." className="py-8 min-h-0" />
+          <EmptyState icon="devices" title={t("profile.security.noSessions")} className="py-8 min-h-0" />
         ) : (
           <div className="space-y-3">
             {sessions.map((s) => (
@@ -722,19 +722,19 @@ export default function ProfileSecurityPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{s.device}</p>
-                    {s.is_current && <span className="badge badge-success text-[10px]">Current</span>}
+                    {s.is_current && <span className="badge badge-success text-[10px]">{t("profile.security.current")}</span>}
                   </div>
                   {s.ip_address && (
                     <p className="text-xs text-neutral-400 mt-0.5">{s.ip_address}</p>
                   )}
                   <p className="text-xs text-neutral-300 mt-0.5">
-                    Last active: {s.last_active_at ? formatDateRelative(s.last_active_at) : "Unknown"}
+                    {t("profile.security.lastActive", { when: s.last_active_at ? formatDateRelative(s.last_active_at) : t("profile.security.unknown") })}
                   </p>
                 </div>
                 {!s.is_current && (
                   <button type="button" onClick={() => handleRevoke(s.id)} disabled={revokingId === s.id}
                     className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600 disabled:opacity-40">
-                    {revokingId === s.id ? "Revoking…" : "Revoke"}
+                    {revokingId === s.id ? t("profile.security.revoking") : t("profile.signature.revoke")}
                   </button>
                 )}
               </div>
@@ -749,14 +749,14 @@ export default function ProfileSecurityPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
             <span className="material-symbols-outlined text-primary text-[18px]">calendar_month</span>
           </div>
-          <h3 className="text-sm font-semibold text-neutral-900">Weekly Summary Emails</h3>
+          <h3 className="text-sm font-semibold text-neutral-900">{t("profile.security.weeklyTitle")}</h3>
         </div>
         {weeklyPref ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-neutral-800">Receive weekly summary email</p>
-                <p className="text-xs text-neutral-400 mt-0.5">Sent every Friday at 16:00 with your institutional summary</p>
+                <p className="text-sm font-medium text-neutral-800">{t("profile.security.weeklyReceive")}</p>
+                <p className="text-xs text-neutral-400 mt-0.5">{t("profile.security.weeklyHint")}</p>
               </div>
               <button
                 type="button"
@@ -767,21 +767,21 @@ export default function ProfileSecurityPage() {
               </button>
             </div>
             <div>
-              <label htmlFor="profile-security-detail-level" className="block text-xs font-semibold text-neutral-700 mb-1">Detail level</label>
+              <label htmlFor="profile-security-detail-level" className="block text-xs font-semibold text-neutral-700 mb-1">{t("profile.security.detailLevel")}</label>
               <select id="profile-security-detail-level"
                 className="form-input max-w-xs"
                 value={weeklyPref.detail_mode}
                 onChange={(e) => setWeeklyPref({ ...weeklyPref, detail_mode: e.target.value as WeeklySummaryPreference["detail_mode"] })}
               >
-                <option value="compact">Compact — key numbers only</option>
-                <option value="standard">Standard — sections with stats</option>
-                <option value="detailed">Detailed — full tables and lists</option>
+                <option value="compact">{t("profile.security.detail.compact")}</option>
+                <option value="standard">{t("profile.security.detail.standard")}</option>
+                <option value="detailed">{t("profile.security.detail.detailed")}</option>
               </select>
             </div>
             <div className="flex justify-end">
               <button type="button" onClick={handleSaveWeeklyPref} disabled={savingWeekly} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2 disabled:opacity-60">
                 <span className="material-symbols-outlined text-[18px]">save</span>
-                {savingWeekly ? "Saving…" : "Save Preference"}
+                {savingWeekly ? t("profile.security.saving") : t("profile.security.savePreference")}
               </button>
             </div>
           </div>
@@ -796,25 +796,25 @@ export default function ProfileSecurityPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-100">
             <span className="material-symbols-outlined text-neutral-600 text-[18px]">timer</span>
           </div>
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Auto Session Timeout</h3>
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("profile.security.timeoutTitle")}</h3>
         </div>
         <div>
-          <label htmlFor="idle-timeout" className="block text-xs font-semibold text-neutral-700 mb-1">Sign out after inactivity</label>
+          <label htmlFor="idle-timeout" className="block text-xs font-semibold text-neutral-700 mb-1">{t("profile.security.timeoutLabel")}</label>
           <select
             id="idle-timeout"
             className="form-input max-w-xs"
             value={sessionTimeout}
             onChange={(e) => setSessionTimeout(e.target.value)}
           >
-            <option value="15">15 minutes</option>
-            <option value="30">30 minutes</option>
-            <option value="60">1 hour</option>
-            <option value="120">2 hours</option>
-            <option value="480">8 hours (work day)</option>
-            <option value="0">Never (not recommended)</option>
+            <option value="15">{t("profile.security.timeout.15")}</option>
+            <option value="30">{t("profile.security.timeout.30")}</option>
+            <option value="60">{t("profile.security.timeout.60")}</option>
+            <option value="120">{t("profile.security.timeout.120")}</option>
+            <option value="480">{t("profile.security.timeout.480")}</option>
+            <option value="0">{t("profile.security.timeout.0")}</option>
           </select>
           <p className="text-xs text-neutral-400 mt-1">
-            Enforced on the server and in this browser. Mobile uses the same preference.
+            {t("profile.security.timeoutHint")}
           </p>
         </div>
         <div className="flex justify-end mt-4">
@@ -825,7 +825,7 @@ export default function ProfileSecurityPage() {
             className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2 disabled:opacity-60"
           >
             <span className="material-symbols-outlined text-[18px]">save</span>
-            {savingTimeout ? "Saving…" : "Save Settings"}
+            {savingTimeout ? t("profile.security.saving") : t("profile.security.saveSettings")}
           </button>
         </div>
       </div>

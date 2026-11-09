@@ -5,23 +5,25 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { deploymentsApi, researcherReportsApi, type StaffDeployment, type ResearcherReport } from "@/lib/api";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const deploymentStatusConfig: Record<string, { label: string; cls: string }> = {
-  active:    { label: "Active",    cls: "badge-success" },
-  completed: { label: "Completed", cls: "badge-muted"   },
-  recalled:  { label: "Recalled",  cls: "badge-danger"  },
-  suspended: { label: "Suspended", cls: "badge-warning" },
+  active:    { label: "srhr.deploymentStatus.active", cls: "badge-success" },
+  completed: { label: "srhr.deploymentStatus.completed", cls: "badge-muted"   },
+  recalled:  { label: "srhr.deploymentStatus.recalled", cls: "badge-danger"  },
+  suspended: { label: "srhr.deploymentStatus.suspended", cls: "badge-warning" },
 };
 
 const reportStatusConfig: Record<string, { label: string; cls: string }> = {
-  draft:              { label: "Draft",             cls: "badge-muted"    },
-  submitted:          { label: "Submitted",         cls: "badge-primary"  },
-  acknowledged:       { label: "Acknowledged",      cls: "badge-success"  },
-  revision_requested: { label: "Revision Requested",cls: "badge-warning"  },
-  archived:           { label: "Archived",          cls: "badge-muted"    },
+  draft:              { label: "srhr.reportStatus.draft", cls: "badge-muted"    },
+  submitted:          { label: "srhr.reportStatus.submitted", cls: "badge-primary"  },
+  acknowledged:       { label: "srhr.reportStatus.acknowledged", cls: "badge-success"  },
+  revision_requested: { label: "srhr.reportStatus.revision_requested", cls: "badge-warning"  },
+  archived:           { label: "srhr.reportStatus.archived", cls: "badge-muted"    },
 };
 
 export default function SrhrOverviewPage() {
+  const { t } = useI18n();
   const [deployments, setDeployments] = useState<StaffDeployment[]>([]);
   const [reports, setReports]         = useState<ResearcherReport[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -38,7 +40,7 @@ export default function SrhrOverviewPage() {
         setLoadError(null);
       })
       .catch(() => {
-        setLoadError("Could not load field researcher data. Please try again.");
+        setLoadError(t("srhr.loadFailed"));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -49,18 +51,18 @@ export default function SrhrOverviewPage() {
   const draftCount     = reports.filter((r) => r.status === "draft").length;
 
   const kpis = [
-    { label: "Active Deployments",  value: activeCount,    icon: "transfer_within_a_station", color: "text-blue-600",   bg: "bg-blue-50"   },
-    { label: "Reports Submitted",   value: submittedCount, icon: "summarize",                  color: "text-amber-600",  bg: "bg-amber-50"  },
-    { label: "Pending Acknowledgement", value: pendingAck, icon: "hourglass_empty",            color: "text-orange-600", bg: "bg-orange-50" },
-    { label: "Draft Reports",       value: draftCount,     icon: "draft",                      color: "text-neutral-500",bg: "bg-neutral-50"},
+    { label: t("srhr.activeDeployments"), value: activeCount,    icon: "transfer_within_a_station", color: "text-blue-600",   bg: "bg-blue-50"   },
+    { label: t("srhr.reportsSubmitted"), value: submittedCount, icon: "summarize",                  color: "text-amber-600",  bg: "bg-amber-50"  },
+    { label: t("srhr.pendingAck"), value: pendingAck, icon: "hourglass_empty",            color: "text-orange-600", bg: "bg-orange-50" },
+    { label: t("srhr.draftReports"), value: draftCount,     icon: "draft",                      color: "text-neutral-500",bg: "bg-neutral-50"},
   ];
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Field Researchers"
-        subtitle="Manage researcher deployments at member state parliaments and review activity reports."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Field Researchers" }]} />}
+        title="srhr.title"
+        subtitle="srhr.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "srhr.title" }]} />}
       />
 
       {loadError && <ErrorBanner message={loadError} />}
@@ -90,15 +92,15 @@ export default function SrhrOverviewPage() {
       <div className="flex flex-wrap gap-3">
         <Link href="/srhr/deployments/new" className="btn-primary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">add</span>
-          New Deployment
+          {t("srhr.newDeployment")}
         </Link>
         <Link href="/srhr/reports/new" className="btn-secondary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">add_notes</span>
-          Submit Report
+          {t("srhr.submitReport")}
         </Link>
         <Link href="/srhr/parliaments" className="btn-secondary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">account_balance</span>
-          Parliaments
+          {t("srhr.parliaments")}
         </Link>
       </div>
 
@@ -108,9 +110,9 @@ export default function SrhrOverviewPage() {
           <div className="card-header flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-neutral-400 text-[18px]">transfer_within_a_station</span>
-              <h3 className="text-sm font-semibold text-neutral-900">Active Deployments</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("srhr.activeDeployments")}</h3>
             </div>
-            <Link href="/srhr/deployments" className="btn-secondary text-xs py-1 px-2">View all</Link>
+            <Link href="/srhr/deployments" className="btn-secondary text-xs py-1 px-2">{t("common.viewAll")}</Link>
           </div>
           <div className="divide-y divide-neutral-100">
             {loading
@@ -127,7 +129,7 @@ export default function SrhrOverviewPage() {
               ? (
                   <EmptyState
                     icon="transfer_within_a_station"
-                    title={loadError ? "Unable to load deployments" : "No active deployments"}
+                    title={loadError ? t("srhr.deploymentsUnavailable") : t("srhr.noActiveDeployments")}
                     className="py-8 min-h-0"
                   />
                 )
@@ -147,7 +149,7 @@ export default function SrhrOverviewPage() {
                       <p className="text-xs text-neutral-500 truncate">{d.parliament?.name}</p>
                     </div>
                     <span className={`badge ${deploymentStatusConfig[d.status]?.cls ?? "badge-muted"} text-[10px] flex-shrink-0`}>
-                      {deploymentStatusConfig[d.status]?.label}
+                      {deploymentStatusConfig[d.status] ? t(deploymentStatusConfig[d.status].label) : d.status}
                     </span>
                   </Link>
                 ))}
@@ -159,9 +161,9 @@ export default function SrhrOverviewPage() {
           <div className="card-header flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-neutral-400 text-[18px]">summarize</span>
-              <h3 className="text-sm font-semibold text-neutral-900">Recent Reports</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">{t("srhr.recentReports")}</h3>
             </div>
-            <Link href="/srhr/reports" className="btn-secondary text-xs py-1 px-2">View all</Link>
+            <Link href="/srhr/reports" className="btn-secondary text-xs py-1 px-2">{t("common.viewAll")}</Link>
           </div>
           <div className="divide-y divide-neutral-100">
             {loading
@@ -175,7 +177,7 @@ export default function SrhrOverviewPage() {
               ? (
                   <EmptyState
                     icon="summarize"
-                    title={loadError ? "Unable to load reports" : "No reports yet"}
+                    title={loadError ? t("srhr.reportsUnavailable") : t("srhr.noReports")}
                     className="py-8 min-h-0"
                   />
                 )
@@ -192,7 +194,7 @@ export default function SrhrOverviewPage() {
                       </p>
                     </div>
                     <span className={`badge ${reportStatusConfig[r.status]?.cls ?? "badge-muted"} text-[10px] flex-shrink-0`}>
-                      {reportStatusConfig[r.status]?.label}
+                      {reportStatusConfig[r.status] ? t(reportStatusConfig[r.status].label) : r.status}
                     </span>
                   </Link>
                 ))}

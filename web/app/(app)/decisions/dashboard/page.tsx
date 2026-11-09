@@ -6,8 +6,10 @@ import { useState } from "react";
 import { decisionsApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function DecisionsDashboardPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [promoteMsg, setPromoteMsg] = useState<string | null>(null);
   const [promoteErr, setPromoteErr] = useState<string | null>(null);
@@ -35,14 +37,14 @@ export default function DecisionsDashboardPage() {
       const row = res.data.data;
       setPromoteErr(null);
       setPromoteMsg(
-        `Promoted ${row.promoted} adopted/in-progress decisions into assignments; skipped ${row.skipped}. Completion stays human-owned.`,
+        t("decisions.dashboard.promotedAssignments", { promoted: row.promoted, skipped: row.skipped }),
       );
       qc.invalidateQueries({ queryKey: ["decisions"] });
       qc.invalidateQueries({ queryKey: ["assignments"] });
     },
     onError: () => {
       setPromoteMsg(null);
-      setPromoteErr("Could not promote weekly assignments. Governance write access is required.");
+      setPromoteErr(t("decisions.dashboard.promoteAssignmentsFailed"));
     },
   });
 
@@ -52,13 +54,13 @@ export default function DecisionsDashboardPage() {
       const row = res.data.data;
       setRiskErr(null);
       setRiskMsg(
-        `Promoted ${row.promoted} risk-like decisions into draft risk proposals; skipped ${row.skipped}. Decisions stay open.`,
+        t("decisions.dashboard.promotedRisks", { promoted: row.promoted, skipped: row.skipped }),
       );
       qc.invalidateQueries({ queryKey: ["decisions"] });
     },
     onError: () => {
       setRiskMsg(null);
-      setRiskErr("Could not promote risks. Governance write access is required.");
+      setRiskErr(t("decisions.dashboard.promoteRisksFailed"));
     },
   });
 
@@ -68,14 +70,14 @@ export default function DecisionsDashboardPage() {
       const row = res.data.data;
       setPackErr(null);
       setPackMsg(
-        `Meeting pack: ${row.assignments.promoted} assignment drafts, ${row.risks.promoted} risk drafts. Decisions stay open.`,
+        t("decisions.dashboard.promotedPack", { assignments: row.assignments.promoted, risks: row.risks.promoted }),
       );
       qc.invalidateQueries({ queryKey: ["decisions"] });
       qc.invalidateQueries({ queryKey: ["assignments"] });
     },
     onError: () => {
       setPackMsg(null);
-      setPackErr("Could not promote the meeting pack. Governance write access is required.");
+      setPackErr(t("decisions.dashboard.promotePackFailed"));
     },
   });
 
@@ -85,28 +87,28 @@ export default function DecisionsDashboardPage() {
       const row = res.data.data;
       setMinutesErr(null);
       setMinutesMsg(
-        `Minutes ${row.meeting_minutes_id}: ${row.assignments.promoted} assignment drafts, ${row.risks.promoted} risk drafts. Decisions stay open.`,
+        t("decisions.dashboard.promotedMinutes", { id: row.meeting_minutes_id, assignments: row.assignments.promoted, risks: row.risks.promoted }),
       );
       qc.invalidateQueries({ queryKey: ["decisions"] });
       qc.invalidateQueries({ queryKey: ["assignments"] });
     },
     onError: () => {
       setMinutesMsg(null);
-      setMinutesErr("Could not promote from minutes. Governance write access is required.");
+      setMinutesErr(t("decisions.dashboard.promoteMinutesFailed"));
     },
   });
 
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Decisions dashboard"
-        subtitle="Promote adopted decisions into assignments and risk drafts. Completion stays human-owned."
+        title="decisions.dashboard.title"
+        subtitle="decisions.dashboard.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Governance", href: "/governance" },
-              { label: "Decision Register", href: "/decisions" },
-              { label: "Dashboard" },
+              { label: "decisions.crumb.governance", href: "/governance" },
+              { label: "decisions.register.title", href: "/decisions" },
+              { label: "nav.dashboard" },
             ]}
           />
         }
@@ -118,7 +120,7 @@ export default function DecisionsDashboardPage() {
               disabled={promote.isPending}
               onClick={() => promote.mutate()}
             >
-              {promote.isPending ? "Promoting…" : "Promote weekly assignments"}
+              {promote.isPending ? t("decisions.dashboard.promoting") : t("decisions.dashboard.promoteAssignments")}
             </button>
             <button
               type="button"
@@ -126,7 +128,7 @@ export default function DecisionsDashboardPage() {
               disabled={promoteRisks.isPending}
               onClick={() => promoteRisks.mutate()}
             >
-              {promoteRisks.isPending ? "Promoting…" : "Promote risk drafts"}
+              {promoteRisks.isPending ? t("decisions.dashboard.promoting") : t("decisions.dashboard.promoteRisks")}
             </button>
             <button
               type="button"
@@ -135,16 +137,16 @@ export default function DecisionsDashboardPage() {
               disabled={promotePack.isPending}
               onClick={() => promotePack.mutate()}
             >
-              {promotePack.isPending ? "Promoting…" : "Promote meeting pack"}
+              {promotePack.isPending ? t("decisions.dashboard.promoting") : t("decisions.dashboard.promotePack")}
             </button>
             <Link href="/decisions/create" className="btn-primary text-sm">
-              New decision
+              {t("decisions.new")}
             </Link>
           </>
         }
       />
 
-      <FormSection title="Promote from minutes" icon="meeting_room">
+      <FormSection title="decisions.dashboard.fromMinutes" icon="meeting_room">
         <form
           className="flex flex-wrap items-end gap-3"
           data-testid="promote-from-minutes"
@@ -153,14 +155,14 @@ export default function DecisionsDashboardPage() {
             if (minutesId) promoteMinutes.mutate();
           }}
         >
-          <FormField label="Minutes" htmlFor="dashboard-minutes" className="min-w-[16rem]">
+          <FormField label="decisions.dashboard.minutes" htmlFor="dashboard-minutes" className="min-w-[16rem]">
             <select
               id="dashboard-minutes"
               className="form-input"
               value={minutesId}
               onChange={(e) => setMinutesId(e.target.value)}
             >
-              <option value="">Select minutes</option>
+              <option value="">{t("decisions.dashboard.selectMinutes")}</option>
               {(minutes.data ?? []).map((row) => (
                 <option key={row.id} value={row.id}>
                   {row.title}
@@ -170,13 +172,11 @@ export default function DecisionsDashboardPage() {
             </select>
           </FormField>
           <button type="submit" className="btn-secondary" disabled={!minutesId || promoteMinutes.isPending}>
-            {promoteMinutes.isPending ? "Promoting…" : "Promote this meeting"}
+            {promoteMinutes.isPending ? t("decisions.dashboard.promoting") : t("decisions.dashboard.promoteMeeting")}
           </button>
         </form>
         <p className="mt-3 text-sm text-neutral-600">
-          Weekly promote creates assignment drafts from adopted decisions that already have an owner and due date.
-          Risk promote creates draft/proposed risks from adopted decisions whose title or body mentions risk.
-          Neither action auto-completes work.
+          {t("decisions.dashboard.explainer")}
         </p>
         {promoteMsg && <p className="mt-2 text-sm text-green-700">{promoteMsg}</p>}
         {promoteErr && <p className="mt-2 text-sm text-red-600">{promoteErr}</p>}
@@ -195,18 +195,18 @@ export default function DecisionsDashboardPage() {
           ))}
         </div>
       )}
-      {isError && <p className="text-sm text-red-600">Failed to load dashboard.</p>}
+      {isError && <p className="text-sm text-red-600">{t("decisions.dashboard.loadFailed")}</p>}
 
       {data && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Total" value={data.total} />
-          <Stat label="Overdue" value={data.overdue} />
-          <Stat label="Open critical actions" value={data.open_critical_actions} />
-          <Stat label="Adopted" value={data.by_status.adopted ?? 0} />
-          <Stat label="In progress" value={data.by_status.in_progress ?? 0} />
-          <Stat label="Implemented" value={data.by_status.implemented ?? 0} />
-          <Stat label="Draft" value={data.by_status.draft ?? 0} />
-          <Stat label="Closed" value={data.by_status.closed ?? 0} />
+          <Stat label={t("decisions.stat.total")} value={data.total} />
+          <Stat label={t("decisions.stat.overdue")} value={data.overdue} />
+          <Stat label={t("decisions.stat.openCritical")} value={data.open_critical_actions} />
+          <Stat label={t("decisions.status.adopted")} value={data.by_status.adopted ?? 0} />
+          <Stat label={t("decisions.status.inProgress")} value={data.by_status.in_progress ?? 0} />
+          <Stat label={t("decisions.status.implemented")} value={data.by_status.implemented ?? 0} />
+          <Stat label={t("decisions.status.draft")} value={data.by_status.draft ?? 0} />
+          <Stat label={t("decisions.status.closed")} value={data.by_status.closed ?? 0} />
         </div>
       )}
     </div>

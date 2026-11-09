@@ -66,7 +66,7 @@ export default function TimesheetImportHistoryPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Ref</th>
+                <th>{t("timesheet.import.colRef")}</th>
                 <th>{t("timesheet.import.file")}</th>
                 <th>{t("timesheet.import.colStatus")}</th>
                 <th>{t("timesheet.import.counts.valid")}</th>

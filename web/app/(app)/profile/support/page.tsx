@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/Toast";
 import { accountProfilePath } from "@/lib/postAuthDestination";
 import { runAfterOverlayClose } from "@/lib/run-after-overlay-close";
 import { readStoredUser } from "@/lib/session";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const PRIORITY_BADGE: Record<SupportTicket["priority"], string> = {
   low: "badge badge-muted",
@@ -28,16 +29,16 @@ const STATUS_BADGE: Record<SupportTicket["status"], string> = {
 };
 
 const STATUS_LABEL: Record<SupportTicket["status"], string> = {
-  open: "Open",
-  in_progress: "In progress",
-  resolved: "Resolved",
-  closed: "Closed",
+  open: "profile.support.status.open",
+  in_progress: "profile.support.status.inProgress",
+  resolved: "hr.incidents.status.resolved",
+  closed: "hr.incidents.status.closed",
 };
 
 const PRIORITY_LABEL: Record<SupportTicket["priority"], string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
+  low: "hr.incidents.severity.low",
+  medium: "hr.incidents.severity.medium",
+  high: "hr.incidents.severity.high",
 };
 
 function ticketIsEditable(ticket: SupportTicket): boolean {
@@ -48,6 +49,7 @@ const TICKET_MENU_WIDTH = 192;
 const TICKET_MENU_HEIGHT = 184;
 
 export default function SupportTicketsPage() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const { confirm } = useConfirm();
   const { success, error: toastError } = useToast();
@@ -96,7 +98,7 @@ export default function SupportTicketsPage() {
 
   const startEdit = (ticket: SupportTicket) => {
     if (!ticketIsEditable(ticket)) {
-      toastError("This ticket cannot be edited.", "Resolved or closed tickets are locked.");
+      toastError(t("profile.support.notEditable"), t("profile.support.notEditableHint"));
       return;
     }
     setEditingId(ticket.id);
@@ -117,11 +119,11 @@ export default function SupportTicketsPage() {
     },
     onSuccess: () => {
       invalidate();
-      success(editingId ? "Ticket updated." : "Ticket submitted.");
+      success(editingId ? t("profile.support.updated") : t("profile.support.submitted"));
       resetForm();
     },
     onError: (err: unknown) => {
-      setFormError(apiErrorMessage(err, "Failed to save ticket."));
+      setFormError(apiErrorMessage(err, t("profile.support.saveFailed")));
     },
   });
 
@@ -130,11 +132,11 @@ export default function SupportTicketsPage() {
       supportTicketsApi.update(id, { status }),
     onSuccess: (_res, vars) => {
       invalidate();
-      success(vars.status === "closed" || vars.status === "resolved" ? "Ticket closed." : "Ticket updated.");
+      success(vars.status === "closed" || vars.status === "resolved" ? t("profile.support.closed") : t("profile.support.updated"));
       setViewing((current) => (current && current.id === vars.id ? { ...current, status: vars.status } : current));
     },
     onError: (err: unknown) => {
-      toastError("Could not update ticket.", apiErrorMessage(err, "Please try again."));
+      toastError(t("profile.support.updateFailed"), apiErrorMessage(err, t("profile.support.tryAgain")));
     },
   });
 
@@ -142,19 +144,19 @@ export default function SupportTicketsPage() {
     mutationFn: (id: number) => supportTicketsApi.delete(id),
     onSuccess: (_res, id) => {
       invalidate();
-      success("Ticket deleted.");
+      success(t("profile.support.deleted"));
       if (editingId === id) resetForm();
       if (viewing?.id === id) setViewing(null);
     },
     onError: (err: unknown) => {
-      toastError("Could not delete ticket.", apiErrorMessage(err, "Please try again."));
+      toastError(t("profile.support.deleteFailed"), apiErrorMessage(err, t("profile.support.tryAgain")));
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim()) {
-      setFormError("Subject is required.");
+      setFormError(t("profile.support.subjectRequired"));
       return;
     }
     setFormError(null);
@@ -164,9 +166,9 @@ export default function SupportTicketsPage() {
   const handleCloseTicket = async (ticket: SupportTicket) => {
     if (!ticketIsEditable(ticket)) return;
     const ok = await confirm({
-      title: "Close ticket",
-      message: `Close ${ticket.reference_number}? You will not be able to edit it afterwards.`,
-      confirmText: "Close ticket",
+      title: t("profile.support.closeTicket"),
+      message: t("profile.support.closeMessage", { reference: ticket.reference_number }),
+      confirmText: t("profile.support.closeTicket"),
     });
     if (!ok) return;
     statusMutation.mutate({ id: ticket.id, status: "closed" });
@@ -174,9 +176,9 @@ export default function SupportTicketsPage() {
 
   const handleDelete = async (ticket: SupportTicket) => {
     const ok = await confirm({
-      title: "Delete ticket",
-      message: `Delete ${ticket.reference_number}? This cannot be undone.`,
-      confirmText: "Delete",
+      title: t("profile.support.deleteTitle"),
+      message: t("profile.support.deleteMessage", { reference: ticket.reference_number }),
+      confirmText: t("common.delete"),
       variant: "danger",
     });
     if (!ok) return;
@@ -186,13 +188,13 @@ export default function SupportTicketsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Help & Support"
-        subtitle="Submit a support request to the system administrators."
+        title="nav.help"
+        subtitle="profile.support.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Profile", href: profileHref },
-              { label: "Support" },
+              { label: "profile.signature.crumbProfile", href: profileHref },
+              { label: "profile.support.crumb" },
             ]}
           />
         }
@@ -205,7 +207,7 @@ export default function SupportTicketsPage() {
             <span className="material-symbols-outlined text-[18px]">
               {showForm && !editingId ? "expand_less" : "add"}
             </span>
-            {showForm && !editingId ? "Cancel" : "New Ticket"}
+            {showForm && !editingId ? t("common.cancel") : t("profile.support.newTicket")}
           </button>
         }
       />
@@ -216,7 +218,7 @@ export default function SupportTicketsPage() {
             <span className="material-symbols-outlined text-[18px] text-primary">
               {editingId ? "edit" : "support_agent"}
             </span>
-            {editingId ? "Edit Support Ticket" : "New Support Ticket"}
+            {editingId ? t("profile.support.editTitle") : t("profile.support.newTitle")}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             {formError && (
@@ -227,40 +229,40 @@ export default function SupportTicketsPage() {
             )}
             <div>
               <label htmlFor="support-subject" className="block text-xs font-semibold text-neutral-700 mb-1">
-                Subject <span className="text-red-500">*</span>
+                {t("hr.incidents.new.subject")} <span className="text-red-500">*</span>
               </label>
               <input
                 id="support-subject"
                 type="text"
                 className="form-input w-full"
-                placeholder="Briefly describe the issue or request"
+                placeholder={t("profile.support.subjectPlaceholder")}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 required
               />
             </div>
             <div>
-              <label htmlFor="support-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+              <label htmlFor="support-description" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.timesheets.templates.description")}</label>
               <textarea
                 id="support-description"
                 rows={4}
                 className="form-input resize-none w-full"
-                placeholder="Provide full details so the support team can help you quickly…"
+                placeholder={t("profile.support.descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
             <div className="max-w-[200px]">
-              <label htmlFor="support-priority" className="block text-xs font-semibold text-neutral-700 mb-1">Priority</label>
+              <label htmlFor="support-priority" className="block text-xs font-semibold text-neutral-700 mb-1">{t("profile.support.priority")}</label>
               <select
                 id="support-priority"
                 className="form-input w-full"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as "low" | "medium" | "high")}
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
+                <option value="low">{t("hr.incidents.severity.low")}</option>
+                <option value="medium">{t("hr.incidents.severity.medium")}</option>
+                <option value="high">{t("hr.incidents.severity.high")}</option>
               </select>
             </div>
             <div className="flex justify-end gap-3 pt-1">
@@ -269,7 +271,7 @@ export default function SupportTicketsPage() {
                 onClick={resetForm}
                 className="btn-secondary px-4 py-2 text-sm"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="submit"
@@ -277,10 +279,10 @@ export default function SupportTicketsPage() {
                 className="btn-primary px-5 py-2 text-sm disabled:opacity-50"
               >
                 {saveMutation.isPending
-                  ? "Saving…"
+                  ? t("hr.timesheets.saving")
                   : editingId
-                    ? "Save changes"
-                    : "Submit Ticket"}
+                    ? t("hr.timesheets.templates.saveChanges")
+                    : t("profile.support.submitTicket")}
               </button>
             </div>
           </form>
@@ -302,29 +304,29 @@ export default function SupportTicketsPage() {
                   data-testid="support-ticket-detail-close"
                   onClick={() => void handleCloseTicket(viewing)}
                 >
-                  Close ticket
+                  {t("profile.support.closeTicket")}
                 </button>
               )}
               <button type="button" className="btn-secondary py-1 px-2 text-xs" onClick={() => setViewing(null)}>
-                Dismiss
+                {t("profile.support.dismiss")}
               </button>
             </div>
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <span className={PRIORITY_BADGE[viewing.priority]}>{PRIORITY_LABEL[viewing.priority]}</span>
-            <span className={STATUS_BADGE[viewing.status]}>{STATUS_LABEL[viewing.status]}</span>
+            <span className={PRIORITY_BADGE[viewing.priority]}>{t(PRIORITY_LABEL[viewing.priority])}</span>
+            <span className={STATUS_BADGE[viewing.status]}>{t(STATUS_LABEL[viewing.status])}</span>
           </div>
           <p className="text-sm text-neutral-600 mt-3 whitespace-pre-wrap">
-            {viewing.description?.trim() || "No description provided."}
+            {viewing.description?.trim() || t("profile.support.noDescription")}
           </p>
-          <p className="text-xs text-neutral-400 mt-3">Submitted {formatDateShort(viewing.created_at)}</p>
+          <p className="text-xs text-neutral-400 mt-3">{t("profile.support.submittedOn", { date: formatDateShort(viewing.created_at) })}</p>
         </div>
       )}
 
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          Failed to load support tickets.
+          {t("profile.support.loadFailed")}
         </div>
       )}
 
@@ -332,13 +334,13 @@ export default function SupportTicketsPage() {
         {isLoading ? (
           <div className="card p-5 flex items-center justify-center py-16 text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[28px]">progress_activity</span>
-            <span className="ml-2">Loading…</span>
+            <span className="ml-2">{t("common.loading")}</span>
           </div>
         ) : tickets.length === 0 ? (
           <EmptyState
             icon="confirmation_number"
-            title="No support tickets yet."
-            description="Submit a ticket above and the admin team will respond shortly."
+            title={t("profile.support.empty")}
+            description={t("profile.support.emptyHint")}
           />
         ) : (
           tickets.map((ticket) => (
@@ -350,10 +352,10 @@ export default function SupportTicketsPage() {
                       {ticket.reference_number}
                     </span>
                     <span className={PRIORITY_BADGE[ticket.priority]}>
-                      {PRIORITY_LABEL[ticket.priority]}
+                      {t(PRIORITY_LABEL[ticket.priority])}
                     </span>
                     <span className={STATUS_BADGE[ticket.status]}>
-                      {STATUS_LABEL[ticket.status]}
+                      {t(STATUS_LABEL[ticket.status])}
                     </span>
                   </div>
                   <p className="font-semibold text-neutral-900 text-sm truncate">{ticket.subject}</p>
@@ -362,7 +364,7 @@ export default function SupportTicketsPage() {
                   )}
                   <div className="flex items-center gap-1 mt-2 text-xs text-neutral-400">
                     <span className="material-symbols-outlined text-[13px]">calendar_today</span>
-                    <span>Submitted {formatDateShort(ticket.created_at)}</span>
+                    <span>{t("profile.support.submittedOn", { date: formatDateShort(ticket.created_at) })}</span>
                   </div>
                 </div>
                 <TicketActionsMenu
@@ -397,6 +399,7 @@ function TicketActionsMenu({
   onCloseTicket: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -444,7 +447,7 @@ function TicketActionsMenu({
         ref={buttonRef}
         type="button"
         className="inline-flex items-center justify-center w-9 h-9 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50"
-        aria-label={`Actions for ${ticket.reference_number}`}
+        aria-label={t("profile.support.actionsFor", { reference: ticket.reference_number })}
         aria-haspopup="menu"
         aria-expanded={open}
         data-testid="support-ticket-actions"
@@ -467,10 +470,10 @@ function TicketActionsMenu({
               className="fixed z-[210] w-48 rounded-xl border border-neutral-200 bg-white shadow-xl overflow-hidden py-1"
               style={menuPos ? { top: menuPos.top, left: menuPos.left } : { top: 0, left: 0, visibility: "hidden" }}
             >
-              <MenuItem testId="support-ticket-action-view" icon="visibility" label="View" onClick={() => run(onView)} />
-              <MenuItem testId="support-ticket-action-edit" icon="edit" label="Edit" disabled={!editable} onClick={() => run(onEdit)} />
-              <MenuItem testId="support-ticket-action-close" icon="check_circle" label="Close ticket" disabled={!editable} onClick={() => run(onCloseTicket)} />
-              <MenuItem testId="support-ticket-action-delete" icon="delete" label="Delete" danger onClick={() => run(onDelete)} />
+              <MenuItem testId="support-ticket-action-view" icon="visibility" label="profile.support.menu.view" onClick={() => run(onView)} />
+              <MenuItem testId="support-ticket-action-edit" icon="edit" label="common.edit" disabled={!editable} onClick={() => run(onEdit)} />
+              <MenuItem testId="support-ticket-action-close" icon="check_circle" label="profile.support.closeTicket" disabled={!editable} onClick={() => run(onCloseTicket)} />
+              <MenuItem testId="support-ticket-action-delete" icon="delete" label="common.delete" danger onClick={() => run(onDelete)} />
             </div>
           </>,
           document.body,
@@ -494,6 +497,7 @@ function MenuItem({
   danger?: boolean;
   testId: string;
 }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
@@ -508,7 +512,7 @@ function MenuItem({
       }`}
     >
       <span className="material-symbols-outlined text-[18px]" aria-hidden="true">{icon}</span>
-      {label}
+      {t(label)}
     </button>
   );
 }

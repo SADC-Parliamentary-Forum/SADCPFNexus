@@ -24,10 +24,10 @@ export default function AuditEngagementsPage() {
     mutationFn: (engagementTitle: string) => auditApi.createEngagement({ title: engagementTitle }),
     onSuccess: () => {
       setTitle("");
-      toast.success("Engagement created");
+      toast.success(t("audit.toast.engagementCreated"));
       qc.invalidateQueries({ queryKey: ["audit", "engagements"] });
     },
-    onError: (err) => toast.error("Engagement not created", apiErrorMessage(err, "Failed to create the engagement.")),
+    onError: (err) => toast.error(t("audit.toast.engagementNotCreated"), apiErrorMessage(err, t("audit.toast.engagementFailed"))),
   });
 
   const runAction = (call: () => Promise<unknown>, successTitle: string, errorTitle: string) =>
@@ -36,7 +36,7 @@ export default function AuditEngagementsPage() {
         toast.success(successTitle);
         return qc.invalidateQueries({ queryKey: ["audit", "engagements"] });
       })
-      .catch((err) => toast.error(errorTitle, apiErrorMessage(err, "Action failed. Please try again.")));
+      .catch((err) => toast.error(errorTitle, apiErrorMessage(err, t("correspondence.detail.actionFailed"))));
 
   return (
     <AuditPageShell
@@ -86,13 +86,13 @@ export default function AuditEngagementsPage() {
             <td className="px-3 py-2.5 capitalize">{String(r.status)}</td>
             <td className="px-3 py-2.5">
               <AuditRowActions>
-                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.declareIndependence(Number(r.id), { status: "cleared" }), "Independence cleared", "Could not clear independence")}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.declareIndependence(Number(r.id), { status: "cleared" }), t("audit.toast.independenceCleared"), t("audit.toast.independenceNotCleared"))}>
                   {t("audit.engagements.clearIndependence")}
                 </button>
-                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.notifyEngagement(Number(r.id)), "Engagement notification sent", "Could not send engagement notification")}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.notifyEngagement(Number(r.id)), t("audit.toast.notificationSent"), t("audit.toast.notificationNotSent"))}>
                   {t("audit.engagements.notify")}
                 </button>
-                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.startFieldwork(Number(r.id)), "Fieldwork started", "Could not start fieldwork")}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.startFieldwork(Number(r.id)), t("audit.toast.fieldworkStarted"), t("audit.toast.fieldworkNotStarted"))}>
                   {t("audit.engagements.fieldwork")}
                 </button>
               </AuditRowActions>

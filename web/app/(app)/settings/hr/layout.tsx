@@ -3,12 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 /**
  * HR Settings layout: accessible to system admins and users with any hr_settings.* permission.
  */
 export default function HrSettingsLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [allowAccess, setAllowAccess] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function HrSettingsLayout({ children }: { children: React.ReactNo
       <div className="flex min-h-[200px] items-center justify-center">
         <div className="flex items-center gap-2 text-sm text-neutral-500">
           <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-          Checking access…
+          {t("settings.hr.checkingAccess")}
         </div>
       </div>
     );

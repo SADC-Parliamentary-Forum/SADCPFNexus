@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
 import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const ICON_OPTIONS = [
   "star", "gavel", "account_balance", "people", "computer",
@@ -28,6 +29,7 @@ function FamilyModal({
   onSave: (data: Partial<HrJobFamily>) => void;
 }) {
   const isEdit = !!family?.id;
+  const { t } = useI18n();
   const [form, setForm] = useState<Partial<HrJobFamily>>(
     family ?? { name: "", code: "", description: "", color: "#1d85ed", icon: "work", status: "active" }
   );
@@ -41,9 +43,9 @@ function FamilyModal({
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-neutral-900">
-            {isEdit ? "Edit Job Family" : "New Job Family"}
+            {isEdit ? t("settings.hr.jobFamily.edit") : t("settings.hr.jobFamily.new")}
           </h3>
-          <button onClick={onClose} aria-label="Close job family editor" className="text-neutral-400 hover:text-neutral-700">
+          <button onClick={onClose} aria-label={t("settings.hr.jobFamily.closeEditor")} className="text-neutral-400 hover:text-neutral-700">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
@@ -51,22 +53,22 @@ function FamilyModal({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="settings-hr-job-families-name" className="block text-xs font-medium text-neutral-700 mb-1">Name *</label>
-              <input id="settings-hr-job-families-name" className="form-input text-sm" value={form.name ?? ""} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Finance & Accounting" />
+              <label htmlFor="settings-hr-job-families-name" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.nameRequired")}</label>
+              <input id="settings-hr-job-families-name" className="form-input text-sm" value={form.name ?? ""} onChange={(e) => set("name", e.target.value)} placeholder={t("settings.hr.jobFamily.namePlaceholder")} />
             </div>
             <div>
-              <label htmlFor="settings-hr-job-families-code" className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
-              <input id="settings-hr-job-families-code" className="form-input text-sm uppercase" value={form.code ?? ""} onChange={(e) => set("code", e.target.value.toUpperCase())} placeholder="e.g. FIN" maxLength={20} />
+              <label htmlFor="settings-hr-job-families-code" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.codeRequired")}</label>
+              <input id="settings-hr-job-families-code" className="form-input text-sm uppercase" value={form.code ?? ""} onChange={(e) => set("code", e.target.value.toUpperCase())} placeholder={t("settings.hr.jobFamily.codePlaceholder")} maxLength={20} />
             </div>
           </div>
 
           <div>
-            <label htmlFor="settings-hr-job-families-description" className="block text-xs font-medium text-neutral-700 mb-1">Description</label>
-            <textarea id="settings-hr-job-families-description" className="form-input text-sm resize-none" rows={2} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} placeholder="Optional description…" />
+            <label htmlFor="settings-hr-job-families-description" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.description")}</label>
+            <textarea id="settings-hr-job-families-description" className="form-input text-sm resize-none" rows={2} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} placeholder={t("settings.hr.common.descriptionPlaceholder")} />
           </div>
 
           <div>
-            <p className="block text-xs font-medium text-neutral-700 mb-1">Colour</p>
+            <p className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.jobFamily.colour")}</p>
             <div className="flex gap-2 flex-wrap">
               {COLOR_OPTIONS.map((c) => (
                 <button
@@ -75,13 +77,14 @@ function FamilyModal({
                   onClick={() => set("color", c)}
                   className={cn("w-7 h-7 rounded-full border-2 transition-transform hover:scale-110", form.color === c ? "border-neutral-700 scale-110" : "border-transparent")}
                   style={{ backgroundColor: c }}
+                  aria-label={t("settings.hr.jobFamily.colourOption", { colour: c })}
                 />
               ))}
             </div>
           </div>
 
           <div>
-            <p className="block text-xs font-medium text-neutral-700 mb-1">Icon</p>
+            <p className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.jobFamily.icon")}</p>
             <div className="flex gap-2 flex-wrap">
               {ICON_OPTIONS.map((ic) => (
                 <button
@@ -97,22 +100,22 @@ function FamilyModal({
           </div>
 
           <div>
-            <label htmlFor="settings-hr-job-families-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <label htmlFor="settings-hr-job-families-status" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.status")}</label>
             <select id="settings-hr-job-families-status" className="form-input text-sm" value={form.status ?? "active"} onChange={(e) => set("status", e.target.value)}>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{t("settings.hr.common.active")}</option>
+              <option value="inactive">{t("settings.hr.common.inactive")}</option>
             </select>
           </div>
         </div>
 
         <div className="flex gap-2 pt-2">
-          <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
+          <button onClick={onClose} className="btn-secondary flex-1 text-sm">{t("common.cancel")}</button>
           <button
             onClick={() => onSave(form)}
             disabled={!form.name || !form.code}
             className="btn-primary flex-1 text-sm disabled:opacity-50"
           >
-            {isEdit ? "Save Changes" : "Create Family"}
+            {isEdit ? t("settings.hr.common.saveChanges") : t("settings.hr.jobFamily.create")}
           </button>
         </div>
       </div>
@@ -123,6 +126,7 @@ function FamilyModal({
 export default function JobFamiliesPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [modal, setModal] = useState<Partial<HrJobFamily> | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<number | null>(null);
 
@@ -137,21 +141,21 @@ export default function JobFamiliesPage() {
         ? hrSettingsApi.updateJobFamily(form.id, form).then((r) => r.data)
         : hrSettingsApi.createJobFamily(form).then((r) => r.data),
     onSuccess: (res: any) => {
-      toast("success", res.message ?? "Saved.");
+      toast("success", res.message ?? t("settings.hr.common.saved"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "job-families"] });
       setModal(undefined);
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Failed to save."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.saveFailed")),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => hrSettingsApi.deleteJobFamily(id).then((r) => r.data),
     onSuccess: () => {
-      toast("success", "Job family deleted.");
+      toast("success", t("settings.hr.jobFamily.deleted"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "job-families"] });
       setDeleting(null);
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Cannot delete."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.cannotDelete")),
   });
 
   const families = data ?? [];
@@ -166,12 +170,12 @@ export default function JobFamiliesPage() {
         />
       )}
       <HrSettingsHeader
-        title="Job Families"
-        subtitle="Group positions into functional families used for competency mapping and appraisals."
+        title={t("settings.hr.home.jobFamilies.title")}
+        subtitle={t("settings.hr.jobFamily.subtitle")}
         actions={
           <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
-          New Family
+          {t("settings.hr.jobFamily.newFamily")}
         </button>
         }
       />
@@ -181,7 +185,7 @@ export default function JobFamiliesPage() {
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
           <p className="text-sm font-medium text-neutral-700">
-            {families.length} job {families.length === 1 ? "family" : "families"}
+            {t(families.length === 1 ? "settings.hr.jobFamily.countOne" : "settings.hr.jobFamily.countMany", { count: families.length })}
           </p>
         </div>
 
@@ -190,16 +194,16 @@ export default function JobFamiliesPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : families.length === 0 ? (
-          <EmptyState icon="category" title="No job families yet." description="Create one to get started." />
+          <EmptyState icon="category" title={t("settings.hr.jobFamily.emptyTitle")} description={t("settings.hr.common.emptyDescription")} />
         ) : (
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th>Family</th>
-                <th>Code</th>
-                <th>Grade Bands</th>
-                <th>Status</th>
-                <th className="w-20">Actions</th>
+                <th>{t("settings.hr.jobFamily.family")}</th>
+                <th>{t("settings.hr.common.code")}</th>
+                <th>{t("settings.hr.jobFamily.gradeBands")}</th>
+                <th>{t("settings.hr.common.status")}</th>
+                <th className="w-20">{t("settings.hr.common.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -234,7 +238,7 @@ export default function JobFamiliesPage() {
                   </td>
                   <td>
                     <span className={cn("badge", f.status === "active" ? "badge-success" : "badge-muted")}>
-                      {f.status}
+                      {f.status === "active" ? t("settings.hr.common.statusValue.active") : f.status === "inactive" ? t("settings.hr.common.statusValue.inactive") : f.status}
                     </span>
                   </td>
                   <td>
@@ -242,7 +246,7 @@ export default function JobFamiliesPage() {
                       <button
                         onClick={() => setModal(f)}
                         className="p-1.5 rounded hover:bg-neutral-100 text-neutral-500 hover:text-primary"
-                        title="Edit"
+                        title={t("common.edit")}
                       >
                         <span className="material-symbols-outlined text-[16px]">edit</span>
                       </button>
@@ -252,17 +256,17 @@ export default function JobFamiliesPage() {
                             onClick={() => deleteMutation.mutate(f.id)}
                             className="p-1.5 rounded hover:bg-red-50 text-red-600 text-xs font-medium"
                           >
-                            Confirm
+                            {t("common.confirm")}
                           </button>
                           <button onClick={() => setDeleting(null)} className="p-1.5 rounded hover:bg-neutral-100 text-neutral-500 text-xs">
-                            Cancel
+                            {t("common.cancel")}
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setDeleting(f.id)}
                           className="p-1.5 rounded hover:bg-red-50 text-neutral-500 hover:text-red-600"
-                          title="Delete"
+                          title={t("common.delete")}
                         >
                           <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>

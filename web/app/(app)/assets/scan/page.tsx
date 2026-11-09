@@ -53,11 +53,11 @@ export default function AssetScanPage() {
       const id = await ensureBasket();
       const updated = await assetsApi.addScanBasketItem(id, payload);
       setBasket(updated.data.data);
-      toast.success("Added to scan basket");
+      toast.success(t("assets.scanPage.added"));
     } catch (err) {
       const message = apiErrorMessage(err, t("assets.scan.notFound"));
       setError(message);
-      toast.error("Not added to scan basket", message);
+      toast.error(t("assets.scanPage.notAdded"), message);
     }
   }
 
@@ -116,12 +116,12 @@ export default function AssetScanPage() {
         to_user_id: toUser.id,
       });
       sessionStorage.removeItem(BASKET_KEY);
-      toast.success("Handover started", toUser.name);
+      toast.success(t("assets.scanPage.handoverStarted"), toUser.name);
       router.push(`/assets/handovers/${started.data.data.id}`);
     } catch (err) {
       const message = apiErrorMessage(err, t("assets.assignFailed"));
       setError(message);
-      toast.error("Handover not started", message);
+      toast.error(t("assets.scanPage.handoverNotStarted"), message);
     }
   }
 

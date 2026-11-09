@@ -8,12 +8,13 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { NewAssetRequestModal } from "@/components/assets/NewAssetRequestModal";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
-  pending: { label: "Pending", badge: "badge-warning" },
-  approved: { label: "Approved", badge: "badge-success" },
-  rejected: { label: "Rejected", badge: "badge-danger" },
-  fulfilled: { label: "Fulfilled", badge: "badge-info" },
+  pending: { label: "assets.requests.status.pending", badge: "badge-warning" },
+  approved: { label: "assets.requests.status.approved", badge: "badge-success" },
+  rejected: { label: "assets.requests.status.rejected", badge: "badge-danger" },
+  fulfilled: { label: "assets.requests.status.fulfilled", badge: "badge-info" },
 };
 
 function padId(id: number): string {
@@ -33,6 +34,7 @@ function syncNewQuery(open: boolean) {
 
 export default function AssetRequestsPage() {
   const { success } = useToast();
+  const { t } = useI18n();
   const [requests, setRequests] = useState<AssetRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,11 +54,11 @@ export default function AssetRequestsPage() {
       setLastPage(payload.last_page ?? 1);
       setPage(pg);
     } catch {
-      setError("Failed to load asset requests.");
+      setError(t("assets.requests.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load(1);
@@ -85,20 +87,20 @@ export default function AssetRequestsPage() {
   return (
     <div className="w-full space-y-6">
       <ModulePageHeader
-        title="Asset Requests"
-        subtitle="Submit and track requests for new or replacement assets."
+        title={t("assets.requests.title")}
+        subtitle={t("assets.requests.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Assets", href: "/assets" },
-              { label: "Requests" },
+              { label: "assets.requests.breadcrumbAssets", href: "/assets" },
+              { label: "assets.requests.breadcrumb" },
             ]}
           />
         }
         actions={
           <button type="button" onClick={openNew} className="btn-primary flex items-center gap-2 py-2 px-4 text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New request
+            {t("assets.requests.new")}
           </button>
         }
       />
@@ -111,7 +113,7 @@ export default function AssetRequestsPage() {
             onClick={() => setFilter(tab)}
             className={`filter-tab capitalize${filter === tab ? " active" : ""}`}
           >
-            {tab === "all" ? "All" : (STATUS_CONFIG[tab]?.label ?? tab)}
+            {tab === "all" ? t("assets.requests.filter.all") : (STATUS_CONFIG[tab] ? t(STATUS_CONFIG[tab].label) : tab)}
           </button>
         ))}
       </div>
@@ -132,16 +134,16 @@ export default function AssetRequestsPage() {
         <div className="card">
           <EmptyState
             icon="inventory_2"
-            title="No asset requests found"
+            title={t("assets.requests.empty")}
             description={
               filter !== "all"
-                ? "No requests match the selected filter."
-                : "You have not submitted any asset requests yet."
+                ? t("assets.requests.emptyFiltered")
+                : t("assets.requests.emptyHint")
             }
             action={
               <button type="button" onClick={openNew} className="btn-primary inline-flex items-center gap-2 py-2 px-4 text-sm">
                 <span className="material-symbols-outlined text-[16px]">add</span>
-                New request
+                {t("assets.requests.new")}
               </button>
             }
           />
@@ -152,17 +154,17 @@ export default function AssetRequestsPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Requester</th>
-                  <th>Justification</th>
-                  <th>Status</th>
-                  <th>Submitted</th>
+                  <th>{t("assets.requests.col.reference")}</th>
+                  <th>{t("assets.requests.col.requester")}</th>
+                  <th>{t("assets.requests.col.justification")}</th>
+                  <th>{t("assets.requests.col.status")}</th>
+                  <th>{t("assets.requests.col.submitted")}</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((req) => {
-                  const sc = STATUS_CONFIG[req.status] ?? { label: req.status, badge: "badge-muted" };
+                  const sc = STATUS_CONFIG[req.status] ? { label: t(STATUS_CONFIG[req.status].label), badge: STATUS_CONFIG[req.status].badge } : { label: req.status, badge: "badge-muted" };
                   return (
                     <tr key={req.id}>
                       <td className="font-mono text-xs text-neutral-600 whitespace-nowrap">
@@ -185,7 +187,7 @@ export default function AssetRequestsPage() {
                           href={`/assets/requests/${req.id}`}
                           className="btn-secondary text-xs py-1 px-2 whitespace-nowrap"
                         >
-                          View
+                          {t("assets.requests.view")}
                         </Link>
                       </td>
                     </tr>
@@ -197,7 +199,7 @@ export default function AssetRequestsPage() {
 
           {lastPage > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200">
-              <p className="text-xs text-neutral-500">Page {page} of {lastPage}</p>
+              <p className="text-xs text-neutral-500">{t("common.pageOf", { page, total: lastPage })}</p>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -205,7 +207,7 @@ export default function AssetRequestsPage() {
                   onClick={() => void load(page - 1)}
                   className="btn-secondary py-1.5 px-3 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Previous
+                  {t("common.previous")}
                 </button>
                 <button
                   type="button"
@@ -213,7 +215,7 @@ export default function AssetRequestsPage() {
                   onClick={() => void load(page + 1)}
                   className="btn-secondary py-1.5 px-3 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Next
+                  {t("common.next")}
                 </button>
               </div>
             </div>
@@ -226,7 +228,7 @@ export default function AssetRequestsPage() {
         onClose={closeNew}
         onCreated={() => {
           closeNew();
-          success("Asset request submitted.");
+          success(t("assets.requests.submitted"));
           void load(1);
         }}
       />

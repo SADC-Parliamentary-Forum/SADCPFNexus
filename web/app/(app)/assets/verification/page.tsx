@@ -111,12 +111,12 @@ export default function AssetVerificationPage() {
       });
       setName("");
       setMsg(t("common.create"));
-      toast.success("Verification campaign created");
+      toast.success(t("assets.verifyPage.campaignCreated"));
       await load();
     } catch (error: unknown) {
       const ax = error as { response?: { data?: { message?: string } } };
       setErrorMsg(ax?.response?.data?.message ?? t("common.error"));
-      toast.error("Verification campaign not created", apiErrorMessage(error, t("common.error")));
+      toast.error(t("assets.verifyPage.campaignNotCreated"), apiErrorMessage(error, t("common.error")));
     } finally {
       setCreating(false);
     }
@@ -128,12 +128,12 @@ export default function AssetVerificationPage() {
     try {
       await assetVerificationApi.close(activeId);
       setMsg(t("assets.verify.closed"));
-      toast.success("Verification campaign closed");
+      toast.success(t("assets.verifyPage.campaignClosed"));
       await load(activeId);
     } catch (error: unknown) {
       const ax = error as { response?: { data?: { message?: string } } };
       setErrorMsg(ax?.response?.data?.message ?? t("common.error"));
-      toast.error("Could not close campaign", apiErrorMessage(error, t("common.error")));
+      toast.error(t("assets.verifyPage.closeFailed"), apiErrorMessage(error, t("common.error")));
     }
   }
 
@@ -154,12 +154,12 @@ export default function AssetVerificationPage() {
       });
       setFindForm({ description: "", make: "", model: "", serial_number: "", found_location: "", notes: "" });
       setFindPhotos(null);
-      toast.success("Unregistered find recorded");
+      toast.success(t("assets.verifyPage.findRecorded"));
       await load(activeId ?? undefined);
     } catch (error: unknown) {
       const ax = error as { response?: { data?: { message?: string } } };
       setErrorMsg(ax?.response?.data?.message ?? t("common.error"));
-      toast.error("Unregistered find not recorded", apiErrorMessage(error, t("common.error")));
+      toast.error(t("assets.verifyPage.findNotRecorded"), apiErrorMessage(error, t("common.error")));
     }
   }
 
@@ -220,12 +220,12 @@ export default function AssetVerificationPage() {
       setVerifyPhotos(null);
       setCameraActive(true);
       setRestartKey((k) => k + 1);
-      toast.success("Verification result recorded");
+      toast.success(t("assets.verifyPage.resultRecorded"));
       await load(activeId);
     } catch (error: unknown) {
       const ax = error as { response?: { data?: { message?: string } } };
       setErrorMsg(ax?.response?.data?.message ?? t("common.error"));
-      toast.error("Verification result not recorded", apiErrorMessage(error, t("common.error")));
+      toast.error(t("assets.verifyPage.resultNotRecorded"), apiErrorMessage(error, t("common.error")));
     }
   }
 
@@ -238,12 +238,12 @@ export default function AssetVerificationPage() {
     if (!tag) return;
     try {
       await assetUnregisteredFindsApi.promote(find.id, { asset_tag: tag, name: find.description });
-      toast.success("Find promoted to asset", tag);
+      toast.success(t("assets.verifyPage.promoted"), tag);
       await load(activeId ?? undefined);
     } catch (error: unknown) {
       const message = apiErrorMessage(error, t("common.error"));
       setErrorMsg(message);
-      toast.error("Could not promote find", message);
+      toast.error(t("assets.verifyPage.promoteFailed"), message);
     }
   }
 

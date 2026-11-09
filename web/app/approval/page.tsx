@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { readStoredUser, writeStoredUser } from "@/lib/session";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const API_BASE = "/api";
 
@@ -58,10 +59,11 @@ async function apiFetch(
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function ApprovalPageWrapper() {
+  const { t } = useI18n();
   return (
     <Suspense fallback={
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f0f2f5", fontFamily: "Arial" }}>
-        <div style={{ textAlign: "center", color: "#9ca3af" }}>Loading…</div>
+        <div style={{ textAlign: "center", color: "#9ca3af" }}>{t("approval.page.loading")}</div>
       </div>
     }>
       <ApprovalPage />
@@ -73,6 +75,7 @@ function ApprovalPage() {
   const params = useSearchParams();
   const action = (params.get("action") ?? "approve") as "approve" | "reject";
   const token = params.get("token") ?? "";
+  const { t, localeTag } = useI18n();
 
   const [state, setState] = useState<PageState>("loading");
   const [preview, setPreview] = useState<PreviewData | null>(null);
@@ -99,7 +102,7 @@ function ApprovalPage() {
       const res = await apiFetch(`${API_BASE}/email-action/preview/${token}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setErrorMsg(body.error ?? "This approval link is invalid or has expired.");
+        setErrorMsg(body.error ?? t("approval.page.invalidLink"));
         setState("invalid");
         return;
       }
@@ -134,14 +137,14 @@ function ApprovalPage() {
 
       setState("ready-logged-in");
     } catch {
-      setErrorMsg("Unable to load the approval page. Please try again.");
+      setErrorMsg(t("approval.page.loadFailed"));
       setState("error");
     }
   }
 
   async function handleProcess() {
     if (action === "reject" && reason.trim().length < 5) {
-      setReasonError("Please provide a reason (at least 5 characters).");
+      setReasonError(t("approval.page.reasonRequired"));
       return;
     }
     setReasonError("");
@@ -165,10 +168,10 @@ function ApprovalPage() {
         if (body.reason === "requires_signature") {
           setErrorMsg(
             body.error ??
-              "This approval requires your enrolled signature. Open the request in Nexus, re-enter your password, and sign.",
+              t("approval.page.requiresSignature"),
           );
         } else {
-          setErrorMsg(body.error ?? "Something went wrong. Please try again.");
+          setErrorMsg(body.error ?? t("approval.page.genericError"));
         }
         setState("error");
         return;
@@ -182,7 +185,7 @@ function ApprovalPage() {
       });
       setState("success");
     } catch {
-      setErrorMsg("Network error. Please check your connection and try again.");
+      setErrorMsg(t("approval.page.networkError"));
       setState("error");
     }
   }
@@ -203,8 +206,8 @@ function ApprovalPage() {
         <div className="ap-logo">
           <div className="ap-logo-mark">SP</div>
           <div>
-            <div className="ap-org-name">SADC Parliamentary Forum</div>
-            <div className="ap-org-sub">SADC-PF Nexus</div>
+            <div className="ap-org-name">{t("approval.page.org")}</div>
+            <div className="ap-org-sub">SADC-PF Nexus</div>{/* i18n-ignore */}
           </div>
         </div>
       </div>
@@ -214,7 +217,7 @@ function ApprovalPage() {
         {state === "loading" && (
           <div className="ap-card ap-center">
             <div className="ap-spinner" />
-            <p className="ap-muted">Loading request details…</p>
+            <p className="ap-muted">{t("approval.page.loadingDetails")}</p>
           </div>
         )}
 
@@ -222,7 +225,7 @@ function ApprovalPage() {
         {state === "confirming" && (
           <div className="ap-card ap-center">
             <div className="ap-spinner" />
-            <p className="ap-muted">Processing your {action === "approve" ? "approval" : "rejection"}…</p>
+            <p className="ap-muted">{action === "approve" ? t("approval.page.processingApproval") : t("approval.page.processingRejection")}</p>
           </div>
         )}
 
@@ -230,12 +233,12 @@ function ApprovalPage() {
         {(state === "invalid" || state === "error") && (
           <div className="ap-card ap-center">
             <div className="ap-icon ap-icon-warn">⚠</div>
-            <h1 className="ap-title">{state === "invalid" ? "Invalid Link" : "Something went wrong"}</h1>
+            <h1 className="ap-title">{state === "invalid" ? t("approval.page.invalidTitle") : t("approval.page.errorTitle")}</h1>
             <p className="ap-sub">{errorMsg}</p>
             <p className="ap-hint-box">
-              Log in to the SADC-PF Nexus portal and find the request in your pending approvals.
+              {t("approval.page.loginHint")}
             </p>
-            <a href="/approvals" className="ap-btn-outline">Go to My Approvals →</a>
+            <a href="/approvals" className="ap-btn-outline">{t("approval.page.goToApprovals")}</a>
           </div>
         )}
 
@@ -243,14 +246,14 @@ function ApprovalPage() {
         {state === "wrong-user" && preview && (
           <div className="ap-card ap-center">
             <div className="ap-icon ap-icon-warn">⚠</div>
-            <h1 className="ap-title">Not your approval</h1>
+            <h1 className="ap-title">{t("approval.page.wrongUserTitle")}</h1>
             <p className="ap-sub">
-              This link was sent to a different approver. You are logged in as <strong>{authUser?.name}</strong>.
+              {t("approval.page.wrongUser")} <strong>{authUser?.name}</strong>.
             </p>
             <p className="ap-hint-box">
-              If you need to action this request, please log in with the correct account or find it via your approvals queue.
+              {t("approval.page.wrongUserHint")}
             </p>
-            <a href="/approvals" className="ap-btn-outline">My Approvals →</a>
+            <a href="/approvals" className="ap-btn-outline">{t("approval.page.myApprovals")}</a>
           </div>
         )}
 
@@ -261,25 +264,25 @@ function ApprovalPage() {
               {successData.action === "approved" ? "✓" : "✗"}
             </div>
             <h1 className="ap-title">
-              {successData.action === "approved" ? "Request Approved" : "Request Returned"}
+              {successData.action === "approved" ? t("approval.page.approvedTitle") : t("approval.page.returnedTitle")}
             </h1>
             <p className="ap-sub">
               {successData.action === "approved"
-                ? `You have approved this ${successData.module} request. The requester has been notified.`
-                : `You have returned this ${successData.module} request with your comments. The requester has been notified.`}
+                ? t("approval.page.approvedMessage", { module: successData.module })
+                : t("approval.page.returnedMessage", { module: successData.module })}
             </p>
             {successData.signed && (
               <div className="ap-badge-signed">
-                <span>✍</span> Signed with your saved signature
+                <span>✍</span> {t("approval.page.signedBadge")}
               </div>
             )}
             <div className="ap-detail-box">
-              <div className="ap-detail-row"><span>Module</span><strong>{successData.module}</strong></div>
-              <div className="ap-detail-row"><span>Reference</span><strong>{successData.reference}</strong></div>
-              <div className="ap-detail-row"><span>Actioned</span><strong>{new Date().toLocaleString()}</strong></div>
+              <div className="ap-detail-row"><span>{t("approval.page.module")}</span><strong>{successData.module}</strong></div>
+              <div className="ap-detail-row"><span>{t("approval.page.reference")}</span><strong>{successData.reference}</strong></div>
+              <div className="ap-detail-row"><span>{t("approval.page.actioned")}</span><strong>{new Date().toLocaleString(localeTag)}</strong></div>
             </div>
             <p className="ap-muted" style={{ marginTop: "20px", fontSize: "12px" }}>
-              This action has been recorded in the audit trail. You may close this window.
+              {t("approval.page.recorded")}
             </p>
           </div>
         )}
@@ -289,7 +292,7 @@ function ApprovalPage() {
           <div className="ap-card">
             <div className="ap-module-badge">{preview.module}</div>
             <h1 className="ap-title">{preview.reference}</h1>
-            <p className="ap-sub">Submitted by <strong>{preview.requester}</strong></p>
+            <p className="ap-sub">{t("approval.page.submittedBy")} <strong>{preview.requester}</strong></p>
 
             <div className="ap-summary-box">
               {preview.summary.split("\n").map((line, i) => (
@@ -302,15 +305,15 @@ function ApprovalPage() {
             <div className="ap-login-prompt">
               <div className="ap-login-icon">✍</div>
               <div>
-                <p className="ap-login-title">Sign with your saved signature</p>
+                <p className="ap-login-title">{t("approval.page.signTitle")}</p>
                 <p className="ap-login-desc">
-                  Log in to use your registered signature and process this {action === "approve" ? "approval" : "rejection"} securely.
+                  {action === "approve" ? t("approval.page.loginToSignApproval") : t("approval.page.loginToSignRejection")}
                 </p>
               </div>
             </div>
 
             <button className="ap-btn-primary ap-full" onClick={handleLoginRedirect}>
-              Log In to Sign &amp; {action === "approve" ? "Approve" : "Reject"}
+              {action === "approve" ? t("approval.page.loginApprove") : t("approval.page.loginReject")}
             </button>
           </div>
         )}
@@ -322,7 +325,7 @@ function ApprovalPage() {
             <div className="ap-greeting">
               <span className="ap-avatar">{authUser?.name?.charAt(0).toUpperCase()}</span>
               <span className="ap-greeting-text">
-                Reviewing as <strong>{authUser?.name}</strong>
+                {t("approval.page.reviewingAs")} <strong>{authUser?.name}</strong>
               </span>
             </div>
 
@@ -331,7 +334,7 @@ function ApprovalPage() {
             {/* Request details */}
             <div className="ap-module-badge">{preview.module}</div>
             <h1 className="ap-title">{preview.reference}</h1>
-            <p className="ap-sub">Submitted by <strong>{preview.requester}</strong></p>
+            <p className="ap-sub">{t("approval.page.submittedBy")} <strong>{preview.requester}</strong></p>
 
             <div className="ap-summary-box">
               {preview.summary.split("\n").map((line, i) => (
@@ -345,7 +348,7 @@ function ApprovalPage() {
             {signature?.active_version?.image_url ? (
               <div className="ap-sig-section">
                 <div className="ap-sig-header">
-                  <span className="ap-sig-label">Your signature</span>
+                  <span className="ap-sig-label">{t("approval.page.yourSignature")}</span>
                   <label className="ap-toggle">
                     <input
                       type="checkbox"
@@ -354,7 +357,7 @@ function ApprovalPage() {
                     />
                     <span className="ap-toggle-track" />
                     <span className="ap-toggle-text">
-                      {useSignature ? "Will be applied" : "Not applied"}
+                      {useSignature ? t("approval.page.willApply") : t("approval.page.notApplied")}
                     </span>
                   </label>
                 </div>
@@ -362,13 +365,13 @@ function ApprovalPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={signature.active_version.image_url}
-                    alt="Your signature"
+                    alt={t("approval.page.yourSignature")}
                     className="ap-sig-img"
                   />
                 </div>
                 {useSignature && (
                   <p className="ap-sig-note">
-                    Your signature will be attached to the approval record.
+                    {t("approval.page.sigNote")}
                   </p>
                 )}
               </div>
@@ -376,9 +379,9 @@ function ApprovalPage() {
               <div className="ap-no-sig">
                 <span>✍</span>
                 <div>
-                  <p>No signature on file</p>
+                  <p>{t("approval.page.noSignature")}</p>
                   <a href="/saam" target="_blank" rel="noreferrer" className="ap-link">
-                    Set up your signature →
+                    {t("approval.page.setupSignature")}
                   </a>
                 </div>
               </div>
@@ -390,14 +393,14 @@ function ApprovalPage() {
             {action === "reject" && (
               <div className="ap-reason-section">
                 <label htmlFor="reason" className="ap-label">
-                  Reason for returning <span className="ap-required">*</span>
+                  {t("approval.page.reasonLabel")} <span className="ap-required">*</span>
                 </label>
                 <textarea
                   id="reason"
                   className={`ap-textarea ${reasonError ? "ap-textarea-error" : ""}`}
                   value={reason}
                   onChange={(e) => { setReason(e.target.value); setReasonError(""); }}
-                  placeholder="Describe why this request is being returned and what corrections are needed…"
+                  placeholder={t("approval.page.reasonPlaceholder")}
                   rows={4}
                 />
                 {reasonError && <p className="ap-field-error">{reasonError}</p>}
@@ -409,28 +412,27 @@ function ApprovalPage() {
               {action === "approve" && preview.requires_signature ? (
                 <>
                   <p className="ap-hint-box">
-                    This step requires your enrolled signature. Email links cannot apply it.
-                    Open Nexus, re-enter your password, and sign from My Approvals.
+                    {t("approval.page.requiresSigHint")}
                   </p>
                   <a href="/approvals" className="ap-btn-outline ap-full">
-                    Open My Approvals →
+                    {t("approval.page.openApprovals")}
                   </a>
                 </>
               ) : action === "approve" ? (
                 <button className="ap-btn-approve ap-full" onClick={handleProcess}>
                   <span>✓</span>
-                  {useSignature && signature ? "Sign & Approve" : "Approve"}
+                  {useSignature && signature ? t("approval.page.signApprove") : t("approval.page.approve")}
                 </button>
               ) : (
                 <button className="ap-btn-reject ap-full" onClick={handleProcess}>
                   <span>✗</span>
-                  {useSignature && signature ? "Sign & Return" : "Return / Reject"}
+                  {useSignature && signature ? t("approval.page.signReturn") : t("approval.page.returnReject")}
                 </button>
               )}
             </div>
 
             <p className="ap-footer-note">
-              This action is final and will be recorded in the audit trail.
+              {t("approval.page.finalNote")}
             </p>
           </div>
         )}
@@ -438,7 +440,7 @@ function ApprovalPage() {
 
       {/* Footer */}
       <div className="ap-footer">
-        SADC Parliamentary Forum · SADC-PF Nexus Paperless System
+        {t("approval.page.footer")}
       </div>
     </div>
   );

@@ -7,20 +7,21 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
 import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const VISIBILITY_LABELS: Record<HrPersonnelFileSection["visibility"], string> = {
-  employee: "Employee",
-  hr_only: "HR Only",
-  supervisor: "Supervisor",
-  director: "Director",
-  sg: "Secretary General",
-  hidden: "Hidden",
+  employee: "settings.hr.fileSection.visibility.employee",
+  hr_only: "settings.hr.fileSection.visibility.hr_only",
+  supervisor: "settings.hr.fileSection.visibility.supervisor",
+  director: "settings.hr.fileSection.visibility.director",
+  sg: "audit.settings.mode.sg",
+  hidden: "settings.hr.fileSection.visibility.hidden",
 };
 
 const CONFIDENTIALITY_LABELS: Record<HrPersonnelFileSection["confidentiality_level"], string> = {
-  public: "Public",
-  restricted: "Restricted",
-  confidential: "Confidential",
+  public: "settings.hr.fileSection.confValue.public",
+  restricted: "settings.hr.fileSection.confValue.restricted",
+  confidential: "settings.hr.fileSection.confValue.confidential",
 };
 
 const CONFIDENTIALITY_BADGE: Record<HrPersonnelFileSection["confidentiality_level"], string> = {
@@ -39,6 +40,7 @@ function PersonnelFileSectionModal({
   onSave: (data: Partial<HrPersonnelFileSection>) => void;
 }) {
   const isEdit = !!item?.id;
+  const { t } = useI18n();
   const [form, setForm] = useState<Partial<HrPersonnelFileSection>>(
     item ?? {
       section_code: "",
@@ -62,9 +64,9 @@ function PersonnelFileSectionModal({
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-neutral-900">
-            {isEdit ? "Edit File Section" : "New File Section"}
+            {isEdit ? t("settings.hr.fileSection.edit") : t("settings.hr.fileSection.new")}
           </h3>
-          <button onClick={onClose} aria-label="Close file section editor" className="text-neutral-400 hover:text-neutral-700">
+          <button onClick={onClose} aria-label={t("settings.hr.fileSection.closeEditor")} className="text-neutral-400 hover:text-neutral-700">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
@@ -72,60 +74,60 @@ function PersonnelFileSectionModal({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="hr-personnel-file-sections-section-code" className="block text-xs font-medium text-neutral-700 mb-1">Section Code *</label>
+              <label htmlFor="hr-personnel-file-sections-section-code" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.fileSection.codeRequired")}</label>
               <input id="hr-personnel-file-sections-section-code"
                 className="form-input text-sm uppercase"
                 value={form.section_code ?? ""}
                 onChange={(e) => set("section_code", e.target.value.toUpperCase())}
-                placeholder="e.g. PERSONAL"
+                placeholder={t("settings.hr.fileSection.codePlaceholder")}
                 maxLength={30}
               />
             </div>
             <div>
-              <label htmlFor="hr-personnel-file-sections-section-name" className="block text-xs font-medium text-neutral-700 mb-1">Section Name *</label>
+              <label htmlFor="hr-personnel-file-sections-section-name" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.fileSection.nameRequired")}</label>
               <input id="hr-personnel-file-sections-section-name"
                 className="form-input text-sm"
                 value={form.section_name ?? ""}
                 onChange={(e) => set("section_name", e.target.value)}
-                placeholder="e.g. Personal Information"
+                placeholder={t("settings.hr.fileSection.namePlaceholder")}
                 maxLength={100}
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="hr-personnel-file-sections-visibility" className="block text-xs font-medium text-neutral-700 mb-1">Visibility</label>
+            <label htmlFor="hr-personnel-file-sections-visibility" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.fileSection.visibilityLabel")}</label>
             <select id="hr-personnel-file-sections-visibility"
               className="form-input text-sm"
               value={form.visibility ?? "hr_only"}
               onChange={(e) => set("visibility", e.target.value as HrPersonnelFileSection["visibility"])}
             >
-              <option value="employee">Employee</option>
-              <option value="hr_only">HR Only</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="director">Director</option>
-              <option value="sg">Secretary General</option>
-              <option value="hidden">Hidden</option>
+              <option value="employee">{t("settings.hr.fileSection.visibility.employee")}</option>
+              <option value="hr_only">{t("settings.hr.fileSection.visibility.hr_only")}</option>
+              <option value="supervisor">{t("settings.hr.fileSection.visibility.supervisor")}</option>
+              <option value="director">{t("settings.hr.fileSection.visibility.director")}</option>
+              <option value="sg">{t("audit.settings.mode.sg")}</option>
+              <option value="hidden">{t("settings.hr.fileSection.visibility.hidden")}</option>
             </select>
           </div>
 
           <div>
-            <label htmlFor="hr-personnel-file-sections-confidentiality-level" className="block text-xs font-medium text-neutral-700 mb-1">Confidentiality Level</label>
+            <label htmlFor="hr-personnel-file-sections-confidentiality-level" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.fileSection.confidentialityLevel")}</label>
             <select id="hr-personnel-file-sections-confidentiality-level"
               className="form-input text-sm"
               value={form.confidentiality_level ?? "restricted"}
               onChange={(e) => set("confidentiality_level", e.target.value as HrPersonnelFileSection["confidentiality_level"])}
             >
-              <option value="public">Public</option>
-              <option value="restricted">Restricted</option>
-              <option value="confidential">Confidential</option>
+              <option value="public">{t("settings.hr.fileSection.confValue.public")}</option>
+              <option value="restricted">{t("settings.hr.fileSection.confValue.restricted")}</option>
+              <option value="confidential">{t("settings.hr.fileSection.confValue.confidential")}</option>
             </select>
           </div>
 
           <div className="flex items-center justify-between rounded-lg bg-neutral-50 border border-neutral-200 px-3 py-2.5">
             <div>
-              <p className="text-sm font-medium text-neutral-800">Editable by Employee</p>
-              <p className="text-xs text-neutral-500">Employee can update this section</p>
+              <p className="text-sm font-medium text-neutral-800">{t("settings.hr.fileSection.editableByEmployee")}</p>
+              <p className="text-xs text-neutral-500">{t("settings.hr.fileSection.editableHint")}</p>
             </div>
             <button
               type="button"
@@ -146,8 +148,8 @@ function PersonnelFileSectionModal({
 
           <div className="flex items-center justify-between rounded-lg bg-neutral-50 border border-neutral-200 px-3 py-2.5">
             <div>
-              <p className="text-sm font-medium text-neutral-800">Mandatory</p>
-              <p className="text-xs text-neutral-500">Required for complete personnel file</p>
+              <p className="text-sm font-medium text-neutral-800">{t("settings.hr.matrix.mandatory")}</p>
+              <p className="text-xs text-neutral-500">{t("settings.hr.fileSection.mandatoryHint")}</p>
             </div>
             <button
               type="button"
@@ -168,7 +170,7 @@ function PersonnelFileSectionModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="hr-personnel-file-sections-retention-months" className="block text-xs font-medium text-neutral-700 mb-1">Retention (months)</label>
+              <label htmlFor="hr-personnel-file-sections-retention-months" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.fileSection.retentionMonths")}</label>
               <input id="hr-personnel-file-sections-retention-months"
                 type="number"
                 className="form-input text-sm"
@@ -179,7 +181,7 @@ function PersonnelFileSectionModal({
               />
             </div>
             <div>
-              <label htmlFor="hr-personnel-file-sections-sort-order" className="block text-xs font-medium text-neutral-700 mb-1">Sort Order</label>
+              <label htmlFor="hr-personnel-file-sections-sort-order" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.fileSection.sortOrder")}</label>
               <input id="hr-personnel-file-sections-sort-order"
                 type="number"
                 className="form-input text-sm"
@@ -191,26 +193,26 @@ function PersonnelFileSectionModal({
           </div>
 
           <div>
-            <label htmlFor="hr-personnel-file-sections-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <label htmlFor="hr-personnel-file-sections-status" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.status")}</label>
             <select id="hr-personnel-file-sections-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{t("settings.hr.common.active")}</option>
+              <option value="inactive">{t("settings.hr.common.inactive")}</option>
             </select>
           </div>
         </div>
 
         <div className="flex gap-2 pt-2">
-          <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
+          <button onClick={onClose} className="btn-secondary flex-1 text-sm">{t("common.cancel")}</button>
           <button
             onClick={() => onSave(form)}
             disabled={!form.section_code || !form.section_name}
             className="btn-primary flex-1 text-sm disabled:opacity-50"
           >
-            {isEdit ? "Save Changes" : "Create Section"}
+            {isEdit ? t("settings.hr.common.saveChanges") : t("settings.hr.fileSection.create")}
           </button>
         </div>
       </div>
@@ -221,6 +223,7 @@ function PersonnelFileSectionModal({
 export default function PersonnelFileSectionsPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [modal, setModal] = useState<Partial<HrPersonnelFileSection> | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<number | null>(null);
 
@@ -239,21 +242,21 @@ export default function PersonnelFileSectionsPage() {
         ? hrSettingsApi.updatePersonnelFileSection(form.id, form).then((r) => r.data)
         : hrSettingsApi.createPersonnelFileSection(form).then((r) => r.data),
     onSuccess: (res: any) => {
-      toast("success", res.message ?? "Saved.");
+      toast("success", res.message ?? t("settings.hr.common.saved"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "personnel-file-sections"] });
       setModal(undefined);
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Failed to save."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.saveFailed")),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => hrSettingsApi.deletePersonnelFileSection(id).then((r) => r.data),
     onSuccess: () => {
-      toast("success", "Section deleted.");
+      toast("success", t("settings.hr.fileSection.deleted"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "personnel-file-sections"] });
       setDeleting(null);
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Cannot delete."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.cannotDelete")),
   });
 
   const reorderMutation = useMutation({
@@ -262,7 +265,7 @@ export default function PersonnelFileSectionsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["hr-settings", "personnel-file-sections"] });
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Reorder failed."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.fileSection.reorderFailed")),
   });
 
   const items = data ?? [];
@@ -286,12 +289,12 @@ export default function PersonnelFileSectionsPage() {
         />
       )}
       <HrSettingsHeader
-        title="Personnel File Sections"
-        subtitle="Configure document sections, visibility levels, retention rules, and mandatory requirements."
+        title={t("settings.hr.home.personnelFileSections.title")}
+        subtitle={t("settings.hr.home.personnelFileSections.description")}
         actions={
           <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
-          New Section
+          {t("settings.hr.fileSection.newSection")}
         </button>
         }
       />
@@ -301,7 +304,7 @@ export default function PersonnelFileSectionsPage() {
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
           <p className="text-sm font-medium text-neutral-700">
-            {items.length} {items.length === 1 ? "section" : "sections"} — drag to reorder or use arrows
+            {t(items.length === 1 ? "settings.hr.fileSection.countOne" : "settings.hr.fileSection.countMany", { count: items.length })}
           </p>
         </div>
 
@@ -310,19 +313,19 @@ export default function PersonnelFileSectionsPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : items.length === 0 ? (
-          <EmptyState icon="folder_shared" title="No file sections yet." description="Create one to get started." />
+          <EmptyState icon="folder_shared" title={t("settings.hr.fileSection.emptyTitle")} description={t("settings.hr.common.emptyDescription")} />
         ) : (
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th className="w-20">Order</th>
-                <th>Code</th>
-                <th>Section Name</th>
-                <th>Visibility</th>
-                <th>Confidentiality</th>
-                <th>Mandatory</th>
-                <th>Status</th>
-                <th className="w-32">Actions</th>
+                <th className="w-20">{t("settings.hr.fileSection.order")}</th>
+                <th>{t("settings.hr.common.code")}</th>
+                <th>{t("settings.hr.fileSection.name")}</th>
+                <th>{t("settings.hr.fileSection.visibilityLabel")}</th>
+                <th>{t("settings.hr.fileSection.confidentiality")}</th>
+                <th>{t("settings.hr.matrix.mandatory")}</th>
+                <th>{t("settings.hr.common.status")}</th>
+                <th className="w-32">{t("settings.hr.common.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -336,7 +339,7 @@ export default function PersonnelFileSectionsPage() {
                           onClick={() => moveItem(index, "up")}
                           disabled={index === 0 || reorderMutation.isPending}
                           className="p-0.5 rounded hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 disabled:opacity-30"
-                          title="Move up"
+                          title={t("settings.hr.fileSection.moveUp")}
                         >
                           <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
                         </button>
@@ -344,7 +347,7 @@ export default function PersonnelFileSectionsPage() {
                           onClick={() => moveItem(index, "down")}
                           disabled={index === items.length - 1 || reorderMutation.isPending}
                           className="p-0.5 rounded hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 disabled:opacity-30"
-                          title="Move down"
+                          title={t("settings.hr.fileSection.moveDown")}
                         >
                           <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
                         </button>
@@ -358,26 +361,26 @@ export default function PersonnelFileSectionsPage() {
                   </td>
                   <td>
                     <p className="font-medium text-sm text-neutral-900">{item.section_name}</p>
-                    <p className="text-xs text-neutral-500">{item.retention_months}mo retention</p>
+                    <p className="text-xs text-neutral-500">{t("settings.hr.fileSection.retention", { count: item.retention_months })}</p>
                   </td>
                   <td>
-                    <span className="text-sm text-neutral-700">{VISIBILITY_LABELS[item.visibility]}</span>
+                    <span className="text-sm text-neutral-700">{VISIBILITY_LABELS[item.visibility] ? t(VISIBILITY_LABELS[item.visibility]) : item.visibility}</span>
                   </td>
                   <td>
                     <span className={cn("badge", CONFIDENTIALITY_BADGE[item.confidentiality_level])}>
-                      {CONFIDENTIALITY_LABELS[item.confidentiality_level]}
+                      {CONFIDENTIALITY_LABELS[item.confidentiality_level] ? t(CONFIDENTIALITY_LABELS[item.confidentiality_level]) : item.confidentiality_level}
                     </span>
                   </td>
                   <td>
                     {item.is_mandatory ? (
-                      <span className="badge badge-warning">Required</span>
+                      <span className="badge badge-warning">{t("settings.hr.matrix.required")}</span>
                     ) : (
-                      <span className="text-xs text-neutral-400">Optional</span>
+                      <span className="text-xs text-neutral-400">{t("settings.hr.fileSection.optional")}</span>
                     )}
                   </td>
                   <td>
                     <span className={cn("badge", item.is_active ? "badge-success" : "badge-muted")}>
-                      {item.is_active ? "Active" : "Inactive"}
+                      {item.is_active ? t("settings.hr.common.active") : t("settings.hr.common.inactive")}
                     </span>
                   </td>
                   <td>
@@ -385,7 +388,7 @@ export default function PersonnelFileSectionsPage() {
                       <button
                         onClick={() => setModal(item)}
                         className="p-1.5 rounded hover:bg-neutral-100 text-neutral-500 hover:text-primary"
-                        title="Edit"
+                        title={t("common.edit")}
                       >
                         <span className="material-symbols-outlined text-[16px]">edit</span>
                       </button>
@@ -395,17 +398,17 @@ export default function PersonnelFileSectionsPage() {
                             onClick={() => deleteMutation.mutate(item.id)}
                             className="p-1.5 rounded hover:bg-red-50 text-red-600 text-xs font-medium"
                           >
-                            Confirm
+                            {t("common.confirm")}
                           </button>
                           <button onClick={() => setDeleting(null)} className="p-1.5 rounded hover:bg-neutral-100 text-neutral-500 text-xs">
-                            Cancel
+                            {t("common.cancel")}
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setDeleting(item.id)}
                           className="p-1.5 rounded hover:bg-red-50 text-neutral-500 hover:text-red-600"
-                          title="Delete"
+                          title={t("common.delete")}
                         >
                           <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>

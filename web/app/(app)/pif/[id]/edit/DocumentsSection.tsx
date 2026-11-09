@@ -4,6 +4,7 @@ import { useState } from "react";
 import { programmeApi, type ProgrammeDocument } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type TenantUser = { id: number; name: string; email: string };
 
@@ -74,13 +75,13 @@ function buildPayload(d: DraftRow): Partial<ProgrammeDocument> {
 }
 
 function validateDraft(d: DraftRow): string | null {
-  if (!d.title.trim()) return "Title is required.";
-  if (!d.document_type.trim()) return "Document type is required.";
+  if (!d.title.trim()) return "pif.docs.titleRequired";
+  if (!d.document_type.trim()) return "pif.docs.typeRequired";
   if (d.translation_required && !d.target_languages.trim()) {
-    return "Target language(s) are required when translation is required.";
+    return "pif.docs.targetRequired";
   }
   if (d.owner_user_id === "" && !d.owner_name.trim()) {
-    return "Provide an owner (select a user or enter an owner name).";
+    return "pif.docs.ownerRequired";
   }
   return null;
 }
@@ -97,6 +98,7 @@ export default function DocumentsSection({
   onToast: (msg: string) => void;
 }) {
   const toast = useToast();
+  const { t } = useI18n();
   const [rows, setRows] = useState<ProgrammeDocument[]>(initialRows);
   const [drafts, setDrafts] = useState<Record<number, DraftRow>>(() =>
     Object.fromEntries(initialRows.map((r) => [r.id, toDraft(r)]))
@@ -113,14 +115,14 @@ export default function DocumentsSection({
     if (!draft) return;
     const err = validateDraft(draft);
     if (err) {
-      toast.error("Document not saved", err);
+      toast.error(t("pif.docs.notSaved"), t(err));
       return;
     }
     try {
       const res = await programmeApi.updateDocument(programmeId, id, buildPayload(draft));
       setRows((prev) => prev.map((r) => (r.id === id ? res.data.data : r)));
     } catch (e) {
-      toast.error("Document not saved", apiErrorMessage(e, "Failed to save document row."));
+      toast.error(t("pif.docs.notSaved"), apiErrorMessage(e, t("pif.docs.saveFailed")));
     }
   };
 
@@ -133,9 +135,9 @@ export default function DocumentsSection({
         delete next[id];
         return next;
       });
-      onToast("Document removed.");
+      onToast(t("pif.docs.removed"));
     } catch (e) {
-      toast.error("Document not removed", apiErrorMessage(e, "Failed to remove document row."));
+      toast.error(t("pif.docs.notRemoved"), apiErrorMessage(e, t("pif.docs.removeFailed")));
     }
   };
 
@@ -143,7 +145,7 @@ export default function DocumentsSection({
     if (!pending) return;
     const err = validateDraft(pending);
     if (err) {
-      toast.error("Document not added", err);
+      toast.error(t("pif.docs.notAdded"), t(err));
       return;
     }
     setSaving(true);
@@ -153,9 +155,9 @@ export default function DocumentsSection({
       setRows((prev) => [...prev, created]);
       setDrafts((prev) => ({ ...prev, [created.id]: toDraft(created) }));
       setPending(null);
-      onToast("Document added.");
+      onToast(t("pif.docs.added"));
     } catch (e) {
-      toast.error("Document not added", apiErrorMessage(e, "Failed to add document."));
+      toast.error(t("pif.docs.notAdded"), apiErrorMessage(e, t("pif.docs.addFailed")));
     } finally {
       setSaving(false);
     }
@@ -170,21 +172,21 @@ export default function DocumentsSection({
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label htmlFor={`${idPrefix}-title`} className="block text-xs font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
+          <label htmlFor={`${idPrefix}-title`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.list.title")} <span className="text-red-500">*</span></label>
           <input id={`${idPrefix}-title`} className="form-input w-full" value={draft.title} onChange={(e) => onChange({ title: e.target.value })} onBlur={onFieldBlur} />
         </div>
         <div>
-          <label htmlFor={`${idPrefix}-document-type`} className="block text-xs font-semibold text-neutral-700 mb-1">Document type <span className="text-red-500">*</span></label>
-          <input id={`${idPrefix}-document-type`} className="form-input w-full" placeholder="e.g. Concept Note, Agenda, Report" value={draft.document_type} onChange={(e) => onChange({ document_type: e.target.value })} onBlur={onFieldBlur} />
+          <label htmlFor={`${idPrefix}-document-type`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.docs.documentType")} <span className="text-red-500">*</span></label>
+          <input id={`${idPrefix}-document-type`} className="form-input w-full" placeholder={t("pif.docs.typePlaceholder")} value={draft.document_type} onChange={(e) => onChange({ document_type: e.target.value })} onBlur={onFieldBlur} />
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label htmlFor={`${idPrefix}-word-count`} className="block text-xs font-semibold text-neutral-700 mb-1">Word count</label>
+          <label htmlFor={`${idPrefix}-word-count`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.docs.wordCount")}</label>
           <input id={`${idPrefix}-word-count`} type="number" min="0" className="form-input w-full" value={draft.word_count} onChange={(e) => onChange({ word_count: e.target.value })} onBlur={onFieldBlur} />
         </div>
         <div>
-          <label htmlFor={`${idPrefix}-budget-line`} className="block text-xs font-semibold text-neutral-700 mb-1">Budget line</label>
+          <label htmlFor={`${idPrefix}-budget-line`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("budget.journal.line")}</label>
           <input id={`${idPrefix}-budget-line`} className="form-input w-full" value={draft.budget_line} onChange={(e) => onChange({ budget_line: e.target.value })} onBlur={onFieldBlur} />
         </div>
       </div>
@@ -198,53 +200,53 @@ export default function DocumentsSection({
           }}
           className="rounded border-neutral-300"
         />
-        <span className="text-sm text-neutral-700">Translation required</span>
+        <span className="text-sm text-neutral-700">{t("pif.field.translationRequired")}</span>
       </label>
       {draft.translation_required && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label htmlFor={`${idPrefix}-source-language`} className="block text-xs font-semibold text-neutral-700 mb-1">Source language</label>
+            <label htmlFor={`${idPrefix}-source-language`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.docs.sourceLanguage")}</label>
             <input id={`${idPrefix}-source-language`} className="form-input w-full" value={draft.source_language} onChange={(e) => onChange({ source_language: e.target.value })} onBlur={onFieldBlur} />
           </div>
           <div>
-            <label htmlFor={`${idPrefix}-target-languages`} className="block text-xs font-semibold text-neutral-700 mb-1">Target language(s) <span className="text-red-500">*</span></label>
-            <p className="text-xs text-neutral-400 mb-1">Comma-separated, e.g. French, Portuguese</p>
+            <label htmlFor={`${idPrefix}-target-languages`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.docs.targetLanguages")} <span className="text-red-500">*</span></label>
+            <p className="text-xs text-neutral-400 mb-1">{t("pif.docs.targetHint")}</p>
             <input id={`${idPrefix}-target-languages`} className="form-input w-full" value={draft.target_languages} onChange={(e) => onChange({ target_languages: e.target.value })} onBlur={onFieldBlur} />
           </div>
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label htmlFor={`${idPrefix}-owner-user`} className="block text-xs font-semibold text-neutral-700 mb-1">Owner (registered user)</label>
+          <label htmlFor={`${idPrefix}-owner-user`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.docs.ownerUser")}</label>
           <select id={`${idPrefix}-owner-user`}
             className="form-input w-full"
             value={draft.owner_user_id === "" ? "" : String(draft.owner_user_id)}
             onChange={(e) => onChange({ owner_user_id: e.target.value === "" ? "" : Number(e.target.value) })}
             onBlur={onFieldBlur}
           >
-            <option value="">Select owner…</option>
+            <option value="">{t("pif.docs.selectOwner")}</option>
             {tenantUsers.map((u) => (
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}
           </select>
         </div>
         <div>
-          <label htmlFor={`${idPrefix}-owner-name`} className="block text-xs font-semibold text-neutral-700 mb-1">Or owner name (external)</label>
+          <label htmlFor={`${idPrefix}-owner-name`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.docs.ownerName")}</label>
           <input id={`${idPrefix}-owner-name`} className="form-input w-full" value={draft.owner_name} onChange={(e) => onChange({ owner_name: e.target.value })} onBlur={onFieldBlur} />
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label htmlFor={`${idPrefix}-owner-org`} className="block text-xs font-semibold text-neutral-700 mb-1">Owner organisation</label>
+          <label htmlFor={`${idPrefix}-owner-org`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.docs.ownerOrg")}</label>
           <input id={`${idPrefix}-owner-org`} className="form-input w-full" value={draft.owner_organisation} onChange={(e) => onChange({ owner_organisation: e.target.value })} onBlur={onFieldBlur} />
         </div>
         <div>
-          <label htmlFor={`${idPrefix}-deadline`} className="block text-xs font-semibold text-neutral-700 mb-1">Deadline</label>
+          <label htmlFor={`${idPrefix}-deadline`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.readonly.deadline")}</label>
           <input id={`${idPrefix}-deadline`} type="date" className="form-input w-full" value={draft.deadline} onChange={(e) => onChange({ deadline: e.target.value })} onBlur={onFieldBlur} />
         </div>
       </div>
       <div>
-        <label htmlFor={`${idPrefix}-comments`} className="block text-xs font-semibold text-neutral-700 mb-1">Comments</label>
+        <label htmlFor={`${idPrefix}-comments`} className="block text-xs font-semibold text-neutral-700 mb-1">{t("pif.field.comments")}</label>
         <textarea id={`${idPrefix}-comments`} rows={2} className="form-input w-full resize-none" value={draft.comments} onChange={(e) => onChange({ comments: e.target.value })} onBlur={onFieldBlur} />
       </div>
     </div>
@@ -257,8 +259,8 @@ export default function DocumentsSection({
         return (
           <div key={row.id} className="rounded-xl border border-neutral-200 p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-neutral-500">Document</span>
-              <button type="button" onClick={() => removeRow(row.id)} className="text-neutral-300 hover:text-red-500">
+              <span className="text-xs font-semibold text-neutral-500">{t("pif.docs.document")}</span>
+              <button type="button" onClick={() => removeRow(row.id)} aria-label={t("common.delete")} className="text-neutral-300 hover:text-red-500">
                 <span className="material-symbols-outlined text-[18px]">delete</span>
               </button>
             </div>
@@ -269,19 +271,19 @@ export default function DocumentsSection({
 
       {pending ? (
         <div className="rounded-xl border-2 border-dashed border-primary/40 p-4 space-y-3">
-          <span className="text-xs font-semibold text-primary">New document</span>
+          <span className="text-xs font-semibold text-primary">{t("pif.docs.newDocument")}</span>
           {renderFields(pending, (patch) => setPending((p) => (p ? { ...p, ...patch } : p)), "pif-doc-pending")}
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setPending(null)} className="btn-secondary px-3 py-1.5 text-xs">Discard</button>
+            <button type="button" onClick={() => setPending(null)} className="btn-secondary px-3 py-1.5 text-xs">{t("pif.arrivals.discard")}</button>
             <button type="button" disabled={saving} onClick={savePending} className="btn-primary px-3 py-1.5 text-xs disabled:opacity-50">
-              {saving ? "Saving…" : "Save document"}
+              {saving ? t("hr.positions.form.saving") : t("pif.docs.save")}
             </button>
           </div>
         </div>
       ) : (
         <button type="button" onClick={() => setPending(emptyDraft)} className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
           <span className="material-symbols-outlined text-[14px]">add</span>
-          Add document
+          {t("pif.docs.add")}
         </button>
       )}
     </div>

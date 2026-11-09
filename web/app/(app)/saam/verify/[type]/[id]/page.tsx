@@ -5,17 +5,19 @@ import { useParams } from "next/navigation";
 import { saamApi, type SignatureEvent, type SignedDocument } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const actionConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  approve:     { label: "Approved",     cls: "badge-success", icon: "check_circle" },
-  reject:      { label: "Rejected",     cls: "badge-danger",  icon: "cancel" },
-  review:      { label: "Reviewed",     cls: "badge-warning", icon: "rate_review" },
-  return:      { label: "Returned",     cls: "badge-muted",   icon: "undo" },
-  acknowledge: { label: "Acknowledged", cls: "badge-primary", icon: "visibility" },
+  approve:     { label: "saam.action.approve",     cls: "badge-success", icon: "check_circle" },
+  reject:      { label: "saam.action.reject",     cls: "badge-danger",  icon: "cancel" },
+  review:      { label: "saam.action.review",     cls: "badge-warning", icon: "rate_review" },
+  return:      { label: "saam.action.return",     cls: "badge-muted",   icon: "undo" },
+  acknowledge: { label: "saam.action.acknowledge", cls: "badge-primary", icon: "visibility" },
 };
 
 export default function VerifyPage() {
   const { type, id } = useParams<{ type: string; id: string }>();
+  const { t, localeTag } = useI18n();
   const [events, setEvents] = useState<SignatureEvent[]>([]);
   const [signedDoc, setSignedDoc] = useState<SignedDocument | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,9 +33,9 @@ export default function VerifyPage() {
         setEvents(evRes.data.data ?? []);
         setSignedDoc(docRes.data.data ?? null);
       })
-      .catch(() => setError("Failed to load signing data."))
+      .catch(() => setError(t("saam.verify.doc.loadFailed")))
       .finally(() => setLoading(false));
-  }, [type, id]);
+  }, [type, id, t]);
 
   async function handleGenerate() {
     setGenerating(true);
@@ -41,7 +43,7 @@ export default function VerifyPage() {
       const res = await saamApi.generateDocument(type, Number(id));
       setSignedDoc(res.data.data);
     } catch {
-      setError("Failed to generate document.");
+      setError(t("saam.verify.doc.generateFailed"));
     } finally {
       setGenerating(false);
     }
@@ -58,20 +60,20 @@ export default function VerifyPage() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {
-      setError("Download failed.");
+      setError(t("saam.verify.doc.downloadFailed"));
     }
   }
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Document Verification"
-        subtitle={`${type} #${id} — signing chain & authentication record`}
+        title={t("saam.verify.doc.title")}
+        subtitle={t("saam.verify.doc.subtitle", { type: String(type), id: String(id) })}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: String(type), href: "/correspondence" },
-              { label: "Signing Audit Trail" },
+              { label: t("saam.verify.doc.breadcrumb") },
             ]}
           />
         }
@@ -84,13 +86,13 @@ export default function VerifyPage() {
               ) : (
                 <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
               )}
-              {generating ? "Generating…" : "Generate PDF"}
+              {generating ? t("saam.verify.doc.generating") : t("saam.verify.doc.generate")}
             </button>
           )}
           {signedDoc && (
             <button onClick={handleDownload} className="btn-primary text-sm flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[16px]">download</span>
-              Download Signed PDF
+              {t("saam.verify.doc.download")}
             </button>
           )}
         </div>
@@ -111,9 +113,9 @@ export default function VerifyPage() {
             <span className="material-symbols-outlined text-green-600 text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-neutral-900">Signed Document v{signedDoc.version}</p>
-            <p className="text-xs text-neutral-400 font-mono truncate">SHA-256: {signedDoc.hash}</p>
-            <p className="text-xs text-neutral-400">Finalised: {new Date(signedDoc.finalized_at).toLocaleString()}</p>
+            <p className="text-sm font-semibold text-neutral-900">{t("saam.verify.doc.signedVersion", { version: signedDoc.version })}</p>
+            <p className="text-xs text-neutral-400 font-mono truncate">{t("saam.verify.doc.hash", { hash: signedDoc.hash })}</p>
+            <p className="text-xs text-neutral-400">{t("saam.verify.doc.finalised", { date: new Date(signedDoc.finalized_at).toLocaleString(localeTag) })}</p>
           </div>
         </div>
       )}
@@ -121,18 +123,19 @@ export default function VerifyPage() {
       {/* Approval chain */}
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-semibold text-neutral-900">Approval &amp; Signing Chain</h2>
-          <p className="text-xs text-neutral-400">{events.length} event{events.length !== 1 ? "s" : ""} recorded</p>
+          <h2 className="text-sm font-semibold text-neutral-900">{t("saam.verify.doc.chain")}</h2>
+          <p className="text-xs text-neutral-400">{t(events.length !== 1 ? "saam.verify.doc.events" : "saam.verify.doc.event", { count: events.length })}</p>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-sm text-neutral-400">Loading…</div>
+          <div className="p-8 text-center text-sm text-neutral-400">{t("common.loading")}</div>
         ) : events.length === 0 ? (
-          <EmptyState icon="verified" title="No signing events recorded yet." className="py-8 min-h-0" />
+          <EmptyState icon="verified" title={t("saam.verify.doc.empty")} className="py-8 min-h-0" />
         ) : (
           <div className="divide-y divide-neutral-100">
             {events.map((event, idx) => {
-              const cfg = actionConfig[event.action] ?? { label: event.action, cls: "badge-muted", icon: "task_alt" };
+              const known = actionConfig[event.action];
+              const cfg = known ? { ...known, label: t(known.label) } : { label: event.action, cls: "badge-muted", icon: "task_alt" };
               return (
                 <div key={event.id} className="px-5 py-4 flex items-start gap-4">
                   {/* Step number */}
@@ -143,7 +146,7 @@ export default function VerifyPage() {
                   {/* Content */}
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-neutral-900">{event.signer?.name ?? "Unknown"}</span>
+                      <span className="text-sm font-semibold text-neutral-900">{event.signer?.name ?? t("saam.verify.doc.unknown")}</span>
                       {event.signer?.job_title && (
                         <span className="text-xs text-neutral-400">{event.signer.job_title}</span>
                       )}
@@ -152,12 +155,12 @@ export default function VerifyPage() {
                         {cfg.label}
                       </span>
                       {event.is_delegated && (
-                        <span className="badge badge-warning text-[10px]">Acting under delegation</span>
+                        <span className="badge badge-warning text-[10px]">{t("saam.verify.doc.delegated")}</span>
                       )}
                     </div>
 
                     {event.step_key && (
-                      <p className="text-xs text-neutral-500">Step: <span className="font-medium capitalize">{event.step_key}</span></p>
+                      <p className="text-xs text-neutral-500">{t("saam.verify.doc.step")} <span className="font-medium capitalize">{event.step_key}</span></p>
                     )}
 
                     {event.comment && (
@@ -166,14 +169,14 @@ export default function VerifyPage() {
 
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="text-xs text-neutral-400">
-                        {new Date(event.signed_at).toLocaleString()}
+                        {new Date(event.signed_at).toLocaleString(localeTag)}
                       </span>
                       <span className="text-xs text-neutral-400">
-                        Auth: <span className="font-medium capitalize">{event.auth_level}</span>
+                        {t("saam.verify.doc.auth")} <span className="font-medium capitalize">{event.auth_level}</span>
                       </span>
                       {event.document_hash && (
                         <span className="text-xs text-neutral-300 font-mono truncate max-w-[160px]">
-                          doc hash: {event.document_hash.slice(0, 16)}…
+                          {t("saam.verify.doc.docHash", { hash: event.document_hash.slice(0, 16) })}
                         </span>
                       )}
                     </div>
@@ -185,7 +188,7 @@ export default function VerifyPage() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={event.signature_version.image_url}
-                        alt="signature"
+                        alt={t("saam.verify.doc.signatureAlt")}
                         className="max-h-10 max-w-[90px] object-contain border border-neutral-100 rounded-lg p-1 bg-white"
                       />
                     </div>
@@ -200,7 +203,7 @@ export default function VerifyPage() {
       {/* Integrity notice */}
       <div className="flex items-start gap-2 text-xs text-neutral-500 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
         <span className="material-symbols-outlined text-blue-500 text-[16px] mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>security</span>
-        <span>All signing events are recorded in an immutable audit log with SHA-256 hash chaining. Document hashes are computed at the time of signing.</span>
+        <span>{t("saam.verify.doc.integrity")}</span>
       </div>
     </div>
   );

@@ -6,8 +6,10 @@ import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function AuditTrailIntegrityPage() {
+  const { t } = useI18n();
   const { success, error, info } = useToast();
   const [checkpoints, setCheckpoints] = useState<Array<Record<string, unknown>>>([]);
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
@@ -16,7 +18,7 @@ export default function AuditTrailIntegrityPage() {
   const load = () => {
     platformAuditApi.checkpoints()
       .then((r) => setCheckpoints(r.data.data ?? []))
-      .catch(() => error("Could not load checkpoints"));
+      .catch(() => error(t("admin.auditTrail.integrity.loadFailed")));
   };
 
   useEffect(() => { load(); }, []);
@@ -26,9 +28,9 @@ export default function AuditTrailIntegrityPage() {
     try {
       const r = await platformAuditApi.verifyIntegrity();
       setResult(r.data.data as any);
-      error(r.data.data.valid ? "Chain valid" : "Chain failure detected");
+      error(r.data.data.valid ? t("admin.auditTrail.integrity.chainValid") : t("admin.auditTrail.integrity.chainFailure"));
     } catch {
-      error("Verify failed");
+      error(t("admin.auditTrail.integrity.verifyFailed"));
     } finally {
       setBusy(false);
     }
@@ -38,10 +40,10 @@ export default function AuditTrailIntegrityPage() {
     setBusy(true);
     try {
       await platformAuditApi.createCheckpoint();
-      success("Checkpoint created");
+      success(t("admin.auditTrail.integrity.checkpointCreated"));
       load();
     } catch {
-      error("Checkpoint failed");
+      error(t("admin.auditTrail.integrity.checkpointFailed"));
     } finally {
       setBusy(false);
     }
@@ -51,25 +53,25 @@ export default function AuditTrailIntegrityPage() {
     <div className="w-full min-w-0 p-6 space-y-4">
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Integrity report"
-        subtitle="Hash-chain verification and periodic checkpoints."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Integrity report" }]} />}
+        title={t("admin.auditTrail.integrity.title")}
+        subtitle={t("admin.auditTrail.integrity.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.auditTrail.integrity.title") }]} />}
       />
-        <Link href="/admin/audit-trail" className="btn-secondary text-sm">Back</Link>
+        <Link href="/admin/audit-trail" className="btn-secondary text-sm">{t("common.back")}</Link>
       </div>
 
       <div className="flex gap-2">
-        <button className="btn-primary text-sm" disabled={busy} onClick={verify}>Verify chain</button>
-        <button className="btn-secondary text-sm" disabled={busy} onClick={checkpoint}>Create checkpoint</button>
+        <button className="btn-primary text-sm" disabled={busy} onClick={verify}>{t("admin.auditTrail.integrity.verify")}</button>
+        <button className="btn-secondary text-sm" disabled={busy} onClick={checkpoint}>{t("admin.auditTrail.integrity.create")}</button>
       </div>
 
       {result && (
         <div className="card p-4 text-sm space-y-1">
-          <div><span className="font-medium">Valid:</span> {String(result.valid)}</div>
-          <div><span className="font-medium">Checked:</span> {String(result.checked)}</div>
-          <div><span className="font-medium">Message:</span> {String(result.message)}</div>
+          <div><span className="font-medium">{t("admin.auditTrail.integrity.valid")}</span> {String(result.valid)}</div>
+          <div><span className="font-medium">{t("admin.auditTrail.integrity.checked")}</span> {String(result.checked)}</div>
+          <div><span className="font-medium">{t("admin.auditTrail.integrity.message")}</span> {String(result.message)}</div>
           {result.first_failure_sequence != null && (
-            <div><span className="font-medium">First failure seq:</span> {String(result.first_failure_sequence)}</div>
+            <div><span className="font-medium">{t("admin.auditTrail.integrity.firstFailure")}</span> {String(result.first_failure_sequence)}</div>
           )}
         </div>
       )}
@@ -78,10 +80,10 @@ export default function AuditTrailIntegrityPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-50 text-xs uppercase text-neutral-500">
             <tr>
-              <th className="px-4 py-3 text-left">ID</th>
-              <th className="px-4 py-3 text-left">Range</th>
-              <th className="px-4 py-3 text-left">Count</th>
-              <th className="px-4 py-3 text-left">Status</th>
+              <th className="px-4 py-3 text-left">{t("admin.common.id")}</th>
+              <th className="px-4 py-3 text-left">{t("admin.auditTrail.integrity.range")}</th>
+              <th className="px-4 py-3 text-left">{t("admin.auditTrail.integrity.count")}</th>
+              <th className="px-4 py-3 text-left">{t("admin.common.status")}</th>
             </tr>
           </thead>
           <tbody>
@@ -94,7 +96,7 @@ export default function AuditTrailIntegrityPage() {
               </tr>
             ))}
             {checkpoints.length === 0 && (
-              <TableEmpty colSpan={4} title="No checkpoints yet." />
+              <TableEmpty colSpan={4} title={t("admin.auditTrail.integrity.empty")} />
             )}
           </tbody>
         </table>

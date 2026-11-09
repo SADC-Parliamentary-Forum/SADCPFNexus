@@ -11,10 +11,13 @@ import {
 } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { reviewStatusLabel } from "@/lib/mandeStatusLabels";
 
 type Tab = "strategic" | "donor";
 
 export default function MandeReportsPage() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("strategic");
   const [frameworkId, setFrameworkId] = useState<string>("");
   const [reviewStatus, setReviewStatus] = useState<string>("");
@@ -76,11 +79,11 @@ export default function MandeReportsPage() {
         coverage_pct: "",
       });
     });
-    data.thematic_distribution.forEach((t) => {
+    data.thematic_distribution.forEach((td) => {
       rows.push({
         section: "thematic_distribution",
-        label: t.area_name,
-        activities: t.activities,
+        label: td.area_name,
+        activities: td.activities,
         closed: "",
         participants: "",
         coverage_pct: "",
@@ -98,7 +101,7 @@ export default function MandeReportsPage() {
     });
     rows.push({
       section: "indicators",
-      label: "Indicator coverage",
+      label: t("mande.reports.indicatorCoverage"),
       activities: data.indicators.total,
       closed: data.indicators.updated,
       participants: "",
@@ -106,19 +109,19 @@ export default function MandeReportsPage() {
     });
     rows.push({
       section: "evidence",
-      label: "Evidence coverage",
+      label: t("mande.reports.evidenceCoverage"),
       activities: data.evidence_coverage.submitted_reports,
       closed: data.evidence_coverage.reports_with_evidence,
       participants: "",
       coverage_pct: data.evidence_coverage.coverage_pct,
     });
     exportToCsv("mande-strategic-report", rows, [
-      { key: "section", header: "Section" },
-      { key: "label", header: "Label" },
-      { key: "activities", header: "Activities / Total" },
-      { key: "closed", header: "Closed / Updated / With evidence" },
-      { key: "participants", header: "Participants" },
-      { key: "coverage_pct", header: "Coverage %" },
+      { key: "section", header: t("mande.reports.section") },
+      { key: "label", header: t("mande.reports.label") },
+      { key: "activities", header: t("mande.reports.activitiesTotal") },
+      { key: "closed", header: t("mande.reports.closedUpdated") },
+      { key: "participants", header: t("mande.reports.participants") },
+      { key: "coverage_pct", header: t("mande.reports.coveragePct") },
     ]);
   }
 
@@ -136,14 +139,14 @@ export default function MandeReportsPage() {
       participants: a.actual_participants ?? "",
     }));
     exportToCsv("mande-donor-activities", rows, [
-      { key: "reference", header: "Reference" },
-      { key: "title", header: "Activity" },
-      { key: "status", header: "Status" },
-      { key: "pif", header: "PIF" },
-      { key: "programme", header: "Programme" },
-      { key: "start", header: "Start" },
-      { key: "end", header: "End" },
-      { key: "participants", header: "Participants" },
+      { key: "reference", header: t("correspondence.col.reference") },
+      { key: "title", header: t("mande.col.activity") },
+      { key: "status", header: t("correspondence.col.status") },
+      { key: "pif", header: t("mande.col.pif") },
+      { key: "programme", header: t("mande.reports.programme") },
+      { key: "start", header: t("fleet.col.start") },
+      { key: "end", header: t("fleet.col.end") },
+      { key: "participants", header: t("mande.reports.participants") },
     ]);
   }
 
@@ -151,9 +154,9 @@ export default function MandeReportsPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <ModulePageHeader
-        title="Institutional Reports"
-        subtitle="Strategic M&amp;E summary and donor/project activity matrix exports."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Institutional Reports" }]} />}
+        title={t("mande.reports.title")}
+        subtitle={t("mande.reports.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("mande.reports.title") }]} />}
       />
         <button
           type="button"
@@ -162,23 +165,23 @@ export default function MandeReportsPage() {
           onClick={tab === "strategic" ? downloadStrategicCsv : downloadDonorCsv}
         >
           <span className="material-symbols-outlined text-[16px]">download</span>
-          Export CSV
+          {t("correspondence.exportCsv")}
         </button>
       </div>
 
       <div className="flex gap-2 border-b border-neutral-200">
-        {(["strategic", "donor"] as Tab[]).map((t) => (
+        {(["strategic", "donor"] as Tab[]).map((tb) => (
           <button
-            key={t}
+            key={tb}
             type="button"
             className={`px-3 py-2 text-sm border-b-2 -mb-px ${
-              tab === t
+              tab === tb
                 ? "border-primary text-primary font-semibold"
                 : "border-transparent text-neutral-500"
             }`}
-            onClick={() => setTab(t)}
+            onClick={() => setTab(tb)}
           >
-            {t === "strategic" ? "Strategic" : "Donor / Project"}
+            {tb === "strategic" ? t("mande.reports.strategic") : t("mande.reports.donorProject")}
           </button>
         ))}
       </div>
@@ -187,42 +190,42 @@ export default function MandeReportsPage() {
         <>
           {strategic.isError && (
             <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-              Failed to load strategic report.
+              {t("mande.reports.strategicFailed")}
             </div>
           )}
           {strategic.isLoading || !strategic.data ? (
-            <div className="card px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
+            <div className="card px-5 py-10 text-center text-sm text-neutral-400">{t("common.loading")}</div>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div className="card px-4 py-4">
                   <p className="text-2xl font-bold text-neutral-900">{strategic.data.indicators.coverage_pct}%</p>
-                  <p className="text-[11px] text-neutral-500">Indicator coverage</p>
+                  <p className="text-[11px] text-neutral-500">{t("mande.reports.indicatorCoverage")}</p>
                 </div>
                 <div className="card px-4 py-4">
                   <p className="text-2xl font-bold text-neutral-900">{strategic.data.evidence_coverage.coverage_pct}%</p>
-                  <p className="text-[11px] text-neutral-500">Evidence coverage</p>
+                  <p className="text-[11px] text-neutral-500">{t("mande.reports.evidenceCoverage")}</p>
                 </div>
                 <div className="card px-4 py-4">
                   <p className="text-2xl font-bold text-neutral-900">{strategic.data.activities_per_goal.length}</p>
-                  <p className="text-[11px] text-neutral-500">Goals with activity</p>
+                  <p className="text-[11px] text-neutral-500">{t("mande.reports.goalsWithActivity")}</p>
                 </div>
                 <div className="card px-4 py-4">
                   <p className="text-2xl font-bold text-neutral-900">{strategic.data.underreported_areas.length}</p>
-                  <p className="text-[11px] text-neutral-500">Under-reported PIFs</p>
+                  <p className="text-[11px] text-neutral-500">{t("mande.reports.underReported")}</p>
                 </div>
               </div>
 
               <div className="card overflow-hidden">
                 <div className="px-5 py-3 border-b border-neutral-100">
-                  <h2 className="text-sm font-semibold text-neutral-800">Activities per strategic goal</h2>
+                  <h2 className="text-sm font-semibold text-neutral-800">{t("mande.reports.activitiesPerGoal")}</h2>
                 </div>
                 {strategic.data.activities_per_goal.length === 0 ? (
-                  <EmptyState icon="flag" title="No data." className="py-8 min-h-0" />
+                  <EmptyState icon="flag" title={t("mande.reports.noData")} className="py-8 min-h-0" />
                 ) : (
                   <table className="data-table">
                     <thead>
-                      <tr><th>Goal</th><th>Activities</th><th>Closed</th></tr>
+                      <tr><th>{t("mande.reports.goal")}</th><th>{t("mande.reports.activities")}</th><th>{t("mande.reports.closed")}</th></tr>
                     </thead>
                     <tbody>
                       {strategic.data.activities_per_goal.map((g, i) => (
@@ -245,13 +248,13 @@ export default function MandeReportsPage() {
         <>
           <div className="card p-4 flex items-end gap-3 flex-wrap">
             <div>
-              <label htmlFor="mande-reports-results-framework" className="text-xs text-neutral-500 block mb-1">Results framework</label>
+              <label htmlFor="mande-reports-results-framework" className="text-xs text-neutral-500 block mb-1">{t("mande.reports.resultsFramework")}</label>
               <select id="mande-reports-results-framework"
                 className="input text-sm max-w-md"
                 value={frameworkId}
                 onChange={(e) => setFrameworkId(e.target.value)}
               >
-                <option value="">All activities (no framework filter)</option>
+                <option value="">{t("mande.reports.allActivities")}</option>
                 {(frameworks.data ?? []).map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.name}{f.donor_name ? ` — ${f.donor_name}` : ""}
@@ -260,61 +263,61 @@ export default function MandeReportsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="mande-reports-status" className="text-xs text-neutral-500 block mb-1">Status</label>
+              <label htmlFor="mande-reports-status" className="text-xs text-neutral-500 block mb-1">{t("correspondence.col.status")}</label>
               <select id="mande-reports-status"
                 className="input text-sm"
                 value={reviewStatus}
                 onChange={(e) => setReviewStatus(e.target.value)}
               >
-                <option value="">All</option>
+                <option value="">{t("imprest.list.all")}</option>
                 {["not_submitted", "submitted", "returned", "reviewed", "accepted", "closed"].map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>{reviewStatusLabel(t, s)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label htmlFor="mande-reports-from" className="text-xs text-neutral-500 block mb-1">From</label>
+              <label htmlFor="mande-reports-from" className="text-xs text-neutral-500 block mb-1">{t("fleet.utilisation.from")}</label>
               <input id="mande-reports-from" type="date" className="input text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
             <div>
-              <label htmlFor="mande-reports-to" className="text-xs text-neutral-500 block mb-1">To</label>
+              <label htmlFor="mande-reports-to" className="text-xs text-neutral-500 block mb-1">{t("fleet.utilisation.to")}</label>
               <input id="mande-reports-to" type="date" className="input text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </div>
           </div>
 
           {donor.isError && (
             <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-              Failed to load donor report.
+              {t("mande.reports.donorFailed")}
             </div>
           )}
           {donor.isLoading || !donor.data ? (
-            <div className="card px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
+            <div className="card px-5 py-10 text-center text-sm text-neutral-400">{t("common.loading")}</div>
           ) : (
             <>
               {donor.data.framework && (
                 <p className="text-sm text-neutral-600">
-                  Framework: <strong>{donor.data.framework.name}</strong>
+                  {t("mande.reports.framework")} <strong>{donor.data.framework.name}</strong>
                 </p>
               )}
               {donor.data.summary && (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <div className="card px-4 py-3">
                     <p className="text-xl font-bold">{donor.data.summary.activity_count}</p>
-                    <p className="text-[11px] text-neutral-500">Activities</p>
+                    <p className="text-[11px] text-neutral-500">{t("mande.reports.activities")}</p>
                   </div>
                   <div className="card px-4 py-3">
                     <p className="text-xl font-bold">{donor.data.summary.indicator_count}</p>
-                    <p className="text-[11px] text-neutral-500">Indicators</p>
+                    <p className="text-[11px] text-neutral-500">{t("mande.aggregation.indicators")}</p>
                   </div>
                   <div className="card px-4 py-3">
                     <p className="text-xl font-bold">{donor.data.summary.participants_sum}</p>
-                    <p className="text-[11px] text-neutral-500">Participants</p>
+                    <p className="text-[11px] text-neutral-500">{t("mande.reports.participants")}</p>
                   </div>
                   <div className="card px-4 py-3">
                     <p className="text-xs text-neutral-600">
-                      {Object.entries(donor.data.summary.by_status).map(([k, v]) => `${k}: ${v}`).join(" · ") || "—"}
+                      {Object.entries(donor.data.summary.by_status).map(([k, v]) => `${reviewStatusLabel(t, k)}: ${v}`).join(" · ") || "—"}
                     </p>
-                    <p className="text-[11px] text-neutral-500 mt-1">By status</p>
+                    <p className="text-[11px] text-neutral-500 mt-1">{t("mande.reports.byStatus")}</p>
                   </div>
                 </div>
               )}
@@ -322,22 +325,22 @@ export default function MandeReportsPage() {
                 <div className="card overflow-hidden">
                   <div className="px-5 py-3 border-b border-neutral-100">
                     <h2 className="text-sm font-semibold text-neutral-800">
-                      Activities ({donor.data.activities.length})
+                      {t("mande.reports.activitiesCount", { count: donor.data.activities.length })}
                     </h2>
                   </div>
                   {donor.data.activities.length === 0 ? (
-                    <EmptyState icon="assignment" title="No activities." className="py-8 min-h-0" />
+                    <EmptyState icon="assignment" title={t("mande.reports.noActivities")} className="py-8 min-h-0" />
                   ) : (
                     <table className="data-table">
                       <thead>
-                        <tr><th>Ref</th><th>Title</th><th>Status</th><th>PIF</th></tr>
+                        <tr><th>{t("mande.reports.ref")}</th><th>{t("mande.col.title")}</th><th>{t("correspondence.col.status")}</th><th>{t("mande.col.pif")}</th></tr>
                       </thead>
                       <tbody>
                         {donor.data.activities.slice(0, 50).map((a) => (
                           <tr key={a.id}>
                             <td className="font-mono text-xs">{a.reference_number}</td>
                             <td className="text-sm">{a.activity_title}</td>
-                            <td className="text-xs">{a.review_status}</td>
+                            <td className="text-xs">{reviewStatusLabel(t, a.review_status)}</td>
                             <td className="font-mono text-xs">{a.pif_number ?? "—"}</td>
                           </tr>
                         ))}
@@ -348,19 +351,19 @@ export default function MandeReportsPage() {
                 <div className="card overflow-hidden">
                   <div className="px-5 py-3 border-b border-neutral-100">
                     <h2 className="text-sm font-semibold text-neutral-800">
-                      Indicators ({donor.data.indicators.length})
+                      {t("mande.reports.indicatorsCount", { count: donor.data.indicators.length })}
                     </h2>
                   </div>
                   {donor.data.indicators.length === 0 ? (
                     <EmptyState
                       icon="speed"
-                      title="Select a results framework to see indicator aggregation."
+                      title={t("mande.reports.selectFramework")}
                       className="py-8 min-h-0"
                     />
                   ) : (
                     <table className="data-table">
                       <thead>
-                        <tr><th>Code</th><th>Name</th><th>Linked</th><th>Sum actual</th></tr>
+                        <tr><th>{t("fleet.col.code")}</th><th>{t("fleet.col.name")}</th><th>{t("mande.intake.linked")}</th><th>{t("mande.reports.sumActual")}</th></tr>
                       </thead>
                       <tbody>
                         {donor.data.indicators.map((ind) => (

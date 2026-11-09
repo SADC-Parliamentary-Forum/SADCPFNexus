@@ -10,6 +10,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function statusLabel(status: string): string {
   return status.replaceAll("_", " ");
@@ -20,6 +21,7 @@ export default function BudgetCycleDetailPage() {
   const id = Number(params.id);
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const user = getStoredUser();
   const canFinance =
     isSystemAdmin(user) || hasPermission(user, ["finance.create", "finance.approve", "finance.admin"]);
@@ -64,69 +66,69 @@ export default function BudgetCycleDetailPage() {
         department_deadline: deadline || undefined,
       }),
     onSuccess: () => {
-      setMessage("Guidelines published.");
-      toast.success("Guidelines published");
+      setMessage(t("budget.cycle.guidelinesPublishedMsg"));
+      toast.success(t("budget.cycle.guidelinesPublished"));
       setError("");
       invalidate();
     },
     onError: (err) => {
-      setError("Failed to publish guidelines.");
-      toast.error("Guidelines not published", apiErrorMessage(err, "Failed to publish guidelines."));
+      setError(t("budget.cycle.guidelinesFailed"));
+      toast.error(t("budget.cycle.guidelinesNotPublished"), apiErrorMessage(err, t("budget.cycle.guidelinesFailed")));
     },
   });
 
   const advanceMut = useMutation({
     mutationFn: () => budgetApi.advanceCycle(id),
     onSuccess: () => {
-      setMessage("Cycle advanced.");
-      toast.success("Budget cycle advanced");
+      setMessage(t("budget.cycle.advancedMsg"));
+      toast.success(t("budget.cycle.advanced"));
       setError("");
       invalidate();
     },
     onError: (err) => {
-      setError("Could not advance (check open packs / stage).");
-      toast.error("Could not advance budget cycle", apiErrorMessage(err, "Could not advance (check open packs / stage)."));
+      setError(t("budget.cycle.advanceFailed"));
+      toast.error(t("budget.cycle.notAdvanced"), apiErrorMessage(err, t("budget.cycle.advanceFailed")));
     },
   });
 
   const returnMut = useMutation({
     mutationFn: () => budgetApi.returnCycle(id, { reason: returnReason.trim() }),
     onSuccess: () => {
-      setMessage("Returned to departments.");
-      toast.success("Budget cycle returned to departments");
+      setMessage(t("budget.cycle.returnedMsg"));
+      toast.success(t("budget.cycle.returned"));
       setReturnReason("");
       invalidate();
     },
     onError: (err) => {
-      setError("Return failed.");
-      toast.error("Could not return budget cycle", apiErrorMessage(err, "Return failed."));
+      setError(t("budget.submission.returnFailed"));
+      toast.error(t("budget.cycle.notReturned"), apiErrorMessage(err, t("budget.submission.returnFailed")));
     },
   });
 
   const sgMut = useMutation({
     mutationFn: () => budgetApi.sgApproveCycle(id, { comments: "SG approved" }),
     onSuccess: () => {
-      setMessage("SG approved.");
-      toast.success("Budget cycle approved");
+      setMessage(t("budget.cycle.sgApprovedMsg"));
+      toast.success(t("budget.cycle.approved"));
       invalidate();
     },
     onError: (err) => {
-      setError("SG approve failed.");
-      toast.error("Could not approve budget cycle", apiErrorMessage(err, "SG approve failed."));
+      setError(t("budget.cycle.sgApproveFailed"));
+      toast.error(t("budget.cycle.notApproved"), apiErrorMessage(err, t("budget.cycle.sgApproveFailed")));
     },
   });
 
   const lockMut = useMutation({
     mutationFn: () => budgetApi.lockCycle(id),
     onSuccess: () => {
-      setMessage("Cycle locked — institutional lines activated.");
-      toast.success("Budget cycle locked");
+      setMessage(t("budget.cycle.lockedMsg"));
+      toast.success(t("budget.cycle.locked"));
       invalidate();
       qc.invalidateQueries({ queryKey: ["budget", "lines"] });
     },
     onError: (err) => {
-      setError("Lock failed.");
-      toast.error("Could not lock budget cycle", apiErrorMessage(err, "Lock failed."));
+      setError(t("budget.cycle.lockFailed"));
+      toast.error(t("budget.cycle.notLocked"), apiErrorMessage(err, t("budget.cycle.lockFailed")));
     },
   });
 
@@ -142,8 +144,8 @@ export default function BudgetCycleDetailPage() {
       return budgetApi.recordDecision(id, form);
     },
     onSuccess: () => {
-      setMessage("Institutional decision recorded.");
-      toast.success("Institutional decision recorded");
+      setMessage(t("budget.cycle.decisionRecordedMsg"));
+      toast.success(t("budget.cycle.decisionRecorded"));
       setError("");
       setDecisionComments("");
       setMinuteRef("");
@@ -151,8 +153,8 @@ export default function BudgetCycleDetailPage() {
       invalidate();
     },
     onError: (err) => {
-      setError("Could not record decision (check body matches current stage).");
-      toast.error("Decision not recorded", apiErrorMessage(err, "Could not record decision (check body matches current stage)."));
+      setError(t("budget.cycle.decisionFailed"));
+      toast.error(t("budget.cycle.decisionNotRecorded"), apiErrorMessage(err, t("budget.cycle.decisionFailed")));
     },
   });
 
@@ -174,13 +176,13 @@ export default function BudgetCycleDetailPage() {
       setItemCode("");
       setItemName("");
       setItemAmount("");
-      setMessage("Submission pack created.");
-      toast.success("Submission pack created");
+      setMessage(t("budget.cycle.packCreatedMsg"));
+      toast.success(t("budget.cycle.packCreated"));
       invalidate();
     },
     onError: (err) => {
-      setError("Could not create submission pack.");
-      toast.error("Submission pack not created", apiErrorMessage(err, "Could not create submission pack."));
+      setError(t("budget.cycle.packFailed"));
+      toast.error(t("budget.cycle.packNotCreated"), apiErrorMessage(err, t("budget.cycle.packFailed")));
     },
   });
 
@@ -195,10 +197,10 @@ export default function BudgetCycleDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Budget cycle"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "Budget Cycles", href: "/budget/cycles" }, { label: "Cycle" }]} />}
+          title="budget.cycle.title"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "budget.cycles.title", href: "/budget/cycles" }, { label: "budget.submission.cycle" }]} />}
         />
-        <p className="text-sm text-neutral-400">Loading cycle…</p>
+        <p className="text-sm text-neutral-400">{t("budget.cycle.loading")}</p>
       </div>
     );
   }
@@ -207,11 +209,11 @@ export default function BudgetCycleDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-6">
         <ModulePageHeader
-          title="Budget cycle"
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "Budget Cycles", href: "/budget/cycles" }, { label: "Cycle" }]} />}
+          title="budget.cycle.title"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "budget.cycles.title", href: "/budget/cycles" }, { label: "budget.submission.cycle" }]} />}
         />
-        <p className="text-sm text-red-700">Cycle not found.</p>
-        <Link href="/budget/cycles" className="btn-secondary text-sm">Back to cycles</Link>
+        <p className="text-sm text-red-700">{t("budget.cycle.notFound")}</p>
+        <Link href="/budget/cycles" className="btn-secondary text-sm">{t("budget.submission.backToCycles")}</Link>
       </div>
     );
   }
@@ -219,14 +221,14 @@ export default function BudgetCycleDetailPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title={cycle.financial_year?.label || cycle.financial_year?.code || `Cycle #${cycle.id}`}
-        subtitle={`Status: ${statusLabel(cycle.status)}`}
+        title={cycle.financial_year?.label || cycle.financial_year?.code || t("budget.cycle.numbered", { id: cycle.id })}
+        subtitle={t("budget.cycle.statusLine", { status: statusLabel(cycle.status) })}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.finance", href: "/finance" },
-              { label: "Budget Cycles", href: "/budget/cycles" },
-              { label: cycle.financial_year?.label || cycle.financial_year?.code || `Cycle #${cycle.id}` },
+              { label: "budget.cycles.title", href: "/budget/cycles" },
+              { label: cycle.financial_year?.label || cycle.financial_year?.code || t("budget.cycle.numbered", { id: cycle.id }) },
             ]}
           />
         }
@@ -234,17 +236,17 @@ export default function BudgetCycleDetailPage() {
           <div className="flex flex-wrap gap-2">
           {canAdvance && (
             <button type="button" className="btn-secondary text-sm" onClick={() => advanceMut.mutate()} disabled={advanceMut.isPending}>
-              Advance stage
+              {t("budget.cycle.advanceStage")}
             </button>
           )}
           {(isSg || canFinance) && cycle.status === "management_review" && (
             <button type="button" className="btn-primary text-sm" onClick={() => sgMut.mutate()} disabled={sgMut.isPending}>
-              SG approve
+              {t("budget.change.sgApprove")}
             </button>
           )}
           {canFinance && cycle.status === "plenary_approved" && (
             <button type="button" className="btn-primary text-sm" onClick={() => lockMut.mutate()} disabled={lockMut.isPending}>
-              Lock & activate
+              {t("budget.cycle.lockActivate")}
             </button>
           )}
           </div>
@@ -256,17 +258,17 @@ export default function BudgetCycleDetailPage() {
 
       {canFinance && cycle.status !== "active" && (
         <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-3 dark:border-neutral-700 dark:bg-neutral-900">
-          <h2 className="text-sm font-semibold dark:text-neutral-100">Publish guidelines</h2>
+          <h2 className="text-sm font-semibold dark:text-neutral-100">{t("budget.cycle.publishGuidelines")}</h2>
           <textarea
             className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
             rows={3}
-            placeholder="Assumptions"
+            placeholder={t("budget.cycle.assumptions")}
             value={assumptions}
             onChange={(e) => setAssumptions(e.target.value)}
           />
           <div className="flex flex-wrap gap-3">
             <label htmlFor="cycle-inflation" className="text-sm dark:text-neutral-200">
-              Inflation %
+              {t("budget.cycle.inflation")}
               <input
                 id="cycle-inflation"
                 className="ml-2 w-24 rounded-lg border border-[var(--border)] px-2 py-1 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
@@ -275,7 +277,7 @@ export default function BudgetCycleDetailPage() {
               />
             </label>
             <label htmlFor="cycle-deadline" className="text-sm dark:text-neutral-200">
-              Department deadline
+              {t("budget.cycle.departmentDeadline")}
               <input
                 id="cycle-deadline"
                 type="date"
@@ -285,21 +287,21 @@ export default function BudgetCycleDetailPage() {
               />
             </label>
             <button type="button" className="btn-secondary text-sm" onClick={() => guidelinesMut.mutate()} disabled={guidelinesMut.isPending}>
-              Publish
+              {t("budget.cycle.publish")}
             </button>
           </div>
           {cycle.guideline?.assumptions && (
-            <p className="text-xs text-[var(--muted)] dark:text-neutral-400">Current: {cycle.guideline.assumptions}</p>
+            <p className="text-xs text-[var(--muted)] dark:text-neutral-400">{t("budget.cycle.current", { value: cycle.guideline.assumptions })}</p>
           )}
         </div>
       )}
 
       {canFinance && cycle.status === "finance_review" && (
         <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-2 dark:border-neutral-700 dark:bg-neutral-900">
-          <h2 className="text-sm font-semibold dark:text-neutral-100">Return to departments</h2>
+          <h2 className="text-sm font-semibold dark:text-neutral-100">{t("budget.cycle.returnToDepartments")}</h2>
           <input
             className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
-            placeholder="Reason"
+            placeholder={t("common.reason")}
             value={returnReason}
             onChange={(e) => setReturnReason(e.target.value)}
           />
@@ -309,36 +311,36 @@ export default function BudgetCycleDetailPage() {
             disabled={!returnReason.trim() || returnMut.isPending}
             onClick={() => returnMut.mutate()}
           >
-            Return all packs
+            {t("budget.cycle.returnAllPacks")}
           </button>
         </div>
       )}
 
       {["planning", "department_preparation"].includes(cycle.status) && (
         <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-3 dark:border-neutral-700 dark:bg-neutral-900">
-          <h2 className="text-sm font-semibold dark:text-neutral-100">New department pack</h2>
+          <h2 className="text-sm font-semibold dark:text-neutral-100">{t("budget.cycle.newPack")}</h2>
           <input
             className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
-            placeholder="Pack title"
+            placeholder={t("budget.cycle.packTitle")}
             value={packTitle}
             onChange={(e) => setPackTitle(e.target.value)}
           />
           <div className="grid gap-2 md:grid-cols-3">
             <input
               className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
-              placeholder="Line code"
+              placeholder={t("budget.cycle.lineCode")}
               value={itemCode}
               onChange={(e) => setItemCode(e.target.value)}
             />
             <input
               className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
-              placeholder="Line name"
+              placeholder={t("budget.cycle.lineName")}
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
             />
             <input
               className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
-              placeholder="Requested amount"
+              placeholder={t("budget.cycle.requestedAmount")}
               value={itemAmount}
               onChange={(e) => setItemAmount(e.target.value)}
             />
@@ -349,48 +351,47 @@ export default function BudgetCycleDetailPage() {
             disabled={!packTitle.trim() || !itemName.trim() || !itemAmount || createPackMut.isPending}
             onClick={() => createPackMut.mutate()}
           >
-            Create pack
+            {t("budget.cycle.createPack")}
           </button>
         </div>
       )}
 
       {canRecordDecision && institutionalStatuses.includes(cycle.status) && cycle.status !== "plenary_approved" && (
         <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-3 dark:border-neutral-700 dark:bg-neutral-900">
-          <h2 className="text-sm font-semibold dark:text-neutral-100">Institutional decision (FSC → EXCO → Plenary)</h2>
+          <h2 className="text-sm font-semibold dark:text-neutral-100">{t("budget.cycle.decisionTitle")}</h2>
           <p className="text-xs text-[var(--muted)] dark:text-neutral-400">
-            Current stage: <span className="capitalize">{statusLabel(cycle.status)}</span>. Record the matching body outcome.
-            Non-approved returns the cycle to Finance review.
+            {t("budget.cycle.currentStage")} <span className="capitalize">{statusLabel(cycle.status)}</span>. {t("budget.cycle.decisionHint")}
           </p>
           <div className="grid gap-2 md:grid-cols-2">
             <label htmlFor="cycle-decision-body" className="text-sm dark:text-neutral-200">
-              Body
+              {t("budget.cycle.body")}
               <select
                 id="cycle-decision-body"
                 className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={decisionBody}
                 onChange={(e) => setDecisionBody(e.target.value as "fsc" | "exco" | "plenary")}
               >
-                <option value="fsc">Finance Sub-Committee</option>
-                <option value="exco">Executive Committee</option>
-                <option value="plenary">Plenary Assembly</option>
+                <option value="fsc">{t("budget.cycle.body.fsc")}</option>
+                <option value="exco">{t("budget.cycle.body.exco")}</option>
+                <option value="plenary">{t("budget.cycle.body.plenary")}</option>
               </select>
             </label>
             <label htmlFor="cycle-decision-outcome" className="text-sm dark:text-neutral-200">
-              Decision
+              {t("budget.cycle.decision")}
               <select
                 id="cycle-decision-outcome"
                 className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={decisionOutcome}
                 onChange={(e) => setDecisionOutcome(e.target.value)}
               >
-                <option value="approved">Approved</option>
-                <option value="approved_with_amendments">Approved with amendments</option>
-                <option value="deferred">Deferred</option>
-                <option value="rejected">Rejected</option>
+                <option value="approved">{t("status.approved")}</option>
+                <option value="approved_with_amendments">{t("budget.cycle.outcome.approvedWithAmendments")}</option>
+                <option value="deferred">{t("budget.cycle.outcome.deferred")}</option>
+                <option value="rejected">{t("status.rejected")}</option>
               </select>
             </label>
             <label htmlFor="cycle-meeting-on" className="text-sm dark:text-neutral-200">
-              Meeting date
+              {t("budget.cycle.meetingDate")}
               <input
                 id="cycle-meeting-on"
                 type="date"
@@ -400,20 +401,20 @@ export default function BudgetCycleDetailPage() {
               />
             </label>
             <label htmlFor="cycle-minute-ref" className="text-sm dark:text-neutral-200">
-              Minute / reference
+              {t("budget.cycle.minuteRef")}
               <input
                 id="cycle-minute-ref"
                 className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
                 value={minuteRef}
                 onChange={(e) => setMinuteRef(e.target.value)}
-                placeholder="e.g. FSC/2026/14"
+                placeholder={t("budget.cycle.minuteRefPlaceholder")}
               />
             </label>
           </div>
           <textarea
             className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
             rows={2}
-            placeholder="Comments / summary"
+            placeholder={t("budget.cycle.comments")}
             value={decisionComments}
             onChange={(e) => setDecisionComments(e.target.value)}
           />
@@ -429,14 +430,14 @@ export default function BudgetCycleDetailPage() {
             disabled={decisionMut.isPending}
             onClick={() => decisionMut.mutate()}
           >
-            Record decision
+            {t("budget.cycle.recordDecision")}
           </button>
         </div>
       )}
 
       {(cycle.decisions?.length ?? 0) > 0 && (
         <div className="rounded-xl border border-[var(--border)] bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
-          <h2 className="mb-2 text-sm font-semibold dark:text-neutral-100">Institutional decisions</h2>
+          <h2 className="mb-2 text-sm font-semibold dark:text-neutral-100">{t("budget.cycle.decisions")}</h2>
           <ul className="space-y-1 text-sm text-[var(--muted)] dark:text-neutral-400">
             {cycle.decisions?.map((d) => (
               <li key={d.id}>
@@ -450,16 +451,16 @@ export default function BudgetCycleDetailPage() {
       )}
 
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-white dark:border-neutral-700 dark:bg-neutral-900">
-        <div className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold dark:border-neutral-700 dark:text-neutral-100">Submissions</div>
+        <div className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold dark:border-neutral-700 dark:text-neutral-100">{t("budget.reports.col.submissions")}</div>
         {submissions.length === 0 ? (
-          <EmptyState icon="folder_open" title="No packs yet." />
+          <EmptyState icon="folder_open" title={t("budget.cycle.noPacks")} />
         ) : (
           <table className="w-full text-left text-sm dark:text-neutral-200">
             <thead className="border-b border-[var(--border)] text-[var(--muted)] dark:border-neutral-700 dark:bg-neutral-950/60 dark:text-neutral-400">
               <tr>
-                <th className="px-4 py-2 font-medium">Title</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-                <th className="px-4 py-2 font-medium">Items</th>
+                <th className="px-4 py-2 font-medium">{t("budget.reports.col.title")}</th>
+                <th className="px-4 py-2 font-medium">{t("budget.reports.col.status")}</th>
+                <th className="px-4 py-2 font-medium">{t("budget.change.items")}</th>
                 <th className="px-4 py-2 font-medium" />
               </tr>
             </thead>
@@ -471,7 +472,7 @@ export default function BudgetCycleDetailPage() {
                   <td className="px-4 py-2">{s.items?.length ?? 0}</td>
                   <td className="px-4 py-2 text-right">
                     <Link href={`/budget/submissions/${s.id}`} className="btn-secondary text-xs">
-                      Open
+                      {t("common.open")}
                     </Link>
                   </td>
                 </tr>
@@ -483,7 +484,7 @@ export default function BudgetCycleDetailPage() {
 
       {(cycle.approvals?.length ?? 0) > 0 && (
         <div className="rounded-xl border border-[var(--border)] bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
-          <h2 className="mb-2 text-sm font-semibold dark:text-neutral-100">Stage history</h2>
+          <h2 className="mb-2 text-sm font-semibold dark:text-neutral-100">{t("budget.cycle.stageHistory")}</h2>
           <ul className="space-y-1 text-sm text-[var(--muted)] dark:text-neutral-400">
             {cycle.approvals?.map((a) => (
               <li key={a.id}>

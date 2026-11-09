@@ -5,10 +5,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supplierCategoriesApi, type SupplierCategory } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export function SupplierCategoriesHierarchyCard() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +31,12 @@ export function SupplierCategoriesHierarchyCard() {
       setParentId("");
       setError(null);
       queryClient.invalidateQueries({ queryKey: ["supplier-categories"] });
-      toast.success("Supplier category added");
+      toast.success(t("procurement.supplierCategories.added"));
     },
     onError: (err: unknown) => {
-      const message = apiErrorMessage(err, "Could not create category.");
+      const message = apiErrorMessage(err, t("procurement.supplierCategories.createFailed"));
       setError(message);
-      toast.error("Supplier category not added", message);
+      toast.error(t("procurement.supplierCategories.notAdded"), message);
     },
   });
 
@@ -43,9 +45,9 @@ export function SupplierCategoriesHierarchyCard() {
   return (
     <div className="card p-5 space-y-4" data-testid="supplier-categories-hierarchy">
       <div>
-        <h2 className="text-base font-semibold text-neutral-900">Supplier categories</h2>
+        <h2 className="text-base font-semibold text-neutral-900">{t("procurement.supplierCategories.title")}</h2>
         <p className="mt-1 text-xs text-neutral-500">
-          Hierarchical categories. RFQ targeting matches a leaf and its ancestors. There is no maximum of three.
+          {t("procurement.supplierCategories.hint")}
         </p>
       </div>
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
@@ -55,16 +57,16 @@ export function SupplierCategoriesHierarchyCard() {
           return (
             <li key={row.id} className="flex justify-between gap-2 rounded-lg border border-neutral-100 px-3 py-2">
               <span>{row.name}</span>
-              <span className="text-xs text-neutral-400">{parent ? `Child of ${parent.name}` : "Top level"}</span>
+              <span className="text-xs text-neutral-400">{parent ? t("procurement.supplierCategories.childOf", { name: parent.name }) : t("procurement.supplierCategories.topLevel")}</span>
             </li>
           );
         })}
-        {categories.length === 0 && <li className="text-neutral-400">No categories yet.</li>}
+        {categories.length === 0 && <li className="text-neutral-400">{t("procurement.supplierCategories.empty")}</li>}
       </ul>
       <div className="grid gap-3 sm:grid-cols-2">
-        <input className="form-input" placeholder="New category name" value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="form-input" placeholder={t("procurement.supplierCategories.newName")} value={name} onChange={(e) => setName(e.target.value)} />
         <select className="form-input" value={parentId} onChange={(e) => setParentId(e.target.value)}>
-          <option value="">Top level</option>
+          <option value="">{t("procurement.supplierCategories.topLevel")}</option>
           {categories.map((row) => (
             <option key={row.id} value={row.id}>{row.name}</option>
           ))}
@@ -76,7 +78,7 @@ export function SupplierCategoriesHierarchyCard() {
         disabled={!name.trim() || createMutation.isPending}
         onClick={() => createMutation.mutate()}
       >
-        {createMutation.isPending ? "Adding…" : "Add category"}
+        {createMutation.isPending ? t("procurement.supplierCategories.adding") : t("procurement.supplierCategories.add")}
       </button>
     </div>
   );

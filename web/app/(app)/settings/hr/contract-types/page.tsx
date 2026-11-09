@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
 import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function ContractTypeModal({
   item,
@@ -18,6 +19,7 @@ function ContractTypeModal({
   onSave: (data: Partial<HrContractType>) => void;
 }) {
   const isEdit = !!item?.id;
+  const { t } = useI18n();
   const [form, setForm] = useState<Partial<HrContractType>>(
     item ?? {
       code: "",
@@ -41,9 +43,9 @@ function ContractTypeModal({
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-neutral-900">
-            {isEdit ? "Edit Contract Type" : "New Contract Type"}
+            {isEdit ? t("settings.hr.contract.edit") : t("settings.hr.contract.new")}
           </h3>
-          <button onClick={onClose} aria-label="Close contract type editor" className="text-neutral-400 hover:text-neutral-700">
+          <button onClick={onClose} aria-label={t("settings.hr.contract.closeEditor")} className="text-neutral-400 hover:text-neutral-700">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
@@ -51,42 +53,42 @@ function ContractTypeModal({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="settings-hr-contract-types-code" className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
+              <label htmlFor="settings-hr-contract-types-code" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.codeRequired")}</label>
               <input id="settings-hr-contract-types-code"
                 className="form-input text-sm uppercase"
                 value={form.code ?? ""}
                 onChange={(e) => set("code", e.target.value.toUpperCase())}
-                placeholder="e.g. PERM"
+                placeholder={t("settings.hr.contract.codePlaceholder")}
                 maxLength={20}
               />
             </div>
             <div>
-              <label htmlFor="settings-hr-contract-types-name" className="block text-xs font-medium text-neutral-700 mb-1">Name *</label>
+              <label htmlFor="settings-hr-contract-types-name" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.nameRequired")}</label>
               <input id="settings-hr-contract-types-name"
                 className="form-input text-sm"
                 value={form.name ?? ""}
                 onChange={(e) => set("name", e.target.value)}
-                placeholder="e.g. Permanent"
+                placeholder={t("settings.hr.contract.namePlaceholder")}
                 maxLength={100}
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="settings-hr-contract-types-description" className="block text-xs font-medium text-neutral-700 mb-1">Description</label>
+            <label htmlFor="settings-hr-contract-types-description" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.description")}</label>
             <textarea id="settings-hr-contract-types-description"
               className="form-input text-sm resize-none"
               rows={2}
               value={form.description ?? ""}
               onChange={(e) => set("description", e.target.value)}
-              placeholder="Optional description…"
+              placeholder={t("settings.hr.common.descriptionPlaceholder")}
             />
           </div>
 
           <div className="flex items-center justify-between rounded-lg bg-neutral-50 border border-neutral-200 px-3 py-2.5">
             <div>
-              <p className="text-sm font-medium text-neutral-800">Is Permanent</p>
-              <p className="text-xs text-neutral-500">Indefinite employment (no fixed end date)</p>
+              <p className="text-sm font-medium text-neutral-800">{t("settings.hr.contract.isPermanent")}</p>
+              <p className="text-xs text-neutral-500">{t("settings.hr.contract.isPermanentHint")}</p>
             </div>
             <button
               type="button"
@@ -108,8 +110,8 @@ function ContractTypeModal({
           {!form.is_permanent && (
             <div className="flex items-center justify-between rounded-lg bg-neutral-50 border border-neutral-200 px-3 py-2.5">
               <div>
-                <p className="text-sm font-medium text-neutral-800">Has Probation</p>
-                <p className="text-xs text-neutral-500">Includes a probationary period</p>
+                <p className="text-sm font-medium text-neutral-800">{t("settings.hr.contract.hasProbation")}</p>
+                <p className="text-xs text-neutral-500">{t("settings.hr.contract.hasProbationHint")}</p>
               </div>
               <button
                 type="button"
@@ -131,7 +133,7 @@ function ContractTypeModal({
 
           {!form.is_permanent && form.has_probation && (
             <div>
-              <label htmlFor="settings-hr-contract-types-probation-months" className="block text-xs font-medium text-neutral-700 mb-1">Probation Months</label>
+              <label htmlFor="settings-hr-contract-types-probation-months" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.contract.probationMonths")}</label>
               <input id="settings-hr-contract-types-probation-months"
                 type="number"
                 className="form-input text-sm"
@@ -144,7 +146,7 @@ function ContractTypeModal({
           )}
 
           <div>
-            <label htmlFor="settings-hr-contract-types-notice-period-days" className="block text-xs font-medium text-neutral-700 mb-1">Notice Period (days) *</label>
+            <label htmlFor="settings-hr-contract-types-notice-period-days" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.contract.noticeDays")}</label>
             <input id="settings-hr-contract-types-notice-period-days"
               type="number"
               className="form-input text-sm"
@@ -157,8 +159,8 @@ function ContractTypeModal({
 
           <div className="flex items-center justify-between rounded-lg bg-neutral-50 border border-neutral-200 px-3 py-2.5">
             <div>
-              <p className="text-sm font-medium text-neutral-800">Is Renewable</p>
-              <p className="text-xs text-neutral-500">Contract can be renewed upon expiry</p>
+              <p className="text-sm font-medium text-neutral-800">{t("settings.hr.contract.isRenewable")}</p>
+              <p className="text-xs text-neutral-500">{t("settings.hr.contract.isRenewableHint")}</p>
             </div>
             <button
               type="button"
@@ -178,26 +180,26 @@ function ContractTypeModal({
           </div>
 
           <div>
-            <label htmlFor="settings-hr-contract-types-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <label htmlFor="settings-hr-contract-types-status" className="block text-xs font-medium text-neutral-700 mb-1">{t("settings.hr.common.status")}</label>
             <select id="settings-hr-contract-types-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{t("settings.hr.common.active")}</option>
+              <option value="inactive">{t("settings.hr.common.inactive")}</option>
             </select>
           </div>
         </div>
 
         <div className="flex gap-2 pt-2">
-          <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
+          <button onClick={onClose} className="btn-secondary flex-1 text-sm">{t("common.cancel")}</button>
           <button
             onClick={() => onSave(form)}
             disabled={!form.code || !form.name}
             className="btn-primary flex-1 text-sm disabled:opacity-50"
           >
-            {isEdit ? "Save Changes" : "Create Contract Type"}
+            {isEdit ? t("settings.hr.common.saveChanges") : t("settings.hr.contract.create")}
           </button>
         </div>
       </div>
@@ -208,6 +210,7 @@ function ContractTypeModal({
 export default function ContractTypesPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [modal, setModal] = useState<Partial<HrContractType> | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<number | null>(null);
 
@@ -222,21 +225,21 @@ export default function ContractTypesPage() {
         ? hrSettingsApi.updateContractType(form.id, form).then((r) => r.data)
         : hrSettingsApi.createContractType(form).then((r) => r.data),
     onSuccess: (res: any) => {
-      toast("success", res.message ?? "Saved.");
+      toast("success", res.message ?? t("settings.hr.common.saved"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "contract-types"] });
       setModal(undefined);
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Failed to save."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.saveFailed")),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => hrSettingsApi.deleteContractType(id).then((r) => r.data),
     onSuccess: () => {
-      toast("success", "Contract type deleted.");
+      toast("success", t("settings.hr.contract.deleted"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "contract-types"] });
       setDeleting(null);
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Cannot delete."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.cannotDelete")),
   });
 
   const items = data ?? [];
@@ -251,12 +254,12 @@ export default function ContractTypesPage() {
         />
       )}
       <HrSettingsHeader
-        title="Contract Types"
-        subtitle="Define employment contract templates — permanent, fixed-term, temporary, and consultancy."
+        title={t("settings.hr.home.contractTypes.title")}
+        subtitle={t("settings.hr.contract.subtitle")}
         actions={
           <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
-          New Contract Type
+          {t("settings.hr.contract.new")}
         </button>
         }
       />
@@ -266,7 +269,7 @@ export default function ContractTypesPage() {
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
           <p className="text-sm font-medium text-neutral-700">
-            {items.length} contract {items.length === 1 ? "type" : "types"}
+            {t(items.length === 1 ? "settings.hr.contract.countOne" : "settings.hr.contract.countMany", { count: items.length })}
           </p>
         </div>
 
@@ -275,19 +278,19 @@ export default function ContractTypesPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : items.length === 0 ? (
-          <EmptyState icon="description" title="No contract types yet." description="Create one to get started." />
+          <EmptyState icon="description" title={t("settings.hr.contract.emptyTitle")} description={t("settings.hr.common.emptyDescription")} />
         ) : (
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Probation</th>
-                <th>Notice Period</th>
-                <th>Renewable</th>
-                <th>Status</th>
-                <th className="w-24">Actions</th>
+                <th>{t("settings.hr.common.code")}</th>
+                <th>{t("settings.hr.common.name")}</th>
+                <th>{t("settings.hr.contract.type")}</th>
+                <th>{t("settings.hr.contract.probation")}</th>
+                <th>{t("settings.hr.contract.noticePeriod")}</th>
+                <th>{t("settings.hr.contract.renewable")}</th>
+                <th>{t("settings.hr.common.status")}</th>
+                <th className="w-24">{t("settings.hr.common.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -306,29 +309,29 @@ export default function ContractTypesPage() {
                   </td>
                   <td>
                     <span className={cn("badge", item.is_permanent ? "badge-primary" : "badge-muted")}>
-                      {item.is_permanent ? "Permanent" : "Fixed-term"}
+                      {item.is_permanent ? t("settings.hr.contract.permanent") : t("settings.hr.contract.fixedTerm")}
                     </span>
                   </td>
                   <td>
                     {item.has_probation ? (
-                      <span className="text-sm text-neutral-700">{item.probation_months} months</span>
+                      <span className="text-sm text-neutral-700">{t("settings.hr.contract.months", { count: item.probation_months ?? 0 })}</span>
                     ) : (
                       <span className="text-xs text-neutral-400">—</span>
                     )}
                   </td>
                   <td>
-                    <span className="text-sm text-neutral-700">{item.notice_period_days} days</span>
+                    <span className="text-sm text-neutral-700">{t("settings.hr.contract.days", { count: item.notice_period_days ?? 0 })}</span>
                   </td>
                   <td>
                     {item.is_renewable ? (
-                      <span className="badge badge-success">Yes</span>
+                      <span className="badge badge-success">{t("settings.hr.common.yes")}</span>
                     ) : (
-                      <span className="badge badge-muted">No</span>
+                      <span className="badge badge-muted">{t("settings.hr.common.no")}</span>
                     )}
                   </td>
                   <td>
                     <span className={cn("badge", item.is_active ? "badge-success" : "badge-muted")}>
-                      {item.is_active ? "Active" : "Inactive"}
+                      {item.is_active ? t("settings.hr.common.active") : t("settings.hr.common.inactive")}
                     </span>
                   </td>
                   <td>
@@ -336,7 +339,7 @@ export default function ContractTypesPage() {
                       <button
                         onClick={() => setModal(item)}
                         className="p-1.5 rounded hover:bg-neutral-100 text-neutral-500 hover:text-primary"
-                        title="Edit"
+                        title={t("common.edit")}
                       >
                         <span className="material-symbols-outlined text-[16px]">edit</span>
                       </button>
@@ -346,17 +349,17 @@ export default function ContractTypesPage() {
                             onClick={() => deleteMutation.mutate(item.id)}
                             className="p-1.5 rounded hover:bg-red-50 text-red-600 text-xs font-medium"
                           >
-                            Confirm
+                            {t("common.confirm")}
                           </button>
                           <button onClick={() => setDeleting(null)} className="p-1.5 rounded hover:bg-neutral-100 text-neutral-500 text-xs">
-                            Cancel
+                            {t("common.cancel")}
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setDeleting(item.id)}
                           className="p-1.5 rounded hover:bg-red-50 text-neutral-500 hover:text-red-600"
-                          title="Delete"
+                          title={t("common.delete")}
                         >
                           <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>

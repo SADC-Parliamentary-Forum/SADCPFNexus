@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { travelApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ── KPI card ──────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,7 @@ function SectionHeading({ title, subtitle }: { title: string; subtitle: string }
 const QUEUE_HREF = "/travel/queues/admin";
 
 export default function TravelAdminDashboardPage() {
+  const { t } = useI18n();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["travel", "dashboard", "admin"],
     queryFn: () => travelApi.dashboardAdmin().then((r) => r.data.data),
@@ -79,87 +81,87 @@ export default function TravelAdminDashboardPage() {
 
   const needsAction = [
     {
-      label: "Needs itinerary",
+      label: t("travel.adminDash.kpi.needsItinerary.label"),
       value: data?.needs_itinerary ?? 0,
       icon: "route",
       color: "text-rose-600 dark:text-rose-300",
       bg: "bg-rose-50 dark:bg-rose-900/20",
-      hint: "Submitted or approved requests with no itinerary added yet.",
+      hint: t("travel.adminDash.kpi.needsItinerary.hint"),
     },
     {
-      label: "Bookings to confirm",
+      label: t("travel.adminDash.kpi.bookings.label"),
       value: bookingsPending,
       icon: "confirmation_number",
       color: "text-orange-600 dark:text-orange-300",
       bg: "bg-orange-50 dark:bg-orange-900/20",
-      hint: "Approved trips still waiting on a committed booking.",
+      hint: t("travel.adminDash.kpi.bookings.hint"),
     },
     {
-      label: "Visas pending",
+      label: t("travel.adminDash.kpi.visas.label"),
       value: data?.visas_pending ?? 0,
       icon: "badge",
       color: "text-amber-600 dark:text-amber-300",
       bg: "bg-amber-50 dark:bg-amber-900/20",
-      hint: "Visa required and not yet issued.",
+      hint: t("travel.adminDash.kpi.visas.hint"),
     },
     {
-      label: "Accommodation pending",
+      label: t("travel.adminDash.kpi.accommodation.label"),
       value: data?.accommodation_pending ?? 0,
       icon: "hotel",
       color: "text-amber-600 dark:text-amber-300",
       bg: "bg-amber-50 dark:bg-amber-900/20",
-      hint: "Approved trips with no accommodation recorded.",
+      hint: t("travel.adminDash.kpi.accommodation.hint"),
     },
     {
-      label: "Amendments open",
+      label: t("travel.adminDash.kpi.amendments.label"),
       value: data?.amendments_open ?? 0,
       icon: "edit_note",
       color: "text-primary dark:text-primary",
       bg: "bg-primary/10",
-      hint: "Pending changes awaiting review.",
+      hint: t("travel.adminDash.kpi.amendments.hint"),
     },
   ];
 
   const overview = [
     {
-      label: "Departing soon",
+      label: t("travel.adminDash.kpi.departing.label"),
       value: data?.departing_soon ?? 0,
       icon: "flight_takeoff",
       color: "text-primary",
       bg: "bg-primary/10",
-      hint: "Approved trips departing in the next 14 days.",
+      hint: t("travel.adminDash.kpi.departing.hint"),
     },
     {
-      label: "New approved",
+      label: t("travel.adminDash.kpi.newApproved.label"),
       value: data?.new_approved ?? 0,
       icon: "check_circle",
       color: "text-green-600 dark:text-green-300",
       bg: "bg-green-50 dark:bg-green-900/20",
-      hint: "Approved in the last 7 days.",
+      hint: t("travel.adminDash.kpi.newApproved.hint"),
     },
     {
-      label: "Vehicle requests",
+      label: t("travel.adminDash.kpi.vehicles.label"),
       value: data?.vehicle_requests ?? 0,
       icon: "directions_car",
       color: "text-sky-600 dark:text-sky-300",
       bg: "bg-sky-50 dark:bg-sky-900/20",
-      hint: "Active requests needing a pool vehicle.",
+      hint: t("travel.adminDash.kpi.vehicles.hint"),
     },
     {
-      label: "Missions",
+      label: t("travel.adminDash.kpi.missions.label"),
       value: data?.missions ?? 0,
       icon: "flag",
       color: "text-indigo-600 dark:text-indigo-300",
       bg: "bg-indigo-50 dark:bg-indigo-900/20",
-      hint: "Total missions on record.",
+      hint: t("travel.adminDash.kpi.missions.hint"),
     },
     {
-      label: "Cancellations",
+      label: t("travel.adminDash.kpi.cancellations.label"),
       value: data?.cancellations ?? 0,
       icon: "cancel",
       color: "text-neutral-500 dark:text-neutral-400",
       bg: "bg-neutral-100 dark:bg-neutral-700/40",
-      hint: "Cancelled travel requests.",
+      hint: t("travel.adminDash.kpi.cancellations.hint"),
     },
   ];
 
@@ -168,20 +170,20 @@ export default function TravelAdminDashboardPage() {
   return (
     <div className="w-full min-w-0 space-y-6 p-6">
       <ModulePageHeader
-        title="Administration Travel Dashboard"
-        subtitle="Logistics readiness across itineraries, bookings, visas, and accommodation for approved trips."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel", href: "/travel" }, { label: "Administration dashboard" }]} />}
+        title={t("travel.adminDash.title")}
+        subtitle={t("travel.adminDash.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("nav.travel"), href: "/travel" }, { label: t("travel.adminDash.crumb") }]} />}
         actions={
           <Link href={QUEUE_HREF} className="btn-primary flex items-center gap-1.5 text-sm">
             <span className="material-symbols-outlined text-[16px]">checklist</span>
-            Open admin queue
+            {t("travel.adminDash.openQueue")}
           </Link>
         }
       />
 
       {isError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-400">
-          Unable to load the admin dashboard. Try refreshing the page.
+          {t("travel.adminDash.loadFailed")}
         </div>
       )}
 
@@ -189,15 +191,15 @@ export default function TravelAdminDashboardPage() {
         <div className="space-y-6" data-testid="travel-admin-dashboard">
           <section className="space-y-3">
             <SectionHeading
-              title="Needs action"
-              subtitle="Approved or in-progress trips waiting on administration or logistics work."
+              title={t("travel.adminDash.needsAction")}
+              subtitle={t("travel.adminDash.needsActionHint")}
             />
             {!isLoading && totalNeedsAction === 0 ? (
               <div className="card flex items-center gap-3 p-4 text-sm text-neutral-600 dark:text-neutral-300">
                 <span className="material-symbols-outlined text-[20px] text-green-600 dark:text-green-400">
                   task_alt
                 </span>
-                Nothing outstanding — every approved trip is itineraried, booked, and documented.
+                {t("travel.adminDash.nothing")}
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -220,7 +222,7 @@ export default function TravelAdminDashboardPage() {
           </section>
 
           <section className="space-y-3">
-            <SectionHeading title="Overview" subtitle="Wider trip and mission activity for context." />
+            <SectionHeading title={t("travel.adminDash.overview")} subtitle={t("travel.adminDash.overviewHint")} />
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {isLoading
                 ? Array.from({ length: 5 }).map((_, i) => <KpiCardSkeleton key={i} />)

@@ -7,8 +7,10 @@ import { lifecycleApi, tenantUsersApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { FormField } from "@/components/ui/FormSection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function LifecycleOnboardingCreatePage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [employeeId, setEmployeeId] = useState("");
   const [category, setCategory] = useState("local");
@@ -30,35 +32,35 @@ export default function LifecycleOnboardingCreatePage() {
       const id = res.data.data?.id;
       if (id) router.push(`/lifecycle/cases/${id}`);
     },
-    onError: () => setErr("Could not start onboarding. Check HR authorisation and published templates."),
+    onError: () => setErr(t("lifecycle.onboardingCreate.failed")),
   });
 
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Start onboarding"
-        subtitle="Opens a versioned onboarding case — notice and probation policy come from HR settings, not this form."
+        title={t("lifecycle.onboarding.start")}
+        subtitle={t("lifecycle.onboardingCreate.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Employee Lifecycle", href: "/lifecycle" },
-              { label: "Onboarding", href: "/lifecycle/onboarding" },
-              { label: "Start" },
+              { label: t("lifecycle.common.breadcrumb"), href: "/lifecycle" },
+              { label: t("lifecycle.onboarding.crumb"), href: "/lifecycle/onboarding" },
+              { label: t("lifecycle.common.startCrumb") },
             ]}
           />
         }
       />
 
-      <FormSection title="Case details">
+      <FormSection title={t("lifecycle.journeyNew.caseDetails")}>
         <div className="space-y-4">
-          <FormField label="Employee" htmlFor="lifecycle-onboarding-employee">
+          <FormField label={t("lifecycle.common.employee")} htmlFor="lifecycle-onboarding-employee">
             <select
               id="lifecycle-onboarding-employee"
               className="input w-full"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
             >
-              <option value="">Select employee…</option>
+              <option value="">{t("lifecycle.common.selectEmployee")}</option>
               {(usersQuery.data ?? []).map((u: { id: number; name: string }) => (
                 <option key={u.id} value={u.id}>
                   {u.name}
@@ -67,15 +69,15 @@ export default function LifecycleOnboardingCreatePage() {
             </select>
           </FormField>
 
-          <FormField label="Employee category" htmlFor="lifecycle-onboarding-category">
+          <FormField label={t("lifecycle.onboardingCreate.category")} htmlFor="lifecycle-onboarding-category">
             <select
               id="lifecycle-onboarding-category"
               className="input w-full"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
-              <option value="local">Local staff</option>
-              <option value="regional">Regional staff</option>
+              <option value="local">{t("lifecycle.onboardingCreate.local")}</option>
+              <option value="regional">{t("lifecycle.onboardingCreate.regional")}</option>
             </select>
           </FormField>
 
@@ -87,7 +89,7 @@ export default function LifecycleOnboardingCreatePage() {
             disabled={!employeeId || create.isPending}
             onClick={() => create.mutate()}
           >
-            {create.isPending ? "Starting…" : "Start onboarding case"}
+            {create.isPending ? t("lifecycle.common.starting") : t("lifecycle.onboardingCreate.submit")}
           </button>
         </div>
       </FormSection>

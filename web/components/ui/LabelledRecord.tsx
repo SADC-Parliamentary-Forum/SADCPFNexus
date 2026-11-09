@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { formatDateShort } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const ISO_DATE_VALUE =
   /^\d{4}-\d{2}-\d{2}(?:[T ][\d:.]+(?:Z|[+-]\d{2}:?\d{2})?)?$/;
@@ -17,9 +18,14 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return null;
 }
 
-function primitive(value: unknown): string {
+function BoolLabel({ value }: { value: boolean }) {
+  const { t } = useI18n();
+  return <>{value ? t("ui.labelledRecord.yes") : t("ui.labelledRecord.no")}</>;
+}
+
+function primitive(value: unknown): ReactNode {
   if (value == null || value === "") return "—";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "boolean") return <BoolLabel value={value} />;
   const text = String(value);
   if (ISO_DATE_VALUE.test(text)) return formatDateShort(text);
   return text;
@@ -81,6 +87,7 @@ export function LabelledChangeRows({
   oldValues: unknown;
   newValues: unknown;
 }): ReactNode {
+  const { t } = useI18n();
   const oldRec = asRecord(oldValues) ?? {};
   const newRec = asRecord(newValues) ?? {};
   const keys = Array.from(new Set([...Object.keys(oldRec), ...Object.keys(newRec)]));
@@ -89,11 +96,11 @@ export function LabelledChangeRows({
     return (
       <div className="space-y-3">
         <div>
-          <p className="text-xs text-neutral-500 mb-1">Previous</p>
+          <p className="text-xs text-neutral-500 mb-1">{t("ui.labelledRecord.previous")}</p>
           <LabelledRecord value={oldValues} />
         </div>
         <div>
-          <p className="text-xs text-neutral-500 mb-1">Updated</p>
+          <p className="text-xs text-neutral-500 mb-1">{t("ui.labelledRecord.updated")}</p>
           <LabelledRecord value={newValues} />
         </div>
       </div>
@@ -110,11 +117,11 @@ export function LabelledChangeRows({
           <dt className="capitalize text-xs font-semibold text-neutral-600">{labelFor(key)}</dt>
           <dd className="mt-2 grid gap-2 sm:grid-cols-2">
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-neutral-400">Previous</p>
+              <p className="text-[11px] uppercase tracking-wide text-neutral-400">{t("ui.labelledRecord.previous")}</p>
               <LabelledRecord value={oldRec[key]} nested />
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-neutral-400">Updated</p>
+              <p className="text-[11px] uppercase tracking-wide text-neutral-400">{t("ui.labelledRecord.updated")}</p>
               <LabelledRecord value={newRec[key]} nested />
             </div>
           </dd>

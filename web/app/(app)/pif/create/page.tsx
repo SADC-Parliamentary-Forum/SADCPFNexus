@@ -9,6 +9,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useToast } from "@/components/ui/Toast";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { unwrapEntity } from "@/lib/unwrapEntity";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STRATEGIC_PILLARS = [...PIF_STRATEGIC_PILLARS] as string[];
 const IMPLEMENTING_DEPARTMENTS = [...DEPARTMENTS] as string[];
@@ -17,6 +18,7 @@ const IMPLEMENTING_DEPARTMENTS = [...DEPARTMENTS] as string[];
 export default function PifCreatePage() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const [title, setTitle] = useState("");
   const [strategicPillar, setStrategicPillar] = useState("");
   const [implementingDepartment, setImplementingDepartment] = useState("");
@@ -28,7 +30,7 @@ export default function PifCreatePage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setError("Programme title is required.");
+      setError(t("pif.create.titleRequired"));
       return;
     }
     setSubmitting(true);
@@ -42,9 +44,9 @@ export default function PifCreatePage() {
       const created = unwrapEntity<{ id?: number }>(res.data);
       const newId = created?.id ?? (res.data as { id?: number }).id;
       if (!newId) {
-        throw new Error("Programme created but no id was returned.");
+        throw new Error(t("pif.create.noId"));
       }
-      toast.success("Programme created", "Draft PIF opened for editing.");
+      toast.success(t("pif.create.created"), t("pif.create.createdDetail"));
       router.push(`/pif/${newId}/edit`);
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string };
@@ -52,9 +54,9 @@ export default function PifCreatePage() {
         ax.response?.data?.message ??
         (ax.response?.data?.errors && Object.values(ax.response.data.errors).flat()[0]) ??
         (err instanceof Error ? err.message : null) ??
-        "Failed to create programme. Please try again.";
+        t("pif.create.createFailed");
       setError(msg);
-      toast.error("Programme not created", msg);
+      toast.error(t("pif.create.notCreated"), msg);
     } finally {
       setSubmitting(false);
     }
@@ -63,13 +65,13 @@ export default function PifCreatePage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Start a Programme Implementation Form"
-        subtitle="Give the programme a title to create a draft. You will complete objectives, activities, budget, travel, procurement and documents on the next screen."
+        title="pif.create.title"
+        subtitle="pif.create.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Programmes", href: "/pif" },
-              { label: "New PIF" },
+              { label: "pif.common.programmes", href: "/pif" },
+              { label: "pif.create.crumb" },
             ]}
           />
         }
@@ -77,15 +79,15 @@ export default function PifCreatePage() {
 
       <form onSubmit={handleCreate}>
         <FormSection
-          title="Draft basics"
-          description="Only a title is required to open the multi-step editor."
+          title="pif.create.basics"
+          description="pif.create.basicsHint"
           icon="account_tree"
         >
           <div className="space-y-5">
-            <FormField label="Programme title" required>
+            <FormField label="pif.create.programmeTitle" required>
               <input
                 className="form-input"
-                placeholder="Short, descriptive title"
+                placeholder={t("pif.create.titlePlaceholder")}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 autoFocus
@@ -93,13 +95,13 @@ export default function PifCreatePage() {
             </FormField>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField label="Strategic pillar">
+              <FormField label="pif.create.strategicPillar">
                 <select
                   className="form-input"
                   value={strategicPillar}
                   onChange={(e) => setStrategicPillar(e.target.value)}
                 >
-                  <option value="">— Select later —</option>
+                  <option value="">{t("pif.create.selectLater")}</option>
                   {STRATEGIC_PILLARS.map((p) => (
                     <option key={p} value={p}>
                       {p}
@@ -107,13 +109,13 @@ export default function PifCreatePage() {
                   ))}
                 </select>
               </FormField>
-              <FormField label="Implementing department">
+              <FormField label="pif.create.implementingDepartment">
                 <select
                   className="form-input"
                   value={implementingDepartment}
                   onChange={(e) => setImplementingDepartment(e.target.value)}
                 >
-                  <option value="">— Select later —</option>
+                  <option value="">{t("pif.create.selectLater")}</option>
                   {IMPLEMENTING_DEPARTMENTS.map((d) => (
                     <option key={d} value={d}>
                       {d}
@@ -140,10 +142,10 @@ export default function PifCreatePage() {
                 ) : (
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 )}
-                {submitting ? "Creating…" : "Create draft & continue"}
+                {submitting ? t("pif.create.creating") : t("pif.create.submit")}
               </button>
               <Link href="/pif" className="btn-secondary">
-                Cancel
+                {t("common.cancel")}
               </Link>
             </div>
           </div>

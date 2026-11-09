@@ -15,28 +15,29 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { unwrapEntity } from "@/lib/unwrapEntity";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const typeConfig: Record<string, { label: string; color: string; icon: string }> = {
-  annual: { label: "Annual Leave", color: "text-green-700 bg-green-50 border-green-200", icon: "sunny" },
-  sick: { label: "Sick Leave", color: "text-red-700 bg-red-50 border-red-200", icon: "medical_services" },
-  lil: { label: "Leave in Lieu", color: "text-primary bg-primary/10 border-primary/20", icon: "swap_horiz" },
-  special: { label: "Special Leave", color: "text-amber-800 bg-amber-50 border-amber-200", icon: "star" },
-  maternity: { label: "Maternity Leave", color: "text-neutral-800 bg-neutral-50 border-neutral-200", icon: "child_care" },
-  paternity: { label: "Paternity Leave", color: "text-neutral-800 bg-neutral-50 border-neutral-200", icon: "family_restroom" },
-  compassionate: { label: "Compassionate Leave", color: "text-amber-800 bg-amber-50 border-amber-200", icon: "volunteer_activism" },
-  study: { label: "Study Leave", color: "text-primary bg-primary/5 border-primary/20", icon: "school" },
-  unpaid: { label: "Leave Without Pay", color: "text-neutral-700 bg-neutral-50 border-neutral-200", icon: "money_off" },
-  home: { label: "Home Leave", color: "text-neutral-700 bg-neutral-50 border-neutral-200", icon: "home" },
+  annual: { label: "leave.typeFull.annual", color: "text-green-700 bg-green-50 border-green-200", icon: "sunny" },
+  sick: { label: "leave.typeFull.sick", color: "text-red-700 bg-red-50 border-red-200", icon: "medical_services" },
+  lil: { label: "leave.typeFull.lil", color: "text-primary bg-primary/10 border-primary/20", icon: "swap_horiz" },
+  special: { label: "leave.typeFull.special", color: "text-amber-800 bg-amber-50 border-amber-200", icon: "star" },
+  maternity: { label: "leave.typeFull.maternity", color: "text-neutral-800 bg-neutral-50 border-neutral-200", icon: "child_care" },
+  paternity: { label: "leave.typeFull.paternity", color: "text-neutral-800 bg-neutral-50 border-neutral-200", icon: "family_restroom" },
+  compassionate: { label: "leave.typeFull.compassionate", color: "text-amber-800 bg-amber-50 border-amber-200", icon: "volunteer_activism" },
+  study: { label: "leave.typeFull.study", color: "text-primary bg-primary/5 border-primary/20", icon: "school" },
+  unpaid: { label: "leave.typeFull.unpaid", color: "text-neutral-700 bg-neutral-50 border-neutral-200", icon: "money_off" },
+  home: { label: "leave.typeFull.home", color: "text-neutral-700 bg-neutral-50 border-neutral-200", icon: "home" },
 };
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  approved:                { label: "Approved",               cls: "text-green-700 bg-green-50 border-green-200",    icon: "check_circle" },
-  submitted:               { label: "Pending",                cls: "text-amber-700 bg-amber-50 border-amber-200",    icon: "pending" },
-  rejected:                { label: "Rejected",               cls: "text-red-700 bg-red-50 border-red-200",          icon: "cancel" },
-  draft:                   { label: "Draft",                  cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note" },
-  cancelled:               { label: "Cancelled",              cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "cancel" },
-  returned_for_correction: { label: "Returned for Correction", cls: "text-amber-700 bg-amber-50 border-amber-200",   icon: "undo" },
-  withdrawn:               { label: "Withdrawn",              cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block" },
+  approved:                { label: "leave.status.approved",               cls: "text-green-700 bg-green-50 border-green-200",    icon: "check_circle" },
+  submitted:               { label: "leave.detail.status.pending",                cls: "text-amber-700 bg-amber-50 border-amber-200",    icon: "pending" },
+  rejected:                { label: "leave.status.rejected",               cls: "text-red-700 bg-red-50 border-red-200",          icon: "cancel" },
+  draft:                   { label: "leave.status.draft",                  cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note" },
+  cancelled:               { label: "leave.status.cancelled",              cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "cancel" },
+  returned_for_correction: { label: "leave.detail.status.returned_for_correction", cls: "text-amber-700 bg-amber-50 border-amber-200",   icon: "undo" },
+  withdrawn:               { label: "leave.status.withdrawn",              cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block" },
 };
 
 type LilLinking = { id: number; code?: string; description?: string; hours?: number; date?: string; approved_by?: string; is_verified?: boolean };
@@ -49,7 +50,7 @@ function SectionIcon({ icon, color, bg }: { icon: string; color: string; bg: str
   );
 }
 
-function formatWorkflowStage(stage: unknown, fallback: string) {
+function formatWorkflowStage(stage: unknown, fallback: string, t: (key: string, vars?: Record<string, string | number>) => string) {
   if (!stage) return fallback;
   if (typeof stage === "string") return stage;
   if (typeof stage === "number") return String(stage);
@@ -66,7 +67,7 @@ function formatWorkflowStage(stage: unknown, fallback: string) {
     if (typeof value.name === "string" && value.name.trim()) return value.name;
     if (typeof value.approver_type === "string" && value.approver_type.trim()) {
       const human = value.approver_type.replace(/_/g, " ");
-      return value.index != null ? `Stage ${Number(value.index) + 1}: ${human}` : human;
+      return value.index != null ? t("leave.detail.stage", { n: Number(value.index) + 1, name: human }) : human;
     }
   }
   return fallback;
@@ -84,6 +85,7 @@ function SkeletonCard() {
 
 export default function LeaveDetailPage() {
   const { success, error: showErrorToast, info } = useToast();
+  const { t, localeTag } = useI18n();
   const params = useParams();
   const router = useRouter();
   const id = Number(params?.id);
@@ -115,7 +117,7 @@ export default function LeaveDetailPage() {
   useEffect(() => {
     if (!id || Number.isNaN(id)) {
       setLoading(false);
-      setError("Invalid request ID.");
+      setError(t("leave.certificate.invalidId"));
       return;
     }
     leaveApi.get(id)
@@ -126,9 +128,9 @@ export default function LeaveDetailPage() {
         return leaveApi.listAttachments(id);
       })
       .then((res) => setAttachments(res.data.data ?? []))
-      .catch(() => setError("Failed to load leave request."))
+      .catch(() => setError(t("leave.detail.loadFailed")))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   const refreshRequest = async () => {
     const res = await leaveApi.get(id);
@@ -148,9 +150,9 @@ export default function LeaveDetailPage() {
       setShowOverrideModal(false);
       setOverrideReason("");
       if (notified.length > 0) {
-        success(`Approved. Notified: ${notified.join(", ")}`);
+        success(t("leave.detail.toast.approvedNotified", { names: notified.join(", ") }));
       } else {
-        success("Request fully approved.");
+        success(t("leave.detail.toast.fullyApproved"));
       }
     } catch (e: unknown) {
       const err = e as { response?: { data?: { errors?: { balance?: string[] }; message?: string } } };
@@ -159,7 +161,7 @@ export default function LeaveDetailPage() {
         setBalanceError(balMsg);
         setShowOverrideModal(true);
       } else {
-        setError(err?.response?.data?.message ?? "Failed to approve request.");
+        setError(err?.response?.data?.message ?? t("leave.detail.error.approve"));
       }
     } finally {
       setActionLoading(false);
@@ -175,7 +177,7 @@ export default function LeaveDetailPage() {
       setShowRejectModal(false);
       setRejectReason("");
     } catch {
-      setError("Failed to reject request.");
+      setError(t("leave.detail.error.reject"));
     } finally {
       setActionLoading(false);
     }
@@ -188,9 +190,9 @@ export default function LeaveDetailPage() {
       await leaveApi.returnForCorrection(request.id, comment);
       await refreshRequest();
       setShowReturnModal(false);
-      success("Request returned to requester for correction.");
+      success(t("leave.detail.toast.returned"));
     } catch {
-      setError("Failed to return request.");
+      setError(t("leave.detail.error.return"));
     } finally {
       setReturnLoading(false);
     }
@@ -198,14 +200,14 @@ export default function LeaveDetailPage() {
 
   const handleWithdraw = async () => {
     if (!request) return;
-    if (!(await confirm({ title: "Withdraw Request", message: "Withdraw this leave request? This cannot be undone.", variant: "danger" }))) return;
+    if (!(await confirm({ title: t("leave.detail.confirm.withdrawTitle"), message: t("leave.detail.confirm.withdrawMessage"), variant: "danger" }))) return;
     setActionLoading(true);
     try {
       await leaveApi.withdraw(request.id);
       await refreshRequest();
-      success("Request withdrawn.");
+      success(t("leave.detail.toast.withdrawn"));
     } catch {
-      setError("Failed to withdraw request.");
+      setError(t("leave.detail.error.withdraw"));
     } finally {
       setActionLoading(false);
     }
@@ -213,14 +215,14 @@ export default function LeaveDetailPage() {
 
   const handleResubmit = async () => {
     if (!request) return;
-    if (!(await confirm({ title: "Resubmit Request", message: "Resubmit this leave request for approval? It will restart from the first step.", variant: "primary" }))) return;
+    if (!(await confirm({ title: t("leave.detail.confirm.resubmitTitle"), message: t("leave.detail.confirm.resubmitMessage"), variant: "primary" }))) return;
     setActionLoading(true);
     try {
       await leaveApi.resubmit(request.id);
       await refreshRequest();
-      success("Request resubmitted for approval.");
+      success(t("leave.detail.toast.resubmitted"));
     } catch {
-      setError("Failed to resubmit request.");
+      setError(t("leave.detail.error.resubmit"));
     } finally {
       setActionLoading(false);
     }
@@ -243,20 +245,22 @@ export default function LeaveDetailPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-4 flex items-start gap-3">
           <span className="material-symbols-outlined text-red-500 text-[20px] flex-shrink-0 mt-0.5">error_outline</span>
           <div>
-            <p className="text-sm font-semibold text-red-700">Error loading request</p>
-            <p className="text-sm text-red-600 mt-0.5">{error ?? "Request not found."}</p>
+            <p className="text-sm font-semibold text-red-700">{t("leave.detail.errorTitle")}</p>
+            <p className="text-sm text-red-600 mt-0.5">{error ?? t("leave.detail.notFound")}</p>
           </div>
         </div>
         <Link href="/leave" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary transition-colors">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Leave Requests
+          {t("leave.detail.back")}
         </Link>
       </div>
     );
   }
 
-  const typeInfo = typeConfig[request.leave_type] ?? { label: request.leave_type, color: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "event_available" };
-  const s = statusConfig[request.status] ?? statusConfig.draft;
+  const typeCfg = typeConfig[request.leave_type];
+  const typeInfo = typeCfg ? { ...typeCfg, label: t(typeCfg.label) } : { label: request.leave_type, color: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "event_available" };
+  const statusCfg = statusConfig[request.status] ?? statusConfig.draft;
+  const s = { ...statusCfg, label: t(statusCfg.label) };
   const lilLinkings = (request as LeaveRequest & { lil_linkings?: LilLinking[] }).lil_linkings ?? [];
   const hasLil = request.has_lil_linking && (lilLinkings.length > 0 || (request.lil_hours_required != null && request.lil_hours_linked != null));
   const segments = request.segments ?? [];
@@ -272,12 +276,12 @@ export default function LeaveDetailPage() {
 
       {/* Toast */}
 <ModulePageHeader
-        title="Leave Request"
-        subtitle={`${formatDateShort(request.start_date)} → ${formatDateShort(request.end_date)} · ${durationDays} day${durationDays !== 1 ? "s" : ""}`}
+        title={t("leave.detail.title")}
+        subtitle={`${formatDateShort(request.start_date)} → ${formatDateShort(request.end_date)} · ${t(durationDays !== 1 ? "leave.certificate.days" : "leave.certificate.day", { count: durationDays })}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Leave", href: "/leave" },
+              { label: t("nav.leave"), href: "/leave" },
               { label: request.reference_number },
             ]}
           />
@@ -303,7 +307,7 @@ export default function LeaveDetailPage() {
                 className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100"
               >
                 <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
-                Certificate
+                {t("leave.certificate.breadcrumb")}
               </Link>
             )}
             <a
@@ -313,38 +317,38 @@ export default function LeaveDetailPage() {
               className="btn-secondary px-3 py-1.5 text-xs"
             >
               <span className="material-symbols-outlined text-[14px]">picture_as_pdf</span>
-              FORM-005
+              FORM-005{/* i18n-ignore */}
             </a>
             {request.status === "draft" && (
               <>
                 <button
                   onClick={async () => {
-                    if (!(await confirm({ title: "Submit Request", message: "Submit this leave request for approval?", variant: "primary" }))) return;
+                    if (!(await confirm({ title: t("leave.detail.confirm.submitTitle"), message: t("leave.detail.confirm.submitMessage"), variant: "primary" }))) return;
                     setActionLoading(true);
                     try {
                       await leaveApi.submit(request.id);
                       await refreshRequest();
-                    } catch { setError("Failed to submit."); }
+                    } catch { setError(t("leave.detail.error.submit")); }
                     finally { setActionLoading(false); }
                   }}
                   disabled={actionLoading}
                   className="btn-primary px-3 py-1.5 text-xs disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[14px]">send</span>
-                  Submit
+                  {t("common.submit")}
                 </button>
                 <button
                   onClick={async () => {
-                    if (!(await confirm({ title: "Delete Draft", message: "Delete this draft leave request?", variant: "danger" }))) return;
+                    if (!(await confirm({ title: t("leave.detail.confirm.deleteTitle"), message: t("leave.detail.confirm.deleteMessage"), variant: "danger" }))) return;
                     try {
                       await leaveApi.delete(request.id);
                       router.push("/leave");
-                    } catch { setError("Failed to delete."); }
+                    } catch { setError(t("leave.detail.error.delete")); }
                   }}
                   className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
                 >
                   <span className="material-symbols-outlined text-[14px]">delete</span>
-                  Delete
+                  {t("common.delete")}
                 </button>
               </>
             )}
@@ -355,7 +359,7 @@ export default function LeaveDetailPage() {
                 className="btn-secondary px-3 py-1.5 text-xs disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[14px]">block</span>
-                Withdraw
+                {t("leave.detail.withdraw")}
               </button>
             )}
             {isReturnedForCorrection && (
@@ -365,7 +369,7 @@ export default function LeaveDetailPage() {
                 className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-600 disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[14px]">refresh</span>
-                Resubmit
+                {t("leave.detail.resubmit")}
               </button>
             )}
           </div>
@@ -375,9 +379,9 @@ export default function LeaveDetailPage() {
       {/* Duration banner */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Start Date", value: formatDateShort(request.start_date), icon: "event", color: "text-primary" },
-          { label: "End Date", value: formatDateShort(request.end_date), icon: "event_available", color: "text-neutral-700" },
-          { label: "Duration", value: `${durationDays} day${durationDays !== 1 ? "s" : ""}`, icon: "schedule", color: "text-green-600" },
+          { label: t("assignments.create.startDate"), value: formatDateShort(request.start_date), icon: "event", color: "text-primary" },
+          { label: t("leave.certificate.endDate"), value: formatDateShort(request.end_date), icon: "event_available", color: "text-neutral-700" },
+          { label: t("leave.certificate.duration"), value: t(durationDays !== 1 ? "leave.certificate.days" : "leave.certificate.day", { count: durationDays }), icon: "schedule", color: "text-green-600" },
         ].map((item) => (
           <div key={item.label} className="card p-4 text-center">
             <span className={`material-symbols-outlined text-[22px] ${item.color}`}>{item.icon}</span>
@@ -389,11 +393,11 @@ export default function LeaveDetailPage() {
 
       <WorkflowStatusBanner
         status={request.status}
-        currentStage={formatWorkflowStage(request.current_stage, request.status)}
-        currentHolder={request.current_holder ?? "Not assigned"}
+        currentStage={formatWorkflowStage(request.current_stage, request.status, t)}
+        currentHolder={request.current_holder ?? t("leave.detail.notAssigned")}
         extras={[
-          { label: "HOD recommendation", value: request.recommendation_status ?? "Pending" },
-          { label: "HR certification", value: request.certification_status ?? "Pending" },
+          { label: t("leave.detail.hodRecommendation"), value: request.recommendation_status ?? t("leave.detail.status.pending") },
+          { label: t("leave.detail.hrCertification"), value: request.certification_status ?? t("leave.detail.status.pending") },
         ]}
       />
 
@@ -416,14 +420,14 @@ export default function LeaveDetailPage() {
             <div className="flex items-center gap-3">
               <SectionIcon icon="fact_check" color="text-indigo-600" bg="bg-indigo-50" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                {needsRecommend ? "HOD Recommendation" : "HR Certification"}
+                {needsRecommend ? t("leave.detail.hodRecommendationTitle") : t("leave.detail.hrCertificationTitle")}
               </h3>
             </div>
             {canRecommend && needsRecommend && (
               <div className="space-y-3">
                 <textarea
                   className="form-input min-h-[70px]"
-                  placeholder="Optional comment (required if not recommending / returning)"
+                  placeholder={t("leave.detail.recommendPlaceholder")}
                   value={recommendComment}
                   onChange={(e) => setRecommendComment(e.target.value)}
                 />
@@ -437,12 +441,12 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.recommend(request.id, { action: "recommend", comment: recommendComment || undefined });
                         await refreshRequest();
-                        success("Recommendation recorded.");
-                      } catch { setError("Failed to record recommendation."); }
+                        success(t("leave.detail.toast.recommended"));
+                      } catch { setError(t("leave.detail.error.recommend")); }
                       finally { setActionLoading(false); }
                     }}
                   >
-                    Recommend
+                    {t("leave.detail.recommend")}
                   </button>
                   <button
                     type="button"
@@ -453,12 +457,12 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.recommend(request.id, { action: "not_recommend", comment: recommendComment.trim() });
                         await refreshRequest();
-                        success("Not recommended recorded.");
-                      } catch { setError("Failed to record recommendation."); }
+                        success(t("leave.detail.toast.notRecommended"));
+                      } catch { setError(t("leave.detail.error.recommend")); }
                       finally { setActionLoading(false); }
                     }}
                   >
-                    Do Not Recommend
+                    {t("leave.detail.notRecommend")}
                   </button>
                   <button
                     type="button"
@@ -469,12 +473,12 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.recommend(request.id, { action: "return", comment: recommendComment.trim() });
                         await refreshRequest();
-                        success("Returned for correction.");
-                      } catch { setError("Failed to return leave request."); }
+                        success(t("leave.detail.toast.returnedForCorrection"));
+                      } catch { setError(t("leave.detail.error.returnLeave")); }
                       finally { setActionLoading(false); }
                     }}
                   >
-                    Return
+                    {t("common.return")}
                   </button>
                 </div>
               </div>
@@ -483,7 +487,7 @@ export default function LeaveDetailPage() {
               <div className="space-y-3">
                 <textarea
                   className="form-input min-h-[70px]"
-                  placeholder="Optional comment (required for conditional / return / ineligible)"
+                  placeholder={t("leave.detail.certifyPlaceholder")}
                   value={certifyComment}
                   onChange={(e) => setCertifyComment(e.target.value)}
                 />
@@ -497,12 +501,12 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.certify(request.id, { action: "certify", comment: certifyComment || undefined });
                         await refreshRequest();
-                        success("Certification recorded.");
-                      } catch { setError("Failed to certify leave request."); }
+                        success(t("leave.detail.toast.certified"));
+                      } catch { setError(t("leave.detail.error.certify")); }
                       finally { setActionLoading(false); }
                     }}
                   >
-                    Certify
+                    {t("leave.detail.certify")}
                   </button>
                   <button
                     type="button"
@@ -513,12 +517,12 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.certify(request.id, { action: "certify_with_condition", comment: certifyComment.trim() });
                         await refreshRequest();
-                        success("Certified with condition.");
-                      } catch { setError("Failed to certify leave request."); }
+                        success(t("leave.detail.toast.certifiedCondition"));
+                      } catch { setError(t("leave.detail.error.certify")); }
                       finally { setActionLoading(false); }
                     }}
                   >
-                    Certify with Condition
+                    {t("leave.detail.certifyCondition")}
                   </button>
                   <button
                     type="button"
@@ -529,12 +533,12 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.certify(request.id, { action: "return", comment: certifyComment.trim() });
                         await refreshRequest();
-                        success("Returned for correction.");
-                      } catch { setError("Failed to return leave request."); }
+                        success(t("leave.detail.toast.returnedForCorrection"));
+                      } catch { setError(t("leave.detail.error.returnLeave")); }
                       finally { setActionLoading(false); }
                     }}
                   >
-                    Return
+                    {t("common.return")}
                   </button>
                 </div>
               </div>
@@ -548,10 +552,10 @@ export default function LeaveDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="badge" color="text-primary" bg="bg-primary/10" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Submitted By</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("leave.detail.submittedBy")}</h3>
             {request.submitted_at && (
               <span className="ml-auto text-xs text-neutral-400">
-                {new Date(request.submitted_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                {new Date(request.submitted_at).toLocaleDateString(localeTag, { day: "numeric", month: "short", year: "numeric" })}
               </span>
             )}
           </div>
@@ -574,9 +578,9 @@ export default function LeaveDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="gavel" color="text-amber-600" bg="bg-amber-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Approval Decision</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("leave.detail.approvalDecision")}</h3>
           </div>
-          <p className="text-sm text-neutral-500 mb-4">Review the leave request details above and take an action.</p>
+          <p className="text-sm text-neutral-500 mb-4">{t("leave.detail.approvalHint")}</p>
           <div className="flex gap-3 flex-wrap">
             <button
               onClick={() => { void handleApprove(); }}
@@ -584,7 +588,7 @@ export default function LeaveDetailPage() {
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 shadow-sm"
             >
               <span className="material-symbols-outlined text-[18px]">check_circle</span>
-              {actionLoading ? "Processing…" : "Approve Request"}
+              {actionLoading ? t("leave.detail.processing") : t("leave.detail.approve")}
             </button>
             {canReturn && (
               <button
@@ -593,7 +597,7 @@ export default function LeaveDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">undo</span>
-                Return
+                {t("common.return")}
               </button>
             )}
             <button
@@ -602,7 +606,7 @@ export default function LeaveDetailPage() {
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">cancel</span>
-              Reject
+              {t("common.reject")}
             </button>
           </div>
         </div>
@@ -614,7 +618,7 @@ export default function LeaveDetailPage() {
       <AuditTimeline
         subjectType="LeaveRequest"
         subjectId={request.id}
-        title="Platform Audit Trail"
+        title={t("leave.detail.auditTrail")}
       />
 
       {/* Leave Segments */}
@@ -622,10 +626,10 @@ export default function LeaveDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="calendar_view_week" color="text-primary" bg="bg-primary/10" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Leave Segments</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("leave.detail.segments")}</h3>
             {request.policy_version && (
               <span className="ml-auto text-[11px] text-neutral-400">
-                Policy: {request.policy_version.name} {request.policy_version.version}
+                {t("leave.detail.policy", { name: request.policy_version.name, version: request.policy_version.version })}
               </span>
             )}
           </div>
@@ -633,17 +637,18 @@ export default function LeaveDetailPage() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-100 text-left text-[11px] uppercase tracking-wide text-neutral-400">
-                  <th className="py-2 pr-3 font-semibold">Type</th>
-                  <th className="py-2 px-3 font-semibold">Dates</th>
-                  <th className="py-2 px-3 text-right font-semibold">Working</th>
-                  <th className="py-2 px-3 text-right font-semibold">Holidays</th>
-                  <th className="py-2 px-3 text-right font-semibold">Balance After</th>
-                  <th className="py-2 pl-3 font-semibold">Certification</th>
+                  <th className="py-2 pr-3 font-semibold">{t("leave.detail.col.type")}</th>
+                  <th className="py-2 px-3 font-semibold">{t("leave.detail.col.dates")}</th>
+                  <th className="py-2 px-3 text-right font-semibold">{t("leave.detail.col.working")}</th>
+                  <th className="py-2 px-3 text-right font-semibold">{t("leave.detail.col.holidays")}</th>
+                  <th className="py-2 px-3 text-right font-semibold">{t("leave.detail.col.balanceAfter")}</th>
+                  <th className="py-2 pl-3 font-semibold">{t("leave.detail.col.certification")}</th>
                 </tr>
               </thead>
               <tbody>
                 {segments.map((segment) => {
-                  const info = typeConfig[segment.leave_type] ?? { label: segment.leave_type, color: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "event_available" };
+                  const segCfg = typeConfig[segment.leave_type];
+                  const info = segCfg ? { ...segCfg, label: t(segCfg.label) } : { label: segment.leave_type, color: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "event_available" };
                   return (
                     <tr key={segment.id} className="border-b border-neutral-50 last:border-0">
                       <td className="py-3 pr-3">
@@ -664,8 +669,8 @@ export default function LeaveDetailPage() {
                         {segment.balance_after == null ? "-" : Number(segment.balance_after).toFixed(2)}
                       </td>
                       <td className="py-3 pl-3 text-neutral-600">
-                        <div className="text-xs font-medium">{segment.certification_status ?? "Pending"}</div>
-                        <div className="text-[11px] text-neutral-400">Docs: {segment.document_status ?? "not recorded"}</div>
+                        <div className="text-xs font-medium">{segment.certification_status ?? t("leave.detail.status.pending")}</div>
+                        <div className="text-[11px] text-neutral-400">{t("leave.detail.docs", { status: segment.document_status ?? t("leave.detail.notRecorded") })}</div>
                       </td>
                     </tr>
                   );
@@ -680,19 +685,19 @@ export default function LeaveDetailPage() {
       <div className="card p-5">
         <div className="flex items-center gap-3 mb-4">
           <SectionIcon icon="event_available" color="text-green-600" bg="bg-green-50" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Leave Details</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("leave.detail.details")}</h3>
         </div>
         {request.reason && (
           <div className="rounded-lg bg-neutral-50 border border-neutral-100 p-4">
             <div className="flex items-center gap-1.5 mb-2">
               <span className="material-symbols-outlined text-[14px] text-neutral-300">description</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Reason</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("common.reason")}</p>
             </div>
             <p className="text-sm text-neutral-700 leading-relaxed">{request.reason}</p>
           </div>
         )}
         {!request.reason && (
-          <p className="text-sm text-neutral-400 italic">No reason provided.</p>
+          <p className="text-sm text-neutral-400 italic">{t("leave.detail.noReason")}</p>
         )}
       </div>
 
@@ -701,7 +706,7 @@ export default function LeaveDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="swap_horiz" color="text-primary" bg="bg-primary/10" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Leave in Lieu Accrual Linkings</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("leave.detail.lilLinkings")}</h3>
             {request.lil_hours_required != null && request.lil_hours_linked != null && (
               <div className="ml-auto flex items-center gap-1.5">
                 <div className="h-1.5 w-20 rounded-full bg-neutral-100 overflow-hidden">
@@ -711,7 +716,7 @@ export default function LeaveDetailPage() {
                   />
                 </div>
                 <span className="text-xs font-semibold text-primary">
-                  {request.lil_hours_linked}/{request.lil_hours_required} hrs
+                  {t("leave.detail.hoursOf", { linked: request.lil_hours_linked, required: request.lil_hours_required })}
                 </span>
               </div>
             )}
@@ -728,7 +733,7 @@ export default function LeaveDetailPage() {
                       <p className="text-sm font-medium text-neutral-900">{lil.description ?? "—"}</p>
                       <p className="text-xs text-neutral-400 mt-0.5">
                         {lil.date ?? ""}
-                        {lil.approved_by && ` · Approved by ${lil.approved_by}`}
+                        {lil.approved_by && ` · ${t("leave.detail.approvedBy", { name: lil.approved_by })}`}
                       </p>
                     </div>
                   </div>
@@ -736,11 +741,11 @@ export default function LeaveDetailPage() {
                     {lil.is_verified && (
                       <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full mb-1">
                         <span className="material-symbols-outlined text-[11px]">verified</span>
-                        Verified
+                        {t("leave.detail.verified")}
                       </span>
                     )}
-                    <p className="text-sm font-bold text-primary">{lil.hours ?? 0} hrs</p>
-                    <p className="text-[10px] text-neutral-400">Code: {lil.code ?? "—"}</p>
+                    <p className="text-sm font-bold text-primary">{t("leave.detail.hours", { hours: lil.hours ?? 0 })}</p>
+                    <p className="text-[10px] text-neutral-400">{t("leave.detail.code", { code: lil.code ?? "—" })}</p>
                   </div>
                 </div>
               ))}
@@ -754,9 +759,9 @@ export default function LeaveDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="gavel" color="text-amber-600" bg="bg-amber-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Approval Decision</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("leave.detail.approvalDecision")}</h3>
           </div>
-          <p className="text-sm text-neutral-500 mb-4">Review the leave request details above and take an action.</p>
+          <p className="text-sm text-neutral-500 mb-4">{t("leave.detail.approvalHint")}</p>
           <div className="flex gap-3 flex-wrap">
             <button
               onClick={() => { void handleApprove(); }}
@@ -764,7 +769,7 @@ export default function LeaveDetailPage() {
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 shadow-sm"
             >
               <span className="material-symbols-outlined text-[18px]">check_circle</span>
-              {actionLoading ? "Processing…" : "Approve Request"}
+              {actionLoading ? t("leave.detail.processing") : t("leave.detail.approve")}
             </button>
             {canReturn && (
               <button
@@ -773,7 +778,7 @@ export default function LeaveDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">undo</span>
-                Return
+                {t("common.return")}
               </button>
             )}
             <button
@@ -782,7 +787,7 @@ export default function LeaveDetailPage() {
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">cancel</span>
-              Reject
+              {t("common.reject")}
             </button>
           </div>
         </div>
@@ -794,8 +799,8 @@ export default function LeaveDetailPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50">
             <span className="material-symbols-outlined text-indigo-600 text-[18px]">attach_file</span>
           </div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Supporting Documents</h3>
-          <span className="ml-auto text-xs text-neutral-400">{attachments.length} file{attachments.length !== 1 ? "s" : ""}</span>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("leave.detail.documents")}</h3>
+          <span className="ml-auto text-xs text-neutral-400">{t(attachments.length !== 1 ? "leave.detail.files" : "leave.detail.file", { count: attachments.length })}</span>
         </div>
 
         {attachToast && (
@@ -808,13 +813,13 @@ export default function LeaveDetailPage() {
             value={uploadDocType}
             onChange={(e) => setUploadDocType(e.target.value)}
           >
-            {LEAVE_DOCUMENT_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
+            {LEAVE_DOCUMENT_TYPES.map((dt) => (
+              <option key={dt.value} value={dt.value}>{dt.label}</option>
             ))}
           </select>
           <label htmlFor="leave-detail-upload-file-catch-finally" className={`btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5 cursor-pointer ${uploadLoading ? "opacity-50 pointer-events-none" : ""}`}>
             <span className="material-symbols-outlined text-[15px]">upload_file</span>
-            {uploadLoading ? "Uploading…" : "Upload File"}
+            {uploadLoading ? t("leave.detail.uploading") : t("leave.detail.uploadFile")}
             <input id="leave-detail-upload-file-catch-finally"
               type="file"
               className="hidden"
@@ -827,10 +832,10 @@ export default function LeaveDetailPage() {
                 try {
                   const res = await leaveApi.uploadAttachment(request.id, file, uploadDocType);
                   setAttachments((prev) => [res.data.data, ...prev]);
-                  setAttachToast("File uploaded.");
+                  setAttachToast(t("leave.detail.uploaded"));
                   setTimeout(() => setAttachToast(null), 3000);
                 } catch {
-                  setAttachToast("Upload failed.");
+                  setAttachToast(t("leave.detail.uploadFailed"));
                   setTimeout(() => setAttachToast(null), 3000);
                 } finally {
                   setUploadLoading(false);
@@ -842,7 +847,7 @@ export default function LeaveDetailPage() {
         </div>
 
         {attachments.length === 0 ? (
-          <p className="text-xs text-neutral-400 text-center py-4">No documents attached. Upload a medical certificate or supporting document.</p>
+          <p className="text-xs text-neutral-400 text-center py-4">{t("leave.detail.noDocuments")}</p>
         ) : (
           <div className="space-y-2">
             {attachments.map((a) => (
@@ -862,6 +867,7 @@ export default function LeaveDetailPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:text-primary hover:bg-primary/5 transition-colors"
+                  aria-label={t("common.download")}
                 >
                   <span className="material-symbols-outlined text-[17px]">download</span>
                 </a>
@@ -873,6 +879,7 @@ export default function LeaveDetailPage() {
                     setAttachments((prev) => prev.filter((x) => x.id !== a.id));
                   }}
                   className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  aria-label={t("common.delete")}
                 >
                   <span className="material-symbols-outlined text-[17px]">delete</span>
                 </button>
@@ -885,7 +892,7 @@ export default function LeaveDetailPage() {
       {/* Back link */}
       <Link href="/leave" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary transition-colors">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-        Back to Leave Requests
+        {t("leave.detail.back")}
       </Link>
 
       {/* Return for Correction Modal */}
@@ -905,18 +912,18 @@ export default function LeaveDetailPage() {
                 <span className="material-symbols-outlined text-amber-600 text-[20px]">warning</span>
               </div>
               <div>
-                <h3 className="text-base font-bold text-neutral-900">Insufficient Leave Balance</h3>
-                <p className="text-xs text-neutral-400">Override requires justification</p>
+                <h3 className="text-base font-bold text-neutral-900">{t("leave.detail.insufficientBalance")}</h3>
+                <p className="text-xs text-neutral-400">{t("leave.detail.overrideRequires")}</p>
               </div>
             </div>
             <p className="text-sm text-neutral-600 mb-4 bg-amber-50 rounded-lg px-3 py-2 border border-amber-100">{balanceError}</p>
             <label htmlFor="leave-detail-override-justification" className="block text-sm font-medium text-neutral-700 mb-2">
-              Override Justification <span className="text-red-500">*</span>
+              {t("leave.detail.overrideJustification")} <span className="text-red-500">*</span>
             </label>
             <textarea id="leave-detail-override-justification"
               value={overrideReason}
               onChange={(e) => setOverrideReason(e.target.value)}
-              placeholder="Provide a written justification for overriding the leave balance check…"
+              placeholder={t("leave.detail.overridePlaceholder")}
               rows={3}
               className="form-input resize-none"
             />
@@ -925,14 +932,14 @@ export default function LeaveDetailPage() {
                 onClick={() => { setShowOverrideModal(false); setOverrideReason(""); setBalanceError(null); }}
                 className="btn-secondary flex-1 justify-center"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={() => handleApprove(overrideReason.trim())}
                 disabled={actionLoading || !overrideReason.trim()}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
               >
-                {actionLoading ? "Processing…" : "Approve Anyway"}
+                {actionLoading ? t("leave.detail.processing") : t("leave.detail.approveAnyway")}
               </button>
             </div>
           </div>
@@ -948,14 +955,14 @@ export default function LeaveDetailPage() {
                 <span className="material-symbols-outlined text-red-600 text-[20px]">cancel</span>
               </div>
               <div>
-                <h3 className="text-base font-bold text-neutral-900">Reject Leave Request</h3>
-                <p className="text-xs text-neutral-400">A reason is required</p>
+                <h3 className="text-base font-bold text-neutral-900">{t("leave.detail.rejectTitle")}</h3>
+                <p className="text-xs text-neutral-400">{t("leave.detail.reasonRequired")}</p>
               </div>
             </div>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Enter your reason for rejection…"
+              placeholder={t("leave.detail.rejectPlaceholder")}
               rows={3}
               className="form-input resize-none"
             />
@@ -964,14 +971,14 @@ export default function LeaveDetailPage() {
                 onClick={() => { setShowRejectModal(false); setRejectReason(""); }}
                 className="btn-secondary flex-1 justify-center"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleReject}
                 disabled={actionLoading || !rejectReason.trim()}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                {actionLoading ? "Rejecting…" : "Confirm Rejection"}
+                {actionLoading ? t("leave.detail.rejecting") : t("leave.detail.confirmRejection")}
               </button>
             </div>
           </div>

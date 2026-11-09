@@ -20,6 +20,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function asValidDate(value: string): Date | null {
   const d = new Date(value);
@@ -121,10 +122,34 @@ const TYPE_ICONS: Record<string, string> = {
 };
 
 // ─── Manage types modal ────────────────────────────────────────────────────────
+/** Catalog keys per managed list, so each message is a whole translatable sentence. */
+const MANAGE_KEYS = {
+  eventTypes: {
+    title: "workplan.detail.manage.eventTypes.title",
+    created: "workplan.eventTypes.created",
+    notCreated: "workplan.eventTypes.notCreated",
+    updated: "workplan.eventTypes.updated",
+    notUpdated: "workplan.eventTypes.notUpdated",
+    deleted: "workplan.eventTypes.deleted",
+    notDeleted: "workplan.eventTypes.notDeleted",
+    placeholder: "workplan.detail.manage.eventTypes.placeholder",
+  },
+  meetingCategories: {
+    title: "workplan.detail.manage.meetingCategories.title",
+    created: "workplan.detail.manage.meetingCategories.created",
+    notCreated: "workplan.detail.manage.meetingCategories.notCreated",
+    updated: "workplan.detail.manage.meetingCategories.updated",
+    notUpdated: "workplan.detail.manage.meetingCategories.notUpdated",
+    deleted: "workplan.detail.manage.meetingCategories.deleted",
+    notDeleted: "workplan.detail.manage.meetingCategories.notDeleted",
+    placeholder: "workplan.detail.manage.meetingCategories.placeholder",
+  },
+} as const;
+
 function ManageTypesModal({
-  title, items, onCreate, onUpdate, onDelete, onClose,
+  kind, items, onCreate, onUpdate, onDelete, onClose,
 }: {
-  title: string;
+  kind: keyof typeof MANAGE_KEYS;
   items: { id: number; name: string; locked: boolean }[];
   onCreate: (name: string) => Promise<unknown>;
   onUpdate: (id: number, name: string) => Promise<unknown>;
@@ -133,7 +158,8 @@ function ManageTypesModal({
 }) {
   const { confirm } = useConfirm();
   const toast = useToast();
-  const singular = title.endsWith("ies") ? `${title.slice(0, -3)}y` : title.replace(/s$/, "");
+  const { t } = useI18n();
+  const keys = MANAGE_KEYS[kind];
   const [newName, setNewName] = useState("");
   const [editId, setEditId]   = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -145,11 +171,11 @@ function ManageTypesModal({
     setBusy(true); setErr(null);
     try {
       await onCreate(newName.trim());
-      toast.success(`${singular} created`, newName.trim());
+      toast.success(t(keys.created), newName.trim());
       setNewName("");
     } catch (e) {
-      setErr("Could not create.");
-      toast.error(`${singular} not created`, apiErrorMessage(e, "Could not create."));
+      setErr(t("workplan.detail.manage.createFailed"));
+      toast.error(t(keys.notCreated), apiErrorMessage(e, t("workplan.detail.manage.createFailed")));
     }
     finally { setBusy(false); }
   };
@@ -159,24 +185,24 @@ function ManageTypesModal({
     setBusy(true); setErr(null);
     try {
       await onUpdate(editId, editName.trim());
-      toast.success(`${singular} updated`, editName.trim());
+      toast.success(t(keys.updated), editName.trim());
       setEditId(null);
     } catch (e) {
-      setErr("Could not update.");
-      toast.error(`${singular} not updated`, apiErrorMessage(e, "Could not update."));
+      setErr(t("workplan.detail.manage.updateFailed"));
+      toast.error(t(keys.notUpdated), apiErrorMessage(e, t("workplan.detail.manage.updateFailed")));
     }
     finally { setBusy(false); }
   };
 
   const doDelete = async (id: number) => {
-    if (!(await confirm({ title: "Delete item", message: "Delete this item?", variant: "danger" }))) return;
+    if (!(await confirm({ title: t("workplan.detail.manage.deleteTitle"), message: t("workplan.detail.manage.deleteMessage"), variant: "danger" }))) return;
     setBusy(true); setErr(null);
     try {
       await onDelete(id);
-      toast.success(`${singular} deleted`);
+      toast.success(t(keys.deleted));
     } catch (e) {
-      setErr("Could not delete.");
-      toast.error(`${singular} not deleted`, apiErrorMessage(e, "Could not delete."));
+      setErr(t("workplan.detail.manage.deleteFailed"));
+      toast.error(t(keys.notDeleted), apiErrorMessage(e, t("workplan.detail.manage.deleteFailed")));
     }
     finally { setBusy(false); }
   };
@@ -185,8 +211,8 @@ function ManageTypesModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-          <h3 className="font-semibold text-neutral-900">Manage {title}</h3>
-          <button onClick={onClose} aria-label="Close manager" className="text-neutral-400 hover:text-neutral-600">
+          <h3 className="font-semibold text-neutral-900">{t(keys.title)}</h3>
+          <button onClick={onClose} aria-label={t("workplan.detail.manage.closeAria")} className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -200,27 +226,27 @@ function ManageTypesModal({
                     <input autoFocus className="form-input flex-1 py-1 text-sm" value={editName}
                       onChange={(e) => setEditName(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") doUpdate(); if (e.key === "Escape") setEditId(null); }} />
-                    <button type="button" disabled={busy} onClick={doUpdate} className="btn-secondary text-xs py-1 px-2 disabled:opacity-50">Save</button>
-                    <button type="button" onClick={() => setEditId(null)} className="btn-secondary text-xs py-1 px-2">Cancel</button>
+                    <button type="button" disabled={busy} onClick={doUpdate} className="btn-secondary text-xs py-1 px-2 disabled:opacity-50">{t("common.save")}</button>
+                    <button type="button" onClick={() => setEditId(null)} className="btn-secondary text-xs py-1 px-2">{t("common.cancel")}</button>
                   </>
                 ) : (
                   <>
                     <span className="flex-1 text-sm font-medium text-neutral-800">{item.name}</span>
-                    {item.locked && <span className="text-[10px] text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">system</span>}
-                    <button type="button" onClick={() => { setEditId(item.id); setEditName(item.name); }} className="btn-secondary text-xs py-1 px-2">Edit</button>
-                    <button type="button" disabled={busy} onClick={() => doDelete(item.id)} className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50">Delete</button>
+                    {item.locked && <span className="text-[10px] text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">{t("workplan.eventTypes.system")}</span>}
+                    <button type="button" onClick={() => { setEditId(item.id); setEditName(item.name); }} className="btn-secondary text-xs py-1 px-2">{t("common.edit")}</button>
+                    <button type="button" disabled={busy} onClick={() => doDelete(item.id)} className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50">{t("common.delete")}</button>
                   </>
                 )}
               </div>
             ))}
-            {items.length === 0 && <p className="text-xs text-neutral-400 text-center py-4">No items yet.</p>}
+            {items.length === 0 && <p className="text-xs text-neutral-400 text-center py-4">{t("workplan.detail.manage.empty")}</p>}
           </div>
           <div className="flex gap-2 pt-1 border-t border-neutral-100">
-            <input className="form-input flex-1 text-sm" placeholder={`New ${title.replace(/s$/, "")} name…`}
+            <input className="form-input flex-1 text-sm" placeholder={t(keys.placeholder)}
               value={newName} onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") doCreate(); }} />
             <button type="button" disabled={busy || !newName.trim()} onClick={doCreate}
-              className="btn-primary px-4 py-2 text-sm disabled:opacity-50">Add</button>
+              className="btn-primary px-4 py-2 text-sm disabled:opacity-50">{t("common.add")}</button>
           </div>
         </div>
       </div>
@@ -230,6 +256,7 @@ function ManageTypesModal({
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function WorkplanEventDetailPage() {
+  const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
@@ -278,11 +305,12 @@ export default function WorkplanEventDetailPage() {
       setSelectedResponsibleUsers((ev.responsible_users ?? []).map((u) => ({ id: u.id, name: u.name, email: u.email })));
       setAttachments(ev.attachments ?? []);
     } catch {
-      setError("Failed to load event.");
+      setError(t("workplan.detail.loadFailed"));
       setEvent(null);
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, router]);
 
   useEffect(() => { loadEvent(); }, [loadEvent]);
@@ -324,11 +352,11 @@ export default function WorkplanEventDetailPage() {
         responsible_user_ids: responsibleUserIds,
       });
       setEditMode(false);
-      toast.success("Event updated");
+      toast.success(t("workplan.detail.updated"));
       loadEvent();
     } catch (err) {
-      setError("Failed to update.");
-      toast.error("Event not updated", apiErrorMessage(err, "Failed to update."));
+      setError(t("workplan.detail.updateFailed"));
+      toast.error(t("workplan.detail.notUpdated"), apiErrorMessage(err, t("workplan.detail.updateFailed")));
     } finally {
       setSaving(false);
     }
@@ -341,11 +369,11 @@ export default function WorkplanEventDetailPage() {
       for (const file of Array.from(e.target.files)) await workplanAttachmentsApi.upload(event.id, file);
       const listRes = await workplanAttachmentsApi.list(event.id);
       setAttachments(listRes.data?.data ?? []);
-      toast.success("File(s) uploaded");
+      toast.success(t("workplan.detail.uploaded"));
       loadEvent();
     } catch (err) {
-      setError("Failed to upload file(s).");
-      toast.error("File(s) not uploaded", apiErrorMessage(err, "Failed to upload file(s)."));
+      setError(t("workplan.detail.uploadFailed"));
+      toast.error(t("workplan.detail.notUploaded"), apiErrorMessage(err, t("workplan.detail.uploadFailed")));
     }
     finally { setUploading(false); e.target.value = ""; }
   };
@@ -355,10 +383,10 @@ export default function WorkplanEventDetailPage() {
     try {
       await workplanAttachmentsApi.delete(event.id, attachmentId);
       setAttachments((p) => p.filter((a) => a.id !== attachmentId));
-      toast.success("Attachment deleted");
+      toast.success(t("workplan.detail.attachmentDeleted"));
     } catch (err) {
-      setError("Failed to delete attachment.");
-      toast.error("Attachment not deleted", apiErrorMessage(err, "Failed to delete attachment."));
+      setError(t("workplan.detail.attachmentDeleteFailed"));
+      toast.error(t("workplan.detail.attachmentNotDeleted"), apiErrorMessage(err, t("workplan.detail.attachmentDeleteFailed")));
     }
   };
 
@@ -370,7 +398,7 @@ export default function WorkplanEventDetailPage() {
       const link = document.createElement("a");
       link.href = url; link.download = a.original_filename; link.click();
       URL.revokeObjectURL(url);
-    } catch { setError("Failed to download file."); }
+    } catch { setError(t("workplan.detail.downloadFailed")); }
   };
 
   // ─── Loading / error states ───────────────────────────────────────────────
@@ -391,7 +419,7 @@ export default function WorkplanEventDetailPage() {
     return (
       <div className="space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
-        <Link href="/workplan" className="btn-secondary text-sm">Back to Workplan</Link>
+        <Link href="/workplan" className="btn-secondary text-sm">{t("workplan.detail.back")}</Link>
       </div>
     );
   }
@@ -410,14 +438,14 @@ export default function WorkplanEventDetailPage() {
     : (nowMs > startMs ? 100 : 0);
   const isUpcoming = startMs > nowMs;
   const isPast     = endMs < nowMs;
-  const statusLabel = isUpcoming ? "Upcoming" : isPast ? "Completed" : "In Progress";
+  const statusLabel = isUpcoming ? t("workplan.detail.status.upcoming") : isPast ? t("workplan.detail.status.completed") : t("workplan.detail.status.inProgress");
   const statusColor = isUpcoming ? "bg-blue-100 text-blue-700 border-blue-200" : isPast ? "bg-green-100 text-green-700 border-green-200" : "bg-amber-100 text-amber-700 border-amber-200";
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={event.title}
-        subtitle={`${formatDate(event.date)}${event.end_date ? ` – ${formatDate(event.end_date)}` : ""}${durationDays > 0 ? ` · ${durationDays} day${durationDays !== 1 ? "s" : ""}` : ""}`}
+        subtitle={`${formatDate(event.date)}${event.end_date ? ` – ${formatDate(event.end_date)}` : ""}${durationDays > 0 ? ` · ${durationDays === 1 ? t("workplan.detail.dayOne") : t("workplan.detail.dayMany", { count: durationDays })}` : ""}`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
@@ -448,37 +476,37 @@ export default function WorkplanEventDetailPage() {
           <button
             type="button"
             onClick={() => downloadICS(event)}
-            title="Download .ics (Apple Calendar / Outlook)"
+            title={t("workplan.detail.icsTitle")}
             className="btn-secondary flex items-center gap-1.5 text-sm"
           >
             <span className="material-symbols-outlined text-[16px]">event</span>
-            Add to Calendar
+            {t("workplan.detail.addToCalendar")}
           </button>
           <a
             href={googleCalendarUrl(event)}
             target="_blank"
             rel="noopener noreferrer"
-            title="Add to Google Calendar"
+            title={t("workplan.detail.googleTitle")}
             className="btn-secondary flex items-center gap-1.5 text-sm"
           >
             <span className="material-symbols-outlined text-[16px]">calendar_month</span>
-            Google
+            Google{/* i18n-ignore */}
           </a>
           {!editMode ? (
             <>
               <button type="button" onClick={() => setEditMode(true)} className="btn-secondary flex items-center gap-1.5 text-sm">
                 <span className="material-symbols-outlined text-[18px]">edit</span>
-                Edit
+                {t("common.edit")}
               </button>
               <label htmlFor="workplan-attach" className="btn-primary flex items-center gap-1.5 text-sm cursor-pointer">
                 <span className="material-symbols-outlined text-[18px]">upload_file</span>
-                {uploading ? "Uploading…" : "Attach File"}
+                {uploading ? t("workplan.detail.uploading") : t("workplan.detail.attachFile")}
                 <input id="workplan-attach" type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
               </label>
             </>
           ) : (
             <button type="button" onClick={() => setEditMode(false)} className="btn-secondary text-sm">
-              Cancel Edit
+              {t("workplan.detail.cancelEdit")}
             </button>
           )}
         </div>
@@ -497,7 +525,7 @@ export default function WorkplanEventDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="card p-5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-neutral-500 font-medium">Timeline Progress</p>
+              <p className="text-xs text-neutral-500 font-medium">{t("workplan.detail.timelineProgress")}</p>
               <span className="material-symbols-outlined text-neutral-300 text-[18px]">timeline</span>
             </div>
             <p className="text-xl font-bold text-neutral-900">{Math.round(timelinePercent)}%</p>
@@ -512,7 +540,7 @@ export default function WorkplanEventDetailPage() {
 
           <div className="card p-5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-neutral-500 font-medium">Responsible Staff</p>
+              <p className="text-xs text-neutral-500 font-medium">{t("workplan.detail.responsibleStaff")}</p>
               <span className="material-symbols-outlined text-neutral-300 text-[18px]">groups</span>
             </div>
             <p className="text-xl font-bold text-neutral-900">{event.responsible_users?.length ?? 0}</p>
@@ -529,19 +557,19 @@ export default function WorkplanEventDetailPage() {
                 </div>
               )}
               {(event.responsible_users?.length ?? 0) === 0 && (
-                <p className="text-xs text-neutral-400">Not assigned</p>
+                <p className="text-xs text-neutral-400">{t("workplan.detail.notAssigned")}</p>
               )}
             </div>
           </div>
 
           <div className="card p-5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-neutral-500 font-medium">Documents</p>
+              <p className="text-xs text-neutral-500 font-medium">{t("workplan.detail.documents")}</p>
               <span className="material-symbols-outlined text-neutral-300 text-[18px]">attach_file</span>
             </div>
             <p className="text-xl font-bold text-neutral-900">{attachments.length}</p>
             <p className="text-xs text-neutral-400 mt-1">
-              {attachments.length === 0 ? "No attachments yet" : `${attachments.length} file${attachments.length !== 1 ? "s" : ""} attached`}
+              {attachments.length === 0 ? t("workplan.detail.noAttachments") : attachments.length === 1 ? t("workplan.detail.fileAttachedOne") : t("workplan.detail.fileAttachedMany", { count: attachments.length })}
             </p>
           </div>
         </div>
@@ -551,14 +579,14 @@ export default function WorkplanEventDetailPage() {
       {editMode ? (
         <form onSubmit={handleSave} className="card p-5 space-y-4">
           <div>
-            <label htmlFor="workplan-detail-title" className="block text-sm font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
+            <label htmlFor="workplan-detail-title" className="block text-sm font-semibold text-neutral-700 mb-1">{t("workplan.detail.titleLabel")} <span className="text-red-500">*</span></label>
             <input id="workplan-detail-title" type="text" className="form-input w-full" value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label htmlFor="workplan-detail-event-type" className="block text-sm font-semibold text-neutral-700">Event type <span className="text-red-500">*</span></label>
+              <label htmlFor="workplan-detail-event-type" className="block text-sm font-semibold text-neutral-700">{t("workplan.detail.eventType")} <span className="text-red-500">*</span></label>
               <button type="button" onClick={() => setManageEventTypes(true)} className="btn-secondary text-xs py-1 px-2 flex items-center gap-0.5">
-                <span className="material-symbols-outlined text-[13px]">settings</span>Manage
+                <span className="material-symbols-outlined text-[13px]">settings</span>{t("workplan.detail.manage")}
               </button>
             </div>
             <select id="workplan-detail-event-type" className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as WorkplanEvent["type"])}>
@@ -568,46 +596,46 @@ export default function WorkplanEventDetailPage() {
           {type === "meeting" && (
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label htmlFor="workplan-detail-meeting-category" className="block text-sm font-semibold text-neutral-700">Meeting Category</label>
+                <label htmlFor="workplan-detail-meeting-category" className="block text-sm font-semibold text-neutral-700">{t("workplan.new.meetingCategory")}</label>
                 <button type="button" onClick={() => setManageMeetingTypes(true)} className="btn-secondary text-xs py-1 px-2 flex items-center gap-0.5">
-                  <span className="material-symbols-outlined text-[13px]">settings</span>Manage
+                  <span className="material-symbols-outlined text-[13px]">settings</span>{t("workplan.detail.manage")}
                 </button>
               </div>
               <select id="workplan-detail-meeting-category" className="form-input w-full" value={meetingTypeId}
                 onChange={(e) => setMeetingTypeId(e.target.value === "" ? "" : Number(e.target.value))}>
-                <option value="">— Select —</option>
+                <option value="">{t("workplan.new.select")}</option>
                 {meetingTypes.map((mt) => <option key={mt.id} value={mt.id}>{mt.name}</option>)}
               </select>
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="workplan-detail-date" className="block text-sm font-semibold text-neutral-700 mb-1">Date <span className="text-red-500">*</span></label>
+              <label htmlFor="workplan-detail-date" className="block text-sm font-semibold text-neutral-700 mb-1">{t("workplan.detail.dateLabel")} <span className="text-red-500">*</span></label>
               <input id="workplan-detail-date" type="date" className="form-input w-full" value={date} onChange={(e) => setDate(e.target.value)} required />
             </div>
             <div>
-              <label htmlFor="workplan-detail-end-date" className="block text-sm font-semibold text-neutral-700 mb-1">End date</label>
+              <label htmlFor="workplan-detail-end-date" className="block text-sm font-semibold text-neutral-700 mb-1">{t("common.endDate")}</label>
               <input id="workplan-detail-end-date" type="date" className="form-input w-full" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
           </div>
           <div>
-            <label htmlFor="workplan-detail-description" className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
+            <label htmlFor="workplan-detail-description" className="block text-sm font-semibold text-neutral-700 mb-1">{t("workplan.meetingTypes.description")}</label>
             <textarea id="workplan-detail-description" className="form-input w-full min-h-[100px] resize-y" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="workplan-detail-responsible-search" className="block text-sm font-semibold text-neutral-700 mb-1">Responsible persons</label>
+            <label htmlFor="workplan-detail-responsible-search" className="block text-sm font-semibold text-neutral-700 mb-1">{t("workplan.new.responsible")}</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {selectedResponsibleUsers.map((u) => (
                 <span key={u.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-sm">
                   {u.name}
-                  <button type="button" onClick={() => removeResponsible(u.id)} aria-label={`Remove ${u.name}`}>
+                  <button type="button" onClick={() => removeResponsible(u.id)} aria-label={t("workplan.new.removePerson", { name: u.name })}>
                     <span className="material-symbols-outlined text-[16px]">close</span>
                   </button>
                 </span>
               ))}
             </div>
             <div className="relative">
-              <input id="workplan-detail-responsible-search" type="text" className="form-input w-full" placeholder="Search by name or email…"
+              <input id="workplan-detail-responsible-search" type="text" className="form-input w-full" placeholder={t("workplan.detail.searchPlaceholder")}
                 value={userSearch}
                 onChange={(e) => { setUserSearch(e.target.value); setResponsibleSearchOpen(true); }}
                 onFocus={() => setResponsibleSearchOpen(true)} />
@@ -625,9 +653,9 @@ export default function WorkplanEventDetailPage() {
           </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={saving} className="btn-primary px-4 py-2 text-sm disabled:opacity-50">
-              {saving ? "Saving…" : "Save changes"}
+              {saving ? t("workplan.types.saving") : t("workplan.detail.saveChanges")}
             </button>
-            <button type="button" onClick={() => setEditMode(false)} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+            <button type="button" onClick={() => setEditMode(false)} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
           </div>
         </form>
       ) : (
@@ -638,12 +666,12 @@ export default function WorkplanEventDetailPage() {
             <div className="card p-5">
               <div className="flex items-center gap-2 mb-3">
                 <span className="material-symbols-outlined text-primary text-[18px]">description</span>
-                <h3 className="text-sm font-semibold text-neutral-800">Description</h3>
+                <h3 className="text-sm font-semibold text-neutral-800">{t("workplan.meetingTypes.description")}</h3>
               </div>
               {event.description ? (
                 <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap">{event.description}</p>
               ) : (
-                <p className="text-sm text-neutral-400 italic">No description provided.</p>
+                <p className="text-sm text-neutral-400 italic">{t("workplan.detail.noDescription")}</p>
               )}
             </div>
 
@@ -652,7 +680,7 @@ export default function WorkplanEventDetailPage() {
               <div className="card p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="material-symbols-outlined text-primary text-[18px]">groups</span>
-                  <h3 className="text-sm font-semibold text-neutral-800">Responsible Staff</h3>
+                  <h3 className="text-sm font-semibold text-neutral-800">{t("workplan.detail.responsibleStaff")}</h3>
                   <span className="text-xs bg-neutral-100 text-neutral-500 rounded-full px-2 py-0.5">{event.responsible_users?.length}</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -675,17 +703,17 @@ export default function WorkplanEventDetailPage() {
           {/* Right: metadata */}
           <div className="space-y-4">
             <div className="card p-5 space-y-3">
-              <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Event Details</h3>
+              <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">{t("workplan.detail.eventDetails")}</h3>
               <div className="space-y-2.5">
                 {[
-                  { icon: "calendar_today",   label: "Start Date",   val: formatDate(event.date) },
-                  { icon: "event",             label: "End Date",     val: event.end_date ? formatDate(event.end_date) : "—" },
-                  { icon: "category",          label: "Type",         val: event.type },
-                  { icon: "label",             label: "Category",     val: event.meeting_type?.name ?? "—" },
-                  { icon: "person",            label: "Created by",   val: event.creator?.name ?? "—" },
-                  { icon: "attach_file",       label: "Attachments",  val: `${attachments.length} file${attachments.length !== 1 ? "s" : ""}` },
+                  { icon: "calendar_today",   label: t("workplan.detail.startDate"),   val: formatDate(event.date) },
+                  { icon: "event",             label: t("workplan.detail.endDate"),     val: event.end_date ? formatDate(event.end_date) : "—" },
+                  { icon: "category",          label: t("workplan.eventTypes.col.type"),         val: event.type },
+                  { icon: "label",             label: t("workplan.detail.category"),     val: event.meeting_type?.name ?? "—" },
+                  { icon: "person",            label: t("workplan.detail.createdBy"),   val: event.creator?.name ?? "—" },
+                  { icon: "attach_file",       label: t("workplan.detail.attachments"),  val: attachments.length === 1 ? t("hr.documents.fileOne") : t("hr.documents.fileMany", { count: attachments.length }) },
                 ].map(({ icon, label, val }) => (
-                  <div key={label} className="flex items-center gap-3">
+                  <div key={icon} className="flex items-center gap-3">
                     <span className="material-symbols-outlined text-neutral-300 text-[16px] flex-shrink-0">{icon}</span>
                     <div className="flex-1 flex items-center justify-between">
                       <span className="text-xs text-neutral-400">{label}</span>
@@ -705,21 +733,21 @@ export default function WorkplanEventDetailPage() {
           <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-neutral-50">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px] text-neutral-400">attach_file</span>
-              <span className="text-sm font-semibold text-neutral-700">Attachments</span>
+              <span className="text-sm font-semibold text-neutral-700">{t("workplan.detail.attachments")}</span>
               {attachments.length > 0 && (
                 <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full">{attachments.length}</span>
               )}
             </div>
             <label htmlFor="workplan-detail-upload-file" className={cn("btn-secondary text-xs flex items-center gap-1.5 cursor-pointer", uploading ? "opacity-50 pointer-events-none" : "")}>
               <span className="material-symbols-outlined text-[16px]">upload_file</span>
-              {uploading ? "Uploading…" : "Upload"}
+              {uploading ? t("workplan.detail.uploading") : t("common.upload")}
               <input id="workplan-detail-upload-file" type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
             </label>
           </div>
           {attachments.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 text-neutral-300">
               <span className="material-symbols-outlined text-[32px]">attach_file</span>
-              <p className="text-sm text-neutral-400">No documents attached yet.</p>
+              <p className="text-sm text-neutral-400">{t("workplan.detail.noDocuments")}</p>
             </div>
           ) : (
             <ul className="divide-y divide-neutral-50">
@@ -733,11 +761,11 @@ export default function WorkplanEventDetailPage() {
                     <button type="button" onClick={() => handleDownloadAttachment(a)}
                       className="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
                       <span className="material-symbols-outlined text-[14px]">download</span>
-                      Download
+                      {t("common.download")}
                     </button>
                     <button type="button" onClick={() => handleDeleteAttachment(a.id)}
                       className="btn-secondary text-xs py-1 px-2 text-red-600">
-                      Remove
+                      {t("workplan.detail.remove")}
                     </button>
                   </div>
                 </li>
@@ -751,12 +779,12 @@ export default function WorkplanEventDetailPage() {
       <div>
         <Link href="/workplan" className="text-sm text-neutral-500 hover:text-primary transition-colors flex items-center gap-1">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Workplan
+          {t("workplan.detail.back")}
         </Link>
       </div>
 
       {manageEventTypes && (
-        <ManageTypesModal title="Event Types"
+        <ManageTypesModal kind="eventTypes"
           items={eventTypes.map((et) => ({ id: et.id, name: et.name, locked: et.is_system }))}
           onCreate={(name) => workplanEventTypesApi.create({ name }).then(() => reloadEventTypes())}
           onUpdate={(id, name) => workplanEventTypesApi.update(id, { name }).then(() => reloadEventTypes())}
@@ -764,7 +792,7 @@ export default function WorkplanEventDetailPage() {
           onClose={() => setManageEventTypes(false)} />
       )}
       {manageMeetingTypes && (
-        <ManageTypesModal title="Meeting Categories"
+        <ManageTypesModal kind="meetingCategories"
           items={meetingTypes.map((mt) => ({ id: mt.id, name: mt.name, locked: false }))}
           onCreate={(name) => workplanMeetingTypesApi.create({ name }).then(() => reloadMeetingTypes())}
           onUpdate={(id, name) => workplanMeetingTypesApi.update(id, { name }).then(() => reloadMeetingTypes())}

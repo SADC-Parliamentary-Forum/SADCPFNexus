@@ -6,6 +6,7 @@ import { weeklySummaryApi, WeeklySummaryRun } from "@/lib/api";
 import { formatDate, formatDateRelative } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_BADGE: Record<string, string> = {
   running:   "badge-warning",
@@ -16,6 +17,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function AdminWeeklySummaryPage() {
+  const { t } = useI18n();
   const { success, error, info } = useToast();
   const [runs, setRuns]         = useState<WeeklySummaryRun[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -56,10 +58,10 @@ export default function AdminWeeklySummaryPage() {
     setTriggering(true);
     try {
       await weeklySummaryApi.triggerRun();
-      success("Weekly summary run queued. Refresh in a few moments.");
+      success(t("admin.weeklySummary.queued"));
       setTimeout(() => loadRuns(), 2000);
     } catch {
-      error("Failed to queue run. Check your permissions.");
+      error(t("admin.weeklySummary.queueFailed"));
     } finally {
       setTriggering(false);
     }
@@ -72,14 +74,14 @@ export default function AdminWeeklySummaryPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader
-        title="Weekly Summary"
-        subtitle="Trigger and monitor institutional summary email batches"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Weekly Summary" }]} />}
+        title={t("admin.weeklySummary.title")}
+        subtitle={t("admin.weeklySummary.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("admin.weeklySummary.title") }]} />}
       />
         <div className="flex gap-2">
           <button onClick={() => loadRuns()} className="btn-secondary flex items-center gap-1">
             <span className="material-symbols-outlined text-base">refresh</span>
-            Refresh
+            {t("admin.common.refresh")}
           </button>
           <button
             onClick={handleTrigger}
@@ -91,7 +93,7 @@ export default function AdminWeeklySummaryPage() {
             ) : (
               <span className="material-symbols-outlined text-base">send</span>
             )}
-            {triggering ? "Queuing…" : "Trigger Run"}
+            {triggering ? t("admin.weeklySummary.queuing") : t("admin.weeklySummary.trigger")}
           </button>
         </div>
       </div>
@@ -100,15 +102,15 @@ export default function AdminWeeklySummaryPage() {
       {runs.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Total Users",     value: runs[0].total_users,     icon: "group" },
-            { label: "Generated",       value: runs[0].total_generated, icon: "description" },
-            { label: "Sent",            value: runs[0].total_sent,      icon: "mark_email_read" },
-            { label: "Failed",          value: runs[0].total_failed,    icon: "error", warn: runs[0].total_failed > 0 },
+            { label: "admin.weeklySummary.totalUsers", value: runs[0].total_users,     icon: "group" },
+            { label: "admin.weeklySummary.generated",  value: runs[0].total_generated, icon: "description" },
+            { label: "admin.weeklySummary.sent",       value: runs[0].total_sent,      icon: "mark_email_read" },
+            { label: "admin.weeklySummary.failed",     value: runs[0].total_failed,    icon: "error", warn: runs[0].total_failed > 0 },
           ].map((s) => (
             <div key={s.label} className={`card p-4 text-center ${s.warn ? "border-red-200" : ""}`}>
               <span className={`material-symbols-outlined text-2xl ${s.warn ? "text-red-500" : "text-primary"}`}>{s.icon}</span>
               <div className={`text-3xl font-bold mt-1 ${s.warn ? "text-red-600" : "text-neutral-900"}`}>{s.value}</div>
-              <div className="text-xs text-neutral-500 mt-1">{s.label} (latest run)</div>
+              <div className="text-xs text-neutral-500 mt-1">{t("admin.weeklySummary.latestRun", { label: t(s.label) })}</div>
             </div>
           ))}
         </div>
@@ -118,25 +120,25 @@ export default function AdminWeeklySummaryPage() {
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-200 flex items-center gap-2">
           <span className="material-symbols-outlined text-neutral-500">history</span>
-          <h2 className="font-semibold text-neutral-800">Run History</h2>
+          <h2 className="font-semibold text-neutral-800">{t("admin.weeklySummary.history")}</h2>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-neutral-400">Loading…</div>
+          <div className="p-8 text-center text-neutral-400">{t("common.loading")}</div>
         ) : runs.length === 0 ? (
-          <EmptyState icon="history" title="No runs yet." description="Trigger the first one above." />
+          <EmptyState icon="history" title={t("admin.weeklySummary.empty")} description={t("admin.weeklySummary.emptyDesc")} />
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Period</th>
-                <th>Status</th>
-                <th>Users</th>
-                <th>Generated</th>
-                <th>Sent</th>
-                <th>Failed</th>
-                <th>Started</th>
-                <th>Completed</th>
+                <th>{t("admin.weeklySummary.period")}</th>
+                <th>{t("admin.common.status")}</th>
+                <th>{t("admin.weeklySummary.users")}</th>
+                <th>{t("admin.weeklySummary.generated")}</th>
+                <th>{t("admin.weeklySummary.sent")}</th>
+                <th>{t("admin.weeklySummary.failed")}</th>
+                <th>{t("admin.weeklySummary.started")}</th>
+                <th>{t("admin.weeklySummary.completed")}</th>
               </tr>
             </thead>
             <tbody>
@@ -169,13 +171,13 @@ export default function AdminWeeklySummaryPage() {
               onClick={() => { setPage(p => Math.max(1, p - 1)); loadRuns(Math.max(1, page - 1)); }}
               disabled={page <= 1}
               className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40"
-            >Previous</button>
-            <span className="text-sm text-neutral-500 self-center">Page {page} / {lastPage}</span>
+            >{t("common.previous")}</button>
+            <span className="text-sm text-neutral-500 self-center">{t("admin.common.pageSlash", { page, total: lastPage })}</span>
             <button
               onClick={() => { setPage(p => Math.min(lastPage, p + 1)); loadRuns(Math.min(lastPage, page + 1)); }}
               disabled={page >= lastPage}
               className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40"
-            >Next</button>
+            >{t("common.next")}</button>
           </div>
         )}
       </div>

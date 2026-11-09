@@ -9,10 +9,22 @@ import { useFormatDate } from "@/lib/useFormatDate";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { TranslateVars } from "@/lib/i18n/messages";
+
+type Translate = (key: string, vars?: TranslateVars) => string;
 
 // ─── Alerts helpers ──────────────────────────────────────────────────────────
 
-const DAYS_LABEL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS_LABEL = [
+  "notifications.day.sun",
+  "notifications.day.mon",
+  "notifications.day.tue",
+  "notifications.day.wed",
+  "notifications.day.thu",
+  "notifications.day.fri",
+  "notifications.day.sat",
+];
 
 function daysUntil(dateStr: string): number {
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -21,10 +33,11 @@ function daysUntil(dateStr: string): number {
 }
 
 function DeadlineBadge({ days }: { days: number }) {
-  if (days < 0)  return <span className="badge badge-danger">Overdue</span>;
-  if (days < 3)  return <span className="badge badge-danger">{days}d left</span>;
-  if (days <= 7) return <span className="badge badge-warning">{days}d left</span>;
-  return <span className="badge badge-success">{days}d left</span>;
+  const { t } = useI18n();
+  if (days < 0)  return <span className="badge badge-danger">{t("notifications.alerts.overdue")}</span>;
+  if (days < 3)  return <span className="badge badge-danger">{t("notifications.alerts.daysLeft", { days })}</span>;
+  if (days <= 7) return <span className="badge badge-warning">{t("notifications.alerts.daysLeft", { days })}</span>;
+  return <span className="badge badge-success">{t("notifications.alerts.daysLeft", { days })}</span>;
 }
 
 function initials(name: string): string {
@@ -42,21 +55,22 @@ const MODULE_ICONS: Record<string, { icon: string; color: string; bg: string }> 
   finance:     { icon: "payments",               color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
 };
 
-function timeAgo(iso: string, fmt: (d: string) => string): string {
+function timeAgo(iso: string, fmt: (d: string) => string, t: Translate): string {
   const diff  = Date.now() - new Date(iso).getTime();
   const mins  = Math.floor(diff / 60_000);
   const hours = Math.floor(diff / 3_600_000);
   const days  = Math.floor(diff / 86_400_000);
-  if (mins < 1)   return "Just now";
-  if (mins < 60)  return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7)   return `${days}d ago`;
+  if (mins < 1)   return t("notifications.time.justNow");
+  if (mins < 60)  return t("notifications.time.minutes", { n: mins });
+  if (hours < 24) return t("notifications.time.hours", { n: hours });
+  if (days < 7)   return t("notifications.time.days", { n: days });
   return fmt(iso);
 }
 
 // ─── Alerts tab ──────────────────────────────────────────────────────────────
 
 function AlertsTab() {
+  const { t } = useI18n();
   const { fmt } = useFormatDate();
   const [summary, setSummary] = useState<AlertsSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,9 +79,9 @@ function AlertsTab() {
   const fetchSummary = useCallback(() => {
     alertsApi.getSummary()
       .then((r) => { setSummary(r.data); setError(null); })
-      .catch(() => setError("Failed to load alerts."))
+      .catch(() => setError(t("notifications.alerts.loadFailed")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchSummary();
@@ -85,7 +99,7 @@ function AlertsTab() {
     return (
       <div className="py-8 text-center text-sm text-neutral-400 flex items-center justify-center gap-2">
         <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-        Loading…
+        {t("common.loading")}
       </div>
     );
   }
@@ -97,29 +111,29 @@ function AlertsTab() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1">
           <div className="card p-4 text-center">
             <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">{loading ? "—" : awayToday.length}</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Staff Away Today</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{t("notifications.alerts.awayToday")}</p>
           </div>
           <div className="card p-4 text-center">
             <p className="text-3xl font-bold text-teal-600">{loading ? "—" : activeMissions.length}</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Active Missions</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{t("notifications.alerts.activeMissions")}</p>
           </div>
           <div className="card p-4 text-center">
             <p className="text-3xl font-bold text-red-500">{loading ? "—" : urgentDeadlines}</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Urgent Deadlines</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{t("notifications.alerts.urgentDeadlines")}</p>
           </div>
           <div className="card p-4 text-center">
             <p className="text-3xl font-bold text-primary">{loading ? "—" : weekEvents.length}</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Events This Week</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{t("notifications.alerts.eventsWeek")}</p>
           </div>
         </div>
         <div className="ml-4 flex-shrink-0">
           <button
             onClick={fetchSummary}
             className="btn-secondary py-2 px-3 text-xs flex items-center gap-1"
-            title="Refresh"
+            title={t("admin.common.refresh")}
           >
             <span className="material-symbols-outlined text-[15px]">refresh</span>
-            Refresh
+            {t("admin.common.refresh")}
           </button>
         </div>
       </div>
@@ -134,12 +148,12 @@ function AlertsTab() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/20">
                 <span className="material-symbols-outlined text-amber-600 text-[18px]">person_off</span>
               </div>
-              <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Who&apos;s Away Today</h2>
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("notifications.alerts.whosAway")}</h2>
             </div>
-            <span className="text-xs text-neutral-400">{awayToday.length} staff absent</span>
+            <span className="text-xs text-neutral-400">{t("notifications.alerts.staffAbsent", { count: awayToday.length })}</span>
           </div>
           {loading ? <Spinner /> : awayToday.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">All staff are present today.</p>
+            <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">{t("notifications.alerts.allPresent")}</p>
           ) : (
             <div className="divide-y divide-neutral-100 dark:divide-neutral-700/50">
               {awayToday.map((s, i) => (
@@ -149,10 +163,10 @@ function AlertsTab() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{s.name}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Until {fmt(s.to_date)}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t("notifications.alerts.until", { date: fmt(s.to_date) })}</p>
                   </div>
                   <span className={`badge ${s.type === "leave" ? "badge-warning" : "badge-primary"} capitalize`}>
-                    {s.type === "leave" ? "On Leave" : "On Mission"}
+                    {s.type === "leave" ? t("notifications.alerts.onLeave") : t("notifications.alerts.onMission")}
                   </span>
                 </div>
               ))}
@@ -167,17 +181,17 @@ function AlertsTab() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-900/20">
                 <span className="material-symbols-outlined text-teal-600 text-[18px]">flight_takeoff</span>
               </div>
-              <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Active Missions Board</h2>
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("notifications.alerts.missionsBoard")}</h2>
             </div>
-            <span className="text-xs text-neutral-400">{activeMissions.length} in progress</span>
+            <span className="text-xs text-neutral-400">{t("notifications.alerts.inProgress", { count: activeMissions.length })}</span>
           </div>
           {loading ? <Spinner /> : activeMissions.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">No active missions at this time.</p>
+            <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">{t("notifications.alerts.noMissions")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
-                  <tr><th>Traveller</th><th>Destination</th><th>Departure</th><th>Return</th></tr>
+                  <tr><th>{t("notifications.alerts.traveller")}</th><th>{t("notifications.alerts.destination")}</th><th>{t("notifications.alerts.departure")}</th><th>{t("notifications.alerts.return")}</th></tr>
                 </thead>
                 <tbody>
                   {activeMissions.map((m) => (
@@ -205,12 +219,12 @@ function AlertsTab() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20">
               <span className="material-symbols-outlined text-red-500 text-[18px]">timer</span>
             </div>
-            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Upcoming Deadlines</h2>
+            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("notifications.alerts.upcomingDeadlines")}</h2>
           </div>
-          <span className="text-xs text-neutral-400">Next 14 days</span>
+          <span className="text-xs text-neutral-400">{t("notifications.alerts.next14")}</span>
         </div>
         {loading ? <Spinner /> : deadlines.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">No upcoming deadlines in the next 14 days.</p>
+          <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">{t("notifications.alerts.noDeadlines")}</p>
         ) : (
           <div className="divide-y divide-neutral-100 dark:divide-neutral-700/50">
             {[...deadlines].sort((a, b) => daysUntil(a.deadline_date) - daysUntil(b.deadline_date)).map((d, i) => {
@@ -227,7 +241,7 @@ function AlertsTab() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{d.title}</p>
                     <p className="text-xs text-neutral-400 mt-0.5">
-                      Due: {fmt(d.deadline_date)}
+                      {t("notifications.alerts.due", { date: fmt(d.deadline_date) })}
                       {d.responsible && ` · ${d.responsible}`}
                       {` · ${d.module}`}
                     </p>
@@ -247,19 +261,19 @@ function AlertsTab() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <span className="material-symbols-outlined text-primary text-[18px]">calendar_view_week</span>
             </div>
-            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Events This Week</h2>
+            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("notifications.alerts.eventsWeek")}</h2>
           </div>
-          <a href="/workplan" className="btn-secondary text-xs py-1 px-2">View full workplan →</a>
+          <a href="/workplan" className="btn-secondary text-xs py-1 px-2">{t("notifications.alerts.viewWorkplan")}</a>
         </div>
         {loading ? <Spinner /> : weekEvents.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">No events scheduled this week.</p>
+          <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">{t("notifications.alerts.noEvents")}</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5">
             {weekEvents.map((e) => {
               const raw = (e.date ?? "").slice(0, 10);
               const d = new Date(raw + "T00:00:00");
               const valid = raw.length === 10 && !Number.isNaN(d.getTime());
-              const dayLabel   = valid ? DAYS_LABEL[d.getDay()] : "—";
+              const dayLabel   = valid ? t(DAYS_LABEL[d.getDay()]) : "—";
               const dayNum     = valid ? d.getDate() : "—";
               const monthLabel = valid ? d.toLocaleDateString("en-GB", { month: "short" }) : "";
               const yearLabel  = valid && d.getFullYear() !== new Date().getFullYear()
@@ -312,6 +326,7 @@ function AlertsTab() {
 type InboxFilter = "all" | "unread" | "read" | "action_required" | "archived";
 
 function InboxTab() {
+  const { t } = useI18n();
   const { fmt } = useFormatDate();
   const { success, error: showErrorToast } = useToast();
   const [filter, setFilter] = useState<InboxFilter>("all");
@@ -349,9 +364,9 @@ function InboxTab() {
     try {
       await userNotificationsApi.markAllRead();
       invalidate();
-      success("All notifications marked as read.");
+      success(t("notifications.inbox.allRead"));
     } catch {
-      showErrorToast("Failed to mark all as read.");
+      showErrorToast(t("notifications.inbox.allReadFailed"));
     }
   };
 
@@ -365,9 +380,9 @@ function InboxTab() {
     try {
       await userNotificationsApi.archive(id);
       invalidate();
-      success("Notification archived.");
+      success(t("notifications.inbox.archived"));
     } catch {
-      showErrorToast("Could not archive this notification.");
+      showErrorToast(t("notifications.inbox.archiveFailed"));
     }
   };
 
@@ -376,9 +391,9 @@ function InboxTab() {
     try {
       await userNotificationsApi.acknowledge(id);
       invalidate();
-      success("Notification acknowledged.");
+      success(t("notifications.inbox.acknowledged"));
     } catch {
-      showErrorToast("Could not acknowledge this notification.");
+      showErrorToast(t("notifications.inbox.acknowledgeFailed"));
     }
   };
 
@@ -387,9 +402,9 @@ function InboxTab() {
     try {
       await userNotificationsApi.markUnread(id);
       invalidate();
-      success("Notification marked unread.");
+      success(t("notifications.inbox.markedUnread"));
     } catch {
-      showErrorToast("Could not mark this notification unread.");
+      showErrorToast(t("notifications.inbox.markUnreadFailed"));
     }
   };
 
@@ -407,7 +422,7 @@ function InboxTab() {
       setModuleFilter(payload?.filters?.module);
       setPage(1);
     } catch {
-      showErrorToast("Search could not suggest inbox filters.");
+      showErrorToast(t("notifications.inbox.searchFailed"));
     } finally {
       setNlBusy(false);
     }
@@ -417,11 +432,11 @@ function InboxTab() {
   const unreadCount = countData ?? 0;
 
   const filterTabs: { key: InboxFilter; label: string }[] = [
-    { key: "all",    label: "All" },
-    { key: "unread", label: `Unread${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
-    { key: "read",   label: "Read" },
-    { key: "action_required", label: "Action required" },
-    { key: "archived", label: "Archived" },
+    { key: "all",    label: t("notifications.inbox.tabAll") },
+    { key: "unread", label: unreadCount > 0 ? t("notifications.inbox.tabUnreadCount", { count: unreadCount }) : t("notifications.inbox.tabUnread") },
+    { key: "read",   label: t("notifications.inbox.tabRead") },
+    { key: "action_required", label: t("notifications.inbox.tabAction") },
+    { key: "archived", label: t("notifications.inbox.tabArchived") },
   ];
 
   return (
@@ -435,17 +450,17 @@ function InboxTab() {
         }}
       >
         <label htmlFor="notifications-inbox-search-setnlquery-e-target-value-placehold" className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-medium text-neutral-500">
-          Inbox search
+          {t("notifications.inbox.search")}
           <input id="notifications-inbox-search-setnlquery-e-target-value-placehold"
             className="form-input text-sm"
             value={nlQuery}
             onChange={(e) => setNlQuery(e.target.value)}
-            placeholder="e.g. unread travel, action required leave"
-            aria-label="Inbox search"
+            placeholder={t("notifications.inbox.searchPlaceholder")}
+            aria-label={t("notifications.inbox.search")}
           />
         </label>
         <button type="submit" className="btn-secondary text-sm" disabled={nlBusy}>
-          {nlBusy ? "Searching…" : "Search inbox"}
+          {nlBusy ? t("notifications.inbox.searching") : t("notifications.inbox.searchButton")}
         </button>
         {moduleFilter ? (
           <button
@@ -453,12 +468,12 @@ function InboxTab() {
             className="btn-secondary text-sm"
             onClick={() => { setModuleFilter(undefined); setPage(1); }}
           >
-            Clear module ({moduleFilter})
+            {t("notifications.inbox.clearModule", { module: moduleFilter })}
           </button>
         ) : null}
       </form>
       <p className="text-xs text-neutral-500">
-        Search suggests inbox filters only. It does not send messages.
+        {t("notifications.inbox.searchHint")}
       </p>
       <div className="flex items-center justify-between">
         <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-700 flex-1">
@@ -482,7 +497,7 @@ function InboxTab() {
             className="btn-secondary text-sm flex items-center gap-2 ml-4 flex-shrink-0"
           >
             <span className="material-symbols-outlined text-[18px]">done_all</span>
-            Mark all read
+            {t("notifications.inbox.markAllRead")}
           </button>
         )}
       </div>
@@ -503,8 +518,8 @@ function InboxTab() {
         ) : notifications.length === 0 ? (
           <EmptyState
             icon="notifications_off"
-            title={filter === "unread" ? "No unread notifications" : filter === "read" ? "No read notifications" : "No notifications yet"}
-            description="Notifications will appear here when you have approvals, rejections, or assignments."
+            title={filter === "unread" ? t("notifications.inbox.noUnread") : filter === "read" ? t("notifications.inbox.noRead") : t("notifications.inbox.none")}
+            description={t("notifications.inbox.noneDesc")}
           />
         ) : notifications.map(n => {
           const isUnread = !n.read_at;
@@ -526,7 +541,7 @@ function InboxTab() {
                   </p>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {isUnread && <span className="h-2 w-2 rounded-full bg-primary" />}
-                    <span className="text-[11px] text-neutral-400 whitespace-nowrap">{timeAgo(n.created_at, fmt)}</span>
+                    <span className="text-[11px] text-neutral-400 whitespace-nowrap">{timeAgo(n.created_at, fmt, t)}</span>
                   </div>
                 </div>
                 {n.body && (
@@ -545,7 +560,7 @@ function InboxTab() {
                 <button
                   onClick={(e) => handleMarkUnread(n.id, e)}
                   className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-300 hover:text-primary flex-shrink-0"
-                  title="Mark unread"
+                  title={t("notifications.inbox.markUnread")}
                 >
                   <span className="material-symbols-outlined text-[16px]">mark_email_unread</span>
                 </button>
@@ -553,21 +568,21 @@ function InboxTab() {
               <button
                 onClick={(e) => handleAcknowledge(n.id, e)}
                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-300 hover:text-primary flex-shrink-0"
-                title="Acknowledge"
+                title={t("notifications.inbox.acknowledge")}
               >
                 <span className="material-symbols-outlined text-[16px]">task_alt</span>
               </button>
               <button
                 onClick={(e) => handleArchive(n.id, e)}
                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-300 hover:text-primary flex-shrink-0"
-                title="Archive"
+                title={t("notifications.inbox.archive")}
               >
                 <span className="material-symbols-outlined text-[16px]">archive</span>
               </button>
               <button
                 onClick={(e) => handleDelete(n.id, e)}
                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-300 hover:text-red-400 flex-shrink-0"
-                title="Dismiss"
+                title={t("admin.users.dismiss")}
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
@@ -578,10 +593,10 @@ function InboxTab() {
 
       {data && data.last_page > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-neutral-500">Page {data.current_page} of {data.last_page} · {data.total} total</p>
+          <p className="text-sm text-neutral-500">{t("common.pageOf", { page: data.current_page, total: data.last_page })} · {t("common.totalCount", { count: data.total })}</p>
           <div className="flex gap-2">
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="btn-secondary text-sm disabled:opacity-40">Previous</button>
-            <button onClick={() => setPage(p => Math.min(data.last_page, p + 1))} disabled={page >= data.last_page} className="btn-secondary text-sm disabled:opacity-40">Next</button>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="btn-secondary text-sm disabled:opacity-40">{t("common.previous")}</button>
+            <button onClick={() => setPage(p => Math.min(data.last_page, p + 1))} disabled={page >= data.last_page} className="btn-secondary text-sm disabled:opacity-40">{t("common.next")}</button>
           </div>
         </div>
       )}
@@ -594,6 +609,7 @@ function InboxTab() {
 type TabKey = "alerts" | "inbox";
 
 function NotificationsPageInner() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialTab = (searchParams.get("tab") as TabKey | null) ?? "alerts";
@@ -611,18 +627,18 @@ function NotificationsPageInner() {
   });
   const unreadCount = countData ?? 0;
 
-  function switchTab(t: TabKey) {
-    setTab(t);
-    const url = t === "alerts" ? "/notifications" : "/notifications?tab=inbox";
+  function switchTab(next: TabKey) {
+    setTab(next);
+    const url = next === "alerts" ? "/notifications" : "/notifications?tab=inbox";
     router.replace(url, { scroll: false });
   }
 
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Alerts & Notifications"
-        subtitle="Operational awareness, upcoming deadlines, and your personal notification inbox."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Home", href: "/dashboard" }, { label: "Alerts & Notifications" }]} />}
+        title={t("nav.notifications")}
+        subtitle={t("notifications.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("notifications.home"), href: "/dashboard" }, { label: t("nav.notifications") }]} />}
       />
 
       {/* Tabs */}
@@ -634,7 +650,7 @@ function NotificationsPageInner() {
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">notifications_active</span>
-          Alerts
+          {t("admin.auditTrail.nav.alerts")}
         </button>
         <button
           onClick={() => switchTab("inbox")}
@@ -643,7 +659,7 @@ function NotificationsPageInner() {
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">inbox</span>
-          My Notifications
+          {t("notifications.myNotifications")}
           {unreadCount > 0 && (
             <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold px-1">
               {unreadCount > 99 ? "99+" : unreadCount}
@@ -659,8 +675,9 @@ function NotificationsPageInner() {
 }
 
 export default function NotificationsPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="space-y-4 p-6 text-sm text-neutral-400">Loading…</div>}>
+    <Suspense fallback={<div className="space-y-4 p-6 text-sm text-neutral-400">{t("common.loading")}</div>}>
       <NotificationsPageInner />
     </Suspense>
   );

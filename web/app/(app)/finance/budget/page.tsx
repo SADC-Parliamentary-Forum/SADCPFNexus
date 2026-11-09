@@ -9,9 +9,11 @@ import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, getListData, slicePage } from "@/lib/listPagination";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function BudgetDashboardPage() {
   const { confirm } = useConfirm();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [error, setError] = useState("");
@@ -26,15 +28,15 @@ export default function BudgetDashboardPage() {
       .then((res) => {
         setBudgets(getListData<Budget>(res.data));
       })
-      .catch(() => setError("Failed to load budgets."))
+      .catch(() => setError(t("finance.budget.loadFailed")))
       .finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (budget: Budget) => {
     if (
       !(await confirm({
-        title: "Delete budget",
-        message: `Delete budget "${budget.name}"? This cannot be undone.`,
+        title: t("finance.budget.deleteTitle"),
+        message: t("finance.budget.deleteMessage", { name: budget.name }),
         variant: "danger",
       }))
     ) return;
@@ -42,7 +44,7 @@ export default function BudgetDashboardPage() {
     financeApi
       .deleteBudget(budget.id)
       .then(() => setBudgets((prev) => prev.filter((b) => b.id !== budget.id)))
-      .catch(() => setError("Failed to delete budget."))
+      .catch(() => setError(t("finance.budget.deleteFailed")))
       .finally(() => setDeletingId(null));
   };
 
@@ -84,11 +86,11 @@ export default function BudgetDashboardPage() {
         total_amount: b.total_amount,
       })),
       [
-        { key: "name", header: "Name" },
-        { key: "type", header: "Type" },
-        { key: "year", header: "Year" },
-        { key: "currency", header: "Currency" },
-        { key: "total_amount", header: "Total Amount" },
+        { key: "name", header: t("finance.budget.col.name") },
+        { key: "type", header: t("finance.budget.col.type") },
+        { key: "year", header: t("finance.budget.col.year") },
+        { key: "currency", header: t("finance.budget.col.currency") },
+        { key: "total_amount", header: t("finance.budget.col.totalAmount") },
       ],
     );
   };
@@ -97,17 +99,17 @@ export default function BudgetDashboardPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/finance" className="hover:text-primary transition-colors">
-          Finance
+          {t("nav.finance")}
         </Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">Budgets</span>
+        <span className="text-neutral-900 font-medium">{t("finance.budget.budgets")}</span>
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <ModulePageHeader
-        title="Budget Management"
-        subtitle="Track core and project budgets, allocations, and expenditures"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget Management" }]} />}
+        title="finance.budget.title"
+        subtitle="finance.budget.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "finance.budget.title" }]} />}
       />
         <div className="flex items-center gap-3">
           <button
@@ -117,11 +119,11 @@ export default function BudgetDashboardPage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("finance.budget.exportCsv")}
           </button>
           <Link href="/finance/budget/upload" className="btn-primary flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">upload_file</span>
-            Upload Budget
+            {t("finance.budget.upload")}
           </Link>
         </div>
       </div>
@@ -135,13 +137,13 @@ export default function BudgetDashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="card p-5">
-          <div className="text-sm font-medium text-neutral-500 mb-1">Total Core Budget</div>
+          <div className="text-sm font-medium text-neutral-500 mb-1">{t("finance.budget.totalCore")}</div>
           <div className="text-2xl font-bold text-neutral-900">
             ${totalCore.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
         <div className="card p-5">
-          <div className="text-sm font-medium text-neutral-500 mb-1">Total Project Budget</div>
+          <div className="text-sm font-medium text-neutral-500 mb-1">{t("finance.budget.totalProject")}</div>
           <div className="text-2xl font-bold text-neutral-900">
             ${totalProject.toLocaleString(undefined, {
               minimumFractionDigits: 2,
@@ -150,7 +152,7 @@ export default function BudgetDashboardPage() {
           </div>
         </div>
         <div className="card p-5 border-l-4 border-l-primary">
-          <div className="text-sm font-medium text-neutral-500 mb-1">Total Managed Funds</div>
+          <div className="text-sm font-medium text-neutral-500 mb-1">{t("finance.budget.totalManaged")}</div>
           <div className="text-2xl font-bold text-primary">
             ${(totalCore + totalProject).toLocaleString(undefined, {
               minimumFractionDigits: 2,
@@ -168,7 +170,8 @@ export default function BudgetDashboardPage() {
           <input
             type="search"
             className="form-input pl-10"
-            placeholder="Search budgets…"
+            placeholder={t("finance.budget.searchPlaceholder")}
+            aria-label={t("finance.budget.searchPlaceholder")}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -179,9 +182,9 @@ export default function BudgetDashboardPage() {
         <div className="flex flex-wrap gap-2">
           {(
             [
-              { key: "all", label: "All" },
-              { key: "core", label: "Core" },
-              { key: "project", label: "Project" },
+              { key: "all", label: "finance.budget.filter.all" },
+              { key: "core", label: "finance.budget.filter.core" },
+              { key: "project", label: "finance.budget.filter.project" },
             ] as const
           ).map((f) => (
             <button
@@ -193,7 +196,7 @@ export default function BudgetDashboardPage() {
               }}
               className={`filter-tab${typeFilter === f.key ? " active" : ""}`}
             >
-              {f.label}
+              {t(f.label)}
             </button>
           ))}
         </div>
@@ -201,20 +204,20 @@ export default function BudgetDashboardPage() {
 
       <div className="card overflow-hidden">
         <div className="card-header">
-          <h2 className="text-lg font-semibold text-neutral-800">Budget Portfolios</h2>
-          <span className="text-xs text-neutral-400">{filtered.length} records</span>
+          <h2 className="text-lg font-semibold text-neutral-800">{t("finance.budget.portfolios")}</h2>
+          <span className="text-xs text-neutral-400">{t("finance.budget.records", { count: filtered.length })}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Year</th>
-                <th>Currency</th>
-                <th className="text-right">Total Amount</th>
-                <th className="text-right">Status</th>
-                <th className="text-right">Actions</th>
+                <th>{t("finance.budget.col.name")}</th>
+                <th>{t("finance.budget.col.type")}</th>
+                <th>{t("finance.budget.col.year")}</th>
+                <th>{t("finance.budget.col.currency")}</th>
+                <th className="text-right">{t("finance.budget.col.totalAmount")}</th>
+                <th className="text-right">{t("finance.budget.col.status")}</th>
+                <th className="text-right">{t("finance.budget.col.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
@@ -229,7 +232,7 @@ export default function BudgetDashboardPage() {
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
-                <TableEmpty colSpan={7} title="No budgets found." />
+                <TableEmpty colSpan={7} title="finance.budget.empty" />
               ) : (
                 paged.map((budget) => (
                   <tr key={budget.id} className="hover:bg-neutral-50/50">
@@ -245,7 +248,7 @@ export default function BudgetDashboardPage() {
                       <span
                         className={`badge ${budget.type === "core" ? "badge-info" : "badge-success"} capitalize`}
                       >
-                        {budget.type}
+                        {budget.type === "core" || budget.type === "project" ? t(`finance.budgetType.${budget.type}`) : budget.type}
                       </span>
                     </td>
                     <td className="text-neutral-600">{budget.year}</td>
@@ -257,7 +260,7 @@ export default function BudgetDashboardPage() {
                       })}
                     </td>
                     <td className="text-right">
-                      <span className="badge badge-success">Active</span>
+                      <span className="badge badge-success">{t("finance.budget.active")}</span>
                     </td>
                     <td className="text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -266,7 +269,7 @@ export default function BudgetDashboardPage() {
                           className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 transition-colors"
                         >
                           <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                          View
+                          {t("finance.hub.view")}
                         </Link>
                         <button
                           type="button"
@@ -281,7 +284,7 @@ export default function BudgetDashboardPage() {
                           ) : (
                             <span className="material-symbols-outlined text-[14px]">delete</span>
                           )}
-                          Delete
+                          {t("common.delete")}
                         </button>
                       </div>
                     </td>

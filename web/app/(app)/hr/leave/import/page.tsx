@@ -68,7 +68,7 @@ export default function LeaveImportPage() {
         setFile(null);
       }
       if (commit) {
-        toast.success("Leave records imported", res.data.message);
+        toast.success(t("hr.leaveImport.toast.imported"), res.data.message);
       }
     } catch (err: unknown) {
       const apiMessage =
@@ -76,7 +76,7 @@ export default function LeaveImportPage() {
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
       setError(apiMessage || t("common.error"));
-      toast.error(commit ? "Leave records not imported" : "Could not preview import", apiMessage || t("common.error"));
+      toast.error(commit ? t("hr.leaveImport.toast.notImported") : t("hr.leaveImport.toast.previewFailed"), apiMessage || t("common.error"));
     } finally {
       setBusy(null);
     }
@@ -120,7 +120,7 @@ export default function LeaveImportPage() {
           <PageBreadcrumbs
             items={[
               { label: "hr.hub", href: "/hr" },
-              { label: "Staff Leave Register", href: "/hr/leave" },
+              { label: "hr.leaveRegister.crumb", href: "/hr/leave" },
               { label: "leave.import.title" },
             ]}
           />

@@ -8,6 +8,7 @@ import {
 } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const emptyForm = {
   code: "",
@@ -23,6 +24,7 @@ const emptyForm = {
 export function SupplierDocumentRequirementTypesCard() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const idPrefix = `supplier-doc-req-types-${useId()}`;
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
@@ -43,12 +45,12 @@ export function SupplierDocumentRequirementTypesCard() {
       setForm(emptyForm);
       setError(null);
       queryClient.invalidateQueries({ queryKey: ["supplier-document-requirement-types"] });
-      toast.success("Document type added");
+      toast.success(t("procurement.docRequirements.added"));
     },
     onError: (err: unknown) => {
-      const message = apiErrorMessage(err, "Could not create type.");
+      const message = apiErrorMessage(err, t("procurement.docRequirements.createFailed"));
       setError(message);
-      toast.error("Document type not added", message);
+      toast.error(t("procurement.docRequirements.notAdded"), message);
     },
   });
 
@@ -57,33 +59,33 @@ export function SupplierDocumentRequirementTypesCard() {
       supplierDocumentRequirementTypesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["supplier-document-requirement-types"] });
-      toast.success("Document type updated");
+      toast.success(t("procurement.docRequirements.updated"));
     },
     onError: (err: unknown) => {
-      toast.error("Document type not updated", apiErrorMessage(err, "Could not update the document type."));
+      toast.error(t("procurement.docRequirements.notUpdated"), apiErrorMessage(err, t("procurement.docRequirements.updateFailed")));
     },
   });
 
   return (
     <div className="card p-5 space-y-4" data-testid="document-requirement-types">
       <div>
-        <h2 className="text-base font-semibold text-neutral-900">Supplier document requirements</h2>
+        <h2 className="text-base font-semibold text-neutral-900">{t("procurement.docRequirements.title")}</h2>
         <p className="mt-1 text-xs text-neutral-500">
-          Configure the compliance register types. Eligibility uses verified, unexpired mandatory documents — not the Approved flag.
+          {t("procurement.docRequirements.hint")}
         </p>
       </div>
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
       {listQuery.isLoading ? (
-        <p className="text-sm text-neutral-400">Loading types…</p>
+        <p className="text-sm text-neutral-400">{t("procurement.docRequirements.loading")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th className="text-left">Type</th>
-                <th>Mandatory</th>
-                <th>Expiry</th>
-                <th>Active</th>
+                <th className="text-left">{t("procurement.docRequirements.type")}</th>
+                <th>{t("procurement.docRequirements.mandatory")}</th>
+                <th>{t("procurement.docRequirements.expiry")}</th>
+                <th>{t("procurement.docRequirements.active")}</th>
               </tr>
             </thead>
             <tbody>
@@ -98,7 +100,7 @@ export function SupplierDocumentRequirementTypesCard() {
                       type="checkbox"
                       checked={row.mandatory}
                       onChange={(e) => updateMutation.mutate({ id: row.id, data: { mandatory: e.target.checked } })}
-                      aria-label={`${row.label} mandatory`}
+                      aria-label={t("procurement.docRequirements.mandatoryFor", { label: row.label })}
                     />
                   </td>
                   <td className="text-center">
@@ -106,7 +108,7 @@ export function SupplierDocumentRequirementTypesCard() {
                       type="checkbox"
                       checked={row.has_expiry}
                       onChange={(e) => updateMutation.mutate({ id: row.id, data: { has_expiry: e.target.checked } })}
-                      aria-label={`${row.label} has expiry`}
+                      aria-label={t("procurement.docRequirements.expiryFor", { label: row.label })}
                     />
                   </td>
                   <td className="text-center">
@@ -114,7 +116,7 @@ export function SupplierDocumentRequirementTypesCard() {
                       type="checkbox"
                       checked={row.is_active}
                       onChange={(e) => updateMutation.mutate({ id: row.id, data: { is_active: e.target.checked } })}
-                      aria-label={`${row.label} active`}
+                      aria-label={t("procurement.docRequirements.activeFor", { label: row.label })}
                     />
                   </td>
                 </tr>
@@ -126,13 +128,13 @@ export function SupplierDocumentRequirementTypesCard() {
       <div className="grid gap-3 sm:grid-cols-2">
         <input
           className="form-input"
-          placeholder="Label"
+          placeholder={t("procurement.docRequirements.label")}
           value={form.label}
           onChange={(e) => setForm({ ...form, label: e.target.value })}
         />
         <input
           className="form-input"
-          placeholder="Code (optional)"
+          placeholder={t("procurement.docRequirements.codeOptional")}
           value={form.code}
           onChange={(e) => setForm({ ...form, code: e.target.value })}
         />
@@ -144,7 +146,7 @@ export function SupplierDocumentRequirementTypesCard() {
           checked={form.mandatory}
           onChange={(e) => setForm({ ...form, mandatory: e.target.checked })}
         />
-        Mandatory for eligibility
+        {t("procurement.docRequirements.mandatoryEligibility")}
       </label>
       <button
         type="button"
@@ -152,7 +154,7 @@ export function SupplierDocumentRequirementTypesCard() {
         disabled={!form.label.trim() || createMutation.isPending}
         onClick={() => createMutation.mutate()}
       >
-        {createMutation.isPending ? "Adding…" : "Add document type"}
+        {createMutation.isPending ? t("procurement.supplierCategories.adding") : t("procurement.docRequirements.add")}
       </button>
     </div>
   );

@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Decision = { id: number; topic: string; status: string; decision_notes?: string };
 
 export default function GovernanceChecklistPage() {
+  const { t } = useI18n();
   const [rows, setRows] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export default function GovernanceChecklistPage() {
         }
         setDrafts(next);
       })
-      .catch(() => setError("Failed to load governance checklist."))
+      .catch(() => setError(t("admin.access.governance.loadFailed")))
       .finally(() => setLoading(false));
   };
 
@@ -48,7 +50,7 @@ export default function GovernanceChecklistPage() {
       });
       load();
     } catch {
-      setError("Unable to save this governance decision.");
+      setError(t("admin.access.governance.saveFailed"));
     } finally {
       setSavingId(null);
     }
@@ -57,14 +59,14 @@ export default function GovernanceChecklistPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Governance checklist"
-        subtitle="Institutional decisions (MFA policy, review cadence, break-glass). Status and notes are recorded here; live secrets stay in operator env."
+        title={t("admin.access.links.governance")}
+        subtitle={t("admin.access.governance.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Access", href: "/admin/access" },
-              { label: "Governance" },
+              { label: t("admin.homeLabel"), href: "/admin" },
+              { label: t("admin.crumb.access"), href: "/admin/access" },
+              { label: t("admin.access.governance.crumb") },
             ]}
           />
         }
@@ -82,7 +84,7 @@ export default function GovernanceChecklistPage() {
         </div>
       ) : rows.length === 0 ? (
         <div className="card">
-          <EmptyState icon="policy" title="No governance items" description="Checklist topics will appear once seeded by administrators." />
+          <EmptyState icon="policy" title={t("admin.access.governance.empty")} description={t("admin.access.governance.emptyDesc")} />
         </div>
       ) : (
         <div className="card divide-y divide-neutral-100">
@@ -93,7 +95,7 @@ export default function GovernanceChecklistPage() {
                 <p className="text-sm font-medium text-neutral-900">{r.topic}</p>
                 <div className="flex flex-wrap items-end gap-3">
                   <label htmlFor={`admin-access-governance-status-${r.id}`} className="text-xs text-neutral-600">
-                    Status
+                    {t("admin.common.status")}
                     <select id={`admin-access-governance-status-${r.id}`}
                       className="form-input mt-1 block min-w-[10rem]"
                       value={draft.status}
@@ -104,13 +106,13 @@ export default function GovernanceChecklistPage() {
                         }))
                       }
                     >
-                      <option value="pending">pending</option>
-                      <option value="decided">decided</option>
-                      <option value="not_applicable">not_applicable</option>
+                      <option value="pending">{t("admin.common.statusPending")}</option>
+                      <option value="decided">{t("admin.common.statusDecided")}</option>
+                      <option value="not_applicable">{t("admin.common.statusNotApplicable")}</option>
                     </select>
                   </label>
                   <label htmlFor={`admin-access-governance-notes-${r.id}`} className="min-w-[16rem] flex-1 text-xs text-neutral-600">
-                    Decision notes
+                    {t("admin.access.governance.decisionNotes")}
                     <textarea id={`admin-access-governance-notes-${r.id}`}
                       className="form-input mt-1 block w-full"
                       rows={2}
@@ -129,7 +131,7 @@ export default function GovernanceChecklistPage() {
                     disabled={savingId === r.id}
                     onClick={() => save(r.id)}
                   >
-                    {savingId === r.id ? "Saving…" : "Save"}
+                    {savingId === r.id ? t("admin.common.saving") : t("common.save")}
                   </button>
                 </div>
               </div>

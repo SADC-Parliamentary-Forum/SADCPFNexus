@@ -9,6 +9,15 @@ import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { SalaryScaleSlideOver } from "./SalaryScaleSlideOver";
 import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+const STATUS_VALUE_KEYS: Record<string, string> = {
+  draft: "settings.hr.lifecycleValue.draft",
+  review: "settings.hr.lifecycleValue.review",
+  approved: "settings.hr.lifecycleValue.approved",
+  published: "settings.hr.lifecycleValue.published",
+  archived: "settings.hr.lifecycleValue.archived",
+};
 
 const STATUS_BADGE: Record<HrSettingsStatus, string> = {
   draft:     "badge-muted",
@@ -31,6 +40,8 @@ function SkeletonRow() {
 export default function SalaryScalesPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useI18n();
+  const statusText = (s: string) => (STATUS_VALUE_KEYS[s] ? t(STATUS_VALUE_KEYS[s]) : s);
   const user = getStoredUser();
   const canApprove = isSystemAdmin(user) || hasPermission(user, "hr_settings.approve");
   const canPublish = isSystemAdmin(user) || hasPermission(user, "hr_settings.publish");
@@ -63,11 +74,11 @@ export default function SalaryScalesPage() {
         ? hrSettingsApi.updateSalaryScale((form as any).id, form).then((r) => r.data)
         : hrSettingsApi.createSalaryScale(form as any).then((r) => r.data),
     onSuccess: (res: any) => {
-      toast("success", res.message ?? "Saved.");
+      toast("success", res.message ?? t("settings.hr.common.saved"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "salary-scales"] });
       setSlideOver({ open: false, scale: null });
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Failed to save."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.saveFailed")),
   });
 
   const lifecycleMutation = useMutation({
@@ -78,11 +89,11 @@ export default function SalaryScalesPage() {
       return Promise.reject("Unknown action");
     },
     onSuccess: (res: any) => {
-      toast("success", res.message ?? "Done.");
+      toast("success", res.message ?? t("settings.hr.common.done"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "salary-scales"] });
       setSlideOver({ open: false, scale: null });
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Action failed."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.actionFailed")),
   });
 
   // Group scales by grade band for display
@@ -110,8 +121,8 @@ export default function SalaryScalesPage() {
         saving={saveMutation.isPending || lifecycleMutation.isPending}
       />
       <HrSettingsHeader
-        title="Salary Scales"
-        subtitle="Notch-based salary structures linked to grade bands, with effective dating and approval workflow."
+        title={t("settings.hr.home.salaryScales.title")}
+        subtitle={t("settings.hr.salaryScale.subtitle")}
         actions={
           <button
             type="button"
@@ -119,7 +130,7 @@ export default function SalaryScalesPage() {
             className="btn-primary flex items-center gap-2 shrink-0"
           >
           <span className="material-symbols-outlined text-[18px]">add</span>
-          New Salary Scale
+          {t("settings.hr.salaryScale.new")}
         </button>
         }
       />
@@ -134,7 +145,7 @@ export default function SalaryScalesPage() {
               onClick={() => setStatusFilter(s)}
               className={cn("filter-tab", statusFilter === s && "active")}
             >
-              {s || "All"}
+              {s ? statusText(s) : t("settings.hr.gradeBands.tab.all")}
             </button>
           ))}
         </div>
@@ -144,7 +155,7 @@ export default function SalaryScalesPage() {
             value={gradeBandFilter}
             onChange={(e) => setGradeBandFilter(e.target.value)}
           >
-            <option value="">All grade bands</option>
+            <option value="">{t("settings.hr.salaryScale.allBands")}</option>
             {gradeBands.map((g) => (
               <option key={g.id} value={g.id}>{g.code} — {g.label}</option>
             ))}
@@ -162,10 +173,10 @@ export default function SalaryScalesPage() {
       ) : scales.length === 0 ? (
         <EmptyState
           icon="payments"
-          title="No salary scales found."
+          title={t("settings.hr.salaryScale.emptyTitle")}
           action={
             <button type="button" onClick={() => setSlideOver({ open: true, scale: null })} className="btn-primary text-sm">
-              Create first salary scale
+              {t("settings.hr.salaryScale.createFirst")}
             </button>
           }
         />
@@ -180,18 +191,18 @@ export default function SalaryScalesPage() {
                     {gradeCode}
                   </span>
                   <span className="text-sm font-medium text-neutral-700">{band?.label ?? "—"}</span>
-                  <span className="text-xs text-neutral-400 ml-auto">{gradeScales.length} scale{gradeScales.length !== 1 ? "s" : ""}</span>
+                  <span className="text-xs text-neutral-400 ml-auto">{t(gradeScales.length !== 1 ? "settings.hr.salaryScale.countMany" : "settings.hr.salaryScale.countOne", { count: gradeScales.length })}</span>
                 </div>
                 <table className="data-table w-full">
                   <thead>
                     <tr>
-                      <th>Version</th>
-                      <th className="text-center">Notches</th>
-                      <th className="text-right">Min (Notch 1 monthly)</th>
-                      <th className="text-right">Max (top notch monthly)</th>
-                      <th>Effective From</th>
-                      <th>Status</th>
-                      <th className="w-28">Actions</th>
+                      <th>{t("settings.hr.gradeBand.version")}</th>
+                      <th className="text-center">{t("settings.hr.gradeBands.col.notches")}</th>
+                      <th className="text-right">{t("settings.hr.salaryScale.colMin")}</th>
+                      <th className="text-right">{t("settings.hr.salaryScale.colMax")}</th>
+                      <th>{t("settings.hr.gradeBand.effectiveFrom")}</th>
+                      <th>{t("settings.hr.common.status")}</th>
+                      <th className="w-28">{t("settings.hr.common.actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -216,7 +227,7 @@ export default function SalaryScalesPage() {
                           </td>
                           <td className="text-sm text-neutral-600">{s.effective_from}</td>
                           <td>
-                            <span className={cn("badge", STATUS_BADGE[scaleStatus])}>{s.status}</span>
+                            <span className={cn("badge", STATUS_BADGE[scaleStatus])}>{statusText(s.status)}</span>
                           </td>
                           <td>
                             <div className="flex items-center gap-1">
@@ -224,7 +235,7 @@ export default function SalaryScalesPage() {
                                 <button
                                   onClick={() => setSlideOver({ open: true, scale: s })}
                                   className="p-1.5 rounded hover:bg-neutral-100 text-neutral-500 hover:text-primary"
-                                  title="Edit"
+                                  title={t("common.edit")}
                                 >
                                   <span className="material-symbols-outlined text-[16px]">edit</span>
                                 </button>
@@ -233,7 +244,7 @@ export default function SalaryScalesPage() {
                                 <button
                                   onClick={() => lifecycleMutation.mutate({ action: "submit", id: s.id })}
                                   className="p-1.5 rounded hover:bg-amber-50 text-neutral-500 hover:text-amber-600"
-                                  title="Submit for review"
+                                  title={t("settings.hr.gradeBands.submitReview")}
                                 >
                                   <span className="material-symbols-outlined text-[16px]">send</span>
                                 </button>
@@ -242,7 +253,7 @@ export default function SalaryScalesPage() {
                                 <button
                                   onClick={() => lifecycleMutation.mutate({ action: "approve", id: s.id })}
                                   className="p-1.5 rounded hover:bg-green-50 text-neutral-500 hover:text-green-600"
-                                  title="Approve"
+                                  title={t("common.approve")}
                                 >
                                   <span className="material-symbols-outlined text-[16px]">check_circle</span>
                                 </button>
@@ -251,7 +262,7 @@ export default function SalaryScalesPage() {
                                 <button
                                   onClick={() => lifecycleMutation.mutate({ action: "publish", id: s.id })}
                                   className="p-1.5 rounded hover:bg-primary/10 text-neutral-500 hover:text-primary"
-                                  title="Publish"
+                                  title={t("settings.hr.gradeBands.publish")}
                                 >
                                   <span className="material-symbols-outlined text-[16px]">publish</span>
                                 </button>

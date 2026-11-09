@@ -10,6 +10,19 @@ import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { GradeBandSlideOver } from "../GradeBandSlideOver";
 import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+const STATUS_VALUE_KEYS: Record<string, string> = {
+  draft: "settings.hr.lifecycleValue.draft",
+  review: "settings.hr.lifecycleValue.review",
+  approved: "settings.hr.lifecycleValue.approved",
+  published: "settings.hr.lifecycleValue.published",
+  archived: "settings.hr.lifecycleValue.archived",
+};
+
+const BAND_LABELS: Record<string, string> = {
+  A: "settings.hr.band.A", B: "settings.hr.band.B", C: "settings.hr.band.C", D: "settings.hr.band.D",
+};
 
 const STATUS_BADGE: Record<HrSettingsStatus, string> = {
   draft:     "badge-muted",
@@ -50,6 +63,8 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t, localeTag } = useI18n();
+  const statusText = (s: string) => (STATUS_VALUE_KEYS[s] ? t(STATUS_VALUE_KEYS[s]) : s);
   const user = getStoredUser();
   const canApprove = isSystemAdmin(user) || hasPermission(user, "hr_settings.approve");
   const canPublish = isSystemAdmin(user) || hasPermission(user, "hr_settings.publish");
@@ -77,11 +92,11 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
     mutationFn: (form: Partial<HrGradeBand>) =>
       hrSettingsApi.updateGradeBand(Number(id), form).then((r) => r.data),
     onSuccess: (res: any) => {
-      toast("success", res.message ?? "Saved.");
+      toast("success", res.message ?? t("settings.hr.common.saved"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "grade-bands", id] });
       setEditOpen(false);
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Failed."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.gradeBandDetail.failed")),
   });
 
   const lifecycleMutation = useMutation({
@@ -94,22 +109,22 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
       return Promise.reject("Unknown action");
     },
     onSuccess: (res: any) => {
-      toast("success", res.message ?? "Done.");
+      toast("success", res.message ?? t("settings.hr.common.done"));
       qc.invalidateQueries({ queryKey: ["hr-settings", "grade-bands"] });
     },
-    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Action failed."),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? t("settings.hr.common.actionFailed")),
   });
 
   if (isLoading) {
     return (
       <div className="space-y-4">
         <HrSettingsHeader
-          title="Position Grade"
+          title={t("settings.hr.gradeBandDetail.title")}
           crumbs={[
             { label: "nav.admin", href: "/admin" },
-            { label: "HR Administration", href: "/settings/hr" },
-            { label: "Position Grades", href: "/settings/hr/grade-bands" },
-            { label: "Position Grade" },
+            { label: t("settings.hr.home.breadcrumb"), href: "/settings/hr" },
+            { label: t("settings.hr.home.gradeBands.title"), href: "/settings/hr/grade-bands" },
+            { label: t("settings.hr.gradeBandDetail.title") },
           ]}
         />
         <SkeletonCard />
@@ -122,15 +137,15 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
     return (
       <div className="space-y-4">
         <HrSettingsHeader
-          title="Position Grade"
+          title={t("settings.hr.gradeBandDetail.title")}
           crumbs={[
             { label: "nav.admin", href: "/admin" },
-            { label: "HR Administration", href: "/settings/hr" },
-            { label: "Position Grades", href: "/settings/hr/grade-bands" },
-            { label: "Position Grade" },
+            { label: t("settings.hr.home.breadcrumb"), href: "/settings/hr" },
+            { label: t("settings.hr.home.gradeBands.title"), href: "/settings/hr/grade-bands" },
+            { label: t("settings.hr.gradeBandDetail.title") },
           ]}
         />
-        <EmptyState icon="error" title="Failed to load grade band." />
+        <EmptyState icon="error" title={t("settings.hr.gradeBandDetail.loadFailed")} />
       </div>
     );
   }
@@ -159,16 +174,16 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
 
       <HrSettingsHeader
         title={g.label}
-        subtitle={`Grade code ${g.code} · ${g.band_group} band · ${g.employment_category}`}
+        subtitle={t("settings.hr.gradeBandDetail.subtitle", { code: g.code, band: g.band_group, category: g.employment_category })}
         crumbs={[
           { label: "nav.admin", href: "/admin" },
-          { label: "HR Administration", href: "/settings/hr" },
-          { label: "Position Grades", href: "/settings/hr/grade-bands" },
+          { label: t("settings.hr.home.breadcrumb"), href: "/settings/hr" },
+          { label: t("settings.hr.home.gradeBands.title"), href: "/settings/hr/grade-bands" },
           { label: g.code },
         ]}
         meta={
           <>
-            <span className={cn("badge", STATUS_BADGE[status])}>{status}</span>
+            <span className={cn("badge", STATUS_BADGE[status])}>{statusText(status)}</span>
             <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">v{g.version_number}</span>
           </>
         }
@@ -177,36 +192,36 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
             {status === "draft" && (
               <button type="button" onClick={() => setEditOpen(true)} className="btn-secondary text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">edit</span>
-                Edit
+                {t("common.edit")}
               </button>
             )}
             {status === "draft" && (
               <button type="button" onClick={() => lifecycleMutation.mutate("submit")} className="btn-secondary text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">send</span>
-                Submit
+                {t("common.submit")}
               </button>
             )}
             {status === "review" && canApprove && (
               <button type="button" onClick={() => lifecycleMutation.mutate("approve")} className="btn-secondary text-sm flex items-center gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                Approve
+                {t("common.approve")}
               </button>
             )}
             {status === "approved" && canPublish && (
               <button type="button" onClick={() => lifecycleMutation.mutate("publish")} className="btn-primary text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">publish</span>
-                Publish
+                {t("settings.hr.gradeBands.publish")}
               </button>
             )}
             {status === "published" && (
               <button type="button" onClick={() => lifecycleMutation.mutate("new-version")} className="btn-secondary text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                New Version
+                {t("settings.hr.gradeBandDetail.newVersion")}
               </button>
             )}
             {(status === "draft" || status === "review") && (
               <button type="button" onClick={() => lifecycleMutation.mutate("archive")} className="btn-secondary text-sm text-neutral-500">
-                Archive
+                {t("settings.hr.gradeBandDetail.archive")}
               </button>
             )}
           </>
@@ -218,18 +233,18 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="grade" color="text-primary" bg="bg-primary/10" />
-            <h2 className="font-semibold text-neutral-900">Core Details</h2>
+            <h2 className="font-semibold text-neutral-900">{t("settings.hr.gradeBandDetail.coreDetails")}</h2>
           </div>
-          <InfoRow label="Grade Code" value={<span className="font-mono font-bold">{g.code}</span>} />
-          <InfoRow label="Label" value={g.label} />
-          <InfoRow label="Band Group" value={`${g.band_group} — ${g.band_group === "A" ? "Executive" : g.band_group === "B" ? "Senior/Manager" : g.band_group === "C" ? "Officer" : "Support"}`} />
-          <InfoRow label="Employment Category" value={<span className="capitalize">{g.employment_category}</span>} />
-          <InfoRow label="Job Family" value={g.job_family?.name ?? "—"} />
-          <InfoRow label="Effective From" value={g.effective_from} />
-          <InfoRow label="Effective To" value={g.effective_to ?? "Open-ended"} />
+          <InfoRow label={t("settings.hr.gradeBandDetail.gradeCode")} value={<span className="font-mono font-bold">{g.code}</span>} />
+          <InfoRow label={t("settings.hr.gradeBands.col.label")} value={g.label} />
+          <InfoRow label={t("settings.hr.gradeBandDetail.bandGroup")} value={`${g.band_group} — ${t(BAND_LABELS[g.band_group] ?? "settings.hr.band.D")}`} />
+          <InfoRow label={t("settings.hr.gradeBandDetail.employmentCategory")} value={<span className="capitalize">{g.employment_category}</span>} />
+          <InfoRow label={t("settings.hr.gradeBand.jobFamily")} value={g.job_family?.name ?? "—"} />
+          <InfoRow label={t("settings.hr.gradeBand.effectiveFrom")} value={g.effective_from} />
+          <InfoRow label={t("settings.hr.gradeBand.effectiveTo")} value={g.effective_to ?? t("settings.hr.gradeBandDetail.openEnded")} />
           {g.notes && (
             <div className="mt-3 pt-3 border-t border-neutral-100">
-              <p className="text-xs text-neutral-500 mb-1">Notes / Policy Reference</p>
+              <p className="text-xs text-neutral-500 mb-1">{t("settings.hr.gradeBand.notesPolicy")}</p>
               <p className="text-sm text-neutral-700">{g.notes}</p>
             </div>
           )}
@@ -239,17 +254,17 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="payments" color="text-green-600" bg="bg-green-50" />
-            <h2 className="font-semibold text-neutral-900">Salary & Benefits</h2>
+            <h2 className="font-semibold text-neutral-900">{t("settings.hr.gradeBandDetail.salaryBenefits")}</h2>
           </div>
-          <InfoRow label="Notch Range" value={`${g.min_notch} – ${g.max_notch}`} />
-          <InfoRow label="Leave Days / Year" value={g.leave_days_per_year} />
-          <InfoRow label="Probation" value={`${g.probation_months} months`} />
-          <InfoRow label="Notice Period" value={`${g.notice_period_days} days`} />
-          <InfoRow label="Acting Allowance" value={g.acting_allowance_rate != null ? `${(Number(g.acting_allowance_rate) * 100).toFixed(1)}%` : "Not eligible"} />
-          <InfoRow label="Medical Aid" value={g.medical_aid_eligible ? "Eligible" : "Not eligible"} />
-          <InfoRow label="Housing Allowance" value={g.housing_allowance_eligible ? "Eligible" : "Not eligible"} />
-          <InfoRow label="Travel Class" value={g.travel_class ? <span className="capitalize">{g.travel_class}</span> : "—"} />
-          <InfoRow label="Overtime" value={g.overtime_eligible ? "Eligible" : "Not eligible"} />
+          <InfoRow label={t("settings.hr.gradeBandDetail.notchRange")} value={`${g.min_notch} – ${g.max_notch}`} />
+          <InfoRow label={t("settings.hr.gradeBandDetail.leaveDaysYear")} value={g.leave_days_per_year} />
+          <InfoRow label={t("settings.hr.contract.probation")} value={t("settings.hr.contract.months", { count: g.probation_months })} />
+          <InfoRow label={t("settings.hr.contract.noticePeriod")} value={t("settings.hr.contract.days", { count: g.notice_period_days })} />
+          <InfoRow label={t("settings.hr.gradeBandDetail.actingAllowance")} value={g.acting_allowance_rate != null ? `${(Number(g.acting_allowance_rate) * 100).toFixed(1)}%` : t("settings.hr.gradeBandDetail.notEligible")} />
+          <InfoRow label={t("settings.hr.gradeBandDetail.medicalAid")} value={g.medical_aid_eligible ? t("settings.hr.gradeBandDetail.eligible") : t("settings.hr.gradeBandDetail.notEligible")} />
+          <InfoRow label={t("settings.hr.gradeBandDetail.housingAllowance")} value={g.housing_allowance_eligible ? t("settings.hr.gradeBandDetail.eligible") : t("settings.hr.gradeBandDetail.notEligible")} />
+          <InfoRow label={t("settings.hr.gradeBand.travelClass")} value={g.travel_class ? <span className="capitalize">{g.travel_class}</span> : "—"} />
+          <InfoRow label={t("settings.hr.gradeBandDetail.overtime")} value={g.overtime_eligible ? t("settings.hr.gradeBandDetail.eligible") : t("settings.hr.gradeBandDetail.notEligible")} />
         </div>
 
         {/* Linked Salary Scales */}
@@ -257,22 +272,22 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <SectionIcon icon="account_balance" color="text-teal-600" bg="bg-teal-50" />
-              <h2 className="font-semibold text-neutral-900">Salary Scales</h2>
+              <h2 className="font-semibold text-neutral-900">{t("settings.hr.home.salaryScales.title")}</h2>
             </div>
             <Link
               href={`/settings/hr/salary-scales?grade_band_id=${g.id}`}
               className="btn-secondary text-xs"
             >
-              View all
+              {t("common.viewAll")}
             </Link>
           </div>
           {!g.salary_scales?.length ? (
             <EmptyState
               icon="payments"
-              title="No salary scales linked to this grade yet."
+              title={t("settings.hr.gradeBandDetail.noScales")}
               action={
                 <Link href="/settings/hr/salary-scales" className="btn-secondary text-xs">
-                  Create salary scale
+                  {t("settings.hr.gradeBandDetail.createScale")}
                 </Link>
               }
             />
@@ -281,10 +296,10 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
               {g.salary_scales.map((s) => (
                 <div key={s.id} className="flex items-center justify-between py-2 border-b border-neutral-50 last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-neutral-800">{s.currency} scale · v{s.version_number}</p>
-                    <p className="text-xs text-neutral-500">Effective {s.effective_from}</p>
+                    <p className="text-sm font-medium text-neutral-800">{t("settings.hr.gradeBandDetail.scaleVersion", { currency: s.currency, version: s.version_number })}</p>
+                    <p className="text-xs text-neutral-500">{t("settings.hr.gradeBandDetail.effective", { date: s.effective_from })}</p>
                   </div>
-                  <span className={cn("badge", STATUS_BADGE[s.status as HrSettingsStatus])}>{s.status}</span>
+                  <span className={cn("badge", STATUS_BADGE[s.status as HrSettingsStatus])}>{statusText(s.status)}</span>
                 </div>
               ))}
             </div>
@@ -295,16 +310,16 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="analytics" color="text-amber-600" bg="bg-amber-50" />
-            <h2 className="font-semibold text-neutral-900">Impact Analysis</h2>
+            <h2 className="font-semibold text-neutral-900">{t("settings.hr.gradeBandDetail.impact")}</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="bg-neutral-50 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold text-neutral-900">{impact.positions_count}</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Positions</p>
+              <p className="text-xs text-neutral-500 mt-0.5">{t("settings.hr.gradeBandDetail.positions")}</p>
             </div>
             <div className="bg-neutral-50 rounded-lg p-3 text-center">
               <p className="text-2xl font-bold text-neutral-900">{impact.active_staff_count}</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Active Staff</p>
+              <p className="text-xs text-neutral-500 mt-0.5">{t("settings.hr.gradeBandDetail.activeStaff")}</p>
             </div>
           </div>
           {impact.positions.length > 0 && (
@@ -316,7 +331,7 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
                 </div>
               ))}
               {impact.positions.length > 6 && (
-                <p className="text-xs text-neutral-400 text-center pt-1">+{impact.positions.length - 6} more</p>
+                <p className="text-xs text-neutral-400 text-center pt-1">{t("assignments.calendar.more", { count: impact.positions.length - 6 })}</p>
               )}
             </div>
           )}
@@ -327,18 +342,18 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
       <div className="card p-5">
         <div className="flex items-center gap-3 mb-4">
           <SectionIcon icon="policy" color="text-indigo-600" bg="bg-indigo-50" />
-          <h2 className="font-semibold text-neutral-900">Governance Trail</h2>
+          <h2 className="font-semibold text-neutral-900">{t("settings.hr.gradeBandDetail.governanceTrail")}</h2>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {[
-            { label: "Reviewed by",  name: (g as any).reviewer?.name, at: g.reviewed_at },
-            { label: "Approved by",  name: (g as any).approver?.name, at: g.approved_at },
-            { label: "Published by", name: (g as any).publisher?.name, at: g.published_at },
+            { label: "settings.hr.gradeBandDetail.reviewedBy",  name: (g as any).reviewer?.name, at: g.reviewed_at },
+            { label: "settings.hr.gradeBand.approvedBy",  name: (g as any).approver?.name, at: g.approved_at },
+            { label: "settings.hr.gradeBand.publishedBy", name: (g as any).publisher?.name, at: g.published_at },
           ].map(({ label, name, at }) => (
             <div key={label} className="bg-neutral-50 rounded-xl p-3">
-              <p className="text-xs text-neutral-500 mb-1">{label}</p>
+              <p className="text-xs text-neutral-500 mb-1">{t(label)}</p>
               <p className="text-sm font-medium text-neutral-800">{name ?? "—"}</p>
-              {at && <p className="text-xs text-neutral-400 mt-0.5">{new Date(at).toLocaleDateString("en-GB")}</p>}
+              {at && <p className="text-xs text-neutral-400 mt-0.5">{new Date(at).toLocaleDateString(localeTag)}</p>}
             </div>
           ))}
         </div>

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { formatDateShort } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "";
 
@@ -25,6 +26,7 @@ function formatLabel(value: string | null | undefined): string {
 }
 
 export default function PublicVerifySignaturePage() {
+  const { t } = useI18n();
   const [token, setToken] = useState("");
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,12 +41,12 @@ export default function PublicVerifySignaturePage() {
       const res = await fetch(`${API_BASE}/api/v1/people-authority/public/verify-signature/${encodeURIComponent(token.trim())}`);
       const json = await res.json();
       if (!res.ok) {
-        setError(json?.message || json?.errors?.token?.[0] || "Verification failed");
+        setError(json?.message || json?.errors?.token?.[0] || t("auth.verifySignature.failed"));
       } else {
         setResult(json.data);
       }
     } catch {
-      setError("Unable to reach verification service.");
+      setError(t("auth.verifySignature.unreachable"));
     } finally {
       setLoading(false);
     }
@@ -54,10 +56,10 @@ export default function PublicVerifySignaturePage() {
     <div className="min-h-screen bg-neutral-50 flex items-start justify-center p-6">
       <div className="w-full max-w-xl space-y-6 bg-white border border-neutral-200 rounded-xl p-6 shadow-sm">
         <div>
-          <p className="text-xs uppercase tracking-wide text-neutral-500">SADC PF Nexus</p>
-          <h1 className="text-2xl font-semibold text-neutral-900">Document signature verification</h1>
+          <p className="text-xs uppercase tracking-wide text-neutral-500">SADC PF Nexus</p>{/* i18n-ignore */}
+          <h1 className="text-2xl font-semibold text-neutral-900">{t("auth.verifySignature.title")}</h1>
           <p className="text-sm text-neutral-600 mt-1">
-            Enter a published verification token. Only approved metadata is shown.
+            {t("auth.verifySignature.subtitle")}
           </p>
         </div>
         <form className="space-y-3" onSubmit={verify}>
@@ -65,11 +67,12 @@ export default function PublicVerifySignaturePage() {
             className="form-input w-full"
             value={token}
             onChange={(e) => setToken(e.target.value)}
-            placeholder="Verification token"
+            placeholder={t("auth.verifySignature.tokenPlaceholder")}
+            aria-label={t("auth.verifySignature.tokenPlaceholder")}
             required
           />
           <button type="submit" className="btn-primary text-sm px-4 py-2" disabled={loading || !token.trim()}>
-            {loading ? "Verifying…" : "Verify"}
+            {loading ? t("auth.verifySignature.verifying") : t("auth.verifySignature.verify")}
           </button>
         </form>
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -83,16 +86,16 @@ export default function PublicVerifySignaturePage() {
               <span className="material-symbols-outlined text-[18px]">
                 {result.valid ? "verified" : "cancel"}
               </span>
-              {result.valid ? "Signature Valid" : "Signature Invalid"}
+              {result.valid ? t("auth.verifySignature.valid") : t("auth.verifySignature.invalid")}
             </div>
             <dl className="divide-y divide-neutral-100">
               {[
-                ["Document", formatLabel(result.document_type)],
-                ["Document Reference", result.document_id ? String(result.document_id) : "—"],
-                ["Signed By (Meaning)", formatLabel(result.signature_meaning)],
-                ["Signature Method", formatLabel(result.signature_method)],
-                ["Date Signed", result.signed_at ? formatDateShort(result.signed_at) : "—"],
-                ["Verification Reference", result.verification_reference || "—"],
+                [t("auth.verifySignature.document"), formatLabel(result.document_type)],
+                [t("auth.verifySignature.documentReference"), result.document_id ? String(result.document_id) : "—"],
+                [t("auth.verifySignature.meaning"), formatLabel(result.signature_meaning)],
+                [t("auth.verifySignature.method"), formatLabel(result.signature_method)],
+                [t("auth.verifySignature.dateSigned"), result.signed_at ? formatDateShort(result.signed_at) : "—"],
+                [t("auth.verifySignature.verificationReference"), result.verification_reference || "—"],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
                   <dt className="text-neutral-500">{label}</dt>
@@ -107,7 +110,7 @@ export default function PublicVerifySignaturePage() {
             )}
           </div>
         ) : null}
-        <Link href="/login" className="text-sm underline">Sign in</Link>
+        <Link href="/login" className="text-sm underline">{t("auth.verifySignature.signIn")}</Link>
       </div>
     </div>
   );
