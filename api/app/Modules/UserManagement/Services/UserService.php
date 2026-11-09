@@ -42,6 +42,13 @@ class UserService
             $query->where('department_id', $filters['department_id']);
         }
 
+        // Removed accounts only appear when asked for.
+        if (($filters['status'] ?? null) === User::STATUS_REMOVED) {
+            $query->where('account_status', User::STATUS_REMOVED);
+        } else {
+            $query->where('account_status', '!=', User::STATUS_REMOVED);
+        }
+
         if (! empty($filters['status'])) {
             match ($filters['status']) {
                 'active' => $query->where('is_active', true)->where('account_status', User::STATUS_ACTIVE),
@@ -365,6 +372,92 @@ class UserService
         return $this->updateAccountStatus($user, User::STATUS_ACTIVE, $reactivatedBy, 'Reactivated by administrator.');
     }
 
+    /**
+     * Remove a user: the account leaves lists and can no longer sign in, and its email is
+     * released for a new account. The row stays, so requests, approvals and audit history
+     * that point at this user still show their name.
+     */
+    public function remove(User $user, User $actor, ?string $reason = null): User
+    {
+        if ($user->account_status === User::STATUS_REMOVED) {
+            throw ValidationException::withMessages(['user' => ['This account has already been removed.']]);
+        }
+
+        $oldValues = $user->only(['email', 'is_active', 'account_status', 'status_reason']);
+        $now = now();
+
+        DB::transaction(function () use ($user, $actor, $reason, $now): void {
+            $user->forceFill([
+                'former_email' => $user->email,
+                'email' => sprintf('removed-%d-%d@removed.invalid', $user->id, $now->getTimestamp()),
+                'account_status' => User::STATUS_REMOVED,
+                'is_active' => false,
+                'removed_at' => $now,
+                'status_changed_at' => $now,
+                'status_reason' => $reason ?: 'Removed by administrator.',
+            ])->save();
+
+            AccountInvitation::where('user_id', $user->id)
+                ->where('status', AccountInvitation::STATUS_PENDING)
+                ->update([
+                    'status' => AccountInvitation::STATUS_REVOKED,
+                    'revoked_at' => $now,
+                    'revoked_by_id' => $actor->id,
+                ]);
+
+            $this->revokeAllAccess($user);
+        });
+
+        AuditLog::record('user.removed', [
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'old_values' => $oldValues,
+            'new_values' => $user->only(['account_status', 'status_reason', 'removed_at']),
+            'tags' => 'user_management',
+        ]);
+
+        return $user->fresh(['department', 'roles']);
+    }
+
+    /**
+     * Bring a removed account back with its email. It returns disabled, so an administrator
+     * reactivates it deliberately.
+     */
+    public function restore(User $user, User $actor): User
+    {
+        if ($user->account_status !== User::STATUS_REMOVED) {
+            throw ValidationException::withMessages(['user' => ['This account has not been removed.']]);
+        }
+
+        $email = (string) $user->former_email;
+        if ($email !== '' && User::withTrashed()->where('email', $email)->whereKeyNot($user->id)->exists()) {
+            throw ValidationException::withMessages([
+                'user' => ['Another account now uses '.$email.'. Change that account\'s email before restoring this one.'],
+            ]);
+        }
+
+        $now = now();
+        $user->forceFill([
+            'email' => $email !== '' ? $email : $user->email,
+            'former_email' => null,
+            'account_status' => User::STATUS_DISABLED,
+            'is_active' => false,
+            'removed_at' => null,
+            'disabled_at' => $now,
+            'status_changed_at' => $now,
+            'status_reason' => 'Restored by administrator.',
+        ])->save();
+
+        AuditLog::record('user.restored', [
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'new_values' => $user->only(['email', 'account_status']),
+            'tags' => 'user_management',
+        ]);
+
+        return $user->fresh(['department', 'roles']);
+    }
+
     public function updateAccountStatus(User $user, string $status, User $actor, ?string $reason = null): User
     {
         $allowed = [
@@ -378,6 +471,12 @@ class UserService
         if (! in_array($status, $allowed, true)) {
             throw ValidationException::withMessages([
                 'status' => ['Unsupported account status transition.'],
+            ]);
+        }
+
+        if ($user->account_status === User::STATUS_REMOVED) {
+            throw ValidationException::withMessages([
+                'status' => ['This account has been removed. Restore it first.'],
             ]);
         }
 

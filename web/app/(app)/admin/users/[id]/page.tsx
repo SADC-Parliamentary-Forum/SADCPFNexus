@@ -242,6 +242,8 @@ export default function UserEditPage() {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const [invitation, setInvitation] = useState<InvitationFields | null>(null);
+  /** Set when the account has been deleted (removed): the email it held and when. */
+  const [removal, setRemoval] = useState<{ email: string; at: string | null } | null>(null);
   const [inviting, setInviting] = useState(false);
   const [documents, setDocuments] = useState<UserDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
@@ -278,6 +280,7 @@ export default function UserEditPage() {
 
         const u: User = (userResult.value.data as any).data ?? userResult.value.data;
         setInvitation({ is_active: u.is_active, account_status: u.account_status, latest_account_invitation: u.latest_account_invitation });
+        setRemoval(u.account_status === "removed" ? { email: u.former_email ?? "", at: u.removed_at ?? null } : null);
 
         if (deptsResult.status === "fulfilled") {
           setDepartments((deptsResult.value.data as any)?.data ?? deptsResult.value.data ?? []);
@@ -538,6 +541,36 @@ export default function UserEditPage() {
     }
   };
 
+  const handleRemove = async () => {
+    const name = form.name || form.email;
+    if (!(await confirm({
+      title: t("admin.users.detail.deleteUser"),
+      message: t("admin.users.detail.deleteMessage", { name }),
+      confirmText: t("admin.users.detail.deleteConfirm"),
+      variant: "danger",
+    }))) return;
+    try {
+      await adminApi.deleteUser(Number(id));
+      success(t("admin.users.detail.userDeleted"), t("admin.users.detail.userDeletedDesc", { name }));
+      router.push("/admin/users");
+    } catch (err) {
+      toastError(t("admin.users.detail.deleteFailed"), apiErrorMessage(err, t("admin.users.detail.deleteFailed")));
+    }
+  };
+
+  const handleRestore = async () => {
+    try {
+      const res = await adminApi.restoreUser(Number(id));
+      const u = res.data.user;
+      setRemoval(null);
+      setInvitation((prev) => (prev ? { ...prev, is_active: u.is_active, account_status: u.account_status } : prev));
+      setForm((prev) => ({ ...prev, email: u.email, is_active: u.is_active }));
+      success(t("admin.users.restored"), t("admin.users.restoredDesc"));
+    } catch (err) {
+      toastError(t("admin.users.restoreFailed"), apiErrorMessage(err, t("admin.users.restoreFailed")));
+    }
+  };
+
   const inputCls = "w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm";
 
   if (loading) {
@@ -578,14 +611,37 @@ export default function UserEditPage() {
       />
         </div>
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 bg-white text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors shadow-sm"
-          >
-            <span className="material-symbols-outlined text-[18px]">person_off</span>
-            {t("admin.users.detail.deactivateUser")}
-          </button>
+          {removal ? (
+            <button
+              type="button"
+              onClick={() => void handleRestore()}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-green-200 bg-white text-green-700 text-sm font-semibold hover:bg-green-50 transition-colors shadow-sm"
+              data-testid="user-restore"
+            >
+              <span className="material-symbols-outlined text-[18px]">restore</span>
+              {t("admin.users.restore")}
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 bg-white text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">person_off</span>
+                {t("admin.users.detail.deactivateUser")}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRemove()}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors shadow-sm"
+                data-testid="user-delete"
+              >
+                <span className="material-symbols-outlined text-[18px]">delete</span>
+                {t("admin.users.detail.deleteUser")}
+              </button>
+            </>
+          )}
           <button
             type="submit"
             form="user-edit-form"
@@ -601,6 +657,12 @@ export default function UserEditPage() {
           </button>
         </div>
       </div>
+
+      {removal && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="status" data-testid="user-removed-banner">
+          {t("admin.users.detail.removedBanner", { date: removal.at ? formatDateShort(removal.at) : "—", email: removal.email || "—" })}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column */}

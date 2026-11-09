@@ -319,6 +319,9 @@ export interface User {
   classification: string;
   is_active: boolean;
   account_status?: string;
+  /** Set while the account is removed: the email it held before release. */
+  former_email?: string | null;
+  removed_at?: string | null;
   latest_account_invitation?: {
     id: number;
     status: string;
@@ -487,6 +490,11 @@ export const adminApi = {
       skipped_count: number;
     }>("/admin/users/bulk-deactivate", { ids }),
   reactivateUser: (id: number) => api.post(`/admin/users/${id}/reactivate`),
+  /** Removes the user from lists and sign-in; history is kept and the email released. */
+  deleteUser: (id: number, reason?: string) =>
+    api.post<{ message: string; user: User }>(`/admin/users/${id}/delete`, { reason }),
+  restoreUser: (id: number) =>
+    api.post<{ message: string; user: User }>(`/admin/users/${id}/restore`),
   changeUserPassword: (id: number, _password?: string, _passwordConfirmation?: string) =>
     api.post<{ message: string }>(`/admin/users/${id}/password-reset`),
   resendUserInvitation: (id: number) =>
