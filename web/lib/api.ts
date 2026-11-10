@@ -10719,6 +10719,12 @@ export const peopleAuthorityApi = {
   removeSupplierLinks: () =>
     api.post<{ data: { removed: number } }>("/people-authority/people/remove-supplier-links"),
   updatePerson: (id: number, data: Record<string, unknown>) => api.put(`/people-authority/people/${id}`, data),
+  bulkDeletePeople: (ids: number[]) =>
+    api.post<{
+      data: { deleted: number[]; deleted_count: number; skipped: { id: number; reason: string }[]; skipped_count: number };
+    }>("/people-authority/people/bulk-delete", { ids }),
+  bulkRestorePeople: (ids: number[]) =>
+    api.post<{ data: { restored_count: number } }>("/people-authority/people/bulk-restore", { ids }),
   linkAccount: (id: number, data: Record<string, unknown>) =>
     api.post(`/people-authority/people/${id}/link-account`, data),
   orgChart: () => api.get<{ data: Record<string, unknown> }>("/people-authority/organisation/chart"),
