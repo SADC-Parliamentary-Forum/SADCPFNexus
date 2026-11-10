@@ -24,6 +24,19 @@ class InferAssetAssigneesTest extends TestCase
         $this->assertSame(['Ronald Windwaai'], $this->people(['name' => 'Laptop R Windwaai']));
     }
 
+    public function test_office_codes_confirmed_for_the_register(): void
+    {
+        $this->assertSame(['Boemo Sekgoma'], $this->people(['location' => 'SG-Residence']));
+        $this->assertSame(['Samuel Bokosi'], $this->people(['location' => 'SB - Office#18']));
+        $this->assertSame(['Munashe Tofa'], $this->people(['location' => 'MT-Office#19']));
+        $this->assertSame(['Munashe Tofa'], $this->people(['location' => 'MT - Upstairs Office']));
+        $this->assertSame(['Daphne Engelbretch'], $this->people(['location' => 'DE - Office#35']));
+        $this->assertSame(['Moses Magadza'], $this->people(['location' => 'DR. MM-Office#38']));
+        $this->assertSame(['Jacob Segale'], $this->people(['location' => 'Dr. J.Segale - Office #17']));
+        $this->assertSame([], $this->people(['location' => 'Office#36']));
+        $this->assertSame([], $this->people(['location' => 'General Office - Upstairs']));
+    }
+
     public function test_short_codes_do_not_match_inside_other_words_or_in_lower_case(): void
     {
         $this->assertSame([], $this->people(['name' => 'Minutes of the RWPC meeting']));

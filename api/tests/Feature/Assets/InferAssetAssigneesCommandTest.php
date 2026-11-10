@@ -40,6 +40,23 @@ class InferAssetAssigneesCommandTest extends TestCase
         $this->assertSame($other->id, (int) $taken->fresh()->assigned_to);
     }
 
+    public function test_an_invited_account_that_has_not_signed_in_yet_can_hold_assets(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $invited = $this->staff($tenant, 'Boemo Mmandu Sekgoma');
+        $invited->forceFill(['is_active' => false, 'account_status' => User::STATUS_INVITED])->save();
+        $removed = $this->staff($tenant, 'Toivo Mwaala');
+        $removed->forceFill(['is_active' => false, 'account_status' => User::STATUS_REMOVED])->save();
+        AssetCategory::create(['tenant_id' => $tenant->id, 'name' => 'Equipment', 'code' => 'equipment']);
+        $sofa = $this->asset($tenant, 'Sofa', 'SG-Residence');
+        $desk = $this->asset($tenant, 'Desk', 'TMM Office');
+
+        $this->artisan('assets:infer-assignees', ['--tenant' => $tenant->id, '--apply' => true])->assertSuccessful();
+
+        $this->assertSame($invited->id, (int) $sofa->fresh()->assigned_to);
+        $this->assertNull($desk->fresh()->assigned_to);
+    }
+
     private function staff(Tenant $tenant, string $name): User
     {
         $user = $this->makeUser('staff', $tenant);

@@ -44,7 +44,17 @@ class InferAssetAssigneesCommand extends Command
         'S. Kauvee' => 'Samueline Kauvee',
         'C. Musonda' => 'Clare Musonda',
         'YNM' => 'Yapoka Mungandi',
+        'SG-Residence' => 'Boemo Sekgoma',
+        'SB - Office' => 'Samuel Bokosi',
+        'MT - Office' => 'Munashe Tofa',
+        'MT - Upstairs' => 'Munashe Tofa',
+        'DE - Office' => 'Daphne Engelbretch',
+        'Dr. MM' => 'Moses Magadza',
+        'J. Segale' => 'Jacob Segale',
     ];
+
+    /** Accounts that can hold assets: active ones, and invitations not yet accepted. */
+    private const HOLDER_STATUSES = [User::STATUS_INVITED, User::STATUS_PENDING_ACTIVATION];
 
     private const NOT_ASSIGNABLE = ['disposed', 'retired', 'pending_disposal', 'lost', 'stolen', 'written_off'];
 
@@ -55,7 +65,10 @@ class InferAssetAssigneesCommand extends Command
             return self::FAILURE;
         }
 
-        $users = User::query()->where('tenant_id', $tenantId)->where('is_active', true)->get(['id', 'name']);
+        $users = User::query()
+            ->where('tenant_id', $tenantId)
+            ->where(fn ($q) => $q->where('is_active', true)->orWhereIn('account_status', self::HOLDER_STATUSES))
+            ->get(['id', 'name']);
         $people = [];
         foreach (array_unique(array_values(self::ALIASES)) as $person) {
             $people[$person] = self::findUser($person, $users);
@@ -97,7 +110,7 @@ class InferAssetAssigneesCommand extends Command
 
         $this->section('Matched', $assign, fn ($r) => "{$verb} {$this->describe($r[0])} -> {$r[1]->name} (user {$r[1]->id}; \"{$r[2]['code']}\" in {$r[2]['field']})");
         $this->section('Unsure: more than one person named (not assigned)', $unsure, fn ($r) => $this->describe($r[0]).' -> '.implode(' / ', $r[1]));
-        $this->section('Person has no active Nexus account (not assigned)', $noAccount, fn ($r) => $this->describe($r[0])." -> {$r[1]}");
+        $this->section('Person has no Nexus account (not assigned)', $noAccount, fn ($r) => $this->describe($r[0])." -> {$r[1]}");
         $this->section('Already assigned to someone else (left as is)', $conflicts, fn ($r) => $this->describe($r[0])." is assigned to {$r[0]->assignedUser?->name}; code suggests {$r[1]}");
         $this->section('No recognised code (please identify)', $unmatched, fn ($a) => $this->describe($a));
 
