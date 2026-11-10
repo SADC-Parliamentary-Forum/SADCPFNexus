@@ -39,6 +39,7 @@ use App\Modules\PeopleAuthority\Services\SigningService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
@@ -58,25 +59,117 @@ class PeopleAuthorityController extends Controller
     {
         $q = Person::query()
             ->with(['organisationalUnit', 'employmentRecord', 'activePositionAssignment.position'])
+            ->withExists(['userLinks as has_account' => fn ($l) => $l->where('status', 'active')])
             ->where('tenant_id', $request->user()->tenant_id);
+        $deleted = $request->boolean('deleted');
+        if ($deleted) {
+            // Deleted entries are only for people who can restore them.
+            abort_unless($request->user()->can('people.manage'), 403);
+            $q->onlyTrashed();
+        }
         if ($request->boolean('directory')) {
             $q->where('directory_visible', true);
         }
-        if ($search = $request->query('q')) {
-            $like = '%'.$search.'%';
+        if ($search = trim((string) $request->query('q'))) {
+            $like = '%'.mb_strtolower($search).'%';
             $q->where(function ($w) use ($like) {
-                $w->where('first_name', 'like', $like)
-                    ->orWhere('last_name', 'like', $like)
-                    ->orWhere('work_email', 'like', $like)
-                    ->orWhere('display_name', 'like', $like)
-                    ->orWhere('person_number', 'like', $like);
+                foreach (['first_name', 'last_name', 'preferred_name', 'work_email', 'display_name', 'person_number'] as $column) {
+                    $w->orWhereRaw("LOWER({$column}) LIKE ?", [$like]);
+                }
             });
         }
+        if ($status = $request->query('status')) {
+            $q->where('employment_status', $status);
+        }
+        if ($unitId = $request->integer('unit_id')) {
+            $q->where('primary_unit_id', $unitId);
+        }
+        $account = $request->query('account');
+        if ($account === 'linked') {
+            $q->whereHas('userLinks', fn ($l) => $l->where('status', 'active'));
+        } elseif ($account === 'unlinked') {
+            $q->whereDoesntHave('userLinks', fn ($l) => $l->where('status', 'active'));
+        }
 
-        $rows = $q->orderBy('last_name')->paginate(min($request->integer('per_page', 50), 200));
-        $rows->getCollection()->transform(fn (Person $p) => $this->confidential->directoryPayload($p));
+        $rows = $q->orderBy('last_name')->orderBy('first_name')->paginate(min($request->integer('per_page', 50), 200));
+        $rows->getCollection()->transform(fn (Person $p) => $this->confidential->directoryPayload($p) + [
+            'has_account' => (bool) $p->has_account,
+            'deleted_at' => $deleted ? $p->deleted_at?->toIso8601String() : null,
+        ]);
 
         return response()->json($rows);
+    }
+
+    /**
+     * Delete several directory entries at once. Entries are soft-deleted (restorable) and
+     * their account links ended; history that points at them still resolves. People who
+     * still hold a position are skipped so the organisation chart is never left pointing
+     * at a deleted entry: vacate the position first.
+     */
+    public function peopleBulkDelete(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:100'],
+            'ids.*' => ['integer', 'distinct'],
+        ]);
+        $actor = $request->user();
+        $people = Person::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereIn('id', $data['ids'])
+            ->with('activePositionAssignment')
+            ->get()
+            ->keyBy('id');
+
+        $deleted = [];
+        $skipped = [];
+        foreach ($data['ids'] as $id) {
+            $person = $people->get($id);
+            if (! $person) {
+                $skipped[] = ['id' => $id, 'reason' => 'not_found'];
+
+                continue;
+            }
+            if ($person->activePositionAssignment) {
+                $skipped[] = ['id' => $id, 'reason' => 'holds_position'];
+
+                continue;
+            }
+
+            DB::transaction(function () use ($person) {
+                $person->userLinks()->where('status', 'active')->update(['status' => 'inactive', 'unlinked_at' => now()]);
+                $person->delete();
+            });
+            $this->audit->record($actor, 'person.deleted', $person->id, Person::class, $person->id);
+            $deleted[] = $id;
+        }
+
+        return response()->json(['data' => [
+            'deleted' => $deleted,
+            'deleted_count' => count($deleted),
+            'skipped' => $skipped,
+            'skipped_count' => count($skipped),
+        ]]);
+    }
+
+    /** Bring deleted directory entries back. "Populate from staff accounts" re-links their accounts. */
+    public function peopleBulkRestore(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:100'],
+            'ids.*' => ['integer', 'distinct'],
+        ]);
+        $actor = $request->user();
+        $people = Person::onlyTrashed()
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereIn('id', $data['ids'])
+            ->get();
+
+        foreach ($people as $person) {
+            $person->restore();
+            $this->audit->record($actor, 'person.restored', $person->id, Person::class, $person->id);
+        }
+
+        return response()->json(['data' => ['restored_count' => $people->count()]]);
     }
 
     public function peopleStore(Request $request): JsonResponse
@@ -275,6 +368,7 @@ class PeopleAuthorityController extends Controller
         $data = $request->validate([
             'first_name' => ['sometimes', 'string', 'max:255'],
             'last_name' => ['sometimes', 'string', 'max:255'],
+            'person_number' => ['nullable', 'string', 'max:64'],
             'preferred_name' => ['nullable', 'string', 'max:255'],
             'display_name' => ['nullable', 'string', 'max:255'],
             'employment_status' => ['nullable', 'string', 'max:32'],

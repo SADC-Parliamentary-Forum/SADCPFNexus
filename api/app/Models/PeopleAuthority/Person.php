@@ -4,6 +4,7 @@ namespace App\Models\PeopleAuthority;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -61,5 +62,10 @@ class Person extends Model
         return $this->hasOne(PositionAssignment::class, 'person_id')
             ->where('status', 'active')
             ->latestOfMany('start_at');
+    }
+
+    public function userLinks(): HasMany
+    {
+        return $this->hasMany(PersonUserLink::class, 'person_id');
     }
 }

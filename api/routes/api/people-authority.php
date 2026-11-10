@@ -23,6 +23,8 @@ Route::prefix('people-authority')->group(function () {
     Route::middleware('can:people.manage')->post('people', [$pa, 'peopleStore']);
     Route::middleware('can:people.manage')->post('people/sync-from-users', [$pa, 'peopleSyncFromUsers']);
     Route::middleware('can:people.manage')->post('people/remove-supplier-links', [$pa, 'peopleRemoveSupplierLinks']);
+    Route::middleware('can:people.manage')->post('people/bulk-delete', [$pa, 'peopleBulkDelete']);
+    Route::middleware('can:people.manage')->post('people/bulk-restore', [$pa, 'peopleBulkRestore']);
     Route::middleware('can:people.manage')->put('people/{person}', [$pa, 'peopleUpdate']);
     Route::middleware('can:people.manage')->post('people/{person}/link-account', [$pa, 'linkAccount']);
     Route::post('people/{person}/change-requests', [$pa, 'changeRequestStore']);
