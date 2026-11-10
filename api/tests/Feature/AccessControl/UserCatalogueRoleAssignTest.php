@@ -3,8 +3,11 @@
 namespace Tests\Feature\AccessControl;
 
 use App\Models\AccessControl\AccessRoleCatalogue;
+use App\Models\AccessControl\AccessRoleSyncRequest;
 use App\Models\AccessControl\AccessRoleVersion;
 use App\Models\Tenant;
+use App\Models\User;
+use App\Modules\AccessControl\Services\RoleCatalogueService;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -64,31 +67,18 @@ class UserCatalogueRoleAssignTest extends TestCase
         $this->assertIsArray($profile['pending_role_sync_requests']);
     }
 
-    public function test_high_risk_catalogue_assignment_stays_pending_until_second_admin_approves(): void
+    public function test_system_admin_assigns_a_high_risk_catalogue_role_directly(): void
     {
         $tenant = Tenant::factory()->create();
-        $adminA = $this->makeUser('System Admin', $tenant);
-        $adminB = $this->makeUser('System Admin', $tenant);
+        $admin = $this->makeUser('System Admin', $tenant);
         $target = $this->makeUser('staff', $tenant);
-        $version = $this->publishUnaro($tenant->id, $adminA->id, 'high', ['admin.roles.view']);
+        $version = $this->publishUnaro($tenant->id, $admin->id, 'high', ['admin.roles.view']);
 
-        Sanctum::actingAs($adminA);
-        $assignmentId = $this->postJson("/api/v1/admin/access/users/{$target->id}/role-versions/{$version->id}", [
+        Sanctum::actingAs($admin);
+        $this->postJson("/api/v1/admin/access/users/{$target->id}/role-versions/{$version->id}", [
             'reason' => 'Privileged Unaro assignment',
         ])
             ->assertCreated()
-            ->assertJsonPath('data.status', 'pending_approval')
-            ->json('data.id');
-
-        $this->assertFalse($target->fresh()->hasRole('Unaro Role'));
-        $this->assertFalse($target->fresh()->checkPermissionTo('admin.roles.view'));
-
-        $this->postJson("/api/v1/admin/access/role-assignments/{$assignmentId}/approve")
-            ->assertStatus(422);
-
-        Sanctum::actingAs($adminB);
-        $this->postJson("/api/v1/admin/access/role-assignments/{$assignmentId}/approve")
-            ->assertOk()
             ->assertJsonPath('data.status', 'active');
 
         $fresh = $target->fresh();
@@ -102,12 +92,15 @@ class UserCatalogueRoleAssignTest extends TestCase
         $admin = $this->makeUser('System Admin', $tenant);
         $target = $this->makeUser('staff', $tenant);
 
-        Sanctum::actingAs($admin);
-        $requestId = $this->patchJson("/api/v1/admin/users/{$target->id}/roles", [
+        $requestId = AccessRoleSyncRequest::query()->create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $target->id,
             'roles' => ['HOD'],
-        ])
-            ->assertStatus(202)
-            ->json('data.request_id');
+            'requested_by' => $admin->id,
+            'status' => 'pending_approval',
+            'reason' => 'Role assignment requires dual control.',
+        ])->id;
+        Sanctum::actingAs($admin);
 
         $pending = $this->getJson("/api/v1/admin/access/users/{$target->id}/profile")
             ->assertOk()
@@ -126,9 +119,9 @@ class UserCatalogueRoleAssignTest extends TestCase
     private function publishUnaro(int $tenantId, int $ownerId, string $risk, array $permissions): AccessRoleVersion
     {
         $catalogue = $this->makeUnaroCatalogue($tenantId, $ownerId, $risk);
-        $admin = \App\Models\User::query()->findOrFail($ownerId);
+        $admin = User::query()->findOrFail($ownerId);
 
-        return app(\App\Modules\AccessControl\Services\RoleCatalogueService::class)
+        return app(RoleCatalogueService::class)
             ->publishVersion($catalogue, $permissions, $admin, 'Published for assignment tests')
             ->fresh(['catalogue']);
     }

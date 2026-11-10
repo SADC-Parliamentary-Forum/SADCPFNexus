@@ -12,7 +12,9 @@ use App\Modules\AccessControl\Services\PrivilegedAccessDualControlService;
 use App\Modules\Correspondence\Services\CorrespondenceRegisterService;
 use App\Modules\Risk\Services\RiskService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ResidualCloseoutAccessControlTest extends TestCase
@@ -156,7 +158,7 @@ class ResidualCloseoutAccessControlTest extends TestCase
 
         $this->assertSame('pending_approval', $grant->status);
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
         $dual->approveGrant($grant, $adminA);
     }
 
@@ -183,17 +185,17 @@ class ResidualCloseoutAccessControlTest extends TestCase
         $admin = $this->makeUser('System Admin');
         $dual = app(PrivilegedAccessDualControlService::class);
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
         $dual->createGrant($admin, [
             'permission_key' => 'roles.manage',
             'reason' => 'self',
         ], $admin);
     }
 
-    public function test_high_risk_role_assignment_pending_until_second_approver(): void
+    public function test_high_risk_role_assignment_by_a_non_admin_is_pending_until_second_approver(): void
     {
         $tenant = Tenant::factory()->create();
-        $adminA = $this->makeUser('System Admin', $tenant);
+        $adminA = $this->makeUser('HR Manager', $tenant);
         $adminB = $this->makeUser('System Admin', $tenant);
         $target = $this->makeUser('staff', $tenant);
 
@@ -215,8 +217,8 @@ class ResidualCloseoutAccessControlTest extends TestCase
         ]);
 
         // Spatie role must exist for assignRole after approval
-        \Spatie\Permission\Models\Role::findOrCreate('Privileged Test Role', 'web');
-        \Spatie\Permission\Models\Role::findOrCreate('Privileged Test Role', 'sanctum');
+        Role::findOrCreate('Privileged Test Role', 'web');
+        Role::findOrCreate('Privileged Test Role', 'sanctum');
 
         $dual = app(PrivilegedAccessDualControlService::class);
         $assignment = $dual->createRoleAssignment($target, $version->load('catalogue'), [

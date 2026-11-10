@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\AccessControl;
 
-use App\Models\AccessControl\AccessRoleSyncRequest;
 use App\Models\Tenant;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
@@ -112,15 +111,14 @@ class RolesCleanupTest extends TestCase
         Sanctum::actingAs($admin);
 
         $this->patchJson("/api/v1/admin/users/{$target->id}/roles", ['roles' => ['Field Researcher', 'Finance Officer']])
-            ->assertStatus(202);
+            ->assertOk();
         $this->assertEqualsCanonicalizing(
             ['Field Researcher', 'Finance Officer', 'Finance Controller'],
-            AccessRoleSyncRequest::query()->latest('id')->first()->roles
+            $target->fresh()->getRoleNames()->all()
         );
 
-        $target->syncRoles(['Field Researcher', 'Finance Officer', 'Finance Controller']);
         $this->patchJson("/api/v1/admin/users/{$target->id}/roles", ['roles' => ['Field Researcher', 'Finance Controller']])
-            ->assertStatus(202);
-        $this->assertSame(['Field Researcher'], AccessRoleSyncRequest::query()->latest('id')->first()->roles);
+            ->assertOk();
+        $this->assertSame(['Field Researcher'], $target->fresh()->getRoleNames()->all());
     }
 }

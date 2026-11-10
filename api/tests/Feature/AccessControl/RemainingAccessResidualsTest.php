@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\AccessControl;
 
+use App\Models\AccessControl\AccessRoleSyncRequest;
 use App\Models\Assignment;
 use App\Models\AuditEngagement;
 use App\Models\DelegatedAuthority;
@@ -169,35 +170,38 @@ class RemainingAccessResidualsTest extends TestCase
         $this->assertSame(1, (int) $res->json('pending_stock_requests'));
     }
 
-    public function test_staff_role_sync_requires_dual_control(): void
+    public function test_system_admin_role_change_applies_without_waiting_for_approval(): void
     {
         $tenant = Tenant::factory()->create();
         $admin = $this->makeAdmin($tenant);
         $target = $this->makeUser('staff', $tenant);
         Sanctum::actingAs($admin);
 
-        $res = $this->patchJson('/api/v1/admin/users/'.$target->id.'/roles', [
+        $this->patchJson('/api/v1/admin/users/'.$target->id.'/roles', [
             'roles' => ['HOD'],
-        ]);
-        $res->assertStatus(202)->assertJsonPath('data.status', 'pending_approval');
-        $this->assertFalse($target->fresh()->hasRole('HOD'));
-        $this->assertTrue($target->fresh()->hasRole('staff'));
+        ])->assertOk()->assertJsonPath('data.status', 'applied');
+
+        $this->assertTrue($target->fresh()->hasRole('HOD'));
+        $this->assertSame(0, AccessRoleSyncRequest::query()->where('user_id', $target->id)->count());
+        $this->assertDatabaseHas('audit_logs', ['event' => 'user.roles_updated', 'auditable_id' => $target->id]);
     }
 
-    public function test_second_admin_can_approve_staff_role_sync(): void
+    public function test_system_admin_can_approve_a_waiting_role_change_including_their_own(): void
     {
         $tenant = Tenant::factory()->create();
-        $adminA = $this->makeAdmin($tenant);
-        $adminB = $this->makeAdmin($tenant);
+        $admin = $this->makeAdmin($tenant);
         $target = $this->makeUser('staff', $tenant);
-        Sanctum::actingAs($adminA);
-
-        $pendingId = $this->patchJson('/api/v1/admin/users/'.$target->id.'/roles', [
+        $pending = AccessRoleSyncRequest::query()->create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $target->id,
             'roles' => ['HOD'],
-        ])->assertStatus(202)->json('data.request_id');
+            'requested_by' => $admin->id,
+            'status' => 'pending_approval',
+            'reason' => 'Role assignment requires dual control.',
+        ]);
+        Sanctum::actingAs($admin);
 
-        Sanctum::actingAs($adminB);
-        $this->postJson('/api/v1/admin/users/role-sync-requests/'.$pendingId.'/approve')
+        $this->postJson('/api/v1/admin/users/role-sync-requests/'.$pending->id.'/approve')
             ->assertOk();
         $this->assertTrue($target->fresh()->hasRole('HOD'));
     }

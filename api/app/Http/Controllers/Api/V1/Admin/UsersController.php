@@ -328,13 +328,35 @@ class UsersController extends Controller
             abort(423, 'Legacy Spatie role edits are frozen. Assign published access_role_versions instead.');
         }
 
+        $actor = $request->user();
         $oldRoles = $user->getRoleNames()->values()->all();
         $roles = app(CanonicalRoleManager::class)->resolveRoleChange($oldRoles, array_values($roles));
+
+        // A System Admin's role changes apply straight away; anyone else's wait for one.
+        if ($actor->isSystemAdmin()) {
+            $user->syncRoles($roles);
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            $this->userService->revokeAllAccess($user);
+            AuditLog::record('user.roles_updated', [
+                'auditable_type' => User::class,
+                'auditable_id' => $user->id,
+                'old_values' => ['roles' => $oldRoles],
+                'new_values' => ['roles' => array_values($roles)],
+                'tags' => 'auth',
+            ]);
+
+            return response()->json([
+                'message' => 'Roles updated.',
+                'user' => $user->fresh(['roles']),
+                'data' => ['status' => 'applied'],
+            ]);
+        }
+
         $pending = AccessRoleSyncRequest::query()->create([
             'tenant_id' => $user->tenant_id,
             'user_id' => $user->id,
             'roles' => array_values($roles),
-            'requested_by' => $request->user()->id,
+            'requested_by' => $actor->id,
             'status' => 'pending_approval',
             'reason' => 'Role assignment requires dual control.',
         ]);
@@ -356,7 +378,7 @@ class UsersController extends Controller
     {
         $this->authorize('create', User::class);
         abort_unless((int) $syncRequest->tenant_id === (int) $request->user()->tenant_id, 404);
-        if ((int) $syncRequest->requested_by === (int) $request->user()->id) {
+        if ((int) $syncRequest->requested_by === (int) $request->user()->id && ! $request->user()->isSystemAdmin()) {
             abort(403, 'A different administrator must approve privileged role changes.');
         }
         if ($syncRequest->status !== 'pending_approval') {
