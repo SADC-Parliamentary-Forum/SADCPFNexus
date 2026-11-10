@@ -265,18 +265,17 @@ class RemainingGapsCloseoutTest extends TestCase
         $this->assertContains('Public resolution', $titles);
     }
 
-    public function test_privileged_role_sync_requires_dual_control(): void
+    public function test_system_admin_assigns_a_privileged_role_directly(): void
     {
         $tenant = Tenant::factory()->create();
         $admin = $this->makeAdmin($tenant);
         $target = $this->makeUser('staff', $tenant);
         Sanctum::actingAs($admin);
 
-        $res = $this->patchJson('/api/v1/admin/users/'.$target->id.'/roles', [
+        $this->patchJson('/api/v1/admin/users/'.$target->id.'/roles', [
             'roles' => ['Secretary General'],
-        ]);
-        $res->assertStatus(202)->assertJsonPath('data.status', 'pending_approval');
-        $this->assertFalse($target->fresh()->hasRole('Secretary General'));
+        ])->assertOk()->assertJsonPath('data.status', 'applied');
+        $this->assertTrue($target->fresh()->hasRole('Secretary General'));
     }
 
     public function test_saam_delegation_mirrors_into_people_authority(): void

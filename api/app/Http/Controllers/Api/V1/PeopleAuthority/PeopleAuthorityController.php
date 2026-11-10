@@ -783,6 +783,9 @@ class PeopleAuthorityController extends Controller
             ]);
         }
 
+        // System Admins grant privileged roles directly; anyone else needs a second approver.
+        $needsApproval = $privileged && ! $request->user()->isSystemAdmin();
+
         $row = UserRoleAssignment::create([
             'tenant_id' => $request->user()->tenant_id,
             'user_id' => $user->id,
@@ -791,16 +794,16 @@ class PeopleAuthorityController extends Controller
             'scope_type' => $data['scope_type'] ?? 'tenant',
             'scope_id' => $data['scope_id'] ?? null,
             'is_privileged' => $privileged,
-            'status' => $privileged ? 'pending' : 'active',
+            'status' => $needsApproval ? 'pending' : 'active',
             'effective_from' => $data['effective_from'] ?? now()->toDateString(),
             'effective_to' => $data['effective_to'] ?? null,
             'requested_by' => $request->user()->id,
             'reason' => $data['reason'] ?? null,
-            'approved_by' => $privileged ? null : $request->user()->id,
-            'approved_at' => $privileged ? null : now(),
+            'approved_by' => $needsApproval ? null : $request->user()->id,
+            'approved_at' => $needsApproval ? null : now(),
         ]);
 
-        if (! $privileged) {
+        if (! $needsApproval) {
             $user->assignRole($data['role_name']);
         }
 

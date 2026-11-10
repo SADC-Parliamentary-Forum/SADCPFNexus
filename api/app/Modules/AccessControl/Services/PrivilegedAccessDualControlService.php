@@ -227,7 +227,9 @@ class PrivilegedAccessDualControlService
         array $data,
         User $actor
     ): AccessRoleAssignment {
-        $privileged = $this->isPrivilegedRoleVersion($version);
+        $highRisk = $this->isPrivilegedRoleVersion($version);
+        // System Admins assign high-risk roles directly; other access administrators need a second approver.
+        $privileged = $highRisk && ! $actor->isSystemAdmin();
         $scopeType = $data['scope_type'] ?? 'organisation';
         $scopeReference = $data['scope_reference'] ?? null;
         $validFrom = Carbon::parse($data['valid_from'] ?? now());
@@ -235,7 +237,7 @@ class PrivilegedAccessDualControlService
             ? Carbon::parse($data['valid_until'])
             : null;
 
-        if ($privileged && (int) $target->id === (int) $actor->id) {
+        if ($highRisk && (int) $target->id === (int) $actor->id) {
             throw ValidationException::withMessages([
                 'role' => ['Access administrators cannot assign themselves privileged roles.'],
             ]);
@@ -322,7 +324,7 @@ class PrivilegedAccessDualControlService
             throw ValidationException::withMessages(['status' => ['Assignment is not awaiting approval.']]);
         }
 
-        if ((int) $assignment->requested_by === (int) $approver->id) {
+        if ((int) $assignment->requested_by === (int) $approver->id && ! $approver->isSystemAdmin()) {
             throw ValidationException::withMessages([
                 'approver' => ['Second approver must be different from the requester (dual-control).'],
             ]);

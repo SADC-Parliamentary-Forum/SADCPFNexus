@@ -20,7 +20,7 @@ import {
   type AccessCatalogueAssignment,
   type AccessRoleSyncRequest,
 } from "@/lib/api";
-import { getStoredUser } from "@/lib/auth";
+import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { cn, formatDateShort } from "@/lib/utils";
@@ -238,6 +238,8 @@ export default function UserEditPage() {
   const [catalogueReason, setCatalogueReason] = useState("Assigned from user security tab");
   const [catalogueBusy, setCatalogueBusy] = useState(false);
   const viewerId = getStoredUser()?.id ?? null;
+  // System Admins may approve any waiting role change, including ones they requested.
+  const viewerIsAdmin = isSystemAdmin(getStoredUser());
   const [positions, setPositions] = useState<Position[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -1050,7 +1052,7 @@ export default function UserEditPage() {
                         {roleAssignments
                           .filter((item) => item.status === "pending_approval")
                           .map((item) => {
-                            const canApprove = viewerId != null && viewerId !== item.requested_by;
+                            const canApprove = viewerId != null && (viewerIsAdmin || viewerId !== item.requested_by);
                             return (
                               <div
                                 key={`cat-${item.id}`}
@@ -1078,7 +1080,7 @@ export default function UserEditPage() {
                             );
                           })}
                         {pendingRoleSyncs.map((item) => {
-                          const canApprove = viewerId != null && viewerId !== item.requested_by;
+                          const canApprove = viewerId != null && (viewerIsAdmin || viewerId !== item.requested_by);
                           return (
                             <div
                               key={`sync-${item.id}`}
