@@ -30,7 +30,6 @@ final class AssetLabelLayout
             ['id' => 'notice', 'x_mm' => 1.5, 'y_mm' => 4.6, 'w_mm' => max(10.0, $labelW - 3), 'h_mm' => 3.0, 'visible' => true],
             ['id' => 'tag', 'x_mm' => 1.5, 'y_mm' => 8.0, 'w_mm' => $textW, 'h_mm' => 4.8, 'visible' => true],
             ['id' => 'name', 'x_mm' => 1.5, 'y_mm' => 12.8, 'w_mm' => $textW, 'h_mm' => 5.4, 'visible' => true],
-            ['id' => 'owner', 'x_mm' => 1.5, 'y_mm' => 27.8, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => true],
             ['id' => 'recovery', 'x_mm' => 1.5, 'y_mm' => 31.0, 'w_mm' => $textW, 'h_mm' => 4.8, 'visible' => true],
             ['id' => 'scan_hint', 'x_mm' => 1.5, 'y_mm' => 35.8, 'w_mm' => $textW, 'h_mm' => 3.0, 'visible' => true],
             ['id' => 'model', 'x_mm' => 1.5, 'y_mm' => 38.8, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => false],
@@ -105,7 +104,11 @@ final class AssetLabelLayout
         $labelW = (float) $template->label_width_mm;
         $labelH = (float) $template->label_height_mm;
         $qrMm = (float) $template->qr_mm;
-        $items = self::sanitize($template->layout, $labelW, $labelH, $qrMm);
+        // The org line already names SADC PF, so an "Owner" line on older saved layouts is never printed.
+        $items = array_values(array_filter(
+            self::sanitize($template->layout, $labelW, $labelH, $qrMm),
+            fn (array $item) => $item['id'] !== 'owner'
+        ));
 
         // The serial and "Assigned to" lines are always laid out, even on templates saved with them
         // hidden or missing; each prints only when the asset has a serial or an assignee.
