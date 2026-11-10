@@ -220,6 +220,34 @@ class UsersController extends Controller
         ]);
     }
 
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        // Same gate as bulk deactivate: System Admin only.
+        $this->authorize('create', User::class);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:100'],
+            'ids.*' => ['integer', 'distinct'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $actor = $request->user();
+        $result = $this->userService->bulkRemove(
+            $data['ids'],
+            $actor,
+            fn (User $target) => $actor->can('delete', $target),
+            $data['reason'] ?? null,
+        );
+
+        return response()->json([
+            'message' => 'Bulk delete completed.',
+            'removed' => $result['removed'],
+            'removed_count' => count($result['removed']),
+            'skipped' => $result['skipped'],
+            'skipped_count' => count($result['skipped']),
+        ]);
+    }
+
     /**
      * @OA\Post(
      *     path="/api/v1/admin/users/{id}/reactivate",
