@@ -48,7 +48,7 @@ class InferAssetAssigneesCommand extends Command
         'SB - Office' => 'Samuel Bokosi',
         'MT - Office' => 'Munashe Tofa',
         'MT - Upstairs' => 'Munashe Tofa',
-        'DE - Office' => 'Daphne Engelbretch',
+        'DE - Office' => 'Daphne Engelbrecht',
         'Dr. MM' => 'Moses Magadza',
         'J. Segale' => 'Jacob Segale',
     ];
