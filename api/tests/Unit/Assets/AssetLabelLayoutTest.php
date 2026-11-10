@@ -14,7 +14,7 @@ class AssetLabelLayoutTest extends TestCase
         $items = AssetLabelLayout::defaultItems(63.5, 46.6, 22);
         $ids = array_column($items, 'id');
         $this->assertSame(
-            ['org', 'notice', 'tag', 'name', 'owner', 'recovery', 'scan_hint', 'model', 'serial', 'location', 'custodian', 'qr'],
+            ['org', 'notice', 'tag', 'name', 'recovery', 'scan_hint', 'model', 'serial', 'location', 'custodian', 'qr'],
             $ids
         );
         $qr = null;
@@ -60,9 +60,19 @@ class AssetLabelLayoutTest extends TestCase
     {
         $fromNull = AssetLabelLayout::sanitize(null, 63.5, 46.6, 22);
         $fromEmpty = AssetLabelLayout::sanitize([], 70, 40, 18);
-        $this->assertCount(12, $fromNull);
-        $this->assertCount(12, $fromEmpty);
-        $this->assertSame('qr', $fromEmpty[11]['id']);
+        $this->assertCount(11, $fromNull);
+        $this->assertCount(11, $fromEmpty);
+        $this->assertSame('qr', $fromEmpty[10]['id']);
+    }
+
+    public function test_resolve_never_lays_out_an_owner_line(): void
+    {
+        $saved = new AssetLabelTemplate(['label_width_mm' => 63.5, 'label_height_mm' => 46.6, 'qr_mm' => 22, 'layout' => [
+            ['id' => 'tag', 'x_mm' => 1, 'y_mm' => 8, 'w_mm' => 30, 'h_mm' => 5],
+            ['id' => 'owner', 'x_mm' => 1, 'y_mm' => 28, 'w_mm' => 30, 'h_mm' => 3.2, 'visible' => true],
+        ]]);
+
+        $this->assertNotContains('owner', array_column(AssetLabelLayout::resolve($saved), 'id'));
     }
 
     public function test_wrapped_items_key_is_accepted(): void

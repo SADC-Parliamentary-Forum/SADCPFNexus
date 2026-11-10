@@ -74,7 +74,6 @@
                                         elseif ($id === 'serial') { $text = $label['serial'] ? 'S/N: '.$label['serial'] : null; }
                                         elseif ($id === 'location') { $text = $label['location'] ? 'Location: '.$label['location'] : null; }
                                         elseif ($id === 'custodian') { $text = $label['custodian'] ? 'Assigned to: '.$label['custodian'] : null; }
-                                        elseif ($id === 'owner') { $text = !empty($label['owner']) ? 'Owner: '.$label['owner'] : 'Owner: SADC Parliamentary Forum'; }
                                         elseif ($id === 'recovery') {
                                             $bits = array_filter([
                                                 !empty($label['recovery_phone']) ? 'Tel: '.$label['recovery_phone'] : null,
