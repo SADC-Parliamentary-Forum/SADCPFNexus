@@ -136,6 +136,24 @@ class AssetLabelLayoutTest extends TestCase
         $this->assertTrue($items['serial']['visible']);
     }
 
+    public function test_resolve_forces_the_assigned_to_line_onto_saved_layouts(): void
+    {
+        $base = ['label_width_mm' => 63.5, 'label_height_mm' => 46.6, 'qr_mm' => 22];
+
+        $hidden = new AssetLabelTemplate($base + ['layout' => [
+            ['id' => 'tag', 'x_mm' => 1, 'y_mm' => 8, 'w_mm' => 30, 'h_mm' => 5],
+            ['id' => 'custodian', 'x_mm' => 1, 'y_mm' => 24, 'w_mm' => 30, 'h_mm' => 3.2, 'visible' => false],
+        ]]);
+        $this->assertTrue(array_column(AssetLabelLayout::resolve($hidden), null, 'id')['custodian']['visible']);
+
+        $missing = new AssetLabelTemplate($base + ['layout' => [
+            ['id' => 'tag', 'x_mm' => 1, 'y_mm' => 8, 'w_mm' => 30, 'h_mm' => 5],
+        ]]);
+        $items = array_column(AssetLabelLayout::resolve($missing), null, 'id');
+        $this->assertTrue($items['custodian']['visible']);
+        $this->assertNotSame($items['serial']['y_mm'], $items['custodian']['y_mm']);
+    }
+
     public function test_qr_stays_square(): void
     {
         $clean = AssetLabelLayout::sanitize([

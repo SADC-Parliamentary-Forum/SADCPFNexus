@@ -3,6 +3,7 @@
 namespace Tests\Feature\Assets;
 
 use App\Models\AssetLabelTemplate;
+use App\Modules\Assets\Services\AssetLabelService;
 use Illuminate\Foundation\Testing\TestCase;
 
 /** Renders the label view only, so it skips the base TestCase's database refresh. */
@@ -45,6 +46,15 @@ class AssetLabelAssignedToTest extends TestCase
     public function test_serial_line_prints_when_the_asset_has_a_serial(): void
     {
         $this->assertStringContainsString('S/N: 6CGK2X1', $this->render(null, '6CGK2X1', 'serial'));
+    }
+
+    public function test_label_name_drops_a_serial_that_already_prints_on_its_own_line(): void
+    {
+        $this->assertSame('Dell Laptop', AssetLabelService::nameForLabel('Dell Laptop S/N 6CGK2X1', '6CGK2X1'));
+        $this->assertSame('HP 15s i5 Laptop', AssetLabelService::nameForLabel('HP 15s i5 Laptop - 5CD144HSKY', '5CD144HSKY'));
+        $this->assertSame('Printer', AssetLabelService::nameForLabel('Printer (CNC0G1805)', 'cnc0g1805'));
+        $this->assertSame('Dell Latitude 5490', AssetLabelService::nameForLabel('Dell Latitude 5490', null));
+        $this->assertSame('ABC123', AssetLabelService::nameForLabel('ABC123', 'ABC123'));
     }
 
     public function test_serial_line_is_left_off_when_there_is_no_serial(): void
