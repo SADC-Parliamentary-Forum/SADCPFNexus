@@ -15,6 +15,7 @@ on:
           - backfill-identifiers-apply
           - infer-assignees-dry-run
           - infer-assignees-apply
+          - staff-lookup
           - app-errors
           - mfa-check
           - log-tail
@@ -57,6 +58,8 @@ jobs:
             # Assign unassigned assets to the staff member named by a code in their name or location.
             infer-assignees-dry-run) CMD="docker exec sadcpf_php php artisan assets:infer-assignees $ARGS" ;;
             infer-assignees-apply)   CMD="bash scripts/ops/backup.sh && docker exec sadcpf_php php artisan assets:infer-assignees $ARGS --apply" ;;
+            # Read-only: accounts and staff-directory emails for named people.
+            staff-lookup) CMD="echo PD9waHAKcmVxdWlyZSAnL3Zhci93d3cvYXBpL3ZlbmRvci9hdXRvbG9hZC5waHAnOwokYXBwID0gcmVxdWlyZSAnL3Zhci93d3cvYXBpL2Jvb3RzdHJhcC9hcHAucGhwJzsKJGFwcC0+bWFrZShJbGx1bWluYXRlXENvbnRyYWN0c1xDb25zb2xlXEtlcm5lbDo6Y2xhc3MpLT5ib290c3RyYXAoKTsKdXNlIElsbHVtaW5hdGVcU3VwcG9ydFxGYWNhZGVzXERCOwokdGVybXMgPSBbJ3Nla2dvbWEnLCAnbHVzYWthbGFsdScsICdwZWRybycsICdrdXJhc2hhJywgJ211bmdhbmRpJywgJ3lhcG9rYScsICdtdXNvbmRhJywgJ3NlZ2FsZScsICdlbmdlbGJyJywgJ21hZ2FkemEnLCAndG9mYScsICdtdW5hc2hlJywgJ2Jva29zaSddOwpmb3JlYWNoICgkdGVybXMgYXMgJHQpIHsKICAgIGVjaG8gIj09IHskdH1cbiI7CiAgICBmb3JlYWNoIChEQjo6dGFibGUoJ3VzZXJzJyktPndoZXJlUmF3KCdMT1dFUihuYW1lKSBMSUtFID8gT1IgTE9XRVIoZW1haWwpIExJS0UgPycsIFsiJXskdH0lIiwgIiV7JHR9JSJdKS0+Z2V0KFsnaWQnLCAnbmFtZScsICdlbWFpbCcsICdpc19hY3RpdmUnLCAnYWNjb3VudF9zdGF0dXMnLCAnZGVsZXRlZF9hdCddKSBhcyAkdSkgewogICAgICAgIGVjaG8gIiAgdXNlciB7JHUtPmlkfTogeyR1LT5uYW1lfSA8eyR1LT5lbWFpbH0+IGFjdGl2ZT0iLigkdS0+aXNfYWN0aXZlID8gMSA6IDApLiIgc3RhdHVzPXskdS0+YWNjb3VudF9zdGF0dXN9Ii4oJHUtPmRlbGV0ZWRfYXQgPyAnIERFTEVURUQnIDogJycpLiJcbiI7CiAgICB9CiAgICBmb3JlYWNoIChEQjo6dGFibGUoJ3Blb3BsZScpLT53aGVyZVJhdygiTE9XRVIoQ09BTEVTQ0UoZmlyc3RfbmFtZSwnJyl8fCcgJ3x8Q09BTEVTQ0UobGFzdF9uYW1lLCcnKXx8JyAnfHxDT0FMRVNDRShkaXNwbGF5X25hbWUsJycpKSBMSUtFID8iLCBbIiV7JHR9JSJdKS0+Z2V0KFsnaWQnLCAnZmlyc3RfbmFtZScsICdsYXN0X25hbWUnLCAnd29ya19lbWFpbCcsICdkZWxldGVkX2F0J10pIGFzICRwKSB7CiAgICAgICAgZWNobyAiICBwZXJzb24geyRwLT5pZH06IHskcC0+Zmlyc3RfbmFtZX0geyRwLT5sYXN0X25hbWV9IDx7JHAtPndvcmtfZW1haWx9PiIuKCRwLT5kZWxldGVkX2F0ID8gJyBERUxFVEVEJyA6ICcnKS4iXG4iOwogICAgfQp9CmVjaG8gIj09IGVtYWlsIGRvbWFpbnMgKGFjdGl2ZSB1c2VycylcbiI7CmZvcmVhY2ggKERCOjp0YWJsZSgndXNlcnMnKS0+d2hlcmUoJ2lzX2FjdGl2ZScsIHRydWUpLT5zZWxlY3RSYXcoInNwbGl0X3BhcnQoZW1haWwsJ0AnLDIpIGQsIGNvdW50KCopIGMiKS0+Z3JvdXBCeSgnZCcpLT5vcmRlckJ5RGVzYygnYycpLT5nZXQoKSBhcyAkcikgewogICAgZWNobyAiICB7JHItPmR9OiB7JHItPmN9XG4iOwp9Cg== | base64 -d | docker exec -i sadcpf_php php" ;;
             # Read-only: error-looking lines from the last 12h of container output.
             app-errors) CMD="for c in sadcpf_php sadcpf_nginx sadcpf_web; do echo \"== \$c\"; docker logs --since 12h \$c 2>&1 | grep -iE 'error|exception| 500 |auth/login' | tail -n 25 | cut -c1-500; done" ;;
             # Read-only: per MFA user, whether the stored secret decrypts and verifies (never prints it).
