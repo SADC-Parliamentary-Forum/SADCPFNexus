@@ -7,8 +7,10 @@ use App\Models\AssetLabel;
 use App\Models\AssetLabelBatch;
 use App\Models\AssetLabelBatchItem;
 use App\Models\AssetLabelTemplate;
+use App\Models\AssetQrToken;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Modules\Assets\Import\AssetDescriptionParser;
 use App\Modules\Assets\Support\AssetLabelLayout;
 use App\Modules\Assets\Support\AssetLabelTextFit;
 use App\Modules\Documents\Services\ModuleDocumentBridge;
@@ -78,12 +80,12 @@ class AssetLabelService
                     ->latest('id')
                     ->first();
                 $version = $previous ? ((int) $previous->label_version) + 1 : 1;
-                $qrToken = \App\Models\AssetQrToken::query()
+                $qrToken = AssetQrToken::query()
                     ->where('asset_id', $asset->id)
                     ->where('token', $asset->qr_token)
                     ->whereNull('revoked_at')
                     ->first();
-                $label = \App\Models\AssetLabel::create([
+                $label = AssetLabel::create([
                     'tenant_id' => $asset->tenant_id,
                     'asset_id' => $asset->id,
                     'template_id' => $template->id,
@@ -174,7 +176,7 @@ class AssetLabelService
 
         return [
             'asset_tag' => $asset->tag_number ?: $asset->asset_code,
-            'name' => $asset->name,
+            'name' => self::nameForLabel($asset->name, $asset->serial_number),
             'model' => $asset->model,
             'serial' => $asset->serial_number,
             'location' => $asset->location?->name ?: $asset->legacy_location,
@@ -186,6 +188,26 @@ class AssetLabelService
             'scan_hint' => 'Scan for current information',
             'qr_base64' => base64_encode($qrPng),
         ];
+    }
+
+    /**
+     * The serial prints on its own line, so take it out of the name: older register
+     * names still read "Dell Laptop S/N 6CGK2X1", which put the serial on the label twice.
+     */
+    public static function nameForLabel(?string $name, ?string $serial): string
+    {
+        $name = trim((string) $name);
+        $serial = trim((string) $serial);
+        if ($name === '') {
+            return '';
+        }
+        $clean = (new AssetDescriptionParser)->withoutSerial($name);
+        if (mb_strlen($serial) >= 4) {
+            $clean = preg_replace('/[\s\-(]*\b'.preg_quote($serial, '/').'\b\)?/i', '', $clean) ?? $clean;
+            $clean = trim(preg_replace('/\s+/', ' ', $clean) ?? $clean, " \t-,;");
+        }
+
+        return $clean !== '' ? $clean : $name;
     }
 
     private function mmToPt(float $mm): float
@@ -289,7 +311,7 @@ class AssetLabelService
         $asset->label_status = 'reprint_required';
         $asset->label_reprint_reason = $reason;
         $asset->save();
-        \App\Models\AssetLabel::query()
+        AssetLabel::query()
             ->where('asset_id', $asset->id)
             ->where('status', 'current')
             ->update(['status' => 'reprint_required', 'reprint_reason' => $reason]);

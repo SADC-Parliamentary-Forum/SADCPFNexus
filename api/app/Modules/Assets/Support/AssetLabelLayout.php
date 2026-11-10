@@ -9,6 +9,9 @@ final class AssetLabelLayout
     /** @var list<string> */
     public const IDS = ['org', 'notice', 'tag', 'name', 'model', 'serial', 'location', 'custodian', 'owner', 'recovery', 'scan_hint', 'qr'];
 
+    /** @var list<string> */
+    private const ALWAYS_SHOWN = ['serial', 'custodian'];
+
     /**
      * @return list<array{id: string, x_mm: float, y_mm: float, w_mm: float, h_mm: float, visible: bool}>
      */
@@ -104,17 +107,24 @@ final class AssetLabelLayout
         $qrMm = (float) $template->qr_mm;
         $items = self::sanitize($template->layout, $labelW, $labelH, $qrMm);
 
-        // The serial line is always laid out, even on templates saved with it hidden or missing; it prints only when the asset has a serial.
-        foreach ($items as $i => $item) {
-            if ($item['id'] === 'serial') {
-                $items[$i]['visible'] = true;
-
-                return $items;
+        // The serial and "Assigned to" lines are always laid out, even on templates saved with them
+        // hidden or missing; each prints only when the asset has a serial or an assignee.
+        foreach (self::ALWAYS_SHOWN as $id) {
+            $found = false;
+            foreach ($items as $i => $item) {
+                if ($item['id'] === $id) {
+                    $items[$i]['visible'] = true;
+                    $found = true;
+                }
             }
-        }
-        foreach (self::defaultItems($labelW, $labelH, $qrMm) as $item) {
-            if ($item['id'] === 'serial') {
-                $items[] = $item;
+            if ($found) {
+                continue;
+            }
+            foreach (self::defaultItems($labelW, $labelH, $qrMm) as $item) {
+                if ($item['id'] === $id) {
+                    $item['visible'] = true;
+                    $items[] = $item;
+                }
             }
         }
 
